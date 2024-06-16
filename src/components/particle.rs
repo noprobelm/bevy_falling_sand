@@ -35,3 +35,16 @@ impl Velocity {
 
 }
 
+/// The density of a particle.
+#[derive(Component, PartialEq, PartialOrd, Debug, Default, Reflect)]
+#[reflect(Component, Debug)]
+pub struct Density(pub u32);
+
+/// A sequence of possible neighbors for a particle to consider as part of its movement logic.
+/// The inner vectors are neighbors that should be considered as equal candidates when assessing
+/// where a particle should attempt to relocate to. The order of the inner vectors can be thought
+/// of as *priority*
+#[derive(Component, Debug, Default, Reflect)]
+#[reflect(Component)]
+pub struct Neighbors(pub Vec<Vec<IVec2>>);
+
