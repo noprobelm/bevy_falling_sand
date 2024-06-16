@@ -2,6 +2,12 @@
 
 use bevy::prelude::*;
 
+pub use components::*;
+pub use resources::*;
+
+mod components;
+mod resources;
+
 pub struct FallingSandPlugin;
 
 impl Plugin for FallingSandPlugin {

@@ -1,4 +1,4 @@
-use bevy::prelude::{Component, States, Resource};
+use bevy::prelude::*;
 
 /// Possible particle types. Add a variant of this enum to an entity to spawn the corresponding type
 /// into the world.

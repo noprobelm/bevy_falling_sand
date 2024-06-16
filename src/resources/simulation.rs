@@ -5,5 +5,5 @@ use bevy::prelude::Resource;
 pub struct SimulationPause;
 
 /// Resource to insert for parallel queries and batching
-#derive(Resource)
+#[derive(Resource)]
 pub struct SimulationBatch;
