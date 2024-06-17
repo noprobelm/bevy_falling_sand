@@ -19,17 +19,18 @@ pub struct Density(pub u32);
 /// where a particle should attempt to relocate to. The order of the inner vectors can be thought
 /// of as *prioritized tier* whe considering groups of movement candidates.
 ///
-/// For example, a sand particle's order of movement might look like `[[0, -1], [1, -1, -1, -1]]`.
-/// The particle would first attempt to move directly downward. If this fails, it would then look to
-/// its lower left and lower right neighbors at random, considering each as equally prioritized
-/// candidates.
+/// For example, a sand particle's order of movement might look like
+/// `[[[0, -1]], [[1, -1], [-1, -1]]]`. The particle would first attempt to move directly downward.
+/// If this fails, it would then look to its lower left and lower right neighbors at random,
+/// considering each as equally prioritized candidates.
 #[derive(Component, Reflect, Debug, Default)]
 #[reflect(Component)]
 pub struct Neighbors(pub Vec<Vec<IVec2>>);
 
 /// This component indicates whether a particle should be considered for movement or not. Examples
 /// of anchored particles might be the ground, or walls. We want anchored particles to be considered
-/// as impenetrable neighbors, but without uninstigated movement.
+/// as impenetrable neighbors (excluding their ability to be destroyed), but without uninstigated
+/// movement.
 #[derive(Component, Debug, Default, Reflect)]
 #[reflect(Component)]
 pub struct Anchored;
