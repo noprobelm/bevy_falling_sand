@@ -70,6 +70,7 @@ pub fn handle_new_particles(
     }
 }
 
+/// Setup all particle parent types on startup
 pub fn setup_particle_types(mut commands: Commands, mut type_map: ResMut<ParentParticleMap>) {
     let id = commands
         .spawn((
