@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 /// An identifier for which chunk we're working with.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum ChunkGroup {
     One,
     Two,
