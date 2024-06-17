@@ -4,7 +4,9 @@ use bevy::prelude::*;
 
 /// A map of all parent particle types to their corresponding entity. This is used exclusively for
 /// assigning child particles to their respective parent when initially spawned or have otherwise
-/// changed types (e.g., a reaction has occurred)
+/// changed types (e.g., a reaction has occurred). For accessing common particle data, we have
+/// dedicated entities with the ParticleParent component to provide us faster access than what
+/// a HashMap could provide.
 #[derive(Resource, Clone, Default, Debug)]
 pub struct ParentParticleMap {
     /// The mapping resource for particle types.
