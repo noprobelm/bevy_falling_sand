@@ -142,8 +142,7 @@ impl ParticleColors {
 
     /// Select a random color from the colors sequence.
     pub fn random<R: TurboRand>(&self, rng: &mut R) -> Color {
-        let index = rng.usize(0..self.colors.len());
-        self.colors[index]
+	rng.sample(self.colors)
     }
 }
 
