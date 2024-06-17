@@ -69,3 +69,115 @@ pub fn handle_new_particles(
         }
     }
 }
+
+pub fn setup_particle_types(mut commands: Commands, mut type_map: ResMut<ParticleTypeMap>) {
+    let id = commands
+        .spawn((
+            ParticleType::Water,
+            ParticleParent,
+            WaterBundle::default(),
+            SpatialBundle::from_transform(Transform::from_xyz(0., 0., 0.)),
+        ))
+        .id();
+
+    type_map.insert(ParticleType::Water, id);
+
+    let id = commands
+        .spawn((
+            ParticleType::Oil,
+            ParticleParent,
+            OilBundle::default(),
+            SpatialBundle::from_transform(Transform::from_xyz(0., 0., 0.)),
+        ))
+        .id();
+
+    type_map.insert(ParticleType::Oil, id);
+
+    let id = commands
+        .spawn((
+            ParticleType::Whiskey,
+            ParticleParent,
+            WhiskeyBundle::default(),
+            SpatialBundle::from_transform(Transform::from_xyz(0., 0., 0.)),
+        ))
+        .id();
+
+    type_map.insert(ParticleType::Whiskey, id);
+
+    let id = commands
+        .spawn((
+            ParticleType::Sand,
+            ParticleParent,
+            SandBundle::default(),
+            SpatialBundle::from_transform(Transform::from_xyz(0., 0., 0.)),
+        ))
+        .id();
+
+    type_map.insert(ParticleType::Sand, id);
+
+    let id = commands
+        .spawn((
+            ParticleType::Wall,
+            ParticleParent,
+            WallBundle::default(),
+            SpatialBundle::from_transform(Transform::from_xyz(0., 0., 0.)),
+        ))
+        .id();
+
+    type_map.insert(ParticleType::Wall, id);
+
+    let id = commands
+        .spawn((
+            ParticleType::DirtWall,
+            ParticleParent,
+            DirtWallBundle::default(),
+            SpatialBundle::from_transform(Transform::from_xyz(0., 0., 0.)),
+        ))
+        .id();
+
+    type_map.insert(ParticleType::DirtWall, id);
+
+    let id = commands
+        .spawn((
+            ParticleType::GrassWall,
+            ParticleParent,
+            GrassWallBundle::default(),
+            SpatialBundle::from_transform(Transform::from_xyz(0., 0., 0.)),
+        ))
+        .id();
+
+    type_map.insert(ParticleType::GrassWall, id);
+
+    let id = commands
+        .spawn((
+            ParticleType::RockWall,
+            ParticleParent,
+            RockWallBundle::default(),
+            SpatialBundle::from_transform(Transform::from_xyz(0., 0., 0.)),
+        ))
+        .id();
+
+    type_map.insert(ParticleType::RockWall, id);
+
+    let id = commands
+        .spawn((
+            ParticleType::DenseRockWall,
+            ParticleParent,
+            DenseRockWallBundle::default(),
+            SpatialBundle::from_transform(Transform::from_xyz(0., 0., 0.)),
+        ))
+        .id();
+
+    type_map.insert(ParticleType::DenseRockWall, id);
+
+    let id = commands
+        .spawn((
+            ParticleType::Steam,
+            ParticleParent,
+            SteamBundle::default(),
+            SpatialBundle::from_transform(Transform::from_xyz(0., 0., 0.)),
+        ))
+        .id();
+
+    type_map.insert(ParticleType::Steam, id);
+}
