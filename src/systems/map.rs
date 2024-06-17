@@ -17,9 +17,9 @@ pub fn handle_new_particles(
         (&ParticleType, &Transform, Entity),
         (Changed<ParticleType>, Without<ParticleParent>),
     >,
+    mut rng: ResMut<GlobalRng>,
     mut map: ResMut<ParticleMap>,
-    type_map: Res<ParentParticleMap>,
-    mut rng: ResMut<GlobalRng>
+    type_map: Res<ParentParticleMap>
 ) {
     let rng = rng.get_mut();
     for (particle_type, transform, entity) in particle_query.iter() {
