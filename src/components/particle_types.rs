@@ -80,7 +80,6 @@ impl Default for WaterBundle {
             ]),
             velocity: Velocity::new(1, 3),
             momentum: Momentum(IVec2::ZERO),
-            receives: Receives(Reaction::Evaporates),
             name: Name::new("Water"),
         }
     }
