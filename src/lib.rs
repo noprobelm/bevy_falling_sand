@@ -4,9 +4,11 @@ use bevy::prelude::*;
 
 pub use components::*;
 pub use resources::*;
+pub use systems::*;
 
 mod components;
 mod resources;
+mod systems;
 
 pub struct FallingSandPlugin;
 
