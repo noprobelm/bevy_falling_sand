@@ -515,6 +515,7 @@ name = "bevy_falling_sand"
 version = "0.1.0"
 dependencies = [
  "bevy",
+ "bevy_turborand",
 ]
 
 [[package]]
@@ -940,6 +941,18 @@ dependencies = [
  "bevy_math",
  "bevy_reflect",
  "thiserror",
+]
+
+[[package]]
+name = "bevy_turborand"
+version = "0.8.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7d6af93b7de02e755e17f1c33e8963665b898a26958f8175e58cf642cf90198c"
+dependencies = [
+ "bevy",
+ "instant",
+ "serde",
+ "turborand",
 ]
 
 [[package]]
@@ -2061,6 +2074,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e05c02b5e89bff3b946cedeca278abc628fe811e604f027c45a8aa3cf793d0eb"
 dependencies = [
  "libc",
+]
+
+[[package]]
+name = "instant"
+version = "0.1.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e0242819d153cba4b4b05a5a8f2a7e9bbf97b6055b2a002b395c96b5ff3c0222"
+dependencies = [
+ "cfg-if",
+ "js-sys",
+ "wasm-bindgen",
+ "web-sys",
 ]
 
 [[package]]
@@ -3238,6 +3263,17 @@ name = "ttf-parser"
 version = "0.21.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2c591d83f69777866b9126b24c6dd9a18351f177e49d625920d19f989fd31cf8"
+
+[[package]]
+name = "turborand"
+version = "0.10.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ffa9ae3c65785079fa553e8aea4ae4b12579b5c5029b4133b54ea3afb2e3e9fa"
+dependencies = [
+ "getrandom",
+ "instant",
+ "serde",
+]
 
 [[package]]
 name = "twox-hash"

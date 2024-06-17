@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_turborand::prelude::*;
 
 /// Marker component for querying for particles
 #[derive(Component, Reflect, Debug, Default)]
@@ -85,4 +86,27 @@ impl Momentum {
     /// Use this value for momentum if the particle is capable of gaining momentum, but currently
     /// has none.
     pub const ZERO: Self = Self(IVec2::splat(0));
+}
+
+/// This component provides a range of possible colors for a particle. Child particles will access
+/// this component from their parent particle when spawning to select a color for themselves at
+/// random.
+#[derive(Component, Debug, Reflect)]
+#[reflect(Component)]
+pub struct ParticleColors {
+    /// The possible range of colors.
+    colors: Vec<Color>,
+}
+
+impl ParticleColors {
+    /// Creates a new ParticleColors component with the specified colors.
+    pub fn new(colors: Vec<Color>) -> Self {
+        ParticleColors { colors }
+    }
+
+    /// Select a random color from the colors sequence.
+    pub fn random<R: TurboRand>(&self, rng: &mut R) -> Color {
+        let index = rng.usize(0..self.colors.len());
+        self.colors[index]
+    }
 }
