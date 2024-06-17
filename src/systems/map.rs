@@ -2,8 +2,7 @@ use bevy::prelude::*;
 use bevy_turborand::prelude::GlobalRng;
 use crate::*;
 
-/// Handle all particles that have either been added to the simulation, or otherwise had their state
-/// changed
+/// Handle all particles that have either been added to the simulation or changed state.
 pub fn handle_new_particles(
     mut commands: Commands,
     parent_query: Query<(
