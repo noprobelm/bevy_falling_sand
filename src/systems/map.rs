@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_turborand::prelude::GlobalRng;
+use bevy_turborand::prelude::{DelegatedRng, GlobalRng};
 use crate::*;
 
 /// Handle all particles that have either been added to the simulation or changed state.
@@ -19,8 +19,9 @@ pub fn handle_new_particles(
     >,
     mut map: ResMut<ParticleMap>,
     type_map: Res<ParentParticleMap>,
-    mut rng: ResMut<GlobalRng>,
+    mut rng: ResMut<GlobalRng>
 ) {
+    let rng = rng.get_mut();
     for (particle_type, transform, entity) in particle_query.iter() {
         let coordinates = IVec2::new(
             transform.translation.x as i32,
@@ -49,7 +50,7 @@ pub fn handle_new_particles(
                     Coordinates(coordinates),
                     LastMoved::default(),
                     Velocity::new(velocity.val, velocity.max),
-                    ParticleColor(colors.random(&mut rng)),
+                    ParticleColor(colors.random(rng)),
                 ));
 
 		if momentum.is_some() {
