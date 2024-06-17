@@ -9,14 +9,6 @@ pub enum ChunkGroup {
     Four
 }
 
-#[derive(Resource, Debug, Clone)]
-pub struct Chunks {
-    pub one: Vec<(IVec2, IVec2)>,
-    pub two: Vec<(IVec2, IVec2)>,
-    pub third: Vec<(IVec2, IVec2)>,
-    pub four: Vec<(IVec2, IVec2)>,
-}
-
 /// When the particle simulation is utilizing parallelism, we have to make considerations for
 /// particle movement so as to not create race between multiple particles trying to occupy the
 /// same location. To mitigate this, we can assign each particle to a 64x64 "chunk", and operate
