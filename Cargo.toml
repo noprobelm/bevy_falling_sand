@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+ahash = "0.8.11"
 bevy = "0.13.2"
 bevy_turborand = "0.8.2"
 
