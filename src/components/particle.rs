@@ -50,6 +50,7 @@ impl Velocity {
         Velocity { val, max }
     }
 
+    /// Increment the velocity by 1
     #[inline(always)]
     pub fn increment(&mut self) {
         if self.val < self.max {
@@ -57,6 +58,7 @@ impl Velocity {
         }
     }
 
+    /// Decrement the velocity by 1
     #[inline(always)]
     pub fn decrement(&mut self) {
         if self.val > 1 {
@@ -74,10 +76,12 @@ impl Velocity {
 ///
 /// The value of the IVec2 field is influenced by the successful, unobstructed movement of the
 /// particle as part of its previous step.
-#[derive(Component, Clone, Default, Debug, Reflect)]
+#[derive(Component, Reflect, Clone, Default, Debug)]
 #[reflect(Component)]
 pub struct Momentum(pub IVec2);
 
 impl Momentum {
+    /// Use this value for momentum if the particle is capable of gaining momentum, but currently
+    /// has none.
     pub const ZERO: Self = Self(IVec2::splat(0));
 }
