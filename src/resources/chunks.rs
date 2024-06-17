@@ -25,7 +25,6 @@ pub struct Chunks {
 /// Chunks are 64x64 by default. By updating particles over 4 rounds, we can guarantee that any
 /// particle can move 32 pixels in any direction without attempting to access a location another
 /// area of the ParticleMap is working with in parallel.
-///
 #[derive(Resource, Debug, Clone)]
 pub struct ChunkGroups {
     /// The first group of min/max cooridnates for each chunk
