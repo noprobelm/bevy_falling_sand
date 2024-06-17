@@ -19,7 +19,7 @@ pub fn handle_new_particles(
     >,
     mut rng: ResMut<GlobalRng>,
     mut map: ResMut<ParticleMap>,
-    type_map: Res<ParentParticleMap>
+    type_map: Res<ParticleParentMap>
 ) {
     let rng = rng.get_mut();
     for (particle_type, transform, entity) in particle_query.iter() {
@@ -71,7 +71,7 @@ pub fn handle_new_particles(
 }
 
 /// Setup all particle parent types on startup
-pub fn setup_particle_types(mut commands: Commands, mut type_map: ResMut<ParentParticleMap>) {
+pub fn setup_particle_types(mut commands: Commands, mut type_map: ResMut<ParticleParentMap>) {
     let id = commands
         .spawn((
             ParticleType::Water,

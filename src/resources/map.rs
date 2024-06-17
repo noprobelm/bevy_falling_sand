@@ -8,12 +8,12 @@ use bevy::prelude::*;
 /// dedicated entities with the ParticleParent component to provide us faster access than what
 /// a HashMap could provide.
 #[derive(Resource, Clone, Default, Debug)]
-pub struct ParentParticleMap {
+pub struct ParticleParentMap {
     /// The mapping resource for particle types.
     map: HashMap<ParticleType, Entity>,
 }
 
-impl ParentParticleMap {
+impl ParticleParentMap {
     /// Insert a new particle type to the map
     pub fn insert(&mut self, ptype: ParticleType, entity: Entity) -> &mut Entity {
         self.map.entry(ptype).or_insert(entity)
