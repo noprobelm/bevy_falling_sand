@@ -70,7 +70,7 @@ pub fn handle_new_particles(
     }
 }
 
-pub fn setup_particle_types(mut commands: Commands, mut type_map: ResMut<ParticleTypeMap>) {
+pub fn setup_particle_types(mut commands: Commands, mut type_map: ResMut<ParentParticleMap>) {
     let id = commands
         .spawn((
             ParticleType::Water,
