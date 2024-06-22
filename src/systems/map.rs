@@ -51,6 +51,7 @@ pub fn handle_new_particles(
                     LastMoved::default(),
                     Velocity::new(velocity.val, velocity.max),
                     ParticleColor(colors.random(rng)),
+                    PhysicsRng::default(),
                 ));
 
 		if momentum.is_some() {
