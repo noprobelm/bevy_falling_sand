@@ -13,6 +13,6 @@ mod systems;
 pub struct FallingSandPlugin;
 
 impl Plugin for FallingSandPlugin {
-    fn build(&self, app: &mut App) {
+    fn build(&self, _app: &mut App) {
     }
 }
