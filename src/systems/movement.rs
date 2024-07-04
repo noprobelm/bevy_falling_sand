@@ -1,5 +1,83 @@
+use std::mem;
+use bevy::utils::HashSet;
 use crate::*;
-// use bevy_turborand::prelude::*;
+
+pub fn handle_particles(
+    mut particle_query: Query<
+        (
+            Entity,
+            &Parent,
+            &mut ParticleType,
+            &mut Coordinates,
+            &mut Transform,
+            &mut Velocity,
+            Option<&mut Momentum>,
+            Option<&mut Hibernating>,
+            &mut PhysicsRng,
+        ),
+        Without<Anchored>,
+    >,
+    parent_query: Query<(&Density, &Neighbors), (With<ParticleParent>, Without<Anchored>)>,
+    mut map: ResMut<ParticleMap>,
+) {
+    unsafe {
+        particle_query.iter_unsafe().for_each(
+            |(
+                entity,
+                parent,
+                mut particle_type,
+                mut coordinates,
+                mut transform,
+                mut velocity,
+                mut momentum,
+                mut hibernating,
+                mut rng,
+            )| {
+                let (density, neighbors) = parent_query.get(parent.get()).unwrap();
+		let mut visited: HashSet<IVec2> = HashSet::default();
+                'velocity_loop: for _ in 0..velocity.val {
+                    let mut swapped = false;
+		    let mut obstructed: HashSet<IVec2> = HashSet::default();
+                    for neighbor_group in &neighbors.0 {
+                        let mut shuffled = neighbor_group.clone();
+                        rng.shuffle(&mut shuffled);
+                        for relative_coordinates in shuffled {
+			    let mut swap = false;
+                            let neighbor_coordinates = coordinates.0 + relative_coordinates;
+                            match map.get(&neighbor_coordinates) {
+                                Some(neighbor_entity) => {
+                                    if let Ok((
+                                        _,
+                                        neighbor_parent,
+                                        neighbor_particle_type,
+                                        mut neighbor_coordinates,
+                                        mut neighbor_transform,
+                                        mut neighbor_velocity,
+                                        mut neighbor_momentum,
+                                        mut neighbor_hibernating,
+                                        _,
+                                    )) = particle_query.get(*neighbor_entity)
+                                    {
+					if *particle_type == *neighbor_particle_type {
+					    continue;
+					}
+					let (neighbor_density, _) = parent_query.get(neighbor_parent.get()).unwrap();
+					if density > neighbor_density {
+					    swap = true;
+					}
+                                    } else {
+                                        continue;
+                                    }
+                                }
+                                None => {}
+                            };
+                        }
+                    }
+                }
+            },
+        );
+    }
+}
 
 #[allow(unused_mut)]
 pub fn handle_particles_transform(

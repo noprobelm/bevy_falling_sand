@@ -1,5 +1,6 @@
 use crate::ParticleType;
 use ahash::HashMap;
+use std::collections::hash_map::Entry;
 use bevy::prelude::*;
 
 /// A map of all parent particle types to their corresponding entity. This is used exclusively for
@@ -43,6 +44,10 @@ impl ParticleMap {
         self.map.clear();
     }
 
+    /// Gets the given coordinate's corresponding entry in the map for in-place manipulation.
+    pub fn entry(&mut self, coords: IVec2) -> Entry<'_, IVec2, Entity> {
+        self.map.entry(coords)
+    }
     /// Inserts a new particle at a given coordinate if it is not already occupied
     pub fn insert_no_overwrite(&mut self, coords: IVec2, entity: Entity) -> &mut Entity {
         self.map.entry(coords).or_insert(entity)
@@ -58,6 +63,12 @@ impl ParticleMap {
     #[inline(always)]
     pub fn get(&self, coords: &IVec2) -> Option<&Entity> {
         self.map.get(coords)
+    }
+
+    /// Get an immutable reference to the corresponding entity, if it exists.
+    #[inline(always)]
+    pub fn get_mut(&mut self, coords: &IVec2) -> Option<&mut Entity> {
+        self.map.get_mut(coords)
     }
 
     /// Remove a particle from the map
