@@ -42,8 +42,12 @@ pub fn handle_particles(
                         let mut shuffled = neighbor_group.clone();
                         rng.shuffle(&mut shuffled);
                         for relative_coordinates in shuffled {
-			    let mut swap = false;
                             let neighbor_coordinates = coordinates.0 + relative_coordinates;
+
+			    if visited.contains(&neighbor_coordinates) || obstructed.contains(&relative_coordinates.signum()) {
+				continue;
+			    }
+
                             match map.get(&neighbor_coordinates) {
                                 Some(neighbor_entity) => {
                                     if let Ok((
@@ -56,21 +60,44 @@ pub fn handle_particles(
                                         mut neighbor_momentum,
                                         mut neighbor_hibernating,
                                         _,
-                                    )) = particle_query.get(*neighbor_entity)
+                                    )) = particle_query.get_unchecked(*neighbor_entity)
                                     {
 					if *particle_type == *neighbor_particle_type {
 					    continue;
 					}
 					let (neighbor_density, _) = parent_query.get(neighbor_parent.get()).unwrap();
 					if density > neighbor_density {
-					    swap = true;
+					    neighbor_coordinates.0 = coordinates.0;
+					    neighbor_transform.translation.x = neighbor_coordinates.0.x as f32;
+					    neighbor_transform.translation.y = neighbor_coordinates.0.y as f32;
+
+					    coordinates.0 += relative_coordinates;
+					    transform.translation.x = neighbor_coordinates.0.x as f32;
+					    transform.translation.y = neighbor_coordinates.0.y as f32;
+
+					    visited.insert(coordinates.0);
+
+					    swapped = true;
+					    break 'velocity_loop
 					}
                                     } else {
+					obstructed.insert(relative_coordinates.signum());
                                         continue;
                                     }
                                 }
-                                None => {}
+                                None => {
+				    map.remove(&coordinates.0);
+				    map.insert_overwrite(neighbor_coordinates, entity);
+				    coordinates.0 = neighbor_coordinates;
+				    continue 'velocity_loop
+				}
                             };
+			    if swapped == true {
+				let neighbor_entity = map.remove(&neighbor_coordinates).unwrap();
+				map.insert_overwrite(coordinates.0, neighbor_entity);
+				map.insert_overwrite(neighbor_coordinates, neighbor_entity);
+				continue 'velocity_loop
+			    }
                         }
                     }
                 }
