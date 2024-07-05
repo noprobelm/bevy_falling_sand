@@ -78,7 +78,6 @@ pub fn handle_particles(
 					    visited.insert(coordinates.0);
 
 					    swapped = true;
-					    break 'velocity_loop
 					}
                                     } else {
 					obstructed.insert(relative_coordinates.signum());
@@ -96,7 +95,7 @@ pub fn handle_particles(
 				let neighbor_entity = map.remove(&neighbor_coordinates).unwrap();
 				map.insert_overwrite(coordinates.0, neighbor_entity);
 				map.insert_overwrite(neighbor_coordinates, neighbor_entity);
-				continue 'velocity_loop
+				break 'velocity_loop
 			    }
                         }
                     }
