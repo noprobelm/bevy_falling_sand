@@ -13,6 +13,14 @@ mod systems;
 pub struct FallingSandPlugin;
 
 impl Plugin for FallingSandPlugin {
-    fn build(&self, _app: &mut App) {
+    fn build(&self, app: &mut App) {
+        app.init_resource::<ParticleMap>();
+
+	app.add_systems(Startup, setup_particle_types);
+
+	app.add_systems(Update, handle_new_particles);
+	app.add_systems(FixedUpdate, handle_particles);
+
+	app.add_systems(Update, color_particles);
     }
 }
