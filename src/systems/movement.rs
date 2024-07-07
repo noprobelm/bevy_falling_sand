@@ -87,12 +87,15 @@ pub fn handle_particles(
 				    map.remove(&coordinates.0);
 				    map.insert_overwrite(neighbor_coordinates, entity);
 				    coordinates.0 = neighbor_coordinates;
+                                    transform.translation.x = neighbor_coordinates.x as f32;
+                                    transform.translation.y = neighbor_coordinates.y as f32;
+
 				    continue 'velocity_loop
 				}
                             };
 			    if swapped == true {
 				let neighbor_entity = map.remove(&neighbor_coordinates).unwrap();
-				map.insert_overwrite(coordinates.0, neighbor_entity);
+				map.insert_overwrite(coordinates.0, entity);
 				map.insert_overwrite(neighbor_coordinates, neighbor_entity);
 				break 'velocity_loop
 			    }

@@ -1,6 +1,7 @@
 //! `bevy_falling_sand` is a generic plugin for adding falling sand simulation physics to your Bevy project.
 
 use bevy::prelude::*;
+use bevy_turborand::prelude::*;
 
 pub use components::*;
 pub use resources::*;
@@ -14,7 +15,10 @@ pub struct FallingSandPlugin;
 
 impl Plugin for FallingSandPlugin {
     fn build(&self, app: &mut App) {
+        app.add_plugins(RngPlugin::default());
+
         app.init_resource::<ParticleMap>();
+        app.init_resource::<ParticleParentMap>();
 
 	app.add_systems(Startup, setup_particle_types);
 
