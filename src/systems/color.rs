@@ -21,7 +21,7 @@ pub fn color_particles_debug(
 pub fn color_particles(
     mut particle_query: Query<
         (&mut Sprite, &ParticleColor),
-        (With<ParticleType>, Changed<Coordinates>),
+//        (With<ParticleType>, Changed<Coordinates>),
     >,
 ) {
     particle_query

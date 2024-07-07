@@ -23,7 +23,7 @@ impl Plugin for FallingSandPlugin {
 	app.add_systems(Startup, setup_particle_types);
 
 	app.add_systems(Update, handle_new_particles);
-	app.add_systems(FixedUpdate, handle_particles);
+	app.add_systems(Update, handle_particles);
 
 	app.add_systems(Update, color_particles);
     }

@@ -1,5 +1,5 @@
-use bevy::utils::HashSet;
 use crate::*;
+use bevy::utils::HashSet;
 
 pub fn handle_particles(
     mut particle_query: Query<
@@ -32,73 +32,88 @@ pub fn handle_particles(
                 mut hibernating,
                 mut rng,
             )| {
-                let (density, neighbors) = parent_query.get(parent.get()).unwrap();
-		let mut visited: HashSet<IVec2> = HashSet::default();
-                'velocity_loop: for _ in 0..velocity.val {
-                    let mut swapped = false;
-		    let mut obstructed: HashSet<IVec2> = HashSet::default();
-                    for neighbor_group in &neighbors.0 {
-                        let mut shuffled = neighbor_group.clone();
-                        rng.shuffle(&mut shuffled);
-                        for relative_coordinates in shuffled {
-                            let neighbor_coordinates = coordinates.0 + relative_coordinates;
+                if let Ok((density, neighbors)) = parent_query.get(parent.get()) {
+                    let (density, neighbors) = parent_query.get(parent.get()).unwrap();
+                    let mut visited: HashSet<IVec2> = HashSet::default();
+                    'velocity_loop: for _ in 0..velocity.val {
+                        let mut swapped = false;
+                        let mut obstructed: HashSet<IVec2> = HashSet::default();
+                        for neighbor_group in &neighbors.0 {
+                            let mut shuffled = neighbor_group.clone();
+                            rng.shuffle(&mut shuffled);
+                            for relative_coordinates in shuffled {
+                                let neighbor_coordinates = coordinates.0 + relative_coordinates;
 
-			    if visited.contains(&neighbor_coordinates) || obstructed.contains(&relative_coordinates.signum()) {
-				continue;
-			    }
-
-                            match map.get(&neighbor_coordinates) {
-                                Some(neighbor_entity) => {
-                                    if let Ok((
-                                        _,
-                                        neighbor_parent,
-                                        neighbor_particle_type,
-                                        mut neighbor_coordinates,
-                                        mut neighbor_transform,
-                                        mut neighbor_velocity,
-                                        mut neighbor_momentum,
-                                        mut neighbor_hibernating,
-                                        _,
-                                    )) = particle_query.get_unchecked(*neighbor_entity)
-                                    {
-					if *particle_type == *neighbor_particle_type {
-					    continue;
-					}
-					let (neighbor_density, _) = parent_query.get(neighbor_parent.get()).unwrap();
-					if density > neighbor_density {
-					    neighbor_coordinates.0 = coordinates.0;
-					    neighbor_transform.translation.x = neighbor_coordinates.0.x as f32;
-					    neighbor_transform.translation.y = neighbor_coordinates.0.y as f32;
-
-					    coordinates.0 += relative_coordinates;
-					    transform.translation.x = neighbor_coordinates.0.x as f32;
-					    transform.translation.y = neighbor_coordinates.0.y as f32;
-
-					    visited.insert(coordinates.0);
-
-					    swapped = true;
-					}
-                                    } else {
-					obstructed.insert(relative_coordinates.signum());
-                                        continue;
-                                    }
+                                if visited.contains(&neighbor_coordinates)
+                                    || obstructed.contains(&relative_coordinates.signum())
+                                {
+                                    continue;
                                 }
-                                None => {
-				    map.remove(&coordinates.0);
-				    map.insert_overwrite(neighbor_coordinates, entity);
-				    coordinates.0 = neighbor_coordinates;
-                                    transform.translation.x = neighbor_coordinates.x as f32;
-                                    transform.translation.y = neighbor_coordinates.y as f32;
 
-				    continue 'velocity_loop
-				}
-                            };
-			    if swapped == true {
-				let neighbor_entity = map.remove(&neighbor_coordinates).unwrap();
-				map.insert_overwrite(coordinates.0, entity);
-				map.insert_overwrite(neighbor_coordinates, neighbor_entity);
-				break 'velocity_loop
-			    }
+                                match map.get(&neighbor_coordinates) {
+                                    Some(neighbor_entity) => {
+                                        if let Ok((
+                                            _,
+                                            neighbor_parent,
+                                            neighbor_particle_type,
+                                            mut neighbor_coordinates,
+                                            mut neighbor_transform,
+                                            mut neighbor_velocity,
+                                            mut neighbor_momentum,
+                                            mut neighbor_hibernating,
+                                            _,
+                                        )) = particle_query.get_unchecked(*neighbor_entity)
+                                        {
+                                            if *particle_type == *neighbor_particle_type {
+                                                continue;
+                                            }
+                                            if let Ok(neighbor_density) =
+                                                parent_query.get(neighbor_parent.get())
+                                            {
+                                                let (neighbor_density, _) = parent_query
+                                                    .get(neighbor_parent.get())
+                                                    .unwrap();
+                                                if density > neighbor_density {
+                                                    neighbor_coordinates.0 = coordinates.0;
+                                                    neighbor_transform.translation.x =
+                                                        neighbor_coordinates.0.x as f32;
+                                                    neighbor_transform.translation.y =
+                                                        neighbor_coordinates.0.y as f32;
+
+                                                    coordinates.0 += relative_coordinates;
+                                                    transform.translation.x =
+                                                        neighbor_coordinates.0.x as f32;
+                                                    transform.translation.y =
+                                                        neighbor_coordinates.0.y as f32;
+
+                                                    visited.insert(coordinates.0);
+
+                                                    swapped = true;
+                                                }
+                                            } else {
+                                                obstructed.insert(relative_coordinates.signum());
+                                                continue;
+                                            }
+                                        }
+                                    }
+                                    None => {
+                                        map.remove(&coordinates.0);
+                                        map.insert_overwrite(neighbor_coordinates, entity);
+                                        coordinates.0 = neighbor_coordinates;
+                                        transform.translation.x = neighbor_coordinates.x as f32;
+                                        transform.translation.y = neighbor_coordinates.y as f32;
+
+                                        continue 'velocity_loop;
+                                    }
+                                };
+                                if swapped == true {
+                                    let neighbor_entity =
+                                        map.remove(&neighbor_coordinates).unwrap();
+                                    map.insert_overwrite(coordinates.0, entity);
+                                    map.insert_overwrite(neighbor_coordinates, neighbor_entity);
+                                    break 'velocity_loop;
+                                }
+                            }
                         }
                     }
                 }
