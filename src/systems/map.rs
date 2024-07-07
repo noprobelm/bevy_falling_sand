@@ -44,6 +44,7 @@ pub fn handle_new_particles(
                             color: Color::rgba(0., 0., 0., 0.),
                             ..default()
                         },
+                        transform: *transform,
                         ..default()
                     },
                     Particle,

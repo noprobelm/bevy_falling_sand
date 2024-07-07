@@ -33,10 +33,9 @@ pub fn handle_particles(
                 mut rng,
             )| {
                 if let Ok((density, neighbors)) = parent_query.get(parent.get()) {
-                    let (density, neighbors) = parent_query.get(parent.get()).unwrap();
                     let mut visited: HashSet<IVec2> = HashSet::default();
                     'velocity_loop: for _ in 0..velocity.val {
-                        let mut swapped = false;
+                        let mut swap = false;
                         let mut obstructed: HashSet<IVec2> = HashSet::default();
                         for neighbor_group in &neighbors.0 {
                             let mut shuffled = neighbor_group.clone();
@@ -67,12 +66,9 @@ pub fn handle_particles(
                                             if *particle_type == *neighbor_particle_type {
                                                 continue;
                                             }
-                                            if let Ok(neighbor_density) =
+                                            if let Ok((neighbor_density, _)) =
                                                 parent_query.get(neighbor_parent.get())
                                             {
-                                                let (neighbor_density, _) = parent_query
-                                                    .get(neighbor_parent.get())
-                                                    .unwrap();
                                                 if density > neighbor_density {
                                                     neighbor_coordinates.0 = coordinates.0;
                                                     neighbor_transform.translation.x =
@@ -88,7 +84,7 @@ pub fn handle_particles(
 
                                                     visited.insert(coordinates.0);
 
-                                                    swapped = true;
+                                                    swap = true;
                                                 }
                                             } else {
                                                 obstructed.insert(relative_coordinates.signum());
@@ -102,15 +98,16 @@ pub fn handle_particles(
                                         coordinates.0 = neighbor_coordinates;
                                         transform.translation.x = neighbor_coordinates.x as f32;
                                         transform.translation.y = neighbor_coordinates.y as f32;
+					velocity.increment();
 
                                         continue 'velocity_loop;
                                     }
                                 };
-                                if swapped == true {
+                                if swap == true {
                                     let neighbor_entity =
-                                        map.remove(&neighbor_coordinates).unwrap();
+                                        map.remove(&coordinates.0).unwrap();
                                     map.insert_overwrite(coordinates.0, entity);
-                                    map.insert_overwrite(neighbor_coordinates, neighbor_entity);
+                                    map.insert_overwrite(coordinates.0 - relative_coordinates, neighbor_entity);
                                     break 'velocity_loop;
                                 }
                             }

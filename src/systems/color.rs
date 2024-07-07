@@ -1,5 +1,5 @@
 use crate::{
-    Coordinates, Hibernating, ParticleColor, ParticleType,
+    Hibernating, ParticleColor, Particle
 };
 use bevy::prelude::*;
 
@@ -21,7 +21,7 @@ pub fn color_particles_debug(
 pub fn color_particles(
     mut particle_query: Query<
         (&mut Sprite, &ParticleColor),
-//        (With<ParticleType>, Changed<Coordinates>),
+        Added<Particle>,
     >,
 ) {
     particle_query
