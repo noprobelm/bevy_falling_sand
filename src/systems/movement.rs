@@ -106,6 +106,7 @@ pub fn handle_particles(
                                         continue 'velocity_loop;
                                     }
                                 };
+
                                 if swap == true {
                                     let neighbor_entity =
                                         map.remove(&coordinates.0).unwrap();
