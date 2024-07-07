@@ -71,16 +71,20 @@ pub fn handle_particles(
                                             {
                                                 if density > neighbor_density {
                                                     neighbor_coordinates.0 = coordinates.0;
+                                                    coordinates.0 += relative_coordinates;
+
                                                     neighbor_transform.translation.x =
                                                         neighbor_coordinates.0.x as f32;
                                                     neighbor_transform.translation.y =
                                                         neighbor_coordinates.0.y as f32;
 
-                                                    coordinates.0 += relative_coordinates;
+
                                                     transform.translation.x =
                                                         neighbor_coordinates.0.x as f32;
                                                     transform.translation.y =
                                                         neighbor_coordinates.0.y as f32;
+
+						    velocity.decrement();
 
                                                     visited.insert(coordinates.0);
 
@@ -88,20 +92,28 @@ pub fn handle_particles(
                                                 }
                                             } else {
                                                 obstructed.insert(relative_coordinates.signum());
+						velocity.decrement();
+
                                                 continue;
                                             }
                                         } else {
 					    obstructed.insert(relative_coordinates.signum());
+
 					    continue;
 					}
                                     }
                                     None => {
                                         map.remove(&coordinates.0);
                                         map.insert_overwrite(neighbor_coordinates, entity);
+
                                         coordinates.0 = neighbor_coordinates;
+
                                         transform.translation.x = neighbor_coordinates.x as f32;
                                         transform.translation.y = neighbor_coordinates.y as f32;
+
 					velocity.increment();
+
+					visited.insert(coordinates.0);
 
                                         continue 'velocity_loop;
                                     }
@@ -112,6 +124,7 @@ pub fn handle_particles(
                                         map.remove(&coordinates.0).unwrap();
                                     map.insert_overwrite(coordinates.0, entity);
                                     map.insert_overwrite(coordinates.0 - relative_coordinates, neighbor_entity);
+
                                     break 'velocity_loop;
                                 }
                             }
