@@ -1,17 +1,16 @@
 use crate::*;
 use bevy::utils::HashSet;
 
+#[allow(unused_mut)]
 pub fn handle_particles(
     mut particle_query: Query<
         (
             Entity,
             &Parent,
-            &mut ParticleType,
+            &ParticleType,
             &mut Coordinates,
             &mut Transform,
             &mut Velocity,
-            Option<&mut Momentum>,
-            Option<&mut Hibernating>,
             &mut PhysicsRng,
         ),
         Without<Anchored>,
@@ -24,12 +23,10 @@ pub fn handle_particles(
             |(
                 entity,
                 parent,
-                mut particle_type,
+                particle_type,
                 mut coordinates,
                 mut transform,
                 mut velocity,
-                mut momentum,
-                mut hibernating,
                 mut rng,
             )| {
                 if let Ok((density, neighbors)) = parent_query.get(parent.get()) {
@@ -57,9 +54,7 @@ pub fn handle_particles(
                                             neighbor_particle_type,
                                             mut neighbor_coordinates,
                                             mut neighbor_transform,
-                                            mut neighbor_velocity,
-                                            mut neighbor_momentum,
-                                            mut neighbor_hibernating,
+					    _,
                                             _,
                                         )) = particle_query.get_unchecked(*neighbor_entity)
                                         {
