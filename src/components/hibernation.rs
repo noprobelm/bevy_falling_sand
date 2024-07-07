@@ -27,3 +27,9 @@ impl Default for Hibernating {
 #[derive(Component, Default, Debug, Reflect)]
 #[reflect(Component)]
 pub struct LastMoved(pub Stopwatch);
+
+impl LastMoved {
+    pub fn reset(&mut self) {
+        self.0.reset();
+    }
+}
