@@ -90,7 +90,10 @@ pub fn handle_particles(
                                                 obstructed.insert(relative_coordinates.signum());
                                                 continue;
                                             }
-                                        }
+                                        } else {
+					    obstructed.insert(relative_coordinates.signum());
+					    continue;
+					}
                                     }
                                     None => {
                                         map.remove(&coordinates.0);
