@@ -11,6 +11,7 @@ pub fn handle_new_particles(
         &Velocity,
         Option<&Momentum>,
         &ParticleColors,
+	Option<&Anchored>,
         Entity,
     )>,
     particle_query: Query<
@@ -35,7 +36,7 @@ pub fn handle_new_particles(
         }
 
         if let Some(parent_entity) = type_map.get(particle_type) {
-            if let Ok((_parent_type, _parent, velocity, momentum, colors, parent_entity)) =
+            if let Ok((_parent_type, _parent, velocity, momentum, colors, anchored, parent_entity)) =
                 parent_query.get(*parent_entity)
             {
                 commands.entity(entity).insert((
@@ -59,6 +60,10 @@ pub fn handle_new_particles(
                     commands.entity(entity).insert(Momentum(IVec2::ZERO));
                 } else {
 		    commands.entity(entity).remove::<Momentum>();
+		}
+
+		if anchored.is_some() {
+		    commands.entity(entity).insert(Anchored);
 		}
 
                 commands.entity(parent_entity).add_child(entity);
