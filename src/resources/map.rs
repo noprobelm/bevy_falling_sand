@@ -3,12 +3,7 @@ use ahash::HashMap;
 use std::collections::hash_map::Entry;
 use bevy::prelude::*;
 use rayon::prelude::*;
-use rayon::iter::ParallelIterator;
 use rayon::iter::IntoParallelRefIterator;
-
-pub struct ChunkMap {
-    
-}
 
 /// A map of all parent particle types to their corresponding entity. This is used exclusively for
 /// assigning child particles to their respective parent when initially spawned or have otherwise
