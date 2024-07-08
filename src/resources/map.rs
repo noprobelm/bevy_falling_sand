@@ -43,11 +43,12 @@ pub struct ParticleMap {
 
 impl Default for ParticleMap {
     fn default() -> ParticleMap {
+	let chunk_size: u32 = 64;
 	let chunks_len: u32 = 32;
         ParticleMap {
 	    min: IVec2::new(-(16 * 64 / 2), 16 * 64 / 2),
 	    max: IVec2::new(16 * 64 / 2, -(16 * 64 / 2)),
-	    grid_size: 2048,
+	    grid_size: (chunk_size * chunks_len) as usize,
             chunks: (0..chunks_len.pow(2)).map(|_| HashMap::default()).collect(),
         }
     }
