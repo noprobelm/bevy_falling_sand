@@ -2,6 +2,13 @@ use crate::ParticleType;
 use ahash::HashMap;
 use std::collections::hash_map::Entry;
 use bevy::prelude::*;
+use rayon::prelude::*;
+use rayon::iter::ParallelIterator;
+use rayon::iter::IntoParallelRefIterator;
+
+pub struct ChunkMap {
+    
+}
 
 /// A map of all parent particle types to their corresponding entity. This is used exclusively for
 /// assigning child particles to their respective parent when initially spawned or have otherwise
@@ -89,8 +96,8 @@ impl ParticleMap {
 
     /// Parallel iter through all the key, value instances of the particle map
     #[inline(always)]
-    pub fn par_iter(&self) -> impl Iterator<Item = (&IVec2, &Entity)> {
-        self.map.iter()
+    pub fn par_iter(&self) -> impl IntoParallelIterator<Item = (&IVec2, &Entity)> {
+        self.map.par_iter()
     }
 
     /// Get the total numebr of particles
