@@ -7,6 +7,7 @@ edition = "2021"
 ahash = "0.8.11"
 bevy = "0.13.2"
 bevy_turborand = "0.8.2"
+rayon = "1.10.0"
 
 [profile.release]
 lto = true

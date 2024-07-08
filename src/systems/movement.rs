@@ -131,4 +131,3 @@ pub fn handle_particles(
         );
     }
 }
-

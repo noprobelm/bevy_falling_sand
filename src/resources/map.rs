@@ -1,9 +1,9 @@
 use crate::ParticleType;
 use ahash::HashMap;
-use std::collections::hash_map::Entry;
 use bevy::prelude::*;
-use rayon::prelude::*;
 use rayon::iter::IntoParallelRefIterator;
+use rayon::prelude::*;
+use std::collections::hash_map::Entry;
 
 /// A map of all parent particle types to their corresponding entity. This is used exclusively for
 /// assigning child particles to their respective parent when initially spawned or have otherwise
@@ -28,12 +28,48 @@ impl ParticleParentMap {
     }
 }
 
-/// The mapping resource for the position of all particles in the world. This is used primarily when
-/// we need to move particles for each tick of the simulation.
-#[derive(Resource, Default, Debug, Clone)]
+
+#[derive(Resource, Debug, Clone)]
 pub struct ParticleMap {
-    /// The mapping resource for all particles
-    map: HashMap<IVec2, Entity>,
+    /// The upper left bound
+    min: IVec2,
+    /// The lower right bound
+    max: IVec2,
+    /// The size of the grid
+    grid_size: usize,
+    /// The particle maps
+    chunks: Vec<HashMap<IVec2, Entity>>,
+}
+
+impl Default for ParticleMap {
+    fn default() -> ParticleMap {
+	let chunks_len: u32 = 32;
+        ParticleMap {
+	    min: IVec2::new(-(16 * 64 / 2), 16 * 64 / 2),
+	    max: IVec2::new(16 * 64 / 2, -(16 * 64 / 2)),
+	    grid_size: 2048,
+            chunks: (0..chunks_len.pow(2)).map(|_| HashMap::default()).collect(),
+        }
+    }
+}
+
+impl ParticleMap {
+    fn get_chunk_index(&self, coord: &IVec2) -> usize {
+        let col = ((coord.x + self.grid_size as i32) / 64) as usize;
+        let row = ((self.grid_size as i32 - coord.y) / 64) as usize;
+	row * 16 + col
+    }
+
+
+    fn get_chunk(&self, coord: &IVec2) -> Option<&HashMap<IVec2, Entity>> {
+        let index = self.get_chunk_index(coord);
+        self.chunks.get(index)
+    }
+
+    fn get_chunk_mut(&mut self, coord: &IVec2) -> Option<&mut HashMap<IVec2, Entity>> {
+        let index = self.get_chunk_index(coord);
+        self.chunks.get_mut(index)
+    }
 }
 
 impl ParticleMap {
@@ -41,36 +77,33 @@ impl ParticleMap {
     /// > **⚠️ Warning:**
     /// > Calling this method will cause major breakage to the simulation if particles are not
     /// simultaneously cleared within the same system from which this method was called.
-    #[inline(always)]
     pub fn clear(&mut self) {
-        self.map.clear();
+	for map in &mut self.chunks {
+	    map.clear();
+	}
     }
 
-    /// Gets the given coordinate's corresponding entry in the map for in-place manipulation.
-    pub fn entry(&mut self, coords: IVec2) -> Entry<'_, IVec2, Entity> {
-        self.map.entry(coords)
-    }
     /// Inserts a new particle at a given coordinate if it is not already occupied
     pub fn insert_no_overwrite(&mut self, coords: IVec2, entity: Entity) -> &mut Entity {
-        self.map.entry(coords).or_insert(entity)
+        self.get_chunk_mut(&coords).unwrap().entry(coords).or_insert(entity)
     }
 
     /// Inserts a new particle at a given coordinate irrespective of its occupied state
     #[inline(always)]
     pub fn insert_overwrite(&mut self, coords: IVec2, entity: Entity) -> Option<Entity> {
-        self.map.insert(coords, entity)
+        self.get_chunk_mut(&coords).unwrap().insert(coords, entity)
     }
 
     /// Get an immutable reference to the corresponding entity, if it exists.
     #[inline(always)]
     pub fn get(&self, coords: &IVec2) -> Option<&Entity> {
-        self.map.get(coords)
+	self.get_chunk(&coords).unwrap().get(coords)
     }
 
     /// Get an immutable reference to the corresponding entity, if it exists.
     #[inline(always)]
     pub fn get_mut(&mut self, coords: &IVec2) -> Option<&mut Entity> {
-        self.map.get_mut(coords)
+        self.get_chunk_mut(&coords).unwrap().get_mut(coords)
     }
 
     /// Remove a particle from the map
@@ -79,25 +112,94 @@ impl ParticleMap {
     /// simultaneously cleared within the same system from which this method was called.
     #[inline(always)]
     pub fn remove(&mut self, coords: &IVec2) -> Option<Entity> {
-        self.map.remove(coords)
+	self.get_chunk_mut(&coords).unwrap().remove(coords)
     }
 
     /// Iterate through all key, value instances of the particle map
     #[inline(always)]
     #[allow(unused)]
     pub fn iter(&self) -> impl Iterator<Item = (&IVec2, &Entity)> {
-        self.map.iter()
+        self.chunks.iter().flat_map(|chunk| chunk.iter())
     }
 
     /// Parallel iter through all the key, value instances of the particle map
     #[inline(always)]
     pub fn par_iter(&self) -> impl IntoParallelIterator<Item = (&IVec2, &Entity)> {
-        self.map.par_iter()
-    }
-
-    /// Get the total numebr of particles
-    #[allow(dead_code)]
-    pub fn len(&self) -> usize {
-        self.map.len()
+        self.chunks.par_iter().flat_map(|chunk| chunk.par_iter())
     }
 }
+
+// /// The mapping resource for the position of all particles in the world. This is used primarily when
+// /// we need to move particles for each tick of the simulation.
+// #[derive(Resource, Default, Debug, Clone)]
+// pub struct ParticleMap {
+//     /// The mapping resource for all particles
+//     map: HashMap<IVec2, Entity>,
+// }
+
+// impl ParticleMap {
+//     /// Clear all existing particles from the map
+//     /// > **⚠️ Warning:**
+//     /// > Calling this method will cause major breakage to the simulation if particles are not
+//     /// simultaneously cleared within the same system from which this method was called.
+//     #[inline(always)]
+//     pub fn clear(&mut self) {
+//         self.map.clear();
+//     }
+
+//     /// Gets the given coordinate's corresponding entry in the map for in-place manipulation.
+//     pub fn entry(&mut self, coords: IVec2) -> Entry<'_, IVec2, Entity> {
+//         self.map.entry(coords)
+//     }
+	
+//     /// Inserts a new particle at a given coordinate if it is not already occupied
+//     pub fn insert_no_overwrite(&mut self, coords: IVec2, entity: Entity) -> &mut Entity {
+//         self.map.entry(coords).or_insert(entity)
+//     }
+
+//     /// Inserts a new particle at a given coordinate irrespective of its occupied state
+//     #[inline(always)]
+//     pub fn insert_overwrite(&mut self, coords: IVec2, entity: Entity) -> Option<Entity> {
+//         self.map.insert(coords, entity)
+//     }
+
+//     /// Get an immutable reference to the corresponding entity, if it exists.
+//     #[inline(always)]
+//     pub fn get(&self, coords: &IVec2) -> Option<&Entity> {
+//         self.map.get(coords)
+//     }
+
+//     /// Get an immutable reference to the corresponding entity, if it exists.
+//     #[inline(always)]
+//     pub fn get_mut(&mut self, coords: &IVec2) -> Option<&mut Entity> {
+//         self.map.get_mut(coords)
+//     }
+
+//     /// Remove a particle from the map
+//     /// > **⚠️ Warning:**
+//     /// > Calling this method will cause major breakage to the simulation if particles are not
+//     /// simultaneously cleared within the same system from which this method was called.
+//     #[inline(always)]
+//     pub fn remove(&mut self, coords: &IVec2) -> Option<Entity> {
+//         self.map.remove(coords)
+//     }
+
+//     /// Iterate through all key, value instances of the particle map
+//     #[inline(always)]
+//     #[allow(unused)]
+//     pub fn iter(&self) -> impl Iterator<Item = (&IVec2, &Entity)> {
+//         self.map.iter()
+//     }
+
+//     /// Parallel iter through all the key, value instances of the particle map
+//     #[inline(always)]
+//     pub fn par_iter(&self) -> impl IntoParallelIterator<Item = (&IVec2, &Entity)> {
+//         self.map.par_iter()
+//     }
+
+//     /// Get the total numebr of particles
+//     #[allow(dead_code)]
+//     pub fn len(&self) -> usize {
+//         self.map.len()
+//     }
+// }
