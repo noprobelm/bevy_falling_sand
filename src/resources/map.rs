@@ -3,7 +3,6 @@ use ahash::HashMap;
 use bevy::prelude::*;
 use rayon::iter::IntoParallelRefIterator;
 use rayon::prelude::*;
-use std::collections::hash_map::Entry;
 
 /// A map of all parent particle types to their corresponding entity. This is used exclusively for
 /// assigning child particles to their respective parent when initially spawned or have otherwise
@@ -90,19 +89,16 @@ impl ParticleMap {
     }
 
     /// Inserts a new particle at a given coordinate irrespective of its occupied state
-    
     pub fn insert_overwrite(&mut self, coords: IVec2, entity: Entity) -> Option<Entity> {
         self.get_chunk_mut(&coords).unwrap().insert(coords, entity)
     }
 
     /// Get an immutable reference to the corresponding entity, if it exists.
-    
     pub fn get(&self, coords: &IVec2) -> Option<&Entity> {
 	self.get_chunk(&coords).unwrap().get(coords)
     }
 
     /// Get an immutable reference to the corresponding entity, if it exists.
-    
     pub fn get_mut(&mut self, coords: &IVec2) -> Option<&mut Entity> {
         self.get_chunk_mut(&coords).unwrap().get_mut(coords)
     }
@@ -111,20 +107,17 @@ impl ParticleMap {
     /// > **⚠️ Warning:**
     /// > Calling this method will cause major breakage to the simulation if particles are not
     /// simultaneously cleared within the same system from which this method was called.
-    
     pub fn remove(&mut self, coords: &IVec2) -> Option<Entity> {
 	self.get_chunk_mut(&coords).unwrap().remove(coords)
     }
 
     /// Iterate through all key, value instances of the particle map
-    
     #[allow(unused)]
     pub fn iter(&self) -> impl Iterator<Item = (&IVec2, &Entity)> {
         self.chunks.iter().flat_map(|chunk| chunk.iter())
     }
 
     /// Parallel iter through all the key, value instances of the particle map
-    
     pub fn par_iter(&self) -> impl IntoParallelIterator<Item = (&IVec2, &Entity)> {
         self.chunks.par_iter().flat_map(|chunk| chunk.par_iter())
     }
