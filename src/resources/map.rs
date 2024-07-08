@@ -36,7 +36,7 @@ pub struct ParticleMap {
     /// The size of the grid
     grid_size: usize,
     /// The particle maps
-    chunks: Vec<HashMap<IVec2, Entity>>,
+    chunks: Vec<ParticleChunk>,
 }
 
 impl Default for ParticleMap {
@@ -46,7 +46,7 @@ impl Default for ParticleMap {
         ParticleMap {
 	    chunk_size,
 	    grid_size: (chunk_size * chunks_len) as usize,
-            chunks: (0..chunks_len.pow(2)).map(|_| HashMap::default()).collect(),
+            chunks: (0..chunks_len.pow(2)).map(|_| ParticleChunk::default()).collect(),
         }
     }
 }
@@ -60,13 +60,13 @@ impl ParticleMap {
     }
 
     /// Gets an immutable reference to a chunk
-    fn get_chunk(&self, coord: &IVec2) -> Option<&HashMap<IVec2, Entity>> {
+    fn get_chunk(&self, coord: &IVec2) -> Option<&ParticleChunk> {
         let index = self.get_chunk_index(coord);
         self.chunks.get(index)
     }
 
     /// Gets a mutable reference to a chunk
-    fn get_chunk_mut(&mut self, coord: &IVec2) -> Option<&mut HashMap<IVec2, Entity>> {
+    fn get_chunk_mut(&mut self, coord: &IVec2) -> Option<&mut ParticleChunk> {
         let index = self.get_chunk_index(coord);
         self.chunks.get_mut(index)
     }
@@ -85,12 +85,12 @@ impl ParticleMap {
 
     /// Inserts a new particle at a given coordinate if it is not already occupied
     pub fn insert_no_overwrite(&mut self, coords: IVec2, entity: Entity) -> &mut Entity {
-        self.get_chunk_mut(&coords).unwrap().entry(coords).or_insert(entity)
+        self.get_chunk_mut(&coords).unwrap().insert_no_overwrite(coords, entity)
     }
 
     /// Inserts a new particle at a given coordinate irrespective of its occupied state
     pub fn insert_overwrite(&mut self, coords: IVec2, entity: Entity) -> Option<Entity> {
-        self.get_chunk_mut(&coords).unwrap().insert(coords, entity)
+        self.get_chunk_mut(&coords).unwrap().insert_overwrite(coords, entity)
     }
 
     /// Get an immutable reference to the corresponding entity, if it exists.
@@ -121,4 +121,59 @@ impl ParticleMap {
     pub fn par_iter(&self) -> impl IntoParallelIterator<Item = (&IVec2, &Entity)> {
         self.chunks.par_iter().flat_map(|chunk| chunk.par_iter())
     }
+}
+
+#[derive(Default, Debug, Clone)]
+pub struct ParticleChunk {
+    chunk: HashMap<IVec2, Entity>
+}
+
+impl ParticleChunk {
+    /// Clear all existing particles from the map
+    /// > **⚠️ Warning:**
+    /// > Calling this method will cause major breakage to the simulation if particles are not
+    /// simultaneously cleared within the same system from which this method was called.
+    pub fn clear(&mut self) {
+	self.chunk.clear();
+    }
+
+    /// Inserts a new particle at a given coordinate if it is not already occupied
+    pub fn insert_no_overwrite(&mut self, coords: IVec2, entity: Entity) -> &mut Entity {
+        self.chunk.entry(coords).or_insert(entity)
+    }
+
+    /// Inserts a new particle at a given coordinate irrespective of its occupied state
+    pub fn insert_overwrite(&mut self, coords: IVec2, entity: Entity) -> Option<Entity> {
+        self.chunk.insert(coords, entity)
+    }
+
+    /// Get an immutable reference to the corresponding entity, if it exists.
+    pub fn get(&self, coords: &IVec2) -> Option<&Entity> {
+	self.chunk.get(coords)
+    }
+
+    /// Get an immutable reference to the corresponding entity, if it exists.
+    pub fn get_mut(&mut self, coords: &IVec2) -> Option<&mut Entity> {
+        self.chunk.get_mut(coords)
+    }
+
+    /// Remove a particle from the map
+    /// > **⚠️ Warning:**
+    /// > Calling this method will cause major breakage to the simulation if particles are not
+    /// simultaneously cleared within the same system from which this method was called.
+    pub fn remove(&mut self, coords: &IVec2) -> Option<Entity> {
+	self.chunk.remove(coords)
+    }
+
+    /// Iterate through all key, value instances of the particle map
+    #[allow(unused)]
+    pub fn iter(&self) -> impl Iterator<Item = (&IVec2, &Entity)> {
+        self.chunk.iter()
+    }
+
+    /// Parallel iter through all the key, value instances of the particle map
+    pub fn par_iter(&self) -> impl IntoParallelIterator<Item = (&IVec2, &Entity)> {
+	self.chunk.par_iter()
+    }
+
 }
