@@ -53,7 +53,7 @@ impl Default for ParticleMap {
 
 impl ParticleMap {
     /// Gets the index of the appropriate chunk when given an &IVec2
-    fn get_chunk_index(&self, coord: &IVec2) -> usize {
+    pub fn get_chunk_index(&self, coord: &IVec2) -> usize {
         let col = ((coord.x + self.grid_size as i32) / self.chunk_size as i32) as usize;
         let row = ((self.grid_size as i32 - coord.y) / self.chunk_size as i32) as usize;
 	row * 16 + col
@@ -69,6 +69,10 @@ impl ParticleMap {
     fn get_chunk_mut(&mut self, coord: &IVec2) -> Option<&mut ParticleChunk> {
         let index = self.get_chunk_index(coord);
         self.chunks.get_mut(index)
+    }
+
+    pub fn num_chunks(&self) -> usize {
+        self.chunks.len()
     }
 }
 
@@ -177,3 +181,21 @@ impl ParticleChunk {
     }
 
 }
+
+#[derive(Default, Resource)]
+pub struct ChunkEntityMap {
+    map: HashMap<usize, Entity>
+}
+
+impl ChunkEntityMap {
+    pub fn insert(&mut self, idx: usize, entity: Entity) -> Option<Entity> {
+        self.map.insert(idx, entity)
+    }
+
+    /// Get an immutable reference to the corresponding entity, if it exists.
+    pub fn get(&self, idx: &usize) -> Option<&Entity> {
+	self.map.get(idx)
+    }
+
+}
+

@@ -1,13 +1,10 @@
 use bevy::prelude::*;
 
 #[derive(Component)]
-pub struct ChunkGroupOne;
+pub struct ChunkID(pub usize);
 
 #[derive(Component)]
-pub struct ChunkGroupTwo;
+pub struct Idle;
 
 #[derive(Component)]
-pub struct ChunkGroupThree;
-
-#[derive(Component)]
-pub struct ChunkGroupFour;
+pub struct Moved;

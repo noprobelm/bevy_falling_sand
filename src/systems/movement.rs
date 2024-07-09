@@ -1,8 +1,10 @@
 use crate::*;
 use bevy::utils::HashSet;
+use rayon::prelude::*;
 
 #[allow(unused_mut)]
 pub fn handle_particles(
+    mut commands: Commands,
     mut particle_query: Query<
         (
             Entity,
@@ -16,8 +18,11 @@ pub fn handle_particles(
         Without<Anchored>,
     >,
     parent_query: Query<(&Density, &Neighbors), (With<ParticleParent>, Without<Anchored>)>,
+    chunks_query: Query<(&ChunkID, Option<&Moved>)>,
     mut map: ResMut<ParticleMap>,
+    chunk_entity_map: Res<ChunkEntityMap>
 ) {
+    let mut visited_chunks: HashSet<usize> = HashSet::with_capacity(map.num_chunks());
     unsafe {
         particle_query.iter_unsafe().for_each(
             |(
@@ -30,8 +35,15 @@ pub fn handle_particles(
                 mut rng,
             )| {
                 if let Ok((density, neighbors)) = parent_query.get(parent.get()) {
+		    let mut moved: bool = false;
                     let mut visited: HashSet<IVec2> = HashSet::default();
                     'velocity_loop: for _ in 0..velocity.val {
+			let chunk_idx = map.get_chunk_index(&coordinates.0);
+			let chunk_entity = chunk_entity_map.get(&chunk_idx).unwrap();
+			let (_, moved_previously) = chunks_query.get(*chunk_entity).unwrap();
+			if !moved_previously.is_some() {
+			    break 'velocity_loop
+			} 
                         let mut swap = false;
                         let mut obstructed: HashSet<IVec2> = HashSet::default();
                         for neighbor_group in &neighbors.0 {
@@ -82,6 +94,7 @@ pub fn handle_particles(
 
                                                     visited.insert(coordinates.0);
 
+						    moved = true;
                                                     swap = true;
                                                 }
                                             } else {
@@ -108,6 +121,7 @@ pub fn handle_particles(
                                         velocity.increment();
 
                                         visited.insert(coordinates.0);
+					moved = true;
 
                                         continue 'velocity_loop;
                                     }
@@ -126,8 +140,23 @@ pub fn handle_particles(
                             }
                         }
                     }
+
+		    if moved == true {
+			let new_chunk_idx = map.get_chunk_index(&coordinates.0);
+			visited_chunks.insert(new_chunk_idx);
+		    }
                 }
             },
         );
+
+	chunks_query.iter().for_each(|(chunk_id, _)| {
+	    let entity = chunk_entity_map.get(&chunk_id.0).unwrap();
+	    if visited_chunks.contains(&chunk_id.0) {
+		commands.entity(*entity).insert(Moved);
+	    } else {
+		commands.entity(*entity).remove::<Moved>();
+	    }
+	});
+
     }
 }
