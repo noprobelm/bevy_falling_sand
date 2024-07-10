@@ -18,6 +18,7 @@ pub fn handle_particles(
     parent_query: Query<(&Density, &Neighbors), (With<ParticleParent>, Without<Anchored>)>,
     mut map: ResMut<ParticleMap>,
 ) {
+    let mut visited: HashSet<IVec2> = HashSet::default();
     unsafe {
         particle_query.iter_unsafe().for_each(
             |(
@@ -30,7 +31,7 @@ pub fn handle_particles(
                 mut rng,
             )| {
                 if let Ok((density, neighbors)) = parent_query.get(parent.get()) {
-                    let mut visited: HashSet<IVec2> = HashSet::default();
+		    let mut moved = false;
                     'velocity_loop: for _ in 0..velocity.val {
                         let mut swap = false;
                         let mut obstructed: HashSet<IVec2> = HashSet::default();
@@ -81,8 +82,9 @@ pub fn handle_particles(
 
                                                     velocity.decrement();
 
-                                                    visited.insert(coordinates.0);
+						    visited.insert(coordinates.0);
 
+						    moved = true;
                                                     swap = true;
                                                 }
                                             } else {
@@ -108,7 +110,7 @@ pub fn handle_particles(
 
                                         velocity.increment();
 
-                                        visited.insert(coordinates.0);
+					moved = true;
 
                                         continue 'velocity_loop;
                                     }
@@ -127,6 +129,9 @@ pub fn handle_particles(
                             }
                         }
                     }
+		    if moved == true {
+			visited.insert(coordinates.0);
+		    }
                 }
             },
         );
