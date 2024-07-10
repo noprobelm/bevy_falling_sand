@@ -21,7 +21,6 @@ pub fn handle_new_particles(
     mut rng: ResMut<GlobalRng>,
     mut map: ResMut<ParticleMap>,
     type_map: Res<ParticleParentMap>,
-    chunk_entity_map: Res<ChunkEntityMap>
 ) {
     let rng = rng.get_mut();
     for (particle_type, transform, entity) in particle_query.iter() {
@@ -69,23 +68,12 @@ pub fn handle_new_particles(
 
                 commands.entity(parent_entity).add_child(entity);
             }
-
-            let chunk_idx = map.get_chunk_index(&coordinates);
-	    let chunk_entity = chunk_entity_map.get(&chunk_idx).unwrap();
-	    commands.entity(*chunk_entity).insert(Moved);
         } else {
             panic!(
                 "No parent entity found for particle type {:?}",
                 particle_type
             );
         }
-    }
-}
-
-pub fn spawn_chunks(mut commands: Commands, map: Res<ParticleMap>, mut chunk_map: ResMut<ChunkEntityMap>) {
-    for idx in 0..map.num_chunks() {
-        let entity = commands.spawn((ChunkID(idx), Moved)).id();
-        chunk_map.insert(idx, entity);
     }
 }
 

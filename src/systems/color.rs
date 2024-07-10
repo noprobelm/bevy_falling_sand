@@ -1,11 +1,11 @@
 use crate::{
-    Hibernating, ParticleColor, Particle
+    ParticleColor, Particle, Sleeping
 };
 use bevy::prelude::*;
 
 #[allow(dead_code)]
 pub fn color_particles_debug(
-    mut particle_query: Query<(&mut Sprite, &ParticleColor, Option<&Hibernating>)>,
+    mut particle_query: Query<(&mut Sprite, &ParticleColor, Option<&Sleeping>)>,
 ) {
     particle_query
         .par_iter_mut()

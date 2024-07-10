@@ -4,7 +4,7 @@ use bevy::prelude::*;
 pub struct ChunkID(pub usize);
 
 #[derive(Component)]
-pub struct Idle;
+pub struct Sleeping;
 
 #[derive(Component)]
 pub struct Moved;

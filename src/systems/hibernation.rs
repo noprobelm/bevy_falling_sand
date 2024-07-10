@@ -1,12 +1,13 @@
 use crate::*;
-use bevy::prelude::*;
 
-pub fn wake_up_chunks(
-    particle_query: Query<&Coordinates, (With<Particle>, Changed<Coordinates>)>,
-    chunks_query: Query<(&ChunkID, Option<&Moved>)>,
-    chunk_entity_map: Res<ChunkEntityMap>,
+pub fn reset_chunks(
+    commands: Commands,
+    mut map: ResMut<ParticleMap>,
 ) {
+    map.sleep_chunks(commands);
+    map.deactivate_all_chunks();
 }
+
 pub fn hibernate_particles(
     par_commands: ParallelCommands,
     particle_query: Query<(Entity, &LastMoved, Option<&Hibernating>)>,
