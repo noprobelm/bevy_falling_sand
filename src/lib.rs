@@ -29,6 +29,9 @@ impl Plugin for FallingSandPlugin {
         app.add_systems(Update, reset_chunks.after(handle_particles));
 
 	app.add_systems(Update, color_particles);
-	app.add_systems(Update, color_chunks.after(color_particles));
+
+	if cfg!(debug_assertions) {
+	    app.add_systems(Update, color_chunks);
+	}
     }
 }

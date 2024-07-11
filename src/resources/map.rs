@@ -146,42 +146,45 @@ impl ParticleMap {
             self.chunks[second_chunk_idx].insert_overwrite(second, entity);
         }
 
-        let first_chunk = &self.chunks[first_chunk_idx];
-        // println!(
-        //     "{:?}: {:?}, {:?}, {:?}",
-        //     first, first_chunk_idx, first_chunk.min, first_chunk.max
-        // );
+	self.activate_neighbor_chunks(&first, first_chunk_idx);
+	self.activate_neighbor_chunks(&second, second_chunk_idx);
 
-        if first.x == first_chunk.min.x {
-            self.chunks[first_chunk_idx - 1].activated = true;
-        } else if first.x == first_chunk.max.x {
-            self.chunks[first_chunk_idx + 1].activated = true;
-        } else if first.y == first_chunk.min.y {
-            self.chunks[first_chunk_idx + 32].activated = true;
-        } else if first.y == first_chunk.max.y {
-            self.chunks[first_chunk_idx - 32].activated = true;
+    }
+
+    pub fn activate_neighbor_chunks(&mut self, coord: &IVec2, chunk_idx: usize) {
+        let chunk = &self.chunks[chunk_idx];
+
+        if coord.x == chunk.min.x {
+            self.chunks[chunk_idx - 1].activated = true;
+        } else if coord.x == chunk.max.x {
+            self.chunks[chunk_idx + 1].activated = true;
+        } else if coord.y == chunk.min.y {
+            self.chunks[chunk_idx + 32].activated = true;
+        } else if coord.y == chunk.max.y {
+            self.chunks[chunk_idx - 32].activated = true;
         }
         // bottom left
-        else if first.x == first_chunk.min.x || first.y == first_chunk.min.y {
-            self.chunks[first_chunk_idx - 1].activated = true;
-            self.chunks[first_chunk_idx + 31].activated = true;
-            self.chunks[first_chunk_idx + 32].activated = true;
+        else if coord.x == chunk.min.x || coord.y == chunk.min.y {
+            self.chunks[chunk_idx - 1].activated = true;
+            self.chunks[chunk_idx + 31].activated = true;
+            self.chunks[chunk_idx + 32].activated = true;
         // bottom right
-        } else if first.x == first_chunk.max.x || first.y == first_chunk.min.y {
-            self.chunks[first_chunk_idx + 1].activated = true;
-            self.chunks[first_chunk_idx + 32].activated = true;
-            self.chunks[first_chunk_idx + 33].activated = true;
+        } else if coord.x == chunk.max.x || coord.y == chunk.min.y {
+            self.chunks[chunk_idx + 1].activated = true;
+            self.chunks[chunk_idx + 32].activated = true;
+            self.chunks[chunk_idx + 33].activated = true;
         // top right
-        } else if first.x == first_chunk.max.x || first.y == first_chunk.max.y {
-            self.chunks[first_chunk_idx + 1].activated = true;
-            self.chunks[first_chunk_idx - 31].activated = true;
-            self.chunks[first_chunk_idx - 32].activated = true;
+        } else if coord.x == chunk.max.x || coord.y == chunk.max.y {
+            self.chunks[chunk_idx + 1].activated = true;
+            self.chunks[chunk_idx - 31].activated = true;
+            self.chunks[chunk_idx - 32].activated = true;
         // top left
-        } else if first.x == first_chunk.min.x || first.y == first_chunk.max.y {
-            self.chunks[first_chunk_idx - 1].activated = true;
-            self.chunks[first_chunk_idx - 32].activated = true;
-            self.chunks[first_chunk_idx - 33].activated = true;
+        } else if coord.x == chunk.min.x || coord.y == chunk.max.y {
+            self.chunks[chunk_idx - 1].activated = true;
+            self.chunks[chunk_idx - 32].activated = true;
+            self.chunks[chunk_idx - 33].activated = true;
         }
+
     }
 
     /// Get an immutable reference to the corresponding entity, if it exists.

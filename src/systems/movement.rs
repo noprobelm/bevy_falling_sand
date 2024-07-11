@@ -67,18 +67,19 @@ pub fn handle_particles(
                                                 parent_query.get(neighbor_parent.get())
                                             {
                                                 if density > neighbor_density {
-                                                    neighbor_coordinates.0 = coordinates.0;
-                                                    coordinates.0 += relative_coordinates;
 
                                                     neighbor_transform.translation.x =
-                                                        neighbor_coordinates.0.x as f32;
+                                                        coordinates.0.x as f32;
                                                     neighbor_transform.translation.y =
-                                                        neighbor_coordinates.0.y as f32;
+                                                        coordinates.0.y as f32;
 
                                                     transform.translation.x =
                                                         neighbor_coordinates.0.x as f32;
                                                     transform.translation.y =
                                                         neighbor_coordinates.0.y as f32;
+
+                                                    neighbor_coordinates.0 = coordinates.0;
+                                                    coordinates.0 += relative_coordinates;
 
                                                     velocity.decrement();
 
@@ -106,6 +107,7 @@ pub fn handle_particles(
                                         transform.translation.y = neighbor_coordinates.y as f32;
 
                                         velocity.increment();
+
 
 					moved = true;
 
