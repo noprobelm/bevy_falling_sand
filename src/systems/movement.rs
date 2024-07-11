@@ -22,7 +22,7 @@ pub fn handle_particles(
     unsafe {
         particle_query.iter_unsafe().for_each(
             |(
-                entity,
+                _,
                 parent,
                 particle_type,
                 mut coordinates,
@@ -82,7 +82,6 @@ pub fn handle_particles(
 
                                                     velocity.decrement();
 
-						    visited.insert(coordinates.0);
 
 						    moved = true;
                                                     swap = true;
@@ -100,9 +99,7 @@ pub fn handle_particles(
                                         }
                                     }
                                     None => {
-                                        map.remove(&coordinates.0);
-                                        map.insert_overwrite(neighbor_coordinates, entity);
-
+					map.swap(coordinates.0, neighbor_coordinates);
                                         coordinates.0 = neighbor_coordinates;
 
                                         transform.translation.x = neighbor_coordinates.x as f32;
@@ -117,13 +114,7 @@ pub fn handle_particles(
                                 };
 
                                 if swap == true {
-                                    let neighbor_entity = map.remove(&coordinates.0).unwrap();
-                                    map.insert_overwrite(coordinates.0, entity);
-                                    map.insert_overwrite(
-                                        coordinates.0 - relative_coordinates,
-                                        neighbor_entity,
-                                    );
-
+				    map.swap(coordinates.0 - relative_coordinates, coordinates.0);
                                     break 'velocity_loop;
                                 }
                             }

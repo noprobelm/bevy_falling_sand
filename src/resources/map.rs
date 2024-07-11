@@ -36,19 +36,30 @@ pub struct ParticleMap {
 
 impl Default for ParticleMap {
     fn default() -> ParticleMap {
-        ParticleMap {
-            chunks: (0..32_u32.pow(2)).map(|_| ChunkMap::default()).collect(),
-        }
+        use bevy::math::IVec2;
+
+        let chunks: Vec<ChunkMap> = (0..32_i32.pow(2))
+            .map(|i| {
+                let x = (i % 32) * 32 - 512;
+                let y = 512 - (i / 32) * 32;
+                let min = IVec2::new(x, y - 31);
+                let max = IVec2::new(x + 31, y);
+                ChunkMap::new(min, max)
+            })
+            .collect();
+
+        ParticleMap { chunks }
     }
 }
 
 impl ParticleMap {
     /// Gets the index of the appropriate chunk when given an &IVec2
     fn get_chunk_index(&self, coord: &IVec2) -> usize {
-        let col = ((coord.x + 1024) / 32) as usize;
-        let row = ((1024 - coord.y) / 32) as usize;
-        row * 16 + col
+	let col = ((coord.x + 512) / 32) as usize;
+	let row = ((512 - coord.y) / 32) as usize;
+	row * 32 + col
     }
+
 
     /// Gets an immutable reference to a chunk
     fn get_chunk(&self, coord: &IVec2) -> Option<&ChunkMap> {
@@ -74,6 +85,10 @@ impl ParticleMap {
         }
     }
 
+    pub fn iter_chunks(&self) -> impl Iterator<Item = &ChunkMap> {
+	self.chunks.iter()
+    }
+
     /// Checks each chunk for activity in the previous frame.
     ///
     /// If a chunk was active and is currently sleeping, wake it up and remove the Sleeping flag component from its
@@ -89,10 +104,10 @@ impl ParticleMap {
                 });
                 chunk.sleeping = false;
             } else if chunk.activated == false && chunk.sleeping == false {
-                chunk.sleeping = true;
                 chunk.iter().for_each(|(_, entity)| {
                     commands.entity(*entity).insert(Sleeping);
                 });
+                chunk.sleeping = true;
             }
         });
     }
@@ -116,6 +131,57 @@ impl ParticleMap {
         self.get_chunk_mut(&coords)
             .unwrap()
             .insert_overwrite(coords, entity)
+    }
+
+    pub fn swap(&mut self, first: IVec2, second: IVec2) {
+        let (first_chunk_idx, second_chunk_idx) =
+            (self.get_chunk_index(&first), self.get_chunk_index(&second));
+
+        if let Some(entity) = self.chunks[second_chunk_idx].remove(&second) {
+            if let Some(swapped) = self.chunks[first_chunk_idx].insert_overwrite(first, entity) {
+                self.chunks[second_chunk_idx].insert_overwrite(second, swapped);
+            }
+        } else {
+            let entity = self.chunks[first_chunk_idx].remove(&first).unwrap();
+            self.chunks[second_chunk_idx].insert_overwrite(second, entity);
+        }
+
+        let first_chunk = &self.chunks[first_chunk_idx];
+        // println!(
+        //     "{:?}: {:?}, {:?}, {:?}",
+        //     first, first_chunk_idx, first_chunk.min, first_chunk.max
+        // );
+
+        if first.x == first_chunk.min.x {
+            self.chunks[first_chunk_idx - 1].activated = true;
+        } else if first.x == first_chunk.max.x {
+            self.chunks[first_chunk_idx + 1].activated = true;
+        } else if first.y == first_chunk.min.y {
+            self.chunks[first_chunk_idx + 32].activated = true;
+        } else if first.y == first_chunk.max.y {
+            self.chunks[first_chunk_idx - 32].activated = true;
+        }
+        // bottom left
+        else if first.x == first_chunk.min.x || first.y == first_chunk.min.y {
+            self.chunks[first_chunk_idx - 1].activated = true;
+            self.chunks[first_chunk_idx + 31].activated = true;
+            self.chunks[first_chunk_idx + 32].activated = true;
+        // bottom right
+        } else if first.x == first_chunk.max.x || first.y == first_chunk.min.y {
+            self.chunks[first_chunk_idx + 1].activated = true;
+            self.chunks[first_chunk_idx + 32].activated = true;
+            self.chunks[first_chunk_idx + 33].activated = true;
+        // top right
+        } else if first.x == first_chunk.max.x || first.y == first_chunk.max.y {
+            self.chunks[first_chunk_idx + 1].activated = true;
+            self.chunks[first_chunk_idx - 31].activated = true;
+            self.chunks[first_chunk_idx - 32].activated = true;
+        // top left
+        } else if first.x == first_chunk.min.x || first.y == first_chunk.max.y {
+            self.chunks[first_chunk_idx - 1].activated = true;
+            self.chunks[first_chunk_idx - 32].activated = true;
+            self.chunks[first_chunk_idx - 33].activated = true;
+        }
     }
 
     /// Get an immutable reference to the corresponding entity, if it exists.
@@ -152,16 +218,20 @@ impl ParticleMap {
 pub struct ChunkMap {
     /// The chunk containing the particle data
     chunk: HashMap<IVec2, Entity>,
+    pub min: IVec2,
+    pub max: IVec2,
     /// Flag indicating the chunk was active at some point during the frame
     pub activated: bool,
     /// Flag indicating the chunk is sleeping
     pub sleeping: bool,
 }
 
-impl Default for ChunkMap {
-    fn default() -> ChunkMap {
+impl ChunkMap {
+    pub fn new(min: IVec2, max: IVec2) -> ChunkMap {
         ChunkMap {
             chunk: HashMap::default(),
+            min: min,
+            max: max,
             activated: true,
             sleeping: false,
         }
