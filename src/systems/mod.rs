@@ -1,3 +1,5 @@
+use bevy::prelude::SystemSet;
+
 pub use map::*;
 pub use movement::*;
 pub use hibernation::*;
@@ -9,3 +11,9 @@ mod movement;
 mod hibernation;
 mod color;
 mod debug;
+
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ParticleMovementSet;
+
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ParticleDebugSet;
