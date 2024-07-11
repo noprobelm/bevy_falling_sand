@@ -1,5 +1,5 @@
 use crate::{
-    ParticleColor, Particle, Sleeping
+    ParticleColor, Particle
 };
 use bevy::prelude::*;
 

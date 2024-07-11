@@ -1,5 +1,4 @@
 use crate::*;
-use bevy::prelude::*;
 
 pub fn color_chunks(map: Res<ParticleMap>, mut chunk_gizmos: Gizmos<ChunkGizmos>) {
     map.iter_chunks().for_each(|chunk| {
