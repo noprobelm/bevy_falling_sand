@@ -163,6 +163,7 @@ impl ParticleMap {
         } else if coord.y == chunk.max.y {
             self.chunks[chunk_idx - 32].activated = true;
         }
+
         // bottom left
         else if coord.x == chunk.min.x || coord.y == chunk.min.y {
             self.chunks[chunk_idx - 1].activated = true;
@@ -173,17 +174,18 @@ impl ParticleMap {
             self.chunks[chunk_idx + 1].activated = true;
             self.chunks[chunk_idx + 32].activated = true;
             self.chunks[chunk_idx + 33].activated = true;
-        // top right
-        } else if coord.x == chunk.max.x || coord.y == chunk.max.y {
-            self.chunks[chunk_idx + 1].activated = true;
-            self.chunks[chunk_idx - 31].activated = true;
-            self.chunks[chunk_idx - 32].activated = true;
         // top left
         } else if coord.x == chunk.min.x || coord.y == chunk.max.y {
             self.chunks[chunk_idx - 1].activated = true;
             self.chunks[chunk_idx - 32].activated = true;
             self.chunks[chunk_idx - 33].activated = true;
         }
+        // top right
+        } else if coord.x == chunk.max.x || coord.y == chunk.max.y {
+            self.chunks[chunk_idx + 1].activated = true;
+            self.chunks[chunk_idx - 31].activated = true;
+            self.chunks[chunk_idx - 32].activated = true;
+
 
     }
 
