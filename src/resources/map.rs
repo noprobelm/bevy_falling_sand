@@ -55,11 +55,10 @@ impl Default for ParticleMap {
 impl ParticleMap {
     /// Gets the index of the appropriate chunk when given an &IVec2
     fn get_chunk_index(&self, coord: &IVec2) -> usize {
-	let col = ((coord.x + 512) / 32) as usize;
-	let row = ((512 - coord.y) / 32) as usize;
-	row * 32 + col
+        let col = ((coord.x + 512) / 32) as usize;
+        let row = ((512 - coord.y) / 32) as usize;
+        row * 32 + col
     }
-
 
     /// Gets an immutable reference to a chunk
     fn get_chunk(&self, coord: &IVec2) -> Option<&ChunkMap> {
@@ -86,7 +85,7 @@ impl ParticleMap {
     }
 
     pub fn iter_chunks(&self) -> impl Iterator<Item = &ChunkMap> {
-	self.chunks.iter()
+        self.chunks.iter()
     }
 
     /// Checks each chunk for activity in the previous frame.
@@ -146,9 +145,8 @@ impl ParticleMap {
             self.chunks[second_chunk_idx].insert_overwrite(second, entity);
         }
 
-	self.activate_neighbor_chunks(&first, first_chunk_idx);
-	self.activate_neighbor_chunks(&second, second_chunk_idx);
-
+        self.activate_neighbor_chunks(&first, first_chunk_idx);
+        self.activate_neighbor_chunks(&second, second_chunk_idx);
     }
 
     pub fn activate_neighbor_chunks(&mut self, coord: &IVec2, chunk_idx: usize) {
@@ -162,10 +160,9 @@ impl ParticleMap {
             self.chunks[chunk_idx + 32].activated = true;
         } else if coord.y == chunk.max.y {
             self.chunks[chunk_idx - 32].activated = true;
-        }
 
         // bottom left
-        else if coord.x == chunk.min.x || coord.y == chunk.min.y {
+        } else if coord.x == chunk.min.x || coord.y == chunk.min.y {
             self.chunks[chunk_idx - 1].activated = true;
             self.chunks[chunk_idx + 31].activated = true;
             self.chunks[chunk_idx + 32].activated = true;
@@ -179,14 +176,12 @@ impl ParticleMap {
             self.chunks[chunk_idx - 1].activated = true;
             self.chunks[chunk_idx - 32].activated = true;
             self.chunks[chunk_idx - 33].activated = true;
-        }
         // top right
         } else if coord.x == chunk.max.x || coord.y == chunk.max.y {
             self.chunks[chunk_idx + 1].activated = true;
             self.chunks[chunk_idx - 31].activated = true;
             self.chunks[chunk_idx - 32].activated = true;
-
-
+        }
     }
 
     /// Get an immutable reference to the corresponding entity, if it exists.
