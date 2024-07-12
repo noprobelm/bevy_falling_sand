@@ -2,14 +2,14 @@ use crate::*;
 
 pub fn color_chunks(map: Res<ChunkMap>, mut chunk_gizmos: Gizmos<DebugGizmos>) {
     map.iter_chunks().for_each(|chunk| {
-        let rect = Rect::from_corners(chunk.upper_left.as_vec2(),lower_rightunk.max.as_vec2());
+        let rect = Rect::from_corners(chunk.upper_left.as_vec2(), chunk.lower_right.as_vec2());
         if chunk.sleeping == true {
             chunk_gizmos.rect_2d(rect.center(), 0., rect.size() + Vec2::splat(1.), Color::rgba(0.67, 0.21, 0.24, 1.));
         }
     });
 
     map.iter_chunks().for_each(|chunk| {
-        let rect = Rect::from_corners(chunk.upper_left.as_vec2(),lower_rightunk.max.as_vec2());
+        let rect = Rect::from_corners(chunk.upper_left.as_vec2(), chunk.lower_right.as_vec2());
         if chunk.sleeping == false {
             chunk_gizmos.rect_2d(
                 rect.center(),
