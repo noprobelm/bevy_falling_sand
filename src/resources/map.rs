@@ -208,13 +208,13 @@ impl ChunkMap {
         self.get_chunk_mut(&coords).unwrap().get_mut(coords)
     }
 
-    /// Iterate through all key, value instances of the particle map
+    /// Iterator through a flattened map of all the particles in the ChunkMap
     #[allow(unused)]
     pub fn iter(&self) -> impl Iterator<Item = (&IVec2, &Entity)> {
         self.chunks.iter().flat_map(|chunk| chunk.iter())
     }
 
-    /// Parallel iter through all the key, value instances of the particle map
+    /// Parallel iterator through a flattened map of all the particles in the ChunkMap
     pub fn par_iter(&self) -> impl IntoParallelIterator<Item = (&IVec2, &Entity)> {
         self.chunks.par_iter().flat_map(|chunk| chunk.par_iter())
     }
