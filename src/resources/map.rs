@@ -241,6 +241,15 @@ impl Chunk {
         self.chunk.clear();
     }
 
+    /// Remove a particle from the map
+    /// > **⚠️ Warning:**
+    /// > Calling this method will cause major breakage to the simulation if particles are not
+    /// simultaneously cleared within the same system from which this method was called.
+    pub fn remove(&mut self, coords: &IVec2) -> Option<Entity> {
+        self.should_process_next_frame = true;
+        self.chunk.remove(coords)
+    }
+
     /// Inserts a new particle at a given coordinate if it is not already occupied
     pub fn insert_no_overwrite(&mut self, coords: IVec2, entity: Entity) -> &mut Entity {
         self.should_process_next_frame = true;
@@ -264,14 +273,6 @@ impl Chunk {
         self.chunk.get_mut(coords)
     }
 
-    /// Remove a particle from the map
-    /// > **⚠️ Warning:**
-    /// > Calling this method will cause major breakage to the simulation if particles are not
-    /// simultaneously cleared within the same system from which this method was called.
-    pub fn remove(&mut self, coords: &IVec2) -> Option<Entity> {
-        self.should_process_next_frame = true;
-        self.chunk.remove(coords)
-    }
 
     /// Iterate through all key, value instances of the particle map
     #[allow(unused)]
