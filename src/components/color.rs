@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_turborand::prelude::*;
 
-/// This component provides a range of possible colors for a particle. Child particles will access
+/// Provides a range of possible colors for a particle. Child particles will access
 /// this component from their parent particle when spawning to select a color for themselves at
 /// random.
 #[derive(Component, Debug, Reflect)]
@@ -23,7 +23,7 @@ impl ParticleColors {
     }
 }
 
-/// This component provides an individual particle with a particular color, usually selected from
+/// Provides an individual particle with a particular color, usually selected from
 /// an existing entity with the ParticleColors component.
 #[derive(Component)]
 pub struct ParticleColor(pub Color);
