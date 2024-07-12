@@ -3,7 +3,7 @@ use crate::{
 };
 use bevy::prelude::*;
 
-/// Colors newly added particles
+/// Colors newly added or changed particles
 pub fn color_particles(
     mut particle_query: Query<
         (&mut Sprite, &ParticleColor),
