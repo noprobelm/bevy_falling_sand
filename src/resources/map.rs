@@ -223,10 +223,12 @@ impl Chunk {
 }
 
 impl Chunk {
+    /// The minimum (upper left) point of the chunk's area
     pub fn min(&self) -> IVec2 {
 	self.irect.min
     }
 
+    /// The maximum (lower right) point of the chunk's area
     pub fn max(&self) -> IVec2 {
 	self.irect.max
     }
