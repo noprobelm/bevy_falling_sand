@@ -166,36 +166,15 @@ impl ChunkMap {
     pub fn activate_neighbor_chunks(&mut self, coord: &IVec2, chunk_idx: usize) {
         let chunk = &self.chunks[chunk_idx];
 
-        if coord.x == chunk.upper_left.x {
+        if coord.x == chunk.min().x {
             self.chunks[chunk_idx - 1].should_process_next_frame = true;
-        } else if coord.x == chunk.lower_right.x {
+        } else if coord.x == chunk.max().x {
             self.chunks[chunk_idx + 1].should_process_next_frame = true;
-        } else if coord.y == chunk.upper_left.y {
+        } else if coord.y == chunk.min().y {
             self.chunks[chunk_idx + 32].should_process_next_frame = true;
-        } else if coord.y == chunk.lower_right.y {
+        } else if coord.y == chunk.max().y {
             self.chunks[chunk_idx - 32].should_process_next_frame = true;
-
-        // bottom left
-        } else if coord.x == chunk.upper_left.x || coord.y == chunk.upper_left.y {
-            self.chunks[chunk_idx - 1].should_process_next_frame = true;
-            self.chunks[chunk_idx + 31].should_process_next_frame = true;
-            self.chunks[chunk_idx + 32].should_process_next_frame = true;
-        // bottom right
-        } else if coord.x == chunk.lower_right.x || coord.y == chunk.upper_left.y {
-            self.chunks[chunk_idx + 1].should_process_next_frame = true;
-            self.chunks[chunk_idx + 32].should_process_next_frame = true;
-            self.chunks[chunk_idx + 33].should_process_next_frame = true;
-        // top left
-        } else if coord.x == chunk.upper_left.x || coord.y == chunk.lower_right.y {
-            self.chunks[chunk_idx - 1].should_process_next_frame = true;
-            self.chunks[chunk_idx - 32].should_process_next_frame = true;
-            self.chunks[chunk_idx - 33].should_process_next_frame = true;
-        // top right
-        } else if coord.x == chunk.lower_right.x || coord.y == chunk.lower_right.y {
-            self.chunks[chunk_idx + 1].should_process_next_frame = true;
-            self.chunks[chunk_idx - 31].should_process_next_frame = true;
-            self.chunks[chunk_idx - 32].should_process_next_frame = true;
-        }
+	}
     }
 
     /// Get an immutable reference to an entity, if it exists.
@@ -225,6 +204,7 @@ pub struct Chunk {
     /// The chunk containing the particle data
     chunk: HashMap<IVec2, Entity>,
     /// The upper left coordinate of the chunk
+    irect: IRect,
     pub upper_left: IVec2,
     /// The lower right coordinate of the chunk
     pub lower_right: IVec2,
@@ -235,14 +215,25 @@ pub struct Chunk {
 }
 
 impl Chunk {
-    pub fn new(min: IVec2, max: IVec2) -> Chunk {
+    pub fn new(upper_left: IVec2, lower_right: IVec2) -> Chunk {
         Chunk {
             chunk: HashMap::default(),
-            upper_left: min,
-            lower_right: max,
+	    irect: IRect::from_corners(upper_left, lower_right),
+            upper_left,
+            lower_right,
             should_process_next_frame: false,
             should_process_this_frame: false,
         }
+    }
+}
+
+impl Chunk {
+    pub fn min(&self) -> IVec2 {
+	self.irect.min
+    }
+
+    pub fn max(&self) -> IVec2 {
+	self.irect.max
     }
 }
 
