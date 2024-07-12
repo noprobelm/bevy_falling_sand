@@ -6,13 +6,12 @@ use crate::*;
 pub fn handle_new_particles(
     mut commands: Commands,
     parent_query: Query<(
-        &ParticleParent,
-        &Velocity,
-        Option<&Momentum>,
-        &ParticleColors,
-	Option<&Anchored>,
         Entity,
-    )>,
+        &Velocity,
+        &ParticleColors,
+        Option<&Momentum>,
+	Option<&Anchored>,
+    ), With<ParticleParent>>,
     particle_query: Query<
         (&ParticleType, &Transform, Entity),
         (Changed<ParticleType>, Without<ParticleParent>),
@@ -35,7 +34,7 @@ pub fn handle_new_particles(
         }
 
         if let Some(parent_entity) = type_map.get(particle_type) {
-            if let Ok((_parent, velocity, momentum, colors, anchored, parent_entity)) =
+            if let Ok((parent_entity, velocity, colors, momentum, anchored)) =
                 parent_query.get(*parent_entity)
             {
                 commands.entity(entity).insert((
