@@ -4,8 +4,8 @@ use bevy::prelude::*;
 use rayon::iter::IntoParallelRefIterator;
 use rayon::prelude::*;
 
-/// A map of all parent particle types to their corresponding entity. Used mainly for mapping child particles to their
-/// corresponding parent types
+/// A map of all parent particle types to their corresponding entity. Used to map child particles to their corresponding
+/// parent types
 #[derive(Resource, Clone, Default, Debug)]
 pub struct ParticleParentMap {
     /// The mapping resource for particle types.
@@ -24,7 +24,9 @@ impl ParticleParentMap {
     }
 }
 
-/// The mapping resource for the position of all particles in the world.
+/// The mapping resource for the position of all particles in the world. This map utilizes "chunks" consisting of particles
+/// in a given region. This allows for putting chunks to "sleep" so their particles don't induce unecessary processing
+/// overhead each frame.
 #[derive(Resource, Debug, Clone)]
 pub struct ChunkMap {
     /// The particle chunk maps
@@ -50,7 +52,7 @@ impl Default for ChunkMap {
 }
 
 impl ChunkMap {
-    /// Gets the index of the appropriate chunk when given an &IVec2
+    /// Gets the index of the corresponding chunk when given an &IVec2
     fn get_chunk_index(&self, coord: &IVec2) -> usize {
         let col = ((coord.x + 512) / 32) as usize;
         let row = ((512 - coord.y) / 32) as usize;
