@@ -1,4 +1,4 @@
-use crate::{ParticleType, Sleeping};
+use crate::{ParticleType, Hibernating};
 use ahash::HashMap;
 use bevy::prelude::*;
 use rayon::iter::IntoParallelRefIterator;
@@ -90,21 +90,21 @@ impl ParticleMap {
 
     /// Checks each chunk for activity in the previous frame.
     ///
-    /// If a chunk was active and is currently sleeping, wake it up and remove the Sleeping flag component from its
+    /// If a chunk was active and is currently sleeping, wake it up and remove the Hibernating flag component from its
     /// HashMap.
     ///
-    /// If a chunk was not activated and is currently awake, put it to sleep and add the Sleeping component to its
+    /// If a chunk was not activated and is currently awake, put it to sleep and add the Hibernating component to its
     /// HashMap.
     pub fn sleep_chunks(&mut self, mut commands: Commands) {
         self.chunks.iter_mut().for_each(|chunk| {
             if chunk.activated == true && chunk.sleeping == true {
                 chunk.iter().for_each(|(_, entity)| {
-                    commands.entity(*entity).remove::<Sleeping>();
+                    commands.entity(*entity).remove::<Hibernating>();
                 });
                 chunk.sleeping = false;
             } else if chunk.activated == false && chunk.sleeping == false {
                 chunk.iter().for_each(|(_, entity)| {
-                    commands.entity(*entity).insert(Sleeping);
+                    commands.entity(*entity).insert(Hibernating);
                 });
                 chunk.sleeping = true;
             }
