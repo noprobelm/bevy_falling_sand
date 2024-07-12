@@ -90,7 +90,9 @@ impl ChunkMap {
     pub fn remove(&mut self, coords: &IVec2) -> Option<Entity> {
         self.get_chunk_mut(&coords).unwrap().remove(coords)
     }
+}
 
+impl ChunkMap {
     pub fn iter_chunks(&self) -> impl Iterator<Item = &Chunk> {
         self.chunks.iter()
     }
