@@ -18,7 +18,7 @@ pub struct FallingSandPlugin;
 impl Plugin for FallingSandPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(RngPlugin::default())
-            .init_resource::<ParticleMap>()
+            .init_resource::<ChunkMap>()
             .init_resource::<ParticleParentMap>()
             .init_gizmo_group::<DebugGizmos>()
             .add_systems(Startup, setup_particles)

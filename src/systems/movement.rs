@@ -16,7 +16,7 @@ pub fn handle_particles(
         (Without<Anchored>, Without<Hibernating>),
     >,
     parent_query: Query<(&Density, &Neighbors), (With<ParticleParent>, Without<Anchored>)>,
-    mut map: ResMut<ParticleMap>,
+    mut map: ResMut<ChunkMap>,
 ) {
     let mut visited: HashSet<IVec2> = HashSet::default();
     unsafe {

@@ -19,7 +19,7 @@ pub fn handle_new_particles(
         (Changed<ParticleType>, Without<ParticleParent>),
     >,
     mut rng: ResMut<GlobalRng>,
-    mut map: ResMut<ParticleMap>,
+    mut map: ResMut<ChunkMap>,
     type_map: Res<ParticleParentMap>,
 ) {
     let rng = rng.get_mut();

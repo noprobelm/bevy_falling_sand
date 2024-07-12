@@ -26,30 +26,30 @@ impl ParticleParentMap {
 
 /// The mapping resource for the position of all particles in the world.
 #[derive(Resource, Debug, Clone)]
-pub struct ParticleMap {
+pub struct ChunkMap {
     /// The particle chunk maps
-    chunks: Vec<ChunkMap>,
+    chunks: Vec<Chunk>,
 }
 
-impl Default for ParticleMap {
-    fn default() -> ParticleMap {
+impl Default for ChunkMap {
+    fn default() -> ChunkMap {
         use bevy::math::IVec2;
 
-        let chunks: Vec<ChunkMap> = (0..32_i32.pow(2))
+        let chunks: Vec<Chunk> = (0..32_i32.pow(2))
             .map(|i| {
                 let x = (i % 32) * 32 - 512;
                 let y = 512 - (i / 32) * 32;
                 let min = IVec2::new(x, y - 31);
                 let max = IVec2::new(x + 31, y);
-                ChunkMap::new(min, max)
+                Chunk::new(min, max)
             })
             .collect();
 
-        ParticleMap { chunks }
+        ChunkMap { chunks }
     }
 }
 
-impl ParticleMap {
+impl ChunkMap {
     /// Gets the index of the appropriate chunk when given an &IVec2
     fn get_chunk_index(&self, coord: &IVec2) -> usize {
         let col = ((coord.x + 512) / 32) as usize;
@@ -58,19 +58,19 @@ impl ParticleMap {
     }
 
     /// Gets an immutable reference to a chunk
-    fn get_chunk(&self, coord: &IVec2) -> Option<&ChunkMap> {
+    fn get_chunk(&self, coord: &IVec2) -> Option<&Chunk> {
         let index = self.get_chunk_index(coord);
         self.chunks.get(index)
     }
 
     /// Gets a mutable reference to a chunk
-    fn get_chunk_mut(&mut self, coord: &IVec2) -> Option<&mut ChunkMap> {
+    fn get_chunk_mut(&mut self, coord: &IVec2) -> Option<&mut Chunk> {
         let index = self.get_chunk_index(coord);
         self.chunks.get_mut(index)
     }
 }
 
-impl ParticleMap {
+impl ChunkMap {
     /// Clear all existing particles from the map
     /// > **⚠️ Warning:**
     /// > Calling this method will cause major breakage to the simulation if particles are not
@@ -81,7 +81,7 @@ impl ParticleMap {
         }
     }
 
-    pub fn iter_chunks(&self) -> impl Iterator<Item = &ChunkMap> {
+    pub fn iter_chunks(&self) -> impl Iterator<Item = &Chunk> {
         self.chunks.iter()
     }
 
@@ -212,7 +212,7 @@ impl ParticleMap {
 }
 
 #[derive(Debug, Clone)]
-pub struct ChunkMap {
+pub struct Chunk {
     /// The chunk containing the particle data
     chunk: HashMap<IVec2, Entity>,
     pub min: IVec2,
@@ -223,9 +223,9 @@ pub struct ChunkMap {
     pub sleeping: bool,
 }
 
-impl ChunkMap {
-    pub fn new(min: IVec2, max: IVec2) -> ChunkMap {
-        ChunkMap {
+impl Chunk {
+    pub fn new(min: IVec2, max: IVec2) -> Chunk {
+        Chunk {
             chunk: HashMap::default(),
             min: min,
             max: max,
@@ -235,7 +235,7 @@ impl ChunkMap {
     }
 }
 
-impl ChunkMap {
+impl Chunk {
     /// Clear all existing particles from the map
     /// > **⚠️ Warning:**
     /// > Calling this method will cause major breakage to the simulation if particles are not

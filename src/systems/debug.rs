@@ -1,6 +1,6 @@
 use crate::*;
 
-pub fn color_chunks(map: Res<ParticleMap>, mut chunk_gizmos: Gizmos<DebugGizmos>) {
+pub fn color_chunks(map: Res<ChunkMap>, mut chunk_gizmos: Gizmos<DebugGizmos>) {
     map.iter_chunks().for_each(|chunk| {
         let rect = Rect::from_corners(chunk.min.as_vec2(), chunk.max.as_vec2());
         if chunk.sleeping == true {
