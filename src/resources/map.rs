@@ -198,12 +198,12 @@ impl ChunkMap {
         }
     }
 
-    /// Get an immutable reference to the corresponding entity, if it exists.
+    /// Get an immutable reference to an entity, if it exists.
     pub fn get(&self, coords: &IVec2) -> Option<&Entity> {
         self.get_chunk(&coords).unwrap().get(coords)
     }
 
-    /// Get an immutable reference to the corresponding entity, if it exists.
+    /// Get an immutable reference to an entity, if it exists.
     pub fn get_mut(&mut self, coords: &IVec2) -> Option<&mut Entity> {
         self.get_chunk_mut(&coords).unwrap().get_mut(coords)
     }
