@@ -83,6 +83,14 @@ impl ChunkMap {
         }
     }
 
+    /// Remove a particle from the map
+    /// > **⚠️ Warning:**
+    /// > Calling this method will cause major breakage to the simulation if particles are not
+    /// simultaneously cleared within the same system from which this method was called.
+    pub fn remove(&mut self, coords: &IVec2) -> Option<Entity> {
+        self.get_chunk_mut(&coords).unwrap().remove(coords)
+    }
+
     pub fn iter_chunks(&self) -> impl Iterator<Item = &Chunk> {
         self.chunks.iter()
     }
@@ -189,14 +197,6 @@ impl ChunkMap {
     /// Get an immutable reference to the corresponding entity, if it exists.
     pub fn get_mut(&mut self, coords: &IVec2) -> Option<&mut Entity> {
         self.get_chunk_mut(&coords).unwrap().get_mut(coords)
-    }
-
-    /// Remove a particle from the map
-    /// > **⚠️ Warning:**
-    /// > Calling this method will cause major breakage to the simulation if particles are not
-    /// simultaneously cleared within the same system from which this method was called.
-    pub fn remove(&mut self, coords: &IVec2) -> Option<Entity> {
-        self.get_chunk_mut(&coords).unwrap().remove(coords)
     }
 
     /// Iterate through all key, value instances of the particle map
