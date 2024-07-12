@@ -13,7 +13,7 @@ pub fn handle_particles(
             &mut Velocity,
             &mut PhysicsRng,
         ),
-        (Without<Anchored>, Without<Sleeping>),
+        (Without<Anchored>, Without<Hibernating>),
     >,
     parent_query: Query<(&Density, &Neighbors), (With<ParticleParent>, Without<Anchored>)>,
     mut map: ResMut<ParticleMap>,
