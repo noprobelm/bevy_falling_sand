@@ -277,7 +277,6 @@ impl Chunk {
 
 
     /// Iterate through all key, value instances of the particle map
-    #[allow(unused)]
     pub fn iter(&self) -> impl Iterator<Item = (&IVec2, &Entity)> {
         self.chunk.iter()
     }
