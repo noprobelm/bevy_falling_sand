@@ -94,12 +94,13 @@ impl ChunkMap {
     /// HashMap.
     pub fn sleep_chunks(&mut self, mut commands: Commands) {
         self.chunks.iter_mut().for_each(|chunk| {
+	    // Check for both so we're not needlessly removing components every frame
             if chunk.activated == true && chunk.sleeping == true {
                 chunk.iter().for_each(|(_, entity)| {
                     commands.entity(*entity).remove::<Hibernating>();
                 });
                 chunk.sleeping = false;
-            } else if chunk.activated == false && chunk.sleeping == false {
+            } else if chunk.activated == false {
                 chunk.iter().for_each(|(_, entity)| {
                     commands.entity(*entity).insert(Hibernating);
                 });
