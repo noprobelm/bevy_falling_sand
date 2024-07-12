@@ -41,7 +41,7 @@ impl Default for ChunkMap {
                 let y = 512 - (i / 32) * 32;
                 let lower_left = IVec2::new(x, y - 31);
                 let lower_right = IVec2::new(x + 31, y);
-                Chunk::new(lower_left, max)
+                Chunk::new(lower_left, lower_right)
             })
             .collect();
 
