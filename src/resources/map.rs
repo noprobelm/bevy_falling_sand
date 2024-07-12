@@ -1,4 +1,4 @@
-use crate::{ParticleType, Hibernating};
+use crate::{Hibernating, ParticleType};
 use ahash::HashMap;
 use bevy::prelude::*;
 use rayon::iter::IntoParallelRefIterator;
@@ -99,7 +99,7 @@ impl ChunkMap {
     }
 
     pub fn iter_chunks_mut(&mut self) -> impl Iterator<Item = &mut Chunk> {
-	self.chunks.iter_mut()
+        self.chunks.iter_mut()
     }
 }
 
@@ -113,13 +113,13 @@ impl ChunkMap {
     /// HashMap.
     pub fn reset_chunks(&mut self, mut commands: Commands) {
         self.chunks.iter_mut().for_each(|chunk| {
-	    // Check for both so we're not needlessly removing components every frame
+            // Check for both so we're not needlessly removing components every frame
             if chunk.should_process_next_frame == true && chunk.should_process_this_frame == true {
                 chunk.iter().for_each(|(_, entity)| {
                     commands.entity(*entity).remove::<Hibernating>();
                 });
                 chunk.should_process_this_frame = false;
-		// Deactivate before the start of the next frame
+            // Deactivate before the start of the next frame
             } else if chunk.should_process_next_frame == false {
                 chunk.iter().for_each(|(_, entity)| {
                     commands.entity(*entity).insert(Hibernating);
@@ -127,11 +127,25 @@ impl ChunkMap {
                 chunk.should_process_this_frame = true;
             }
 
-	chunk.should_process_next_frame = false;
+            chunk.should_process_next_frame = false;
         });
-
     }
+    fn activate_neighbor_chunks(&mut self, coord: &IVec2, chunk_idx: usize) {
+        let chunk = &self.chunks[chunk_idx];
 
+        if coord.x == chunk.min().x {
+            self.chunks[chunk_idx - 1].should_process_next_frame = true;
+        } else if coord.x == chunk.max().x {
+            self.chunks[chunk_idx + 1].should_process_next_frame = true;
+        } else if coord.y == chunk.min().y {
+            self.chunks[chunk_idx + 32].should_process_next_frame = true;
+        } else if coord.y == chunk.max().y {
+            self.chunks[chunk_idx - 32].should_process_next_frame = true;
+        }
+    }
+}
+
+impl ChunkMap {
     /// Inserts a new particle at a given coordinate if it is not already occupied
     pub fn insert_no_overwrite(&mut self, coords: IVec2, entity: Entity) -> &mut Entity {
         self.get_chunk_mut(&coords)
@@ -161,20 +175,6 @@ impl ChunkMap {
 
         self.activate_neighbor_chunks(&first, first_chunk_idx);
         self.activate_neighbor_chunks(&second, second_chunk_idx);
-    }
-
-    pub fn activate_neighbor_chunks(&mut self, coord: &IVec2, chunk_idx: usize) {
-        let chunk = &self.chunks[chunk_idx];
-
-        if coord.x == chunk.min().x {
-            self.chunks[chunk_idx - 1].should_process_next_frame = true;
-        } else if coord.x == chunk.max().x {
-            self.chunks[chunk_idx + 1].should_process_next_frame = true;
-        } else if coord.y == chunk.min().y {
-            self.chunks[chunk_idx + 32].should_process_next_frame = true;
-        } else if coord.y == chunk.max().y {
-            self.chunks[chunk_idx - 32].should_process_next_frame = true;
-	}
     }
 
     /// Get an immutable reference to an entity, if it exists.
@@ -215,7 +215,7 @@ impl Chunk {
     pub fn new(upper_left: IVec2, lower_right: IVec2) -> Chunk {
         Chunk {
             chunk: HashMap::default(),
-	    irect: IRect::from_corners(upper_left, lower_right),
+            irect: IRect::from_corners(upper_left, lower_right),
             should_process_next_frame: false,
             should_process_this_frame: false,
         }
@@ -225,12 +225,12 @@ impl Chunk {
 impl Chunk {
     /// The minimum (upper left) point of the chunk's area
     pub fn min(&self) -> IVec2 {
-	self.irect.min
+        self.irect.min
     }
 
     /// The maximum (lower right) point of the chunk's area
     pub fn max(&self) -> IVec2 {
-	self.irect.max
+        self.irect.max
     }
 }
 
@@ -274,7 +274,6 @@ impl Chunk {
         self.should_process_next_frame = true;
         self.chunk.get_mut(coords)
     }
-
 
     /// Iterate through all key, value instances of the particle map
     pub fn iter(&self) -> impl Iterator<Item = (&IVec2, &Entity)> {
