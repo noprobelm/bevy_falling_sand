@@ -3,14 +3,15 @@ use crate::{
 };
 use bevy::prelude::*;
 
+/// Colors newly added particles
 pub fn color_particles(
     mut particle_query: Query<
         (&mut Sprite, &ParticleColor),
-        Added<Particle>,
+        Changed<Particle>,
     >,
 ) {
     particle_query
-        .par_iter_mut()
+        .iter_mut()
         .for_each(|(mut sprite, color)| {
             sprite.color = color.0;
         });
