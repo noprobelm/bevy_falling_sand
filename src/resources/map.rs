@@ -98,6 +98,12 @@ impl ChunkMap {
         self.chunks.iter()
     }
 
+    pub fn iter_chunks_mut(&mut self) -> impl Iterator<Item = &mut Chunk> {
+	self.chunks.iter_mut()
+    }
+}
+
+impl ChunkMap {
     /// Checks each chunk for activity in the previous frame.
     ///
     /// If a chunk was active and is currently sleeping, wake it up and remove the Hibernating flag component from its
