@@ -6,10 +6,12 @@ use bevy_turborand::prelude::*;
 pub use components::*;
 pub use resources::*;
 pub use systems::*;
+pub use gizmos::*;
 
 mod components;
 mod resources;
 mod systems;
+mod gizmos;
 
 pub struct FallingSandPlugin;
 

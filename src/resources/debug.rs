@@ -1,7 +1,5 @@
-use bevy::prelude::{Reflect, GizmoConfigGroup, Resource};
+use bevy::prelude::Resource;
 
+/// Indicates whether built-in debugging should be enabled
 #[derive(Default, Resource)]
 pub struct DebugParticles;
-
-#[derive(Default, Reflect, GizmoConfigGroup)]
-pub struct DebugGizmos;
