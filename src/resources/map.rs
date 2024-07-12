@@ -100,20 +100,17 @@ impl ChunkMap {
                     commands.entity(*entity).remove::<Hibernating>();
                 });
                 chunk.sleeping = false;
+		// Deactivate before the start of the next frame
             } else if chunk.activated == false {
                 chunk.iter().for_each(|(_, entity)| {
                     commands.entity(*entity).insert(Hibernating);
                 });
                 chunk.sleeping = true;
             }
-        });
-    }
 
-    /// Puts all chunks in an inactive state prior to the start of the next frame.
-    pub fn deactivate_all_chunks(&mut self) {
-        self.chunks
-            .iter_mut()
-            .for_each(|chunk| chunk.activated = false);
+	chunk.activated = false;
+        });
+
     }
 
     /// Inserts a new particle at a given coordinate if it is not already occupied

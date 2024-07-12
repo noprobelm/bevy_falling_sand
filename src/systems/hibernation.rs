@@ -5,5 +5,4 @@ pub fn reset_chunks(
     mut map: ResMut<ChunkMap>,
 ) {
     map.sleep_chunks(commands);
-    map.deactivate_all_chunks();
 }
