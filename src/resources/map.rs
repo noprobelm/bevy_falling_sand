@@ -119,6 +119,7 @@ impl ChunkMap {
                     commands.entity(*entity).remove::<Hibernating>();
                 });
                 chunk.should_process_this_frame = false;
+
             // Deactivate before the start of the next frame
             } else if chunk.should_process_next_frame == false {
                 chunk.iter().for_each(|(_, entity)| {
@@ -130,6 +131,8 @@ impl ChunkMap {
             chunk.should_process_next_frame = false;
         });
     }
+
+    /// Checks if a coordinate lies on the border of a neighboring chunk and activates it if true
     fn activate_neighbor_chunks(&mut self, coord: &IVec2, chunk_idx: usize) {
         let chunk = &self.chunks[chunk_idx];
 
@@ -235,6 +238,31 @@ impl Chunk {
 }
 
 impl Chunk {
+    /// Get an immutable reference to the corresponding entity, if it exists.
+    pub fn get(&self, coords: &IVec2) -> Option<&Entity> {
+        self.chunk.get(coords)
+    }
+
+    /// Get an immutable reference to the corresponding entity, if it exists.
+    pub fn get_mut(&mut self, coords: &IVec2) -> Option<&mut Entity> {
+        self.should_process_next_frame = true;
+        self.chunk.get_mut(coords)
+    }
+}
+
+impl Chunk {
+    /// Iterate through all key, value instances of the particle map
+    pub fn iter(&self) -> impl Iterator<Item = (&IVec2, &Entity)> {
+        self.chunk.iter()
+    }
+
+    /// Parallel iter through all the key, value instances of the particle map
+    pub fn par_iter(&self) -> impl IntoParallelIterator<Item = (&IVec2, &Entity)> {
+        self.chunk.par_iter()
+    }
+}
+
+impl Chunk {
     /// Clear all existing particles from the map
     /// > **⚠️ Warning:**
     /// > Calling this method will cause major breakage to the simulation if particles are not
@@ -262,26 +290,5 @@ impl Chunk {
     pub fn insert_overwrite(&mut self, coords: IVec2, entity: Entity) -> Option<Entity> {
         self.should_process_next_frame = true;
         self.chunk.insert(coords, entity)
-    }
-
-    /// Get an immutable reference to the corresponding entity, if it exists.
-    pub fn get(&self, coords: &IVec2) -> Option<&Entity> {
-        self.chunk.get(coords)
-    }
-
-    /// Get an immutable reference to the corresponding entity, if it exists.
-    pub fn get_mut(&mut self, coords: &IVec2) -> Option<&mut Entity> {
-        self.should_process_next_frame = true;
-        self.chunk.get_mut(coords)
-    }
-
-    /// Iterate through all key, value instances of the particle map
-    pub fn iter(&self) -> impl Iterator<Item = (&IVec2, &Entity)> {
-        self.chunk.iter()
-    }
-
-    /// Parallel iter through all the key, value instances of the particle map
-    pub fn par_iter(&self) -> impl IntoParallelIterator<Item = (&IVec2, &Entity)> {
-        self.chunk.par_iter()
     }
 }
