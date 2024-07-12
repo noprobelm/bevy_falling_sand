@@ -4,11 +4,8 @@ use bevy::prelude::*;
 use rayon::iter::IntoParallelRefIterator;
 use rayon::prelude::*;
 
-/// A map of all parent particle types to their corresponding entity. This is used exclusively for
-/// assigning child particles to their respective parent when initially spawned or have otherwise
-/// changed types (e.g., a reaction has occurred). For accessing common particle data, we have
-/// dedicated entities with the ParticleParent component to provide us faster access than what
-/// a HashMap could provide.
+/// A map of all parent particle types to their corresponding entity. Used mainly for mapping child particles to their
+/// corresponding parent types
 #[derive(Resource, Clone, Default, Debug)]
 pub struct ParticleParentMap {
     /// The mapping resource for particle types.
