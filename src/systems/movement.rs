@@ -1,9 +1,8 @@
 use crate::*;
 use bevy::utils::HashSet;
 
-#[allow(unused_mut)]
 pub fn handle_particles(
-    mut particle_query: Query<
+    particle_query: Query<
         (
             Entity,
             &Parent,
