@@ -149,32 +149,32 @@ impl ChunkMap {
     pub fn activate_neighbor_chunks(&mut self, coord: &IVec2, chunk_idx: usize) {
         let chunk = &self.chunks[chunk_idx];
 
-        if coord.x == chunk.min.x {
+        if coord.x == chunk.upper_left.x {
             self.chunks[chunk_idx - 1].activated = true;
-        } else if coord.x == chunk.max.x {
+        } else if coord.x == chunk.lower_right.x {
             self.chunks[chunk_idx + 1].activated = true;
-        } else if coord.y == chunk.min.y {
+        } else if coord.y == chunk.upper_left.y {
             self.chunks[chunk_idx + 32].activated = true;
-        } else if coord.y == chunk.max.y {
+        } else if coord.y == chunk.lower_right.y {
             self.chunks[chunk_idx - 32].activated = true;
 
         // bottom left
-        } else if coord.x == chunk.min.x || coord.y == chunk.min.y {
+        } else if coord.x == chunk.upper_left.x || coord.y == chunk.upper_left.y {
             self.chunks[chunk_idx - 1].activated = true;
             self.chunks[chunk_idx + 31].activated = true;
             self.chunks[chunk_idx + 32].activated = true;
         // bottom right
-        } else if coord.x == chunk.max.x || coord.y == chunk.min.y {
+        } else if coord.x == chunk.lower_right.x || coord.y == chunk.upper_left.y {
             self.chunks[chunk_idx + 1].activated = true;
             self.chunks[chunk_idx + 32].activated = true;
             self.chunks[chunk_idx + 33].activated = true;
         // top left
-        } else if coord.x == chunk.min.x || coord.y == chunk.max.y {
+        } else if coord.x == chunk.upper_left.x || coord.y == chunk.lower_right.y {
             self.chunks[chunk_idx - 1].activated = true;
             self.chunks[chunk_idx - 32].activated = true;
             self.chunks[chunk_idx - 33].activated = true;
         // top right
-        } else if coord.x == chunk.max.x || coord.y == chunk.max.y {
+        } else if coord.x == chunk.lower_right.x || coord.y == chunk.lower_right.y {
             self.chunks[chunk_idx + 1].activated = true;
             self.chunks[chunk_idx - 31].activated = true;
             self.chunks[chunk_idx - 32].activated = true;
@@ -215,8 +215,10 @@ impl ChunkMap {
 pub struct Chunk {
     /// The chunk containing the particle data
     chunk: HashMap<IVec2, Entity>,
-    pub min: IVec2,
-    pub max: IVec2,
+    /// The upper left coordinate of the chunk
+    pub upper_left: IVec2,
+    /// The lower right coordinate of the chunk
+    pub lower_right: IVec2,
     /// Flag indicating the chunk was active at some point during the frame
     pub activated: bool,
     /// Flag indicating the chunk is sleeping
@@ -227,8 +229,8 @@ impl Chunk {
     pub fn new(min: IVec2, max: IVec2) -> Chunk {
         Chunk {
             chunk: HashMap::default(),
-            min: min,
-            max: max,
+            upper_left: min,
+            lower_right: max,
             activated: true,
             sleeping: false,
         }
