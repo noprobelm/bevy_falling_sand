@@ -93,6 +93,7 @@ impl ChunkMap {
 }
 
 impl ChunkMap {
+    /// Immutable iterator over all chunks in the ChunkMap
     pub fn iter_chunks(&self) -> impl Iterator<Item = &Chunk> {
         self.chunks.iter()
     }
@@ -104,7 +105,7 @@ impl ChunkMap {
     ///
     /// If a chunk was not activated and is currently awake, put it to sleep and add the Hibernating component to its
     /// HashMap.
-    pub fn sleep_chunks(&mut self, mut commands: Commands) {
+    pub fn reset_chunks(&mut self, mut commands: Commands) {
         self.chunks.iter_mut().for_each(|chunk| {
 	    // Check for both so we're not needlessly removing components every frame
             if chunk.should_process_next_frame == true && chunk.should_process_this_frame == true {
