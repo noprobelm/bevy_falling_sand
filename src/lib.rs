@@ -19,7 +19,6 @@ impl Plugin for FallingSandPlugin {
 
         app.init_resource::<ParticleMap>();
         app.init_resource::<ParticleParentMap>();
-        app.init_resource::<DebugParticlesMode>();
         app.init_gizmo_group::<DebugGizmos>();
 
         app.add_systems(Startup, setup_particle_types);
@@ -37,7 +36,7 @@ impl Plugin for FallingSandPlugin {
             Update,
             color_chunks
                 .in_set(ParticleDebugSet)
-                .run_if(resource_exists::<DebugParticlesMode>),
+                .run_if(resource_exists::<DebugParticles>),
         );
     }
 }
