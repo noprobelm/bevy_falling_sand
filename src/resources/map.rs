@@ -229,7 +229,7 @@ impl Chunk {
             chunk: HashMap::default(),
             upper_left: min,
             lower_right: max,
-            should_process_next_frame: true,
+            should_process_next_frame: false,
             should_process_this_frame: false,
         }
     }
