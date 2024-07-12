@@ -95,20 +95,20 @@ impl ChunkMap {
     pub fn sleep_chunks(&mut self, mut commands: Commands) {
         self.chunks.iter_mut().for_each(|chunk| {
 	    // Check for both so we're not needlessly removing components every frame
-            if chunk.activated == true && chunk.sleeping == true {
+            if chunk.should_process_next_frame == true && chunk.should_process_this_frame == true {
                 chunk.iter().for_each(|(_, entity)| {
                     commands.entity(*entity).remove::<Hibernating>();
                 });
-                chunk.sleeping = false;
+                chunk.should_process_this_frame = false;
 		// Deactivate before the start of the next frame
-            } else if chunk.activated == false {
+            } else if chunk.should_process_next_frame == false {
                 chunk.iter().for_each(|(_, entity)| {
                     commands.entity(*entity).insert(Hibernating);
                 });
-                chunk.sleeping = true;
+                chunk.should_process_this_frame = true;
             }
 
-	chunk.activated = false;
+	chunk.should_process_next_frame = false;
         });
 
     }
@@ -148,34 +148,34 @@ impl ChunkMap {
         let chunk = &self.chunks[chunk_idx];
 
         if coord.x == chunk.upper_left.x {
-            self.chunks[chunk_idx - 1].activated = true;
+            self.chunks[chunk_idx - 1].should_process_next_frame = true;
         } else if coord.x == chunk.lower_right.x {
-            self.chunks[chunk_idx + 1].activated = true;
+            self.chunks[chunk_idx + 1].should_process_next_frame = true;
         } else if coord.y == chunk.upper_left.y {
-            self.chunks[chunk_idx + 32].activated = true;
+            self.chunks[chunk_idx + 32].should_process_next_frame = true;
         } else if coord.y == chunk.lower_right.y {
-            self.chunks[chunk_idx - 32].activated = true;
+            self.chunks[chunk_idx - 32].should_process_next_frame = true;
 
         // bottom left
         } else if coord.x == chunk.upper_left.x || coord.y == chunk.upper_left.y {
-            self.chunks[chunk_idx - 1].activated = true;
-            self.chunks[chunk_idx + 31].activated = true;
-            self.chunks[chunk_idx + 32].activated = true;
+            self.chunks[chunk_idx - 1].should_process_next_frame = true;
+            self.chunks[chunk_idx + 31].should_process_next_frame = true;
+            self.chunks[chunk_idx + 32].should_process_next_frame = true;
         // bottom right
         } else if coord.x == chunk.lower_right.x || coord.y == chunk.upper_left.y {
-            self.chunks[chunk_idx + 1].activated = true;
-            self.chunks[chunk_idx + 32].activated = true;
-            self.chunks[chunk_idx + 33].activated = true;
+            self.chunks[chunk_idx + 1].should_process_next_frame = true;
+            self.chunks[chunk_idx + 32].should_process_next_frame = true;
+            self.chunks[chunk_idx + 33].should_process_next_frame = true;
         // top left
         } else if coord.x == chunk.upper_left.x || coord.y == chunk.lower_right.y {
-            self.chunks[chunk_idx - 1].activated = true;
-            self.chunks[chunk_idx - 32].activated = true;
-            self.chunks[chunk_idx - 33].activated = true;
+            self.chunks[chunk_idx - 1].should_process_next_frame = true;
+            self.chunks[chunk_idx - 32].should_process_next_frame = true;
+            self.chunks[chunk_idx - 33].should_process_next_frame = true;
         // top right
         } else if coord.x == chunk.lower_right.x || coord.y == chunk.lower_right.y {
-            self.chunks[chunk_idx + 1].activated = true;
-            self.chunks[chunk_idx - 31].activated = true;
-            self.chunks[chunk_idx - 32].activated = true;
+            self.chunks[chunk_idx + 1].should_process_next_frame = true;
+            self.chunks[chunk_idx - 31].should_process_next_frame = true;
+            self.chunks[chunk_idx - 32].should_process_next_frame = true;
         }
     }
 
@@ -217,10 +217,10 @@ pub struct Chunk {
     pub upper_left: IVec2,
     /// The lower right coordinate of the chunk
     pub lower_right: IVec2,
-    /// Flag indicating the chunk was active at some point during the frame
-    pub activated: bool,
-    /// Flag indicating the chunk is sleeping
-    pub sleeping: bool,
+    /// Flag indicating whether the chunk should be processed in the next frame
+    pub should_process_next_frame: bool,
+    /// Flag indicating whether the chunk should be processed this frame
+    pub should_process_this_frame: bool,
 }
 
 impl Chunk {
@@ -229,8 +229,8 @@ impl Chunk {
             chunk: HashMap::default(),
             upper_left: min,
             lower_right: max,
-            activated: true,
-            sleeping: false,
+            should_process_next_frame: true,
+            should_process_this_frame: false,
         }
     }
 }
@@ -246,13 +246,13 @@ impl Chunk {
 
     /// Inserts a new particle at a given coordinate if it is not already occupied
     pub fn insert_no_overwrite(&mut self, coords: IVec2, entity: Entity) -> &mut Entity {
-        self.activated = true;
+        self.should_process_next_frame = true;
         self.chunk.entry(coords).or_insert(entity)
     }
 
     /// Inserts a new particle at a given coordinate irrespective of its occupied state
     pub fn insert_overwrite(&mut self, coords: IVec2, entity: Entity) -> Option<Entity> {
-        self.activated = true;
+        self.should_process_next_frame = true;
         self.chunk.insert(coords, entity)
     }
 
@@ -263,7 +263,7 @@ impl Chunk {
 
     /// Get an immutable reference to the corresponding entity, if it exists.
     pub fn get_mut(&mut self, coords: &IVec2) -> Option<&mut Entity> {
-        self.activated = true;
+        self.should_process_next_frame = true;
         self.chunk.get_mut(coords)
     }
 
@@ -272,7 +272,7 @@ impl Chunk {
     /// > Calling this method will cause major breakage to the simulation if particles are not
     /// simultaneously cleared within the same system from which this method was called.
     pub fn remove(&mut self, coords: &IVec2) -> Option<Entity> {
-        self.activated = true;
+        self.should_process_next_frame = true;
         self.chunk.remove(coords)
     }
 
