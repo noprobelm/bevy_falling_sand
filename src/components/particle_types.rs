@@ -1,8 +1,11 @@
 use bevy::prelude::*;
 use crate::*;
 
-/// Possible particle types. Add a variant of this enum to an entity to spawn the corresponding type
-/// into the world.
+/// Possible particle types. Add a variant of this enum to an entity to spawn the corresponding type into the world.
+///
+/// If there is not a corresponding parent entity mapped (defined as the bundles found in the remainder of this module)
+/// and mapped as part of the 'setup_particles' system, the program will panic when a child particle of that type is
+/// spawned into the world
 #[derive(Component, States, Resource, Reflect, Default, Debug, Copy, Clone, Eq, PartialEq, Hash)]
 #[reflect(Component)]
 pub enum ParticleType {
