@@ -22,7 +22,7 @@ impl Plugin for FallingSandPlugin {
             .init_resource::<ParticleParentMap>()
             .init_gizmo_group::<DebugGizmos>()
             .add_systems(Startup, setup_particles)
-            .add_systems(Update, handle_new_particles)
+            .add_systems(Last, handle_new_particles)
             .add_systems(Update, handle_new_particles)
             .add_systems(
                 Update,
