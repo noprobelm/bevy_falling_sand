@@ -50,7 +50,6 @@ pub fn handle_new_particles(
                     },
                     Particle,
                     Coordinates(coordinates),
-                    LastMoved::default(),
                     Velocity::new(velocity.val, velocity.max),
                     ParticleColor(colors.random(rng)),
                     PhysicsRng::default(),
@@ -78,7 +77,7 @@ pub fn handle_new_particles(
 }
 
 /// Setup all particle parent types on startup
-pub fn setup_particle_types(mut commands: Commands, mut type_map: ResMut<ParticleParentMap>) {
+pub fn setup_particles(mut commands: Commands, mut type_map: ResMut<ParticleParentMap>) {
     let id = commands
         .spawn((
             ParticleType::Water,
