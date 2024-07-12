@@ -41,9 +41,9 @@ impl Default for ChunkMap {
             .map(|i| {
                 let x = (i % 32) * 32 - 512;
                 let y = 512 - (i / 32) * 32;
-                let lower_left = IVec2::new(x, y - 31);
+                let upper_left = IVec2::new(x, y - 31);
                 let lower_right = IVec2::new(x + 31, y);
-                Chunk::new(lower_left, lower_right)
+                Chunk::new(upper_left, lower_right)
             })
             .collect();
 
@@ -203,11 +203,8 @@ impl ChunkMap {
 pub struct Chunk {
     /// The chunk containing the particle data
     chunk: HashMap<IVec2, Entity>,
-    /// The upper left coordinate of the chunk
+    /// The area of the chunk
     irect: IRect,
-    pub upper_left: IVec2,
-    /// The lower right coordinate of the chunk
-    pub lower_right: IVec2,
     /// Flag indicating whether the chunk should be processed in the next frame
     pub should_process_next_frame: bool,
     /// Flag indicating whether the chunk should be processed this frame
@@ -219,8 +216,6 @@ impl Chunk {
         Chunk {
             chunk: HashMap::default(),
 	    irect: IRect::from_corners(upper_left, lower_right),
-            upper_left,
-            lower_right,
             should_process_next_frame: false,
             should_process_this_frame: false,
         }
