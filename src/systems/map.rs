@@ -14,7 +14,7 @@ pub fn handle_new_particles(
     ), With<ParticleParent>>,
     particle_query: Query<
         (&ParticleType, &Transform, Entity),
-        (Changed<ParticleType>, Without<ParticleParent>),
+        Changed<ParticleType>,
     >,
     mut rng: ResMut<GlobalRng>,
     mut map: ResMut<ChunkMap>,
