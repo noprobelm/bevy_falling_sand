@@ -1,3 +1,4 @@
+//! DebugGizmos group.
 use bevy::prelude::*;
 
 /// Indicates a gizmo used for debugging purposes
