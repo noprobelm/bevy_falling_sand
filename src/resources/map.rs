@@ -53,21 +53,21 @@ impl Default for ChunkMap {
 
 impl ChunkMap {
     /// Gets the index of the corresponding chunk when given an &IVec2
-    fn get_chunk_index(&self, coord: &IVec2) -> usize {
+    fn chunk_index(&self, coord: &IVec2) -> usize {
         let col = ((coord.x + 512) / 32) as usize;
         let row = ((512 - coord.y) / 32) as usize;
         row * 32 + col
     }
 
     /// Gets an immutable reference to a chunk
-    fn get_chunk(&self, coord: &IVec2) -> Option<&Chunk> {
-        let index = self.get_chunk_index(coord);
+    fn chunk(&self, coord: &IVec2) -> Option<&Chunk> {
+        let index = self.chunk_index(coord);
         self.chunks.get(index)
     }
 
     /// Gets a mutable reference to a chunk
-    fn get_chunk_mut(&mut self, coord: &IVec2) -> Option<&mut Chunk> {
-        let index = self.get_chunk_index(coord);
+    fn chunk_mut(&mut self, coord: &IVec2) -> Option<&mut Chunk> {
+        let index = self.chunk_index(coord);
         self.chunks.get_mut(index)
     }
 }
@@ -88,7 +88,7 @@ impl ChunkMap {
     /// > Calling this method will cause major breakage to the simulation if particles are not
     /// simultaneously cleared within the same system from which this method was called.
     pub fn remove(&mut self, coords: &IVec2) -> Option<Entity> {
-        self.get_chunk_mut(&coords).unwrap().remove(coords)
+        self.chunk_mut(&coords).unwrap().remove(coords)
     }
 }
 
@@ -151,21 +151,21 @@ impl ChunkMap {
 impl ChunkMap {
     /// Inserts a new particle at a given coordinate if it is not already occupied
     pub fn insert_no_overwrite(&mut self, coords: IVec2, entity: Entity) -> &mut Entity {
-        self.get_chunk_mut(&coords)
+        self.chunk_mut(&coords)
             .unwrap()
             .insert_no_overwrite(coords, entity)
     }
 
     /// Inserts a new particle at a given coordinate irrespective of its occupied state
     pub fn insert_overwrite(&mut self, coords: IVec2, entity: Entity) -> Option<Entity> {
-        self.get_chunk_mut(&coords)
+        self.chunk_mut(&coords)
             .unwrap()
             .insert_overwrite(coords, entity)
     }
 
     pub fn swap(&mut self, first: IVec2, second: IVec2) {
         let (first_chunk_idx, second_chunk_idx) =
-            (self.get_chunk_index(&first), self.get_chunk_index(&second));
+            (self.chunk_index(&first), self.chunk_index(&second));
 
         if let Some(entity) = self.chunks[second_chunk_idx].remove(&second) {
             if let Some(swapped) = self.chunks[first_chunk_idx].insert_overwrite(first, entity) {
@@ -182,12 +182,12 @@ impl ChunkMap {
 
     /// Get an immutable reference to an entity, if it exists.
     pub fn get(&self, coords: &IVec2) -> Option<&Entity> {
-        self.get_chunk(&coords).unwrap().get(coords)
+        self.chunk(&coords).unwrap().get(coords)
     }
 
     /// Get an immutable reference to an entity, if it exists.
     pub fn get_mut(&mut self, coords: &IVec2) -> Option<&mut Entity> {
-        self.get_chunk_mut(&coords).unwrap().get_mut(coords)
+        self.chunk_mut(&coords).unwrap().get_mut(coords)
     }
 
     /// Iterator through a flattened map of all the particles in the ChunkMap
