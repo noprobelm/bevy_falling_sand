@@ -181,7 +181,7 @@ impl ChunkMap {
     }
 
     /// Get an immutable reference to an entity, if it exists.
-    pub fn get(&self, coords: &IVec2) -> Option<&Entity> {
+    pub fn entity(&self, coords: &IVec2) -> Option<&Entity> {
         self.chunk(&coords).unwrap().get(coords)
     }
 

@@ -53,7 +53,7 @@ pub fn handle_particles(
                                     continue;
                                 }
 
-                                match map.get(&neighbor_coordinates) {
+                                match map.entity(&neighbor_coordinates) {
                                     Some(neighbor_entity) => {
                                         if let Ok((
                                             _,
