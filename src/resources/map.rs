@@ -1,11 +1,12 @@
+//! All resources related to tracking/mapping particles.
 use crate::{ShouldProcessThisFrame, ParticleType};
 use ahash::HashMap;
 use bevy::prelude::*;
 use rayon::iter::IntoParallelRefIterator;
 use rayon::prelude::*;
 
-/// A map of all parent particle types to their corresponding entity. Used to map child particles to their corresponding
-/// parent types
+/// Map of all parent particle types to their corresponding entity. Used to map child particles to their corresponding
+/// parent data.
 #[derive(Resource, Clone, Default, Debug)]
 pub struct ParticleParentMap {
     /// The mapping resource for particle types.
