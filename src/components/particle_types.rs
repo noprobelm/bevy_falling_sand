@@ -13,7 +13,7 @@
 //! - `colors`: `Vec<Color>`: A sequence of colors, one of which will be assigned to a child particle at random for rendering.
 //! - `momentum`: [Momentum](crate::Momentum): If a particle is capable of gaining momentum, it should be included in its bundle. Any starting value is valid, though Momentum::ZERO is recommended.
 //! - `anchored`: [Anchored](crate::Anchored): If a particle should not be evaluated, and block the movement of all other particles (e.g., a 'wall'), it should have this component.
-//! - `name`: [Name](bevy::core::Name): Can be used for organizing data if [bevy_reflect](bevy_reflect) is being used.
+//! - `name`: [Name](bevy::core::Name): Can be used for organizing data if `bevy_reflect` being used.
 
 use bevy::prelude::*;
 use crate::*;
