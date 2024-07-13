@@ -36,7 +36,7 @@ pub struct WhiskeyBundle {
 impl Default for WhiskeyBundle {
     fn default() -> Self {
         WhiskeyBundle {
-            colors: ParticleColors::new(vec![Color::OLIVE]),
+            colors: ParticleColors::new(vec![Color::srgba(18.8, 47.9, 16.5, 0.5)]),
             density: Density(3),
             neighbors: Neighbors(vec![
                 vec![IVec2::NEG_Y],
@@ -69,7 +69,7 @@ pub struct WaterBundle {
 impl Default for WaterBundle {
     fn default() -> Self {
         WaterBundle {
-            colors: ParticleColors::new(vec![Color::rgba(0.043, 0.5, 0.67, 0.5)]),
+            colors: ParticleColors::new(vec![Color::srgba(0.043, 0.5, 0.67, 0.5)]),
             density: Density(2),
             neighbors: Neighbors(vec![
                 vec![IVec2::NEG_Y],
@@ -102,7 +102,7 @@ pub struct OilBundle {
 impl Default for OilBundle {
     fn default() -> Self {
         OilBundle {
-            colors: ParticleColors::new(vec![Color::BLACK]),
+            colors: ParticleColors::new(vec![Color::srgba(0.16, 0.12, 0.18, 0.5)]),
             density: Density(1),
             neighbors: Neighbors(vec![
                 vec![IVec2::NEG_Y],
@@ -134,8 +134,8 @@ impl Default for SandBundle {
     fn default() -> Self {
         SandBundle {
             colors: ParticleColors::new(vec![
-                Color::rgba(0.95, 0.88, 0.42, 1.0),
-                Color::rgba(1., 0.92, 0.54, 1.),
+                Color::srgba(0.95, 0.88, 0.42, 1.0),
+                Color::srgba(1., 0.92, 0.54, 1.),
             ]),
             density: Density(4),
             neighbors: Neighbors(vec![
@@ -164,8 +164,8 @@ impl Default for WallBundle {
     fn default() -> Self {
         WallBundle {
             colors: ParticleColors::new(vec![
-                Color::rgba(0.82, 0.84, 0.83, 1.),
-                Color::rgba(0.74, 0.76, 0.78, 1.),
+                Color::srgba(0.82, 0.84, 0.83, 1.),
+                Color::srgba(0.74, 0.76, 0.78, 1.),
             ]),
             density: Density(0),
             neighbors: Neighbors(Vec::new()),
@@ -189,7 +189,7 @@ pub struct SteamBundle {
 impl Default for SteamBundle {
     fn default() -> Self {
         SteamBundle {
-            colors: ParticleColors::new(vec![Color::SILVER]),
+            colors: ParticleColors::new(vec![Color::srgba(0.78, 0.84, 0.88, 1.)]),
             density: Density(1),
             neighbors: Neighbors(vec![
                 vec![IVec2::Y, IVec2::new(1, 1), IVec2::new(-1, 1)],
@@ -218,8 +218,8 @@ impl Default for DirtWallBundle {
     fn default() -> Self {
         DirtWallBundle {
             colors: ParticleColors::new(vec![
-                Color::rgba(0.57, 0.42, 0.3, 1.),
-                Color::rgba(0.45, 0.34, 0.24, 1.),
+                Color::srgba(0.57, 0.42, 0.3, 1.),
+                Color::srgba(0.45, 0.34, 0.24, 1.),
             ]),
             density: Density(0),
             neighbors: Neighbors(Vec::new()),
@@ -245,10 +245,10 @@ impl Default for GrassWallBundle {
     fn default() -> Self {
         GrassWallBundle {
             colors: ParticleColors::new(vec![
-                Color::rgba(0.36, 0.53, 0.19, 1.),
-                Color::rgba(0.24, 0.36, 0.13, 1.),
-                Color::rgba(0.32, 0.48, 0.18, 1.),
-                Color::rgba(0.36, 0.55, 0.2, 1.),
+                Color::srgba(0.36, 0.53, 0.19, 1.),
+                Color::srgba(0.24, 0.36, 0.13, 1.),
+                Color::srgba(0.32, 0.48, 0.18, 1.),
+                Color::srgba(0.36, 0.55, 0.2, 1.),
             ]),
             density: Density(0),
             neighbors: Neighbors(Vec::new()),
@@ -274,10 +274,10 @@ impl Default for RockWallBundle {
     fn default() -> Self {
         RockWallBundle {
             colors: ParticleColors::new(vec![
-                Color::rgba(0.23, 0.2, 0.2, 1.),
-                Color::rgba(0.29, 0.24, 0.24, 1.),
-                Color::rgba(0.36, 0.29, 0.29, 1.),
-                Color::rgba(0.4, 0.33, 0.33, 1.),
+                Color::srgba(0.23, 0.2, 0.2, 1.),
+                Color::srgba(0.29, 0.24, 0.24, 1.),
+                Color::srgba(0.36, 0.29, 0.29, 1.),
+                Color::srgba(0.4, 0.33, 0.33, 1.),
             ]),
             density: Density(0),
             neighbors: Neighbors(Vec::new()),
@@ -303,9 +303,9 @@ impl Default for DenseRockWallBundle {
     fn default() -> Self {
         DenseRockWallBundle {
             colors: ParticleColors::new(vec![
-                Color::rgba(0.42, 0.45, 0.55, 1.),
-                Color::rgba(0.55, 0.59, 0.67, 1.),
-                Color::rgba(0.7, 0.77, 0.84, 1.),
+                Color::srgba(0.42, 0.45, 0.55, 1.),
+                Color::srgba(0.55, 0.59, 0.67, 1.),
+                Color::srgba(0.7, 0.77, 0.84, 1.),
             ]),
             density: Density(0),
             neighbors: Neighbors(Vec::new()),

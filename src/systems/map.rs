@@ -40,7 +40,7 @@ pub fn handle_new_particles(
                 commands.entity(entity).insert((
                     SpriteBundle {
                         sprite: Sprite {
-                            color: Color::rgba(0., 0., 0., 0.),
+                            color: Color::srgba(0., 0., 0., 0.),
                             ..default()
                         },
                         transform: *transform,
