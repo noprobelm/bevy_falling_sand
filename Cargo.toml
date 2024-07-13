@@ -8,7 +8,7 @@ repository = "https://github.com/noprobelm/bevy_falling_sand"
 readme = "README.md"
 description = "Falling Sand simulation plugin for Bevy"
 keywords = ["falling-sand", "simulation", "physics"]
-exclude = ["examples", "docs", ".github", ".gitignore", "assets"]
+exclude = ["examples", "docs", ".github", ".gitignore", "assets", "CHANGELOG.org"]
 documentation = "http://docs.rs/bevy_falling_sand"
 categories = ["game-engines", "game-development"]
 
