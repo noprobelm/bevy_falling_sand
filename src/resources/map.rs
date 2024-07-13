@@ -185,11 +185,6 @@ impl ChunkMap {
         self.chunk(&coords).unwrap().get(coords)
     }
 
-    /// Get an immutable reference to an entity, if it exists.
-    pub fn get_mut(&mut self, coords: &IVec2) -> Option<&mut Entity> {
-        self.chunk_mut(&coords).unwrap().get_mut(coords)
-    }
-
     /// Iterator through a flattened map of all the particles in the ChunkMap
     #[allow(unused)]
     pub fn iter(&self) -> impl Iterator<Item = (&IVec2, &Entity)> {
