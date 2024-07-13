@@ -1,3 +1,5 @@
+//! Collection of particle components.
+
 use bevy::prelude::*;
 
 /// Marker component for particles.
@@ -22,7 +24,7 @@ pub struct Density(pub u32);
 
 /// A particle's neighbors, represented as a nested vector of IVec2. The outer vectors represent tiered "groups" of
 /// priority, whereas the inner vectors are representative of relative coordinates a particle might move to. See
-/// the [handle_particles](handle_particles) system.
+/// the [handle_particles](crate::handle_particles) system.
 #[derive(Clone, Eq, PartialEq, Hash, Debug, Default, Component, Reflect)]
 #[reflect(Component)]
 pub struct Neighbors(pub Vec<Vec<IVec2>>);

@@ -6,11 +6,11 @@ pub use hibernation::*;
 pub use color::*;
 pub use debug::*;
 
-mod map;
-mod movement;
-mod hibernation;
-mod color;
-mod debug;
+pub mod map;
+pub mod movement;
+pub mod hibernation;
+pub mod color;
+pub mod debug;
 
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ParticleMovementSet;
