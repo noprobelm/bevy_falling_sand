@@ -1,3 +1,4 @@
+//! Particle mapping behaviors.
 use bevy::prelude::*;
 use bevy_turborand::prelude::{DelegatedRng, GlobalRng};
 use crate::*;

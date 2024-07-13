@@ -5,8 +5,8 @@ pub use rng::*;
 pub use color::*;
 pub use hibernation::*;
 
-pub mod particle_types;
-pub mod particle;
-pub mod rng;
-pub mod color;
-pub mod hibernation;
+mod particle_types;
+mod particle;
+mod rng;
+mod color;
+mod hibernation;
