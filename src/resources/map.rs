@@ -149,20 +149,26 @@ impl ChunkMap {
 }
 
 impl ChunkMap {
-    /// Inserts a new particle at a given coordinate if it is not already occupied
+    /// Inserts a new particle at a given coordinate if it is not already occupied. Calls to this method will
+    /// wake up the subject chunk.
     pub fn insert_no_overwrite(&mut self, coords: IVec2, entity: Entity) -> &mut Entity {
         self.chunk_mut(&coords)
             .unwrap()
             .insert_no_overwrite(coords, entity)
     }
 
-    /// Inserts a new particle at a given coordinate irrespective of its occupied state
+    /// Inserts a new particle at a given coordinate irrespective of its occupied state. Calls to this method will
+    /// wake up the subject chunk.
     pub fn insert_overwrite(&mut self, coords: IVec2, entity: Entity) -> Option<Entity> {
         self.chunk_mut(&coords)
             .unwrap()
             .insert_overwrite(coords, entity)
     }
 
+    /// Swaps two entities in the ChunkMap. This method is the preferred interface when carrying out component-based
+    /// interactions between entities due to the facilities this provides for waking up neighboring chunks.
+    /// 'insert_overwrite' and 'insert_no_overwrite' will wake up the subject chunk, but they will NOT wake up
+    /// neighboring chunks.
     pub fn swap(&mut self, first: IVec2, second: IVec2) {
         let (first_chunk_idx, second_chunk_idx) =
             (self.chunk_index(&first), self.chunk_index(&second));
@@ -204,12 +210,13 @@ pub struct Chunk {
     /// The area of the chunk
     irect: IRect,
     /// Flag indicating whether the chunk should be processed in the next frame
-    pub should_process_next_frame: bool,
+    should_process_next_frame: bool,
     /// Flag indicating whether the chunk should be processed this frame
-    pub should_process_this_frame: bool,
+    should_process_this_frame: bool,
 }
 
 impl Chunk {
+    /// Creates a new Chunk instance
     pub fn new(upper_left: IVec2, lower_right: IVec2) -> Chunk {
         Chunk {
             chunk: HashMap::default(),
@@ -229,6 +236,18 @@ impl Chunk {
     /// The maximum (lower right) point of the chunk's area
     pub fn max(&self) -> &IVec2 {
         &self.irect.max
+    }
+}
+
+impl Chunk {
+    /// The chunk should be processed in the current frame
+    pub fn should_process_this_frame(&self) -> bool {
+	self.should_process_this_frame
+    }
+
+    /// The chunk should be processed in the next frame
+    pub fn should_process_next_frame(&self) -> bool {
+	self.should_process_next_frame
     }
 }
 
@@ -269,13 +288,15 @@ impl Chunk {
         self.chunk.remove(coords)
     }
 
-    /// Inserts a new particle at a given coordinate if it is not already occupied
+    /// Inserts a new particle at a given coordinate if it is not already occupied. Calls to this method will
+    /// wake up the subject chunk.
     pub fn insert_no_overwrite(&mut self, coords: IVec2, entity: Entity) -> &mut Entity {
         self.should_process_next_frame = true;
         self.chunk.entry(coords).or_insert(entity)
     }
 
-    /// Inserts a new particle at a given coordinate irrespective of its occupied state
+    /// Inserts a new particle at a given coordinate irrespective of its occupied state. Calls to this method will
+    /// wake up the subject chunk.
     pub fn insert_overwrite(&mut self, coords: IVec2, entity: Entity) -> Option<Entity> {
         self.should_process_next_frame = true;
         self.chunk.insert(coords, entity)
