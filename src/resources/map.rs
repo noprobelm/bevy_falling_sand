@@ -24,16 +24,21 @@ impl ParticleParentMap {
     }
 }
 
-/// The mapping resource for the position of all particles in the world. This map utilizes "chunks" consisting of particles
-/// in a given region. This allows for putting chunks to "sleep" so their particles don't induce unecessary processing
-/// overhead each frame.
+/// Generic resource for mapping IVec2 to entities. This resource uses underlying "chunks" which can optimize
+/// performance when processing large numbers of entities that may be inactive for some time. Chunks will enter a
+/// "sleeping" status if none of their contents are processed in a given frame.
+///
+/// Entities that move in a given frame which also border another chunk will send a "wake up" signal to that chunk,
+/// causing it to be active for the next frame.
 #[derive(Resource, Debug, Clone)]
 pub struct ChunkMap {
-    /// The particle chunk maps
+    /// The entity chunk maps
     chunks: Vec<Chunk>,
 }
 
 impl Default for ChunkMap {
+    /// A default chunk has a size of 32x32 entities. A default chunk map can hold 32 chunks, effectively capable of
+    /// storing 1024x1024 (1,048,576) total entities.
     fn default() -> ChunkMap {
         use bevy::math::IVec2;
 
@@ -52,7 +57,7 @@ impl Default for ChunkMap {
 }
 
 impl ChunkMap {
-    /// Gets the index of the corresponding chunk when given an &IVec2
+    /// Gets the index of the corresponding chunk
     fn chunk_index(&self, coord: &IVec2) -> usize {
         let col = ((coord.x + 512) / 32) as usize;
         let row = ((512 - coord.y) / 32) as usize;
@@ -73,33 +78,29 @@ impl ChunkMap {
 }
 
 impl ChunkMap {
-    /// Clear all existing particles from the map
+    /// Clear all existing key, value pairs from all chunks.
     /// > **⚠️ Warning:**
-    /// > Calling this method will cause major breakage to the simulation if particles are not
-    /// simultaneously cleared within the same system from which this method was called.
+    /// > Calling this method will cause major breakage to the simulation if entities are not despawned before another
+    /// system attempts to access them.
     pub fn clear(&mut self) {
         for map in &mut self.chunks {
             map.clear();
         }
     }
 
-    /// Remove a particle from the map
+    /// Remove a particle from the map.
     /// > **⚠️ Warning:**
-    /// > Calling this method will cause major breakage to the simulation if particles are not
-    /// simultaneously cleared within the same system from which this method was called.
+    /// > Calling this method will cause major breakage to the simulation if the target entity is not despawned before
+    /// another system attempts to access it.
     pub fn remove(&mut self, coords: &IVec2) -> Option<Entity> {
         self.chunk_mut(&coords).unwrap().remove(coords)
     }
 }
 
 impl ChunkMap {
-    /// Immutable iterator over all chunks in the ChunkMap
+    /// Immutable iterator over all chunks.
     pub fn iter_chunks(&self) -> impl Iterator<Item = &Chunk> {
         self.chunks.iter()
-    }
-
-    pub fn iter_chunks_mut(&mut self) -> impl Iterator<Item = &mut Chunk> {
-        self.chunks.iter_mut()
     }
 }
 
