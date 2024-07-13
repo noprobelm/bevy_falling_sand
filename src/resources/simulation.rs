@@ -1,3 +1,4 @@
+//! 
 use bevy::prelude::Resource;
 
 /// Resource to insert for pausing the simulation
