@@ -8,14 +8,14 @@ repository = "https://github.com/noprobelm/bevy_falling_sand"
 readme = "README.md"
 description = "Falling Sand simulation plugin for Bevy"
 keywords = ["falling-sand", "simulation", "physics"]
-exclude = ["examples", "docs", ".github", ".gitignore", "assets"]
+exclude = ["examples", "docs", ".github", ".gitignore", "assets", "CHANGELOG.org"]
 documentation = "http://docs.rs/bevy_falling_sand"
 categories = ["game-engines", "game-development"]
 
 [dependencies]
 ahash = "0.8.11"
-bevy = "0.13.2"
-bevy_turborand = "0.8.2"
+bevy = "0.14.0"
+bevy_turborand = "0.9.0"
 rayon = "1.10.0"
 
 [profile.release]
