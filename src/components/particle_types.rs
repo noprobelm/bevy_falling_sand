@@ -36,7 +36,7 @@ pub struct WhiskeyBundle {
 impl Default for WhiskeyBundle {
     fn default() -> Self {
         WhiskeyBundle {
-            colors: ParticleColors::new(vec![Color::srgba(18.8, 47.9, 16.5, 0.5)]),
+            colors: ParticleColors::new(vec![Color::srgba(0.84, 0.6, 0.44, 0.5)]),
             density: Density(3),
             neighbors: Neighbors(vec![
                 vec![IVec2::NEG_Y],
