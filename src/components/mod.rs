@@ -1,4 +1,4 @@
-//! All components related to particle behavior are found in this module.
+//! All components related to particle behavior are found in these modules.
 pub use particle_types::*;
 pub use particle::*;
 pub use rng::*;
