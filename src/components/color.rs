@@ -1,3 +1,4 @@
+//! Particle color components.
 use bevy::prelude::*;
 use bevy_turborand::prelude::*;
 
