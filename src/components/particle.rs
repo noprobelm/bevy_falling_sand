@@ -1,18 +1,16 @@
 use bevy::prelude::*;
 
-/// Marker component for querying for particles
+/// Marker component for particles.
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Component, Reflect)]
 #[reflect(Component)]
 pub struct Particle;
 
-/// Marker component for particle parent entities. Parent particle entities are generally responsible for holding
-/// common component data between particles, such as density or neighbor priority selections.
+/// Marker component for particle parents.
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Component, Reflect)]
 #[reflect(Component)]
 pub struct ParticleParent;
 
-/// Keeps track of the coordinate of a given particle. This is primarily used for movement detection from one frame to
-/// the next, so we can do things like track time last moved (for hibernation)
+/// Coordinates component for particles.
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, Default, Component, Reflect)]
 #[reflect(Component)]
 pub struct Coordinates(pub IVec2);
@@ -22,13 +20,9 @@ pub struct Coordinates(pub IVec2);
 #[reflect(Component, Debug)]
 pub struct Density(pub u32);
 
-/// A sequence of possible neighbors for a particle to consider as part of its movement logic. The inner vectors are
-/// neighbors that should be considered as equal candidates when assessing where a particle should attempt to relocate
-/// to. The order of the inner vectors can be thought of as *prioritized tier* whe considering groups of movement
-/// candidates.
-/// For example, a sand particle's order of movement might look like `[[[0, -1]], [[1, -1], [-1, -1]]]`. The particle
-/// would first attempt to move directly downward. If this fails, it would then look to its lower left and lower right
-/// neighbors at random, considering each as equally prioritized candidates.
+/// A particle's neighbors, represented as a nested vector of IVec2. The outer vectors represent tiered "groups" of
+/// priority, whereas the inner vectors are representative of relative coordinates a particle might move to. See
+/// the [handle_particles](handle_particles) system.
 #[derive(Clone, Eq, PartialEq, Hash, Debug, Default, Component, Reflect)]
 #[reflect(Component)]
 pub struct Neighbors(pub Vec<Vec<IVec2>>);
@@ -40,18 +34,18 @@ pub struct Neighbors(pub Vec<Vec<IVec2>>);
 #[reflect(Component)]
 pub struct Anchored;
 
-/// Manages a particle's velocity
+/// A particle's velocity.
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Component, Reflect)]
 #[reflect(Component)]
 pub struct Velocity {
-    /// The current velocity of the particle
+    /// The current velocity of the particle.
     pub val: u8,
-    /// The maximum velocity of the particle
+    /// The maximum velocity of the particle.
     pub max: u8
 }
 
 impl Velocity {
-    /// Creates a new velocity component with the specified values.
+    /// Creates a new velocity component.
     #[inline(always)]
     pub fn new(val: u8, max: u8) -> Self {
         Velocity { val, max }
@@ -75,18 +69,13 @@ impl Velocity {
 
 }
 
-/// Provides optional momentum for particles. If a particle possesses the ability to obtain momentum (as indicated by
-/// the presence of this component on its parent type), it will attempt to relocate itself to the relative coordinate
-/// indicated by the IVec2 field *if* the coordinate resides within the inner vector currently being considered in the
-/// Neighbors selection strategy.
-///
-/// The value of the IVec2 field is influenced by the successful, unobstructed movement of the particle as part of its
-/// previous step.
+/// Momentum component for particles. If a particle possesses this component, it will dynamically attempt to move in the
+/// same direction it moved in the previous frame.
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, Default, Component, Reflect)]
 #[reflect(Component)]
 pub struct Momentum(pub IVec2);
 
 impl Momentum {
-    /// Used if the particle is capable of gaining momentum, but currently has none.
+    /// Use if the particle is capable of gaining momentum, but currently has none.
     pub const ZERO: Self = Self(IVec2::splat(0));
 }
