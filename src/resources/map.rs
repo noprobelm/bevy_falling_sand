@@ -237,12 +237,6 @@ impl Chunk {
     pub fn get(&self, coords: &IVec2) -> Option<&Entity> {
         self.chunk.get(coords)
     }
-
-    /// Get an immutable reference to the corresponding entity, if it exists.
-    pub fn get_mut(&mut self, coords: &IVec2) -> Option<&mut Entity> {
-        self.should_process_next_frame = true;
-        self.chunk.get_mut(coords)
-    }
 }
 
 impl Chunk {
