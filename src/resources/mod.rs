@@ -3,5 +3,5 @@ pub use map::*;
 pub use debug::*;
 
 mod simulation;
-mod map;
+pub mod map;
 mod debug;
