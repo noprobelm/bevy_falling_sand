@@ -105,13 +105,14 @@ impl ChunkMap {
 }
 
 impl ChunkMap {
-    /// Checks each chunk for activity in the previous frame..
+    /// Checks each chunk for activity in the current frame. This method is meant to be called after all
+    /// movement logic has occurred for this frame.
     ///
-    /// If a chunk was active and is currently sleeping, wake it up and remove the Hibernating flag component from its
-    /// HashMap.
+    /// If a chunk was active and is currently sleeping, wake it up and remove the ShouldProcessThisFrame marker
+    /// component from its entity.
     ///
-    /// If a chunk was not activated and is currently awake, put it to sleep and add the Hibernating component to its
-    /// HashMap.
+    /// If a chunk was not activated and is currently awake, put it to sleep and add the ShouldProcessThisFrame
+    /// component to its entity.
     pub fn reset_chunks(&mut self, mut commands: Commands) {
         self.chunks.iter_mut().for_each(|chunk| {
             // Check for both so we're not needlessly removing components every frame
@@ -133,7 +134,7 @@ impl ChunkMap {
         });
     }
 
-    /// Checks if a coordinate lies on the border of a neighboring chunk and activates it if true
+    /// Checks if a coordinate lies on the border of a neighboring chunk and activates it if true.
     fn activate_neighbor_chunks(&mut self, coord: &IVec2, chunk_idx: usize) {
         let chunk = &self.chunks[chunk_idx];
 
@@ -260,43 +261,43 @@ impl Chunk {
 }
 
 impl Chunk {
-    /// Iterate through all key, value instances of the particle map
+    /// Iterate through all key, value instances of the entity map
     pub fn iter(&self) -> impl Iterator<Item = (&IVec2, &Entity)> {
         self.chunk.iter()
     }
 
-    /// Parallel iter through all the key, value instances of the particle map
+    /// Parallel iter through all the key, value instances of the entity map
     pub fn par_iter(&self) -> impl IntoParallelIterator<Item = (&IVec2, &Entity)> {
         self.chunk.par_iter()
     }
 }
 
 impl Chunk {
-    /// Clear all existing particles from the map
+    /// Clear all existing entities from the map
     /// > **⚠️ Warning:**
-    /// > Calling this method will cause major breakage to the simulation if particles are not
+    /// > Calling this method will cause major breakage to the simulation if entities are not
     /// simultaneously cleared within the same system from which this method was called.
     pub fn clear(&mut self) {
         self.chunk.clear();
     }
 
-    /// Remove a particle from the map
+    /// Remove a entity from the map
     /// > **⚠️ Warning:**
-    /// > Calling this method will cause major breakage to the simulation if particles are not
+    /// > Calling this method will cause major breakage to the simulation if entities are not
     /// simultaneously cleared within the same system from which this method was called.
     pub fn remove(&mut self, coords: &IVec2) -> Option<Entity> {
         self.should_process_next_frame = true;
         self.chunk.remove(coords)
     }
 
-    /// Inserts a new particle at a given coordinate if it is not already occupied. Calls to this method will
+    /// Inserts a new entity at a given coordinate if it is not already occupied. Calls to this method will
     /// wake up the subject chunk.
     pub fn insert_no_overwrite(&mut self, coords: IVec2, entity: Entity) -> &mut Entity {
         self.should_process_next_frame = true;
         self.chunk.entry(coords).or_insert(entity)
     }
 
-    /// Inserts a new particle at a given coordinate irrespective of its occupied state. Calls to this method will
+    /// Inserts a new entity at a given coordinate irrespective of its occupied state. Calls to this method will
     /// wake up the subject chunk.
     pub fn insert_overwrite(&mut self, coords: IVec2, entity: Entity) -> Option<Entity> {
         self.should_process_next_frame = true;
