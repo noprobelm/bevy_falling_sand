@@ -1,4 +1,4 @@
-use crate::{Hibernating, ParticleType};
+use crate::{ShouldProcessThisFrame, ParticleType};
 use ahash::HashMap;
 use bevy::prelude::*;
 use rayon::iter::IntoParallelRefIterator;
@@ -105,7 +105,7 @@ impl ChunkMap {
 }
 
 impl ChunkMap {
-    /// Checks each chunk for activity in the previous frame.
+    /// Checks each chunk for activity in the previous frame..
     ///
     /// If a chunk was active and is currently sleeping, wake it up and remove the Hibernating flag component from its
     /// HashMap.
@@ -117,14 +117,14 @@ impl ChunkMap {
             // Check for both so we're not needlessly removing components every frame
             if chunk.should_process_next_frame == true && chunk.should_process_this_frame == true {
                 chunk.iter().for_each(|(_, entity)| {
-                    commands.entity(*entity).remove::<Hibernating>();
+                    commands.entity(*entity).remove::<ShouldProcessThisFrame>();
                 });
                 chunk.should_process_this_frame = false;
 
             // Deactivate before the start of the next frame
             } else if chunk.should_process_next_frame == false {
                 chunk.iter().for_each(|(_, entity)| {
-                    commands.entity(*entity).insert(Hibernating);
+                    commands.entity(*entity).insert(ShouldProcessThisFrame);
                 });
                 chunk.should_process_this_frame = true;
             }

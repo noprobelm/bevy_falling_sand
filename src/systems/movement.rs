@@ -16,7 +16,7 @@ pub fn handle_particles(
             &mut Velocity,
             &mut PhysicsRng,
         ),
-        (Without<Anchored>, Without<Hibernating>),
+        (Without<Anchored>, Without<ShouldProcessThisFrame>),
     >,
     parent_query: Query<(&Density, &Neighbors), (With<ParticleParent>, Without<Anchored>)>,
     mut map: ResMut<ChunkMap>,
