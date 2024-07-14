@@ -1,4 +1,4 @@
-`bevy_falling_sand` is a generic plugin for adding falling sand physics to your Bevy project.
+`bevy_falling_sand` is a plugin for adding falling sand physics to your Bevy project.
 
 ## Bevy versions
 
@@ -9,15 +9,14 @@
 
 ## Example
 If you clone this repository, there is an example available that provides a full GUI interface for a "sandbox" like 
-experience. Though this project is surprisingly optimized, I recommend running the example with the `--release` flag to
-maximize performance:
+experience. I recommend running the example with the `--release` flag to maximize performance:
 ```rust
 cargo run --example sandbox --release
 ```
 
 ## How to use
 
-Spawning a particle is easy, just insert a `ParticleType` component variant to an entity with a `Transform`
+Spawning a particle is easy, just insert a `ParticleType` variant on an entity with a `Transform`
 component and it will be added to the simulation:
 ```rust
 commands.spawn((
@@ -29,22 +28,20 @@ commands.spawn((
 ## Current limitations
 ### ChunkMap size
 For optimization reasons, the underlying mapping mechanism for particles utilizes a sequence of chunks, each of which
-will induce a "hibernating" state on itself and the particles it contains if no movement is detected in a given frame.
+will induce a "hibernating" state on itself and the particles it contains if no movement is detected in a given frame. 
+Because of this, the total map size is limited (the default is 1024x1024 spanning from transform `(-512, 512)` 
+through `(512,  -512)`). Any particle processed outside of this region will cause a panic. 
 
-For this reason, the total map size is limited (the default is 1024x1024 spanning from transform `(-512, 512)` 
-through `(512,  -512)`). Any particle processed outside of this region will cause a panic. This will be resolved
-in a future release, which will modify the ChunkMap to "follow" and entity with an arbitrary specified component
-(for example, a main camera), loading and unloading chunks as it moves.
+This will be resolved in a future release, which will modify the ChunkMap to "follow" and entity with an arbitrary
+specified component (for example, a main camera), loading and unloading chunks as it moves. This will emulate an 
+"infinite" space in which particles can reside.
 
 ### Single-threaded simulation
-I've found the simulation runs surprisingly well despite the lack of multi-threading capabiltiy (excluding what `bevy` 
-inherently provides with its scheduling mechanisms). 
+Currently, the particle simulation is single threaded. An multi-threaded simulation is planned for a future release.
 
-An optional multi-threaded simulation is planned for a future release, but if you want to tweak with CPU thread 
-allocation in the meantime to experiment with performance, you might try tweaking the default task pool thread
-assignment policy that `bevy` provides. I've found differing results in performance based on CPU 
-manufacturer/architecture (sorry, no benchmarks available yet)
-
+If you want to tweak CPU thread allocation in the meantime to experiment with performance, you might try adjusting 
+the default task pool thread assignment policy that `bevy` provides. I've found differing results in performance 
+based on CPU  manufacturer/architecture (sorry, no benchmarks available)
 ```rust
 use bevy::{
     core::TaskPoolThreadAssignmentPolicy, prelude::*, tasks::available_parallelism,
