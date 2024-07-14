@@ -18,7 +18,7 @@ commands.spawn((
     ));
 ```
 
-## `ChunkMap`
+## `ChunkMap` limitations
 For performance reasons, the underlying mapping mechanism for particles utilizes a sequence of _chunks_, each of which will
 enter a "hibernating" state if there are no active particles within its region. As a consequence, the particle map
 _is not_ unlimited in size. By default, a `ChunkMap` will track particles between a transform of `(-512, 512)` through
@@ -34,3 +34,11 @@ If you want to visualize how chunks behave, insert the [DebugParticles] resource
 ```rust
 app.init_resource::<DebugParticles>()
 ```
+
+![Debug Mode Demo](https://imgur.com/kjiJaha)
+
+## Demos
+### Steam
+![Debug Mode Demo](https://imgur.com/opcsGFU)
+### Water
+![Debug Mode Demo](https://imgur.com/Pnlb7lO)
