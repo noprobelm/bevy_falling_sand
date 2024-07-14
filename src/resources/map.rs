@@ -1,5 +1,5 @@
 //! All resources related to tracking/mapping particles.
-use crate::{ParticleType, ShouldProcessThisFrame};
+use crate::{ParticleType, Sleeping};
 use ahash::HashMap;
 use bevy::prelude::*;
 use rayon::iter::IntoParallelRefIterator;
@@ -109,26 +109,26 @@ impl ChunkMap {
     /// Checks each chunk for activity in the current frame. This method is meant to be called after all
     /// movement logic has occurred for this frame.
     ///
-    /// If a chunk was active and is currently sleeping, wake it up and remove the ShouldProcessThisFrame marker
+    /// If a chunk was active and is currently sleeping, wake it up and remove the Sleeping marker
     /// component from its entity.
     ///
-    /// If a chunk was not activated and is currently awake, put it to sleep and add the ShouldProcessThisFrame
+    /// If a chunk was not activated and is currently awake, put it to sleep and add the Sleeping
     /// component to its entity.
     pub fn reset_chunks(&mut self, mut commands: Commands) {
         self.chunks.iter_mut().for_each(|chunk| {
             // Check for both so we're not needlessly removing components every frame
-            if chunk.should_process_next_frame == true && chunk.should_process_this_frame == true {
+            if chunk.should_process_next_frame == true && chunk.sleeping == true {
                 chunk.iter().for_each(|(_, entity)| {
-                    commands.entity(*entity).remove::<ShouldProcessThisFrame>();
+                    commands.entity(*entity).remove::<Sleeping>();
                 });
-                chunk.should_process_this_frame = false;
+                chunk.sleeping = false;
 
             // Deactivate before the start of the next frame
             } else if chunk.should_process_next_frame == false {
                 chunk.iter().for_each(|(_, entity)| {
-                    commands.entity(*entity).insert(ShouldProcessThisFrame);
+                    commands.entity(*entity).insert(Sleeping);
                 });
-                chunk.should_process_this_frame = true;
+                chunk.sleeping = true;
             }
 
             chunk.should_process_next_frame = false;
@@ -215,7 +215,7 @@ pub struct Chunk {
     /// Flag indicating whether the chunk should be processed in the next frame
     should_process_next_frame: bool,
     /// Flag indicating whether the chunk should be processed this frame
-    should_process_this_frame: bool,
+    sleeping: bool,
 }
 
 impl Chunk {
@@ -225,7 +225,7 @@ impl Chunk {
             chunk: HashMap::default(),
             irect: IRect::from_corners(upper_left, lower_right),
             should_process_next_frame: false,
-            should_process_this_frame: false,
+            sleeping: false,
         }
     }
 }
@@ -244,8 +244,8 @@ impl Chunk {
 
 impl Chunk {
     /// The chunk should be processed in the current frame
-    pub fn should_process_this_frame(&self) -> bool {
-        self.should_process_this_frame
+    pub fn sleeping(&self) -> bool {
+        self.sleeping
     }
 
     /// The chunk should be processed in the next frame
