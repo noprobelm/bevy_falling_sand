@@ -38,19 +38,18 @@ fn main() {
     app.add_event::<BrushResizeEvent>()
         .add_event::<CanvasResetEvent>();
 
-    // Camera control systems
+    // Camera control
     app.add_systems(Startup, setup_camera)
         .add_systems(Update, (zoom_camera, pan_camera));
 
+    // UI
+    app.add_systems(Update, render_ui);
+
     // Brush systems
     app.add_systems(Startup, setup_brush)
-        .add_systems(Update, (update_brush, resize_brush_event_listener));
+        .add_systems(Update, (update_brush, resize_brush_event_listener, hide_cursor.after(render_ui)));
 
-    // UI rendering
-    app.add_systems(Update, render_ui)
-        .add_systems(Update, hide_cursor.after(render_ui));
-
-    app.add_systems(PreUpdate, update_cursor_coordinates);
+    app.add_systems(Update, update_cursor_coordinates);
 
     // Particle management systems 
     app.add_systems(
@@ -61,14 +60,14 @@ fn main() {
             .after(update_cursor_coordinates),),
     );
     app.add_systems(
-        PreUpdate,
+        Update,
         despawn_particles
             .run_if(input_pressed(MouseButton::Left))
             .run_if(in_state(SpawnState::Despawn))
             .after(update_cursor_coordinates),
     );
 
-    app.add_systems(PreUpdate, despawn_all_particles);
+    app.add_systems(Update, despawn_all_particles.before(ParticleSimulationSet));
 
     app.run();
 }
@@ -91,12 +90,20 @@ impl Brush {
         Brush { size, color }
     }
 }
-
-#[derive(Resource, Default, Debug)]
-pub struct CursorCoords(pub Vec2);
+impl Default for Brush {
+    fn default() -> Self {
+        Brush {
+            size: 80,
+            color: Color::WHITE,
+        }
+    }
+}
 
 #[derive(Reflect, Resource)]
 pub struct MaxBrushSize(pub usize);
+
+#[derive(Resource, Default, Debug)]
+pub struct CursorCoords(pub Vec2);
 
 impl Default for MaxBrushSize {
     fn default() -> Self {
