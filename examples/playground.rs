@@ -194,8 +194,8 @@ impl BrushType {
                 }));
             }
             BrushType::Square => {
-                commands.spawn_batch((min_x * 2..=max_x * 2).flat_map(move |x| {
-                    (min_y * 2..=max_y * 2).map(move |y| {
+                commands.spawn_batch((min_x..=max_x).flat_map(move |x| {
+                    (min_y..=max_y).map(move |y| {
                         (
                             particle_type,
                             SpatialBundle::from_transform(Transform::from_xyz(
