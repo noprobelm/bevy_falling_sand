@@ -20,8 +20,8 @@ fn main() {
         }),
     );
 
-    app.add_plugins(FallingSandPlugin);
-    app.add_plugins(EguiPlugin);
+    app.add_plugins(FallingSandPlugin)
+        .add_plugins(EguiPlugin);
 
     app.init_resource::<DebugParticles>();
 
@@ -464,6 +464,7 @@ pub fn despawn_all_particles(
 }
 
 pub fn render_ui(
+    mut commands: Commands,
     mut particle_type_state: ResMut<NextState<ParticleType>>,
     mut spawn_state: ResMut<NextState<SpawnState>>,
     brush_query: Query<&Brush>,
@@ -472,7 +473,8 @@ pub fn render_ui(
     mut ev_brush_resize: EventWriter<BrushResizeEvent>,
     mut ev_canvas_reset: EventWriter<CanvasResetEvent>,
     mut contexts: EguiContexts,
-    max_brush_size: Res<MaxBrushSize>
+    max_brush_size: Res<MaxBrushSize>,
+    debug_particles: Option<Res<DebugParticles>>
 ) {
     let ctx = contexts.ctx_mut();
     let brush = brush_query.single();
@@ -559,5 +561,16 @@ pub fn render_ui(
                         next_brush_type.set(BrushType::Square)
                     };
                 });
+
+	    ui.separator();
+
+	    let mut debugging = debug_particles.is_some();
+	    if ui.checkbox(&mut debugging, "Show Chunks").clicked() {
+		if debugging == true {
+		    commands.init_resource::<DebugParticles>();
+		} else {
+		    commands.remove_resource::<DebugParticles>();
+		}
+	    }
         });
 }
