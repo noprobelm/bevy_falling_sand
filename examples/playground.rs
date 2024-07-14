@@ -1,0 +1,563 @@
+use bevy::{prelude::*, window::WindowMode};
+use bevy::utils::HashSet;
+use bevy_egui::{EguiPlugin, EguiContexts};
+use bevy::input::mouse::MouseWheel;
+use bevy::window::PrimaryWindow;
+
+use bevy_falling_sand::*;
+use bevy::input::common_conditions::input_pressed;
+
+fn main() {
+    let mut app = App::new();
+    app.add_plugins(
+        DefaultPlugins.set(WindowPlugin {
+            primary_window: Some(Window {
+                title: "Falling Sand Playground".into(),
+                mode: WindowMode::BorderlessFullscreen,
+                ..default()
+            }),
+            ..default()
+        }),
+    );
+
+    app.add_plugins(FallingSandPlugin);
+    app.add_plugins(EguiPlugin);
+
+    app.init_resource::<DebugParticles>();
+
+        app.add_systems(Update, zoom_camera);
+        app.add_systems(Update, pan_camera);
+        app.add_systems(Startup, setup_camera_release);
+
+        // GUI 
+        app.add_systems(Update, render_ui);
+
+        // Brush resources
+        app.init_state::<ParticleType>();
+        app.init_state::<SpawnState>();
+        app.init_state::<BrushType>();
+        app.init_resource::<CursorCoords>();
+	app.init_resource::<MaxBrushSize>();
+
+        app.init_gizmo_group::<BrushGizmos>();
+        app.add_event::<BrushResizeEvent>();
+	app.add_event::<CanvasResetEvent>();
+        app.add_systems(Startup, setup_brush);
+        app.add_systems(PreUpdate, update_cursor_coordinates);
+        app.add_systems(Update, update_brush);
+        app.add_systems(Update, resize_brush_event_listener);
+	app.add_systems(Update, hide_cursor.after(render_ui));
+
+        // Particle spawn resources
+        app.add_systems(
+            PreUpdate,
+            (spawn_particles
+                .run_if(input_pressed(MouseButton::Left))
+                .run_if(in_state(SpawnState::Spawn))
+                .after(update_cursor_coordinates),),
+        );
+        app.add_systems(
+            PreUpdate,
+            despawn_particles
+                .run_if(input_pressed(MouseButton::Left))
+                .run_if(in_state(SpawnState::Despawn))
+                .after(update_cursor_coordinates),
+        );
+
+	app.add_systems(PreUpdate, despawn_all_particles);
+
+
+    app.run();
+}
+
+#[derive(Component)]
+pub struct MainCamera;
+
+#[derive(Default, Reflect, GizmoConfigGroup)]
+pub struct BrushGizmos;
+
+#[derive(Component)]
+#[allow(dead_code)]
+pub struct Brush {
+    pub size: usize,
+    pub color: Color,
+}
+
+impl Brush {
+    pub fn new(size: usize, color: Color) -> Self {
+        Brush { size, color }
+    }
+}
+impl Default for Brush {
+    fn default() -> Self {
+        Brush {
+            size: 80,
+            color: Color::WHITE,
+        }
+    }
+}
+
+#[derive(Resource, Default, Debug)]
+pub struct CursorCoords(pub Vec2);
+
+
+#[derive(Reflect, Resource)]
+pub struct MaxBrushSize(pub usize);
+
+impl Default for MaxBrushSize {
+    fn default() -> Self {
+        return MaxBrushSize(100);
+    }
+}
+
+#[derive(Default, Clone, Hash, Eq, PartialEq, Debug, States)]
+pub enum BrushType {
+    Line,
+    #[default]
+    Circle,
+    Square,
+}
+
+impl BrushType {
+    pub fn update_brush(
+        &self,
+        coords: Vec2,
+        brush_size: f32,
+        brush_gizmos: &mut Gizmos<BrushGizmos>,
+    ) {
+        match self {
+            BrushType::Line => brush_gizmos.line_2d(
+                Vec2::new(coords.x - brush_size * 3. / 2., coords.y),
+                Vec2::new(coords.x + brush_size * 3. / 2., coords.y),
+                Color::WHITE,
+            ),
+            BrushType::Circle => {
+                brush_gizmos.circle_2d(coords, brush_size, Color::WHITE);
+            }
+            BrushType::Square => {
+                brush_gizmos.rect_2d(coords, 0., Vec2::splat(brush_size), Color::WHITE);
+            }
+        }
+    }
+
+    pub fn spawn_particles(
+        &self,
+        commands: &mut Commands,
+        coords: Vec2,
+        brush_size: f32,
+        particle_type: ParticleType,
+    ) {
+        let min_x = -(brush_size as i32) / 2;
+        let max_x = (brush_size / 2.) as i32;
+        let min_y = -(brush_size as i32) / 2;
+        let max_y = (brush_size / 2.) as i32;
+
+        match self {
+            BrushType::Line => {
+                for x in min_x * 3..=max_x * 3 {
+                    commands.spawn((
+                        particle_type.clone(),
+                        SpatialBundle::from_transform(Transform::from_xyz(
+                            coords.x + x as f32,
+                            coords.y,
+                            0.,
+                        )),
+                    ));
+                }
+            }
+            BrushType::Circle => {
+                let mut points: HashSet<IVec2> = HashSet::default();
+                let circle = Circle::new(brush_size);
+                for x in min_x * 2..=max_x * 2 {
+                    for y in min_y * 2..=max_y * 2 {
+                        let mut point = Vec2::new(x as f32, y as f32);
+                        point = circle.closest_point(point);
+                        points.insert((point + coords).as_ivec2());
+                    }
+                }
+                for point in points {
+                    commands.spawn((
+                        particle_type.clone(),
+                        SpatialBundle::from_transform(Transform::from_xyz(
+                            point.x as f32,
+                            point.y as f32,
+                            0.,
+                        )),
+                    ));
+                }
+            }
+            BrushType::Square => {
+                for x in min_x..=max_x {
+                    for y in min_y..=max_y {
+                        commands.spawn((
+                            particle_type.clone(),
+                            SpatialBundle::from_transform(Transform::from_xyz(
+                                coords.x + x as f32,
+                                coords.y + y as f32,
+                                0.,
+                            )),
+                        ));
+                    }
+                }
+            }
+        }
+    }
+
+    pub fn despawn_particles(
+        &self,
+        commands: &mut Commands,
+	parent_query: &Query<(Entity, &Children), With<ParticleParent>>,
+	map: &mut ChunkMap,
+        coords: IVec2,
+        brush_size: f32,
+    ) {
+        let min_x = -(brush_size as i32) / 2;
+        let max_x = (brush_size / 2.) as i32;
+        let min_y = -(brush_size as i32) / 2;
+        let max_y = (brush_size / 2.) as i32;
+
+	let mut entities: Vec<Entity> = Vec::new();
+
+        match self {
+            BrushType::Line => for x in min_x * 3..=max_x * 3 {
+                let point = IVec2::new(coords.x + x, coords.y);
+		if let Some(entity) = map.entity(&point) {
+		    entities.push(*entity);
+                    map.remove(&point);
+		} 
+	    },
+            BrushType::Circle => {
+                let mut points: HashSet<IVec2> = HashSet::default();
+                let circle = Circle::new(brush_size);
+                for x in min_x * 2..=max_x * 2 {
+                    for y in min_y * 2..=max_y * 2 {
+                        let mut point = Vec2::new(x as f32, y as f32);
+                        point = circle.closest_point(point);
+                        points.insert((point + coords.as_vec2()).as_ivec2());
+                    }
+                }
+                for point in points {
+		    if let Some(entity) = map.entity(&point) {
+			entities.push(*entity);
+                        map.remove(&point);
+		    }
+		}
+            }
+            BrushType::Square => {
+                for x in min_x..=max_x {
+                    for y in min_y..=max_y {
+                        let point = IVec2::new(coords.x + x, coords.y + y);
+			if let Some(entity) = map.entity(&IVec2::new(coords.x + x, coords.y + y)) {
+			    entities.push(*entity);
+                            map.remove(&point);
+			}
+                        
+		    }
+                }
+            }
+        }
+
+        for (parent_id, children) in parent_query.iter() {
+            let mut parent = commands.entity(parent_id);
+            for entity in entities.iter() {
+                if children.contains(entity) {
+                    parent.remove_children(&[*entity]);
+                }
+            }
+        }
+
+        for entity in entities.iter() {
+            commands.entity(*entity).despawn();
+        }
+    }
+}
+
+#[derive(Event)]
+pub struct BrushResizeEvent(pub usize);
+
+#[derive(Event)]
+pub struct CanvasResetEvent;
+
+#[derive(States, Reflect, Default, Debug, Clone, Eq, PartialEq, Hash)]
+pub enum SpawnState {
+    #[default]
+    Spawn,
+    Despawn,
+}
+
+pub fn setup_camera_release(mut commands: Commands) {
+    commands.spawn((
+        Camera2dBundle {
+            projection: OrthographicProjection {
+                near: -1000.0,
+                scale: 0.5,
+                ..default()
+            },
+            ..default()
+        },
+        MainCamera,
+    ));
+}
+
+pub fn zoom_camera(
+    mut scroll_evr: EventReader<MouseWheel>,
+    mut camera_query: Query<&mut OrthographicProjection, With<MainCamera>>,
+) {
+    let mut projection = camera_query.single_mut();
+    for ev in scroll_evr.read() {
+        let zoom = -(ev.y / 10.);
+        if projection.scale + zoom > 0.1 {
+            projection.scale += zoom;
+        }
+    }
+}
+
+pub fn pan_camera(
+    mut camera_query: Query<&mut Transform, With<MainCamera>>,
+    keys: Res<ButtonInput<KeyCode>>,
+) {
+    let mut transform = camera_query.single_mut();
+
+    if keys.pressed(KeyCode::KeyW) {
+        transform.translation.y += 2.;
+    }
+
+    if keys.pressed(KeyCode::KeyA) {
+        transform.translation.x -= 2.;
+    }
+
+    if keys.pressed(KeyCode::KeyS) {
+        transform.translation.y -= 2.;
+    }
+
+    if keys.pressed(KeyCode::KeyD) {
+        transform.translation.x += 2.;
+    }
+}
+
+pub fn update_cursor_coordinates(
+    mut coords: ResMut<CursorCoords>,
+    q_window: Query<&Window, With<PrimaryWindow>>,
+    q_camera: Query<(&Camera, &GlobalTransform), With<MainCamera>>,
+) {
+    let (camera, camera_transform) = q_camera.single();
+
+    let window = q_window.single();
+
+    if let Some(world_position) = window
+        .cursor_position()
+        .and_then(|cursor| camera.viewport_to_world(camera_transform, cursor))
+        .map(|ray| ray.origin.truncate())
+    {
+        coords.0 = world_position;
+    }
+}
+
+pub fn hide_cursor(
+    mut primary_window: Query<&mut Window, With<PrimaryWindow>>,
+    mut contexts: EguiContexts
+) {
+    let window = &mut primary_window.single_mut();
+    let ctx = contexts.ctx_mut();
+
+    if ctx.is_pointer_over_area() {
+        window.cursor.visible = true;
+    } else {
+        window.cursor.visible = false;
+    }
+}
+
+pub fn setup_brush(
+    mut commands: Commands,
+    mut brush_gizmos: Gizmos<BrushGizmos>,
+    cursor_coords: Res<CursorCoords>,
+    brush_type: Res<State<BrushType>>
+) {
+    let brush = Brush::new(2, Color::WHITE);
+    let brush_size = brush.size;
+    commands.spawn(brush);
+    brush_type.update_brush(cursor_coords.0, brush_size as f32, &mut brush_gizmos);
+}
+
+pub fn update_brush(
+    mut brush_query: Query<&Brush>,
+    cursor_coords: Res<CursorCoords>,
+    mut brush_gizmos: Gizmos<BrushGizmos>,
+    brush_type: Res<State<BrushType>>
+) {
+    let brush = brush_query.single_mut();
+    brush_type.update_brush(cursor_coords.0, brush.size as f32, &mut brush_gizmos);
+}
+
+pub fn resize_brush_event_listener(
+    mut ev_brush_resize: EventReader<BrushResizeEvent>,
+    mut brush_query: Query<&mut Brush>,
+) {
+    let mut brush = brush_query.single_mut();
+    for ev in ev_brush_resize.read() {
+        brush.size = ev.0;
+    }
+}
+
+pub fn spawn_particles(
+    mut commands: Commands,
+    cursor_coords: Res<CursorCoords>,
+    selected: Res<State<ParticleType>>,
+    brush_type: Res<State<BrushType>>,
+    brush_query: Query<&Brush>,
+    mut contexts: EguiContexts
+) {
+    let ctx = contexts.ctx_mut();
+    if ctx.is_pointer_over_area() {
+	return;
+    }
+
+    let brush = brush_query.single();
+    let brush_type = brush_type.get();
+    brush_type.spawn_particles(
+        &mut commands,
+        cursor_coords.0,
+        brush.size as f32,
+        selected.get().clone(),
+    );
+
+}
+
+pub fn despawn_particles(
+    mut commands: Commands,
+    cursor_coords: Res<CursorCoords>,
+    mut map: ResMut<ChunkMap>,
+    brush_type: Res<State<BrushType>>,
+    parent_query: Query<(Entity, &Children), With<ParticleParent>>,
+    brush_query: Query<&Brush>,
+    mut contexts: EguiContexts
+) {
+    let ctx = contexts.ctx_mut();
+    if ctx.is_pointer_over_area() {
+	return;
+    }
+
+    let brush = brush_query.single();
+    let brush_size = brush.size;
+
+    brush_type.despawn_particles(
+	&mut commands,
+	&parent_query,
+	&mut map,
+	cursor_coords.0.as_ivec2(),
+	brush_size as f32
+    )
+}
+
+pub fn despawn_all_particles(
+    mut commands: Commands,
+    mut ev_canvas_reset: EventReader<CanvasResetEvent>,
+    parent_query: Query<Entity, With<ParticleParent>>,
+    mut map: ResMut<ChunkMap>
+) {
+    for _ in ev_canvas_reset.read() {
+        parent_query.iter().for_each(|entity| {
+            commands.entity(entity).despawn_descendants();
+        });
+        map.clear();
+    }
+}
+
+pub fn render_ui(
+    mut particle_type_state: ResMut<NextState<ParticleType>>,
+    mut spawn_state: ResMut<NextState<SpawnState>>,
+    brush_query: Query<&Brush>,
+    current_brush_type: Res<State<BrushType>>,
+    mut next_brush_type: ResMut<NextState<BrushType>>,
+    mut ev_brush_resize: EventWriter<BrushResizeEvent>,
+    mut ev_canvas_reset: EventWriter<CanvasResetEvent>,
+    mut contexts: EguiContexts,
+    max_brush_size: Res<MaxBrushSize>
+) {
+    let ctx = contexts.ctx_mut();
+    let brush = brush_query.single();
+    let mut brush_size = brush.size;
+
+    egui::SidePanel::left("side_panel")
+        .exact_width(200.0)
+        .resizable(false)
+        .show(ctx, |ui| {
+            ui.horizontal_wrapped(|ui| {
+                if ui.button("Water").clicked() {
+                    particle_type_state.set(ParticleType::Water);
+                    spawn_state.set(SpawnState::Spawn)
+                } else if ui.button("Oil").clicked() {
+                    particle_type_state.set(ParticleType::Oil);
+                    spawn_state.set(SpawnState::Spawn);
+                } else if ui.button("Whiskey").clicked() {
+                    particle_type_state.set(ParticleType::Whiskey);
+                    spawn_state.set(SpawnState::Spawn);
+                } else if ui.button("Sand").clicked() {
+                    particle_type_state.set(ParticleType::Sand);
+                    spawn_state.set(SpawnState::Spawn);
+                } else if ui.button("Steam").clicked() {
+                    particle_type_state.set(ParticleType::Steam);
+                    spawn_state.set(SpawnState::Spawn);
+                } else if ui.button("Wall").clicked() {
+                    particle_type_state.set(ParticleType::Wall);
+                    spawn_state.set(SpawnState::Spawn);
+                } else if ui.button("Dirt Wall").clicked() {
+                    particle_type_state.set(ParticleType::DirtWall);
+                    spawn_state.set(SpawnState::Spawn);
+                } else if ui.button("Grass Wall").clicked() {
+                    particle_type_state.set(ParticleType::GrassWall);
+                    spawn_state.set(SpawnState::Spawn);
+                } else if ui.button("Rock Wall").clicked() {
+                    particle_type_state.set(ParticleType::RockWall);
+                    spawn_state.set(SpawnState::Spawn);
+                } else if ui.button("Dense Rock Wall").clicked() {
+                    particle_type_state.set(ParticleType::DenseRockWall);
+                    spawn_state.set(SpawnState::Spawn);
+                } else if ui.button("Remove").clicked() {
+                    spawn_state.set(SpawnState::Despawn);
+                }
+            });
+
+            if ui.button("Despawn All Particles").clicked() {
+                ev_canvas_reset.send(CanvasResetEvent);
+            }
+
+            if ui
+                .add(egui::Slider::new(&mut brush_size, 1..=max_brush_size.0))
+                .changed()
+            {
+                ev_brush_resize.send(BrushResizeEvent(brush_size));
+            };
+
+            egui::ComboBox::from_label("Brush Type")
+                .selected_text(format!("{:?}", current_brush_type.get()))
+                .show_ui(ui, |ui| {
+                    if ui
+                        .selectable_value(&mut current_brush_type.get(), &BrushType::Line, "Line")
+                        .changed()
+                    {
+                        next_brush_type.set(BrushType::Line)
+                    };
+                    if ui
+                        .selectable_value(
+                            &mut current_brush_type.get(),
+                            &BrushType::Circle,
+                            "Circle",
+                        )
+                        .changed()
+                    {
+                        next_brush_type.set(BrushType::Circle)
+                    };
+                    if ui
+                        .selectable_value(
+                            &mut current_brush_type.get(),
+                            &BrushType::Square,
+                            "Square",
+                        )
+                        .changed()
+                    {
+                        next_brush_type.set(BrushType::Square)
+                    };
+                });
+        });
+}
