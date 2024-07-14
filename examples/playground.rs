@@ -277,6 +277,7 @@ impl BrushType {
 #[derive(Event)]
 pub struct BrushResizeEvent(pub usize);
 
+// Triggers the removal of all particles when the corresponding UI button is clicked
 #[derive(Event)]
 pub struct CanvasResetEvent;
 
@@ -355,6 +356,7 @@ pub fn update_cursor_coordinates(
     }
 }
 
+// The cursor looks bad with the brush. Disable it when we're not hovering over a UI element
 pub fn hide_cursor(
     mut primary_window: Query<&mut Window, With<PrimaryWindow>>,
     mut contexts: EguiContexts,
