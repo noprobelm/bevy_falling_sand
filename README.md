@@ -39,6 +39,6 @@ app.init_resource::<DebugParticles>()
 
 ## Demos
 ### Steam
-![Debug Mode Demo](https://i.imgur.com/opcsGFU.gif)
+![Steam Demo](https://i.imgur.com/opcsGFU.gif)
 ### Water
-![Debug Mode Demo](https://i.imgur.com/Pnlb7lO.gif)
+![Water Demo](https://i.imgur.com/Pnlb7lO.gif)
