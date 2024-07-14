@@ -8,11 +8,11 @@
 | 0.1.x                 | 0.13.x    |
 
 ## Example
-If you clone this repository, there is an example available that provides a full GUI interface for a "playground" like 
+If you clone this repository, there is an example available that provides a full GUI interface for a "sandbox" like 
 experience. Though this project is surprisingly optimized, I recommend running the example with the `--release` flag to
 maximize performance:
 ```rust
-cargo run --example playground --release
+cargo run --example sandbox --release
 ```
 
 ## How to use
