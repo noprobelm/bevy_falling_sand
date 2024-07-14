@@ -35,10 +35,10 @@ If you want to visualize how chunks behave, insert the [DebugParticles] resource
 app.init_resource::<DebugParticles>()
 ```
 
-![Debug Mode Demo](https://i.imgur.com/kjiJaha.gif)
+![Debug Mode Demo](https://github.com/noprobelm/bevy_falling_sand/blob/media/debug.gif)
 
 ## Demos
 ### Steam
-![Steam Demo](https://i.imgur.com/opcsGFU.gif)
+![Steam Demo](https://github.com/noprobelm/bevy_falling_sand/blob/media/steam.gif)
 ### Water
-![Water Demo](https://i.imgur.com/Pnlb7lO.gif)
+![Water Demo](https://github.com/noprobelm/bevy_falling_sand/blob/media/water.gif)
