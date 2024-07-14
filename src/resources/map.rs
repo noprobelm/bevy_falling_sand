@@ -1,5 +1,5 @@
 //! All resources related to tracking/mapping particles.
-use crate::{ShouldProcessThisFrame, ParticleType};
+use crate::{ParticleType, ShouldProcessThisFrame};
 use ahash::HashMap;
 use bevy::prelude::*;
 use rayon::iter::IntoParallelRefIterator;
@@ -245,12 +245,12 @@ impl Chunk {
 impl Chunk {
     /// The chunk should be processed in the current frame
     pub fn should_process_this_frame(&self) -> bool {
-	self.should_process_this_frame
+        self.should_process_this_frame
     }
 
     /// The chunk should be processed in the next frame
     pub fn should_process_next_frame(&self) -> bool {
-	self.should_process_next_frame
+        self.should_process_next_frame
     }
 }
 
