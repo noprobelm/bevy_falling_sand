@@ -1,71 +1,74 @@
-use bevy::{prelude::*, window::WindowMode};
-use bevy::utils::HashSet;
-use bevy_egui::{EguiPlugin, EguiContexts};
 use bevy::input::mouse::MouseWheel;
+use bevy::utils::HashSet;
 use bevy::window::PrimaryWindow;
+use bevy::{prelude::*, window::WindowMode};
+use bevy_egui::{EguiContexts, EguiPlugin};
 
-use bevy_falling_sand::*;
 use bevy::input::common_conditions::input_pressed;
+use bevy_falling_sand::*;
 
 fn main() {
     let mut app = App::new();
-    app.add_plugins(
-        DefaultPlugins.set(WindowPlugin {
-            primary_window: Some(Window {
-                title: "Falling Sand Playground".into(),
-                mode: WindowMode::BorderlessFullscreen,
-                ..default()
-            }),
+    app.add_plugins(DefaultPlugins.set(WindowPlugin {
+        primary_window: Some(Window {
+            title: "Falling Sand Playground".into(),
+            mode: WindowMode::BorderlessFullscreen,
             ..default()
         }),
+        ..default()
+    }));
+
+    // Plugins
+    app.add_plugins(FallingSandPlugin).add_plugins(EguiPlugin);
+
+    // Resources
+    app.init_resource::<DebugParticles>()
+        .init_resource::<CursorCoords>()
+        .init_resource::<MaxBrushSize>();
+
+    // States
+    app.init_state::<ParticleType>()
+        .init_state::<SpawnState>()
+        .init_state::<BrushType>();
+
+    // Gizmos
+    app.init_gizmo_group::<BrushGizmos>();
+
+    // Events
+    app.add_event::<BrushResizeEvent>()
+        .add_event::<CanvasResetEvent>();
+
+    // Camera control systems
+    app.add_systems(Startup, setup_camera)
+        .add_systems(Update, (zoom_camera, pan_camera));
+
+    // Brush systems
+    app.add_systems(Startup, setup_brush)
+        .add_systems(Update, (update_brush, resize_brush_event_listener));
+
+    // UI rendering
+    app.add_systems(Update, render_ui)
+        .add_systems(Update, hide_cursor.after(render_ui));
+
+    app.add_systems(PreUpdate, update_cursor_coordinates);
+
+    // Particle management systems 
+    app.add_systems(
+        Update,
+        (spawn_particles
+            .run_if(input_pressed(MouseButton::Left))
+            .run_if(in_state(SpawnState::Spawn))
+            .after(update_cursor_coordinates),),
+    );
+    app.add_systems(
+        PreUpdate,
+        despawn_particles
+            .run_if(input_pressed(MouseButton::Left))
+            .run_if(in_state(SpawnState::Despawn))
+            .after(update_cursor_coordinates),
     );
 
-    app.add_plugins(FallingSandPlugin)
-        .add_plugins(EguiPlugin);
-
-    app.init_resource::<DebugParticles>();
-
-        app.add_systems(Update, zoom_camera);
-        app.add_systems(Update, pan_camera);
-        app.add_systems(Startup, setup_camera_release);
-
-        // GUI 
-        app.add_systems(Update, render_ui);
-
-        // Brush resources
-        app.init_state::<ParticleType>();
-        app.init_state::<SpawnState>();
-        app.init_state::<BrushType>();
-        app.init_resource::<CursorCoords>();
-	app.init_resource::<MaxBrushSize>();
-
-        app.init_gizmo_group::<BrushGizmos>();
-        app.add_event::<BrushResizeEvent>();
-	app.add_event::<CanvasResetEvent>();
-        app.add_systems(Startup, setup_brush);
-        app.add_systems(PreUpdate, update_cursor_coordinates);
-        app.add_systems(Update, update_brush);
-        app.add_systems(Update, resize_brush_event_listener);
-	app.add_systems(Update, hide_cursor.after(render_ui));
-
-        // Particle spawn resources
-        app.add_systems(
-            PreUpdate,
-            (spawn_particles
-                .run_if(input_pressed(MouseButton::Left))
-                .run_if(in_state(SpawnState::Spawn))
-                .after(update_cursor_coordinates),),
-        );
-        app.add_systems(
-            PreUpdate,
-            despawn_particles
-                .run_if(input_pressed(MouseButton::Left))
-                .run_if(in_state(SpawnState::Despawn))
-                .after(update_cursor_coordinates),
-        );
-
-	app.add_systems(PreUpdate, despawn_all_particles);
-
+    app.add_systems(PreUpdate, despawn_all_particles);
 
     app.run();
 }
@@ -88,18 +91,9 @@ impl Brush {
         Brush { size, color }
     }
 }
-impl Default for Brush {
-    fn default() -> Self {
-        Brush {
-            size: 80,
-            color: Color::WHITE,
-        }
-    }
-}
 
 #[derive(Resource, Default, Debug)]
 pub struct CursorCoords(pub Vec2);
-
 
 #[derive(Reflect, Resource)]
 pub struct MaxBrushSize(pub usize);
@@ -206,8 +200,8 @@ impl BrushType {
     pub fn despawn_particles(
         &self,
         commands: &mut Commands,
-	parent_query: &Query<(Entity, &Children), With<ParticleParent>>,
-	map: &mut ChunkMap,
+        parent_query: &Query<(Entity, &Children), With<ParticleParent>>,
+        map: &mut ChunkMap,
         coords: IVec2,
         brush_size: f32,
     ) {
@@ -216,16 +210,18 @@ impl BrushType {
         let min_y = -(brush_size as i32) / 2;
         let max_y = (brush_size / 2.) as i32;
 
-	let mut entities: Vec<Entity> = Vec::new();
+        let mut entities: Vec<Entity> = Vec::new();
 
         match self {
-            BrushType::Line => for x in min_x * 3..=max_x * 3 {
-                let point = IVec2::new(coords.x + x, coords.y);
-		if let Some(entity) = map.entity(&point) {
-		    entities.push(*entity);
-                    map.remove(&point);
-		} 
-	    },
+            BrushType::Line => {
+                for x in min_x * 3..=max_x * 3 {
+                    let point = IVec2::new(coords.x + x, coords.y);
+                    if let Some(entity) = map.entity(&point) {
+                        entities.push(*entity);
+                        map.remove(&point);
+                    }
+                }
+            }
             BrushType::Circle => {
                 let mut points: HashSet<IVec2> = HashSet::default();
                 let circle = Circle::new(brush_size);
@@ -237,22 +233,21 @@ impl BrushType {
                     }
                 }
                 for point in points {
-		    if let Some(entity) = map.entity(&point) {
-			entities.push(*entity);
+                    if let Some(entity) = map.entity(&point) {
+                        entities.push(*entity);
                         map.remove(&point);
-		    }
-		}
+                    }
+                }
             }
             BrushType::Square => {
                 for x in min_x..=max_x {
                     for y in min_y..=max_y {
                         let point = IVec2::new(coords.x + x, coords.y + y);
-			if let Some(entity) = map.entity(&IVec2::new(coords.x + x, coords.y + y)) {
-			    entities.push(*entity);
+                        if let Some(entity) = map.entity(&IVec2::new(coords.x + x, coords.y + y)) {
+                            entities.push(*entity);
                             map.remove(&point);
-			}
-                        
-		    }
+                        }
+                    }
                 }
             }
         }
@@ -285,7 +280,7 @@ pub enum SpawnState {
     Despawn,
 }
 
-pub fn setup_camera_release(mut commands: Commands) {
+pub fn setup_camera(mut commands: Commands) {
     commands.spawn((
         Camera2dBundle {
             projection: OrthographicProjection {
@@ -355,7 +350,7 @@ pub fn update_cursor_coordinates(
 
 pub fn hide_cursor(
     mut primary_window: Query<&mut Window, With<PrimaryWindow>>,
-    mut contexts: EguiContexts
+    mut contexts: EguiContexts,
 ) {
     let window = &mut primary_window.single_mut();
     let ctx = contexts.ctx_mut();
@@ -371,7 +366,7 @@ pub fn setup_brush(
     mut commands: Commands,
     mut brush_gizmos: Gizmos<BrushGizmos>,
     cursor_coords: Res<CursorCoords>,
-    brush_type: Res<State<BrushType>>
+    brush_type: Res<State<BrushType>>,
 ) {
     let brush = Brush::new(2, Color::WHITE);
     let brush_size = brush.size;
@@ -383,7 +378,7 @@ pub fn update_brush(
     mut brush_query: Query<&Brush>,
     cursor_coords: Res<CursorCoords>,
     mut brush_gizmos: Gizmos<BrushGizmos>,
-    brush_type: Res<State<BrushType>>
+    brush_type: Res<State<BrushType>>,
 ) {
     let brush = brush_query.single_mut();
     brush_type.update_brush(cursor_coords.0, brush.size as f32, &mut brush_gizmos);
@@ -405,11 +400,11 @@ pub fn spawn_particles(
     selected: Res<State<ParticleType>>,
     brush_type: Res<State<BrushType>>,
     brush_query: Query<&Brush>,
-    mut contexts: EguiContexts
+    mut contexts: EguiContexts,
 ) {
     let ctx = contexts.ctx_mut();
     if ctx.is_pointer_over_area() {
-	return;
+        return;
     }
 
     let brush = brush_query.single();
@@ -420,7 +415,6 @@ pub fn spawn_particles(
         brush.size as f32,
         selected.get().clone(),
     );
-
 }
 
 pub fn despawn_particles(
@@ -430,22 +424,22 @@ pub fn despawn_particles(
     brush_type: Res<State<BrushType>>,
     parent_query: Query<(Entity, &Children), With<ParticleParent>>,
     brush_query: Query<&Brush>,
-    mut contexts: EguiContexts
+    mut contexts: EguiContexts,
 ) {
     let ctx = contexts.ctx_mut();
     if ctx.is_pointer_over_area() {
-	return;
+        return;
     }
 
     let brush = brush_query.single();
     let brush_size = brush.size;
 
     brush_type.despawn_particles(
-	&mut commands,
-	&parent_query,
-	&mut map,
-	cursor_coords.0.as_ivec2(),
-	brush_size as f32
+        &mut commands,
+        &parent_query,
+        &mut map,
+        cursor_coords.0.as_ivec2(),
+        brush_size as f32,
     )
 }
 
@@ -453,7 +447,7 @@ pub fn despawn_all_particles(
     mut commands: Commands,
     mut ev_canvas_reset: EventReader<CanvasResetEvent>,
     parent_query: Query<Entity, With<ParticleParent>>,
-    mut map: ResMut<ChunkMap>
+    mut map: ResMut<ChunkMap>,
 ) {
     for _ in ev_canvas_reset.read() {
         parent_query.iter().for_each(|entity| {
@@ -474,7 +468,7 @@ pub fn render_ui(
     mut ev_canvas_reset: EventWriter<CanvasResetEvent>,
     mut contexts: EguiContexts,
     max_brush_size: Res<MaxBrushSize>,
-    debug_particles: Option<Res<DebugParticles>>
+    debug_particles: Option<Res<DebugParticles>>,
 ) {
     let ctx = contexts.ctx_mut();
     let brush = brush_query.single();
@@ -562,15 +556,15 @@ pub fn render_ui(
                     };
                 });
 
-	    ui.separator();
+            ui.separator();
 
-	    let mut debugging = debug_particles.is_some();
-	    if ui.checkbox(&mut debugging, "Show Chunks").clicked() {
-		if debugging == true {
-		    commands.init_resource::<DebugParticles>();
-		} else {
-		    commands.remove_resource::<DebugParticles>();
-		}
-	    }
+            let mut debugging = debug_particles.is_some();
+            if ui.checkbox(&mut debugging, "Show Chunks").clicked() {
+                if debugging == true {
+                    commands.init_resource::<DebugParticles>();
+                } else {
+                    commands.remove_resource::<DebugParticles>();
+                }
+            }
         });
 }
