@@ -15,7 +15,7 @@ mod color;
 mod debug;
 
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ParticleMovementSet;
+pub struct ParticleSimulationSet;
 
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ParticleDebugSet;

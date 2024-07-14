@@ -58,11 +58,10 @@ impl Plugin for FallingSandPlugin {
             .init_gizmo_group::<DebugGizmos>()
             .add_systems(Startup, setup_particles)
             .add_systems(Last, handle_new_particles)
-            .add_systems(Update, handle_new_particles)
             .add_systems(
                 Update,
-                (handle_particles, reset_chunks.after(handle_particles))
-                    .in_set(ParticleMovementSet),
+                (handle_new_particles, handle_particles, reset_chunks.after(handle_particles))
+                    .in_set(ParticleSimulationSet),
             )
             .add_systems(Update, color_particles)
             .add_systems(
