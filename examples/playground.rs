@@ -46,25 +46,31 @@ fn main() {
     app.add_systems(Update, render_ui);
 
     // Brush systems
-    app.add_systems(Startup, setup_brush)
-        .add_systems(Update, (update_brush, resize_brush_event_listener, hide_cursor.after(render_ui)));
+    app.add_systems(Startup, setup_brush).add_systems(
+        Update,
+        (
+            update_brush,
+            resize_brush_event_listener,
+            hide_cursor.after(render_ui),
+        ),
+    );
 
     app.add_systems(Update, update_cursor_coordinates);
 
-    // Particle management systems 
+    // Particle management systems
     app.add_systems(
         Update,
         (spawn_particles
             .run_if(input_pressed(MouseButton::Left))
             .run_if(in_state(SpawnState::Spawn))
-            .after(update_cursor_coordinates),),
+            .after(update_cursor_coordinates).after(render_ui),),
     );
     app.add_systems(
         Update,
         despawn_particles
             .run_if(input_pressed(MouseButton::Left))
             .run_if(in_state(SpawnState::Despawn))
-            .after(update_cursor_coordinates),
+            .after(update_cursor_coordinates).after(render_ui),
     );
 
     app.add_systems(Update, despawn_all_particles.before(ParticleSimulationSet));
@@ -107,7 +113,7 @@ pub struct CursorCoords(pub Vec2);
 
 impl Default for MaxBrushSize {
     fn default() -> Self {
-        return MaxBrushSize(100);
+        return MaxBrushSize(50);
     }
 }
 
@@ -155,16 +161,16 @@ impl BrushType {
 
         match self {
             BrushType::Line => {
-                for x in min_x * 3..=max_x * 3 {
-                    commands.spawn((
-                        particle_type.clone(),
+                commands.spawn_batch((min_x * 3..=max_x * 3).map(move |x| {
+                    (
+                        particle_type,
                         SpatialBundle::from_transform(Transform::from_xyz(
                             coords.x + x as f32,
                             coords.y,
-                            0.,
+                            0.0,
                         )),
-                    ));
-                }
+                    )
+                }));
             }
             BrushType::Circle => {
                 let mut points: HashSet<IVec2> = HashSet::default();
@@ -176,30 +182,30 @@ impl BrushType {
                         points.insert((point + coords).as_ivec2());
                     }
                 }
-                for point in points {
-                    commands.spawn((
-                        particle_type.clone(),
+                commands.spawn_batch(points.into_iter().map(move |point| {
+                    (
+                        particle_type,
                         SpatialBundle::from_transform(Transform::from_xyz(
                             point.x as f32,
                             point.y as f32,
                             0.,
                         )),
-                    ));
-                }
+                    )
+                }));
             }
             BrushType::Square => {
-                for x in min_x..=max_x {
-                    for y in min_y..=max_y {
-                        commands.spawn((
-                            particle_type.clone(),
+                commands.spawn_batch((min_x * 2..=max_x * 2).flat_map(move |x| {
+                    (min_y * 2..=max_y * 2).map(move |y| {
+                        (
+                            particle_type,
                             SpatialBundle::from_transform(Transform::from_xyz(
                                 coords.x + x as f32,
                                 coords.y + y as f32,
                                 0.,
                             )),
-                        ));
-                    }
-                }
+                        )
+                    })
+                }));
             }
         }
     }
