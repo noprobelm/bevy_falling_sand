@@ -7,9 +7,17 @@
 | 0.2.x                 | 0.14.x    |
 | 0.1.x                 | 0.13.x    |
 
+## Example
+If you clone this repository, there is an example available that provides a full GUI interface for a "playground" like 
+experience. Though this project is surprisingly optimized, I recommend running the example with the `--release` flag to
+maximize performance:
+```rust
+cargo run --example playground --release
+```
+
 ## How to use
 
-Spawning a particle is easy, just insert a [ParticleType] component variant to an entity with a [Transform]
+Spawning a particle is easy, just insert a `ParticleType` component variant to an entity with a `Transform`
 component and it will be added to the simulation:
 ```rust
 commands.spawn((
@@ -18,19 +26,49 @@ commands.spawn((
     ));
 ```
 
-## `ChunkMap` limitations
-For performance reasons, the underlying mapping mechanism for particles utilizes a sequence of _chunks_, each of which will
-enter a "hibernating" state if there are no active particles within its region. As a consequence, the particle map
-_is not_ unlimited in size. By default, a `ChunkMap` will track particles between a transform of `(-512, 512)` through
-`(512, -512)`. Unless the bounds of the `ChunkMap` are changed, any particle processed outside of this region will
-cause a panic.
+## Current limitations
+### ChunkMap size
+For optimization reasons, the underlying mapping mechanism for particles utilizes a sequence of chunks, each of which
+will induce a "hibernating" state on itself and the particles it contains if no movement is detected in a given frame.
 
-In a future release, the `ChunkMap` will be capable of dynamically loading/unloading scenes according
-to arbitrary any arbitrary entity's transform.
+For this reason, the total map size is limited (the default is 1024x1024 spanning from transform `(-512, 512)` 
+through `(512,  -512)`). Any particle processed outside of this region will cause a panic. This will be resolved
+in a future release, which will modify the ChunkMap to "follow" and entity with an arbitrary specified component
+(for example, a main camera), loading and unloading chunks as it moves.
+
+### Single-threaded simulation
+I've found the simulation runs surprisingly well despite the lack of multi-threading capabiltiy (excluding what `bevy` 
+inherently provides with its scheduling mechanisms). 
+
+An optional multi-threaded simulation is planned for a future release, but if you want to tweak with CPU thread 
+allocation in the meantime to experiment with performance, you might try tweaking the default task pool thread
+assignment policy that `bevy` provides. I've found differing results in performance based on CPU 
+manufacturer/architecture (sorry, no benchmarks available yet)
+
+```rust
+use bevy::{
+    core::TaskPoolThreadAssignmentPolicy, prelude::*, tasks::available_parallelism,
+};
+
+fn main() {
+    let mut app = App::new();
+    app.add_plugins(DefaultPlugins
+        .set(TaskPoolPlugin {
+            task_pool_options: TaskPoolOptions {
+                compute: TaskPoolThreadAssignmentPolicy {
+                    min_threads: available_parallelism(),
+                    max_threads: std::usize::MAX,
+                    percent: 1.0,
+                },
+                ..default()
+            },
+        }));
+}
+```
 
 ## Visualizing chunk behavior
 
-If you want to visualize how chunks behave, insert the [DebugParticles] resource:
+If you want to visualize how chunks behave, insert the `DebugParticles` resource:
 ```rust
 app.init_resource::<DebugParticles>()
 ```
