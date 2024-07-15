@@ -299,7 +299,7 @@ pub fn setup_camera(mut commands: Commands) {
         Camera2dBundle {
             projection: OrthographicProjection {
                 near: -1000.0,
-                scale: 0.5,
+                scale: 0.1,
                 ..default()
             },
             ..default()
@@ -314,8 +314,8 @@ pub fn zoom_camera(
 ) {
     let mut projection = camera_query.single_mut();
     for ev in scroll_evr.read() {
-        let zoom = -(ev.y / 10.);
-        if projection.scale + zoom > 0.1 {
+        let zoom = -(ev.y / 100.);
+        if projection.scale + zoom > 0.01 {
             projection.scale += zoom;
         }
     }
