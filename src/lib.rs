@@ -8,7 +8,7 @@
 //! | 0.1.x                 | 0.13.x    |
 
 //! ## Example
-//! If you clone this repository, there is an example available that provides a full GUI interface for a "sandbox" like 
+//! If you clone this repository, there is an example available that provides a full GUI interface for a "sandbox" like
 //! experience. I recommend running the example with the `--release` flag to maximize performance:
 //! ```rust
 //! cargo run --example sandbox --release
@@ -29,7 +29,7 @@
 //! ### ChunkMap size
 //! For optimization reasons, the underlying mapping mechanism for particles utilizes a sequence of chunks, each of which
 //! will induce a "hibernating" state on itself and the particles it contains if no movement is detected in a given frame.
-//! Because of this, the total map size is limited (the default is 1024x1024 spanning from transform `(-512, 512)` 
+//! Because of this, the total map size is limited (the default is 1024x1024 spanning from transform `(-512, 512)`
 //! through `(512,  -512)`). Any particle processed outside of this region will cause a panic.
 //!
 //! This will be resolved in a future release, which will modify the ChunkMap to "follow" and entity with an arbitrary
@@ -39,8 +39,8 @@
 //! ### Single-threaded simulation
 //! Currently, the particle simulation is single threaded. An multi-threaded simulation is planned for a future release.
 //!
-//! If you want to tweak CPU thread allocation in the meantime to experiment with performance, you might try adjusting 
-//! the default task pool thread assignment policy that `bevy` provides. I've found differing results in performance 
+//! If you want to tweak CPU thread allocation in the meantime to experiment with performance, you might try adjusting
+//! the default task pool thread assignment policy that `bevy` provides. I've found differing results in performance
 //! based on CPU  manufacturer/architecture (sorry, no benchmarks available)
 //! ```rust
 //! use bevy::{
@@ -74,16 +74,16 @@ use bevy::prelude::*;
 use bevy_turborand::prelude::*;
 
 pub use components::*;
+pub use events::*;
 pub use gizmos::*;
 pub use resources::*;
 pub use systems::*;
-pub use events::*;
 
 mod components;
+mod events;
 mod gizmos;
 mod resources;
 mod systems;
-mod events;
 
 pub struct FallingSandPlugin;
 
@@ -92,18 +92,24 @@ impl Plugin for FallingSandPlugin {
         app.add_plugins(RngPlugin::default())
             .init_resource::<ChunkMap>()
             .init_resource::<ParticleParentMap>()
+            .init_resource::<DynamicParticleCount>()
+            .init_resource::<TotalParticleCount>()
             .init_gizmo_group::<DebugGizmos>()
             .add_event::<ClearChunkMap>()
             .add_systems(Startup, setup_particles)
             .add_systems(
                 Update,
-                (handle_new_particles.before(handle_particles), handle_particles, reset_chunks.after(handle_particles))
+                (
+                    handle_new_particles.before(handle_particles),
+                    handle_particles,
+                    reset_chunks.after(handle_particles),
+                )
                     .in_set(ParticleSimulationSet),
             )
             .add_systems(Update, color_particles)
             .add_systems(
                 Update,
-                color_chunks
+                (color_chunks, count_dynamic_particles, count_total_particles)
                     .in_set(ParticleDebugSet)
                     .run_if(resource_exists::<DebugParticles>),
             )

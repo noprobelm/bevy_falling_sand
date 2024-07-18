@@ -211,12 +211,7 @@ impl BrushType {
         }
     }
 
-    pub fn remove_particles(
-        &self,
-        commands: &mut Commands,
-        coords: IVec2,
-        brush_size: f32,
-    ) {
+    pub fn remove_particles(&self, commands: &mut Commands, coords: IVec2, brush_size: f32) {
         let min_x = -(brush_size as i32) / 2;
         let max_x = (brush_size / 2.) as i32;
         let min_y = -(brush_size as i32) / 2;
@@ -226,7 +221,7 @@ impl BrushType {
             BrushType::Line => {
                 for x in min_x * 3..=max_x * 3 {
                     let coordinates = IVec2::new(coords.x + x, coords.y);
-		    commands.trigger(RemoveParticle {coordinates});
+                    commands.trigger(RemoveParticle { coordinates });
                 }
             }
             BrushType::Circle => {
@@ -240,19 +235,18 @@ impl BrushType {
                     }
                 }
                 for coordinates in circle_coords {
-		    commands.trigger(RemoveParticle {coordinates})
+                    commands.trigger(RemoveParticle { coordinates })
                 }
             }
             BrushType::Square => {
                 for x in min_x..=max_x {
                     for y in min_y..=max_y {
                         let coordinates = IVec2::new(coords.x + x, coords.y + y);
-			commands.trigger(RemoveParticle {coordinates})
+                        commands.trigger(RemoveParticle { coordinates })
                     }
                 }
             }
         }
-
     }
 }
 
@@ -423,11 +417,7 @@ pub fn despawn_particles(
     let brush = brush_query.single();
     let brush_size = brush.size;
 
-    brush_type.remove_particles(
-        &mut commands,
-        cursor_coords.0.as_ivec2(),
-        brush_size as f32,
-    )
+    brush_type.remove_particles(&mut commands, cursor_coords.0.as_ivec2(), brush_size as f32)
 }
 
 pub fn render_ui(
@@ -441,6 +431,8 @@ pub fn render_ui(
     mut contexts: EguiContexts,
     max_brush_size: Res<MaxBrushSize>,
     debug_particles: Option<Res<DebugParticles>>,
+    dynamic_particle_count: Res<DynamicParticleCount>,
+    total_particle_count: Res<TotalParticleCount>,
 ) {
     let ctx = contexts.ctx_mut();
     let brush = brush_query.single();
@@ -531,12 +523,17 @@ pub fn render_ui(
             ui.separator();
 
             let mut debugging = debug_particles.is_some();
-            if ui.checkbox(&mut debugging, "Show Chunks").clicked() {
+            if ui.checkbox(&mut debugging, "Debug Mode").clicked() {
                 if debugging == true {
                     commands.init_resource::<DebugParticles>();
                 } else {
                     commands.remove_resource::<DebugParticles>();
                 }
+            }
+
+            if debug_particles.is_some() {
+                ui.label(format!("Dynamic Particles: {}", dynamic_particle_count.0));
+                ui.label(format!("Total Particles: {}", total_particle_count.0));
             }
         });
 }
