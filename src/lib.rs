@@ -77,11 +77,13 @@ pub use components::*;
 pub use gizmos::*;
 pub use resources::*;
 pub use systems::*;
+pub use events::*;
 
 mod components;
 mod gizmos;
 mod resources;
 mod systems;
+mod events;
 
 pub struct FallingSandPlugin;
 
@@ -91,6 +93,7 @@ impl Plugin for FallingSandPlugin {
             .init_resource::<ChunkMap>()
             .init_resource::<ParticleParentMap>()
             .init_gizmo_group::<DebugGizmos>()
+            .add_event::<ClearChunkMap>()
             .add_systems(Startup, setup_particles)
             .add_systems(
                 Update,
@@ -103,7 +106,8 @@ impl Plugin for FallingSandPlugin {
                 color_chunks
                     .in_set(ParticleDebugSet)
                     .run_if(resource_exists::<DebugParticles>),
-            );
-
+            )
+            .observe(on_remove_particle)
+            .observe(on_clear_chunk_map);
     }
 }

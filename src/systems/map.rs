@@ -1,22 +1,44 @@
 //! Particle mapping behaviors.
-use bevy::prelude::*;
-use bevy_turborand::prelude::{DelegatedRng, GlobalRng};
 use crate::*;
+use bevy_turborand::prelude::{DelegatedRng, GlobalRng};
+
+pub fn on_remove_particle(
+    trigger: Trigger<RemoveParticle>,
+    mut commands: Commands,
+    mut map: ResMut<ChunkMap>,
+) {
+    if let Some(entity) = map.remove(&trigger.event().coordinates) {
+        commands.entity(entity).remove_parent().despawn();
+    }
+}
+
+pub fn on_clear_chunk_map(
+    _trigger: Trigger<ClearChunkMap>,
+    mut commands: Commands,
+    particle_parent_map: Res<ParticleParentMap>,
+    mut map: ResMut<ChunkMap>,
+) {
+    particle_parent_map.iter().for_each(|(_, entity)| {
+        commands.entity(*entity).despawn_descendants();
+    });
+
+    map.clear();
+}
 
 /// Map all particles to their respective parent when added/changed within the simulation
 pub fn handle_new_particles(
     mut commands: Commands,
-    parent_query: Query<(
-        Entity,
-        &Velocity,
-        &ParticleColors,
-        Option<&Momentum>,
-	Option<&Anchored>,
-    ), With<ParticleParent>>,
-    particle_query: Query<
-        (&ParticleType, &Transform, Entity),
-        Changed<ParticleType>,
+    parent_query: Query<
+        (
+            Entity,
+            &Velocity,
+            &ParticleColors,
+            Option<&Momentum>,
+            Option<&Anchored>,
+        ),
+        With<ParticleParent>,
     >,
+    particle_query: Query<(&ParticleType, &Transform, Entity), Changed<ParticleType>>,
     mut rng: ResMut<GlobalRng>,
     mut map: ResMut<ChunkMap>,
     type_map: Res<ParticleParentMap>,
@@ -54,15 +76,15 @@ pub fn handle_new_particles(
                     PhysicsRng::default(),
                 ));
 
-		if momentum.is_some() {
+                if momentum.is_some() {
                     commands.entity(entity).insert(Momentum(IVec2::ZERO));
                 } else {
-		    commands.entity(entity).remove::<Momentum>();
-		}
+                    commands.entity(entity).remove::<Momentum>();
+                }
 
-		if anchored.is_some() {
-		    commands.entity(entity).insert(Anchored);
-		}
+                if anchored.is_some() {
+                    commands.entity(entity).insert(Anchored);
+                }
 
                 commands.entity(parent_entity).add_child(entity);
             }

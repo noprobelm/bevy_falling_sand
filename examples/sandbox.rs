@@ -62,18 +62,19 @@ fn main() {
         Update,
         (spawn_particles
             .run_if(input_pressed(MouseButton::Left))
-            .run_if(in_state(SpawnState::Spawn))
-            .after(update_cursor_coordinates).after(render_ui),),
+            .run_if(in_state(SpawnState::Add))
+            .after(update_cursor_coordinates)
+            .after(render_ui),),
     );
     app.add_systems(
         Update,
         despawn_particles
             .run_if(input_pressed(MouseButton::Left))
-            .run_if(in_state(SpawnState::Despawn))
-            .after(update_cursor_coordinates).after(render_ui),
+            .run_if(in_state(SpawnState::Remove))
+            .before(handle_particles)
+            .after(update_cursor_coordinates)
+            .after(render_ui),
     );
-
-    app.add_systems(Update, despawn_all_particles.before(ParticleSimulationSet));
 
     app.run();
 }
@@ -210,11 +211,9 @@ impl BrushType {
         }
     }
 
-    pub fn despawn_particles(
+    pub fn remove_particles(
         &self,
         commands: &mut Commands,
-        parent_query: &Query<(Entity, &Children), With<ParticleParent>>,
-        map: &mut ChunkMap,
         coords: IVec2,
         brush_size: f32,
     ) {
@@ -223,60 +222,37 @@ impl BrushType {
         let min_y = -(brush_size as i32) / 2;
         let max_y = (brush_size / 2.) as i32;
 
-        let mut entities: Vec<Entity> = Vec::new();
-
         match self {
             BrushType::Line => {
                 for x in min_x * 3..=max_x * 3 {
-                    let point = IVec2::new(coords.x + x, coords.y);
-                    if let Some(entity) = map.entity(&point) {
-                        entities.push(*entity);
-                        map.remove(&point);
-                    }
+                    let coordinates = IVec2::new(coords.x + x, coords.y);
+		    commands.trigger(RemoveParticle {coordinates});
                 }
             }
             BrushType::Circle => {
-                let mut points: HashSet<IVec2> = HashSet::default();
+                let mut circle_coords: HashSet<IVec2> = HashSet::default();
                 let circle = Circle::new(brush_size);
                 for x in min_x * 2..=max_x * 2 {
                     for y in min_y * 2..=max_y * 2 {
-                        let mut point = Vec2::new(x as f32, y as f32);
-                        point = circle.closest_point(point);
-                        points.insert((point + coords.as_vec2()).as_ivec2());
+                        let mut coordinates = Vec2::new(x as f32, y as f32);
+                        coordinates = circle.closest_point(coordinates);
+                        circle_coords.insert((coordinates + coords.as_vec2()).as_ivec2());
                     }
                 }
-                for point in points {
-                    if let Some(entity) = map.entity(&point) {
-                        entities.push(*entity);
-                        map.remove(&point);
-                    }
+                for coordinates in circle_coords {
+		    commands.trigger(RemoveParticle {coordinates})
                 }
             }
             BrushType::Square => {
                 for x in min_x..=max_x {
                     for y in min_y..=max_y {
-                        let point = IVec2::new(coords.x + x, coords.y + y);
-                        if let Some(entity) = map.entity(&IVec2::new(coords.x + x, coords.y + y)) {
-                            entities.push(*entity);
-                            map.remove(&point);
-                        }
+                        let coordinates = IVec2::new(coords.x + x, coords.y + y);
+			commands.trigger(RemoveParticle {coordinates})
                     }
                 }
             }
         }
 
-        for (parent_id, children) in parent_query.iter() {
-            let mut parent = commands.entity(parent_id);
-            for entity in entities.iter() {
-                if children.contains(entity) {
-                    parent.remove_children(&[*entity]);
-                }
-            }
-        }
-
-        for entity in entities.iter() {
-            commands.entity(*entity).despawn();
-        }
     }
 }
 
@@ -290,8 +266,8 @@ pub struct CanvasResetEvent;
 #[derive(States, Reflect, Default, Debug, Clone, Eq, PartialEq, Hash)]
 pub enum SpawnState {
     #[default]
-    Spawn,
-    Despawn,
+    Add,
+    Remove,
 }
 
 pub fn setup_camera(mut commands: Commands) {
@@ -435,9 +411,7 @@ pub fn spawn_particles(
 pub fn despawn_particles(
     mut commands: Commands,
     cursor_coords: Res<CursorCoords>,
-    mut map: ResMut<ChunkMap>,
     brush_type: Res<State<BrushType>>,
-    parent_query: Query<(Entity, &Children), With<ParticleParent>>,
     brush_query: Query<&Brush>,
     mut contexts: EguiContexts,
 ) {
@@ -449,27 +423,11 @@ pub fn despawn_particles(
     let brush = brush_query.single();
     let brush_size = brush.size;
 
-    brush_type.despawn_particles(
+    brush_type.remove_particles(
         &mut commands,
-        &parent_query,
-        &mut map,
         cursor_coords.0.as_ivec2(),
         brush_size as f32,
     )
-}
-
-pub fn despawn_all_particles(
-    mut commands: Commands,
-    mut ev_canvas_reset: EventReader<CanvasResetEvent>,
-    parent_query: Query<Entity, With<ParticleParent>>,
-    mut map: ResMut<ChunkMap>,
-) {
-    for _ in ev_canvas_reset.read() {
-        parent_query.iter().for_each(|entity| {
-            commands.entity(entity).despawn_descendants();
-        });
-        map.clear();
-    }
 }
 
 pub fn render_ui(
@@ -480,7 +438,6 @@ pub fn render_ui(
     current_brush_type: Res<State<BrushType>>,
     mut next_brush_type: ResMut<NextState<BrushType>>,
     mut ev_brush_resize: EventWriter<BrushResizeEvent>,
-    mut ev_canvas_reset: EventWriter<CanvasResetEvent>,
     mut contexts: EguiContexts,
     max_brush_size: Res<MaxBrushSize>,
     debug_particles: Option<Res<DebugParticles>>,
@@ -496,41 +453,41 @@ pub fn render_ui(
             ui.horizontal_wrapped(|ui| {
                 if ui.button("Water").clicked() {
                     particle_type_state.set(ParticleType::Water);
-                    spawn_state.set(SpawnState::Spawn)
+                    spawn_state.set(SpawnState::Add)
                 } else if ui.button("Oil").clicked() {
                     particle_type_state.set(ParticleType::Oil);
-                    spawn_state.set(SpawnState::Spawn);
+                    spawn_state.set(SpawnState::Add);
                 } else if ui.button("Whiskey").clicked() {
                     particle_type_state.set(ParticleType::Whiskey);
-                    spawn_state.set(SpawnState::Spawn);
+                    spawn_state.set(SpawnState::Add);
                 } else if ui.button("Sand").clicked() {
                     particle_type_state.set(ParticleType::Sand);
-                    spawn_state.set(SpawnState::Spawn);
+                    spawn_state.set(SpawnState::Add);
                 } else if ui.button("Steam").clicked() {
                     particle_type_state.set(ParticleType::Steam);
-                    spawn_state.set(SpawnState::Spawn);
+                    spawn_state.set(SpawnState::Add);
                 } else if ui.button("Wall").clicked() {
                     particle_type_state.set(ParticleType::Wall);
-                    spawn_state.set(SpawnState::Spawn);
+                    spawn_state.set(SpawnState::Add);
                 } else if ui.button("Dirt Wall").clicked() {
                     particle_type_state.set(ParticleType::DirtWall);
-                    spawn_state.set(SpawnState::Spawn);
+                    spawn_state.set(SpawnState::Add);
                 } else if ui.button("Grass Wall").clicked() {
                     particle_type_state.set(ParticleType::GrassWall);
-                    spawn_state.set(SpawnState::Spawn);
+                    spawn_state.set(SpawnState::Add);
                 } else if ui.button("Rock Wall").clicked() {
                     particle_type_state.set(ParticleType::RockWall);
-                    spawn_state.set(SpawnState::Spawn);
+                    spawn_state.set(SpawnState::Add);
                 } else if ui.button("Dense Rock Wall").clicked() {
                     particle_type_state.set(ParticleType::DenseRockWall);
-                    spawn_state.set(SpawnState::Spawn);
+                    spawn_state.set(SpawnState::Add);
                 } else if ui.button("Remove").clicked() {
-                    spawn_state.set(SpawnState::Despawn);
+                    spawn_state.set(SpawnState::Remove);
                 }
             });
 
             if ui.button("Despawn All Particles").clicked() {
-                ev_canvas_reset.send(CanvasResetEvent);
+                commands.trigger(ClearChunkMap);
             }
 
             if ui

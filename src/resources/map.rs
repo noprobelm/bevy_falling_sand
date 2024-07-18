@@ -15,6 +15,10 @@ pub struct ParticleParentMap {
 
 impl ParticleParentMap {
     /// Insert a new particle type to the map
+    pub fn iter(&self) -> impl Iterator<Item = (&ParticleType, &Entity)> {
+        return self.map.iter()
+    }
+
     pub fn insert(&mut self, ptype: ParticleType, entity: Entity) -> &mut Entity {
         self.map.entry(ptype).or_insert(entity)
     }
