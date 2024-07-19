@@ -6,7 +6,7 @@
 //!
 //! A particle bundle should, at a minimum, possess these components. Any particle without these components will result in undefined behavior (likely a panic):
 //! - `density`: [Density](crate::Density): A particle's "weight" when being evaluated for movement with neighbors.
-//! - `neighbors`: [`Vec<Vec<Neighbors>>`](crate::Neighbors): A nested sequence of neighbors to consider for particle movement.
+//! - `neighbors`: [`Vec<Vec<MovementPriority>>`](crate::MovementPriority): A nested sequence of neighbors to consider for particle movement.
 //! - `velocity`: [Velocity]: Measures the number of times (and maximum) a particle should move in a given frame.
 //!
 //! Optionally, a particle can possess these components:
@@ -17,6 +17,7 @@
 
 use bevy::prelude::*;
 use crate::*;
+use crate::components::Material;
 
 /// Possible particle types. Add a variant of this enum to an entity to spawn the corresponding type into the world.
 ///
@@ -43,7 +44,7 @@ pub enum ParticleType {
 pub struct WhiskeyBundle {
     pub colors: ParticleColors,
     pub density: Density,
-    pub neighbors: Neighbors,
+    pub movement_priority: MovementPriority,
     pub velocity: Velocity,
     pub momentum: Momentum,
     pub name: Name,
@@ -54,16 +55,7 @@ impl Default for WhiskeyBundle {
         WhiskeyBundle {
             colors: ParticleColors::new(vec![Color::srgba(0.84, 0.6, 0.44, 0.5)]),
             density: Density(3),
-            neighbors: Neighbors(vec![
-                vec![IVec2::NEG_Y],
-                vec![IVec2::NEG_ONE, IVec2::new(1, -1)],
-                vec![IVec2::X, IVec2::NEG_X],
-                vec![IVec2::X * 2, IVec2::NEG_X * 2],
-                vec![IVec2::X * 3, IVec2::NEG_X * 3],
-                vec![IVec2::X * 4, IVec2::NEG_X * 4],
-                vec![IVec2::X * 5, IVec2::NEG_X * 5],
-                vec![IVec2::X * 6, IVec2::NEG_X * 6],
-            ]),
+            movement_priority: Liquid::new(5).into_movement_priority(),
             velocity: Velocity::new(1, 3),
             momentum: Momentum(IVec2::ZERO),
             name: Name::new("Whiskey"),
@@ -76,7 +68,7 @@ impl Default for WhiskeyBundle {
 pub struct WaterBundle {
     pub colors: ParticleColors,
     pub density: Density,
-    pub neighbors: Neighbors,
+    pub neighbors: MovementPriority,
     pub velocity: Velocity,
     pub momentum: Momentum,
     pub name: Name,
@@ -87,16 +79,7 @@ impl Default for WaterBundle {
         WaterBundle {
             colors: ParticleColors::new(vec![Color::srgba(0.043, 0.5, 0.67, 0.5)]),
             density: Density(2),
-            neighbors: Neighbors(vec![
-                vec![IVec2::NEG_Y],
-                vec![IVec2::NEG_ONE, IVec2::new(1, -1)],
-                vec![IVec2::X, IVec2::NEG_X],
-                vec![IVec2::X * 2, IVec2::NEG_X * 2],
-                vec![IVec2::X * 3, IVec2::NEG_X * 3],
-                vec![IVec2::X * 4, IVec2::NEG_X * 4],
-                vec![IVec2::X * 5, IVec2::NEG_X * 5],
-                vec![IVec2::X * 6, IVec2::NEG_X * 6],
-            ]),
+            neighbors: Liquid::new(5).into_movement_priority(),
             velocity: Velocity::new(1, 3),
             momentum: Momentum(IVec2::ZERO),
             name: Name::new("Water"),
@@ -109,7 +92,7 @@ impl Default for WaterBundle {
 pub struct OilBundle {
     pub colors: ParticleColors,
     pub density: Density,
-    pub neighbors: Neighbors,
+    pub neighbors: MovementPriority,
     velocity: Velocity,
     momentum: Momentum,
     pub name: Name,
@@ -120,14 +103,7 @@ impl Default for OilBundle {
         OilBundle {
             colors: ParticleColors::new(vec![Color::srgba(0.16, 0.12, 0.18, 0.5)]),
             density: Density(1),
-            neighbors: Neighbors(vec![
-                vec![IVec2::NEG_Y],
-                vec![IVec2::NEG_ONE, IVec2::new(1, -1)],
-                vec![IVec2::X, IVec2::NEG_X],
-                vec![IVec2::X * 2, IVec2::NEG_X * 2],
-                vec![IVec2::X * 3, IVec2::NEG_X * 3],
-                vec![IVec2::X * 4, IVec2::NEG_X * 4],
-            ]),
+            neighbors: Liquid::new(3).into_movement_priority(),
             velocity: Velocity::new(1, 3),
             momentum: Momentum(IVec2::ZERO),
             name: Name::new("Oil"),
@@ -140,7 +116,7 @@ impl Default for OilBundle {
 pub struct SandBundle {
     pub colors: ParticleColors,
     pub density: Density,
-    pub neighbors: Neighbors,
+    pub neighbors: MovementPriority,
     pub velocity: Velocity,
     pub momentum: Momentum,
     pub name: Name,
@@ -154,10 +130,7 @@ impl Default for SandBundle {
                 Color::srgba(1., 0.92, 0.54, 1.),
             ]),
             density: Density(4),
-            neighbors: Neighbors(vec![
-                vec![IVec2::NEG_Y],
-                vec![IVec2::NEG_ONE, IVec2::new(1, -1)],
-            ]),
+            neighbors: MovableSolid::new().into_movement_priority(),
             velocity: Velocity::new(1, 3),
             momentum: Momentum(IVec2::ZERO),
             name: Name::new("Sand"),
@@ -170,7 +143,7 @@ impl Default for SandBundle {
 pub struct WallBundle {
     pub colors: ParticleColors,
     pub density: Density,
-    pub neighbors: Neighbors,
+    pub neighbors: MovementPriority,
     pub anchored: Anchored,
     pub velocity: Velocity,
     pub name: Name,
@@ -184,7 +157,7 @@ impl Default for WallBundle {
                 Color::srgba(0.74, 0.76, 0.78, 1.),
             ]),
             density: Density(0),
-            neighbors: Neighbors(Vec::new()),
+            neighbors: MovementPriority(Vec::new()),
             anchored: Anchored,
             velocity: Velocity::new(0, 0),
             name: Name::new("Wall"),
@@ -197,7 +170,7 @@ impl Default for WallBundle {
 pub struct SteamBundle {
     pub colors: ParticleColors,
     pub density: Density,
-    pub neighbors: Neighbors,
+    pub neighbors: MovementPriority,
     pub velocity: Velocity,
     pub name: Name,
 }
@@ -207,12 +180,7 @@ impl Default for SteamBundle {
         SteamBundle {
             colors: ParticleColors::new(vec![Color::srgba(0.78, 0.84, 0.88, 1.)]),
             density: Density(1),
-            neighbors: Neighbors(vec![
-                vec![IVec2::Y, IVec2::new(1, 1), IVec2::new(-1, 1)],
-                vec![IVec2::X * 2, IVec2::NEG_X * 2],
-                vec![IVec2::X * 3, IVec2::NEG_X * 3],
-                vec![IVec2::X * 4, IVec2::NEG_X * 4],
-            ]),
+            neighbors: Gas::new(3).into_movement_priority(),
             velocity: Velocity::new(1, 1),
             name: Name::new("Steam"),
         }
@@ -224,7 +192,7 @@ impl Default for SteamBundle {
 pub struct DirtWallBundle {
     pub colors: ParticleColors,
     pub density: Density,
-    pub neighbors: Neighbors,
+    pub neighbors: MovementPriority,
     pub anchored: Anchored,
     pub velocity: Velocity,
     pub name: Name,
@@ -238,7 +206,7 @@ impl Default for DirtWallBundle {
                 Color::srgba(0.45, 0.34, 0.24, 1.),
             ]),
             density: Density(0),
-            neighbors: Neighbors(Vec::new()),
+            neighbors: MovementPriority(Vec::new()),
             anchored: Anchored,
             velocity: Velocity::new(0, 0),
             name: Name::new("Dirt Wall"),
@@ -251,7 +219,7 @@ impl Default for DirtWallBundle {
 pub struct GrassWallBundle {
     pub colors: ParticleColors,
     pub density: Density,
-    pub neighbors: Neighbors,
+    pub neighbors: MovementPriority,
     pub anchored: Anchored,
     pub velocity: Velocity,
     pub name: Name,
@@ -267,7 +235,7 @@ impl Default for GrassWallBundle {
                 Color::srgba(0.36, 0.55, 0.2, 1.),
             ]),
             density: Density(0),
-            neighbors: Neighbors(Vec::new()),
+            neighbors: MovementPriority(Vec::new()),
             anchored: Anchored,
             velocity: Velocity::new(0, 0),
             name: Name::new("Grass Wall"),
@@ -280,7 +248,7 @@ impl Default for GrassWallBundle {
 pub struct RockWallBundle {
     pub colors: ParticleColors,
     pub density: Density,
-    pub neighbors: Neighbors,
+    pub neighbors: MovementPriority,
     pub anchored: Anchored,
     pub velocity: Velocity,
     pub name: Name,
@@ -296,7 +264,7 @@ impl Default for RockWallBundle {
                 Color::srgba(0.4, 0.33, 0.33, 1.),
             ]),
             density: Density(0),
-            neighbors: Neighbors(Vec::new()),
+            neighbors: MovementPriority(Vec::new()),
             anchored: Anchored,
             velocity: Velocity::new(0, 0),
             name: Name::new("Rock Wall"),
@@ -309,7 +277,7 @@ impl Default for RockWallBundle {
 pub struct DenseRockWallBundle {
     pub colors: ParticleColors,
     pub density: Density,
-    pub neighbors: Neighbors,
+    pub neighbors: MovementPriority,
     pub anchored: Anchored,
     pub velocity: Velocity,
     pub name: Name,
@@ -324,7 +292,7 @@ impl Default for DenseRockWallBundle {
                 Color::srgba(0.7, 0.77, 0.84, 1.),
             ]),
             density: Density(0),
-            neighbors: Neighbors(Vec::new()),
+            neighbors: MovementPriority(Vec::new()),
             anchored: Anchored,
             velocity: Velocity::new(0, 0),
             name: Name::new("Dense Rock Wall"),

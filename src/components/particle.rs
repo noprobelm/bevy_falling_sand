@@ -22,13 +22,6 @@ pub struct Coordinates(pub IVec2);
 #[reflect(Component, Debug)]
 pub struct Density(pub u32);
 
-/// A particle's neighbors, represented as a nested vector of IVec2. The outer vectors represent tiered "groups" of
-/// priority, whereas the inner vectors are representative of relative coordinates a particle might move to. See
-/// the [handle_particles](crate::handle_particles) system.
-#[derive(Clone, Eq, PartialEq, Hash, Debug, Default, Component, Reflect)]
-#[reflect(Component)]
-pub struct Neighbors(pub Vec<Vec<IVec2>>);
-
 /// Indicates whether a particle should be considered for movement or not. Examples of anchored particles might be the
 /// ground, or walls. We want anchored particles to be considered as impenetrable neighbors (excluding their ability to
 /// be destroyed), but without uninstigated movement.

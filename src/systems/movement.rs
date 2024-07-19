@@ -18,7 +18,7 @@ pub fn handle_particles(
         ),
         (Without<Anchored>, Without<Sleeping>),
     >,
-    parent_query: Query<(&Density, &Neighbors), (With<ParticleParent>, Without<Anchored>)>,
+    parent_query: Query<(&Density, &MovementPriority), (With<ParticleParent>, Without<Anchored>)>,
     mut map: ResMut<ChunkMap>,
 ) {
     // Check visited before we perform logic on a particle (particles shouldn't move more than once)
@@ -26,7 +26,7 @@ pub fn handle_particles(
     unsafe {
         particle_query.iter_unsafe().for_each(
             |(_, parent, particle_type, mut coordinates, mut transform, mut velocity, mut rng)| {
-                if let Ok((density, neighbors)) = parent_query.get(parent.get()) {
+                if let Ok((density, movement_priority)) = parent_query.get(parent.get()) {
                     // Flag indicating whether the particle moved at all during this frame
                     let mut moved = false;
                     'velocity_loop: for _ in 0..velocity.val {
@@ -40,11 +40,11 @@ pub fn handle_particles(
                         // same vector.
                         let mut obstructed: HashSet<IVec2> = HashSet::default();
 
-                        for neighbor_group in &neighbors.0 {
-                            let mut indices: Vec<usize> = (0..neighbor_group.len()).collect();
+                        for group in &movement_priority.0 {
+                            let mut indices: Vec<usize> = (0..group.len()).collect();
                             rng.shuffle(&mut indices);
                             for idx in indices {
-                                let relative_coordinates = neighbor_group[idx];
+                                let relative_coordinates = group[idx];
                                 let neighbor_coordinates = coordinates.0 + relative_coordinates;
 
                                 if visited.contains(&neighbor_coordinates)
