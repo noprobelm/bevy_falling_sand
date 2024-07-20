@@ -600,6 +600,7 @@ dependencies = [
  "bevy_turborand",
  "egui",
  "rayon",
+ "smallvec",
 ]
 
 [[package]]
