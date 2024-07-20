@@ -1,11 +1,14 @@
 //! Collection of particle components.
 
 use bevy::prelude::*;
+use crate::MovementPriority;
 
 /// Marker component for particles.
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Component, Reflect)]
-#[reflect(Component)]
-pub struct Particle;
+#[derive(Clone, Eq, PartialEq, Hash, Debug, Default, Component)]
+pub struct Particle {
+    pub density: Density,
+    pub movement_priority: MovementPriority
+}
 
 /// Marker component for particle parents.
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Component, Reflect)]
@@ -18,7 +21,7 @@ pub struct ParticleParent;
 pub struct Coordinates(pub IVec2);
 
 /// The density of a particle.
-#[derive(Component, Reflect, Debug, Default, PartialEq, PartialOrd)]
+#[derive(Copy, Clone, Hash, Debug, Default, Eq, PartialEq, PartialOrd, Component, Reflect)]
 #[reflect(Component, Debug)]
 pub struct Density(pub u32);
 

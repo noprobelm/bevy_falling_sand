@@ -31,6 +31,8 @@ pub fn handle_new_particles(
     parent_query: Query<
         (
             Entity,
+	    &Density,
+	    &MovementPriority,
             &Velocity,
             &ParticleColors,
             Option<&Momentum>,
@@ -57,7 +59,7 @@ pub fn handle_new_particles(
         }
 
         if let Some(parent_entity) = type_map.get(particle_type) {
-            if let Ok((parent_entity, velocity, colors, momentum, anchored)) =
+            if let Ok((parent_entity, density, movement_priority, velocity, colors, momentum, anchored)) =
                 parent_query.get(*parent_entity)
             {
                 commands.entity(entity).insert((
@@ -69,7 +71,7 @@ pub fn handle_new_particles(
                         transform: *transform,
                         ..default()
                     },
-                    Particle,
+                    Particle{density: *density, movement_priority: movement_priority.clone()},
                     Coordinates(coordinates),
                     Velocity::new(velocity.val, velocity.max),
                     ParticleColor(colors.random(rng)),
