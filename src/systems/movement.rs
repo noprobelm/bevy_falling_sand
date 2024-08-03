@@ -16,7 +16,7 @@ pub fn handle_particles(
             &mut Velocity,
             &mut PhysicsRng,
         ),
-        (Without<Anchored>, Without<Sleeping>),
+        (Without<Anchored>, Without<Hibernating>),
     >,
     mut map: ResMut<ChunkMap>,
 ) {

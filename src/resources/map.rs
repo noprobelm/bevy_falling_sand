@@ -1,5 +1,5 @@
 //! All resources related to tracking/mapping particles.
-use crate::{ParticleType, Sleeping};
+use crate::{ParticleType, Hibernating};
 use ahash::HashMap;
 use bevy::prelude::*;
 use rayon::iter::IntoParallelRefIterator;
@@ -31,7 +31,7 @@ impl ParticleParentMap {
 
 /// Generic resource for mapping IVec2 to entities. This resource uses underlying "chunks" which can optimize
 /// performance when processing large numbers of entities that may be inactive for some time. Chunks will enter a
-/// "sleeping" status if none of their contents are processed in a given frame.
+/// "hibernating" status if none of their contents are processed in a given frame.
 ///
 /// Entities that move in a given frame which also border another chunk will send a "wake up" signal to that chunk,
 /// causing it to be active for the next frame.
@@ -113,26 +113,26 @@ impl ChunkMap {
     /// Checks each chunk for activity in the current frame. This method is meant to be called after all
     /// movement logic has occurred for this frame.
     ///
-    /// If a chunk was active and is currently sleeping, wake it up and remove the Sleeping marker
+    /// If a chunk was active and is currently hibernating, wake it up and remove the Hibernating marker
     /// component from its entity.
     ///
-    /// If a chunk was not activated and is currently awake, put it to sleep and add the Sleeping
+    /// If a chunk was not activated and is currently awake, put it to sleep and add the Hibernating
     /// component to its entity.
     pub fn reset_chunks(&mut self, mut commands: Commands) {
         self.chunks.iter_mut().for_each(|chunk| {
             // Check for both so we're not needlessly removing components every frame
-            if chunk.should_process_next_frame == true && chunk.sleeping == true {
+            if chunk.should_process_next_frame == true && chunk.hibernating == true {
                 chunk.iter().for_each(|(_, entity)| {
-                    commands.entity(*entity).remove::<Sleeping>();
+                    commands.entity(*entity).remove::<Hibernating>();
                 });
-                chunk.sleeping = false;
+                chunk.hibernating = false;
 
             // Deactivate before the start of the next frame
-            } else if chunk.should_process_next_frame == false {
+            } else if chunk.should_process_next_frame == false && chunk.hibernating == false {
                 chunk.iter().for_each(|(_, entity)| {
-                    commands.entity(*entity).insert(Sleeping);
+                    commands.entity(*entity).insert(Hibernating);
                 });
-                chunk.sleeping = true;
+                chunk.hibernating = true;
             }
 
             chunk.should_process_next_frame = false;
@@ -219,7 +219,7 @@ pub struct Chunk {
     /// Flag indicating whether the chunk should be processed in the next frame
     should_process_next_frame: bool,
     /// Flag indicating whether the chunk should be processed this frame
-    sleeping: bool,
+    hibernating: bool,
 }
 
 impl Chunk {
@@ -229,7 +229,7 @@ impl Chunk {
             chunk: HashMap::default(),
             irect: IRect::from_corners(upper_left, lower_right),
             should_process_next_frame: false,
-            sleeping: false,
+            hibernating: false,
         }
     }
 }
@@ -248,8 +248,8 @@ impl Chunk {
 
 impl Chunk {
     /// The chunk should be processed in the current frame
-    pub fn sleeping(&self) -> bool {
-        self.sleeping
+    pub fn hibernating(&self) -> bool {
+        self.hibernating
     }
 
     /// The chunk should be processed in the next frame
