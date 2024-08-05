@@ -26,10 +26,7 @@ pub struct ParticleParent;
 
 /// Marker component for particles.
 #[derive(Clone, Eq, PartialEq, Hash, Debug, Default, Component)]
-pub struct Particle {
-    pub density: Density,
-    pub movement_priority: MovementPriority
-}
+pub struct Particle;
 
 /// Possible particle types. Add a variant of this enum to an entity to spawn the corresponding type into the world.
 ///

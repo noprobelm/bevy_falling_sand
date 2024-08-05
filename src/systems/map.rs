@@ -71,11 +71,13 @@ pub fn handle_new_particles(
                         transform: *transform,
                         ..default()
                     },
-                    Particle{density: *density, movement_priority: movement_priority.clone()},
+                    Particle,
                     Coordinates(coordinates),
-                    Velocity::new(velocity.val, velocity.max),
                     ParticleColor(colors.random(rng)),
                     PhysicsRng::default(),
+		    *density,
+		    *velocity,
+		    movement_priority.clone()
                 ));
 
                 if momentum.is_some() {

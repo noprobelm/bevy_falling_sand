@@ -10,13 +10,14 @@ pub fn handle_particles(
         (
             Entity,
             &ParticleType,
-            &Particle,
             &mut Coordinates,
             &mut Transform,
-            &mut Velocity,
             &mut PhysicsRng,
+	    &mut Velocity,
+	    &Density,
+	    &MovementPriority
         ),
-        (Without<Anchored>, Without<Hibernating>),
+        (Without<Anchored>, Without<Hibernating>, With<Particle>),
     >,
     mut map: ResMut<ChunkMap>,
 ) {
@@ -27,11 +28,12 @@ pub fn handle_particles(
             |(
                 _,
                 particle_type,
-                particle,
                 mut coordinates,
                 mut transform,
-                mut velocity,
                 mut rng,
+		mut velocity,
+		density,
+		movement_priority
             )| {
                 // Flag indicating whether the particle moved at all during this frame
                 let mut moved = false;
@@ -40,7 +42,7 @@ pub fn handle_particles(
                     // same vector.
                     let mut obstructed: HashSet<IVec2> = HashSet::default();
 
-                    for group in &particle.movement_priority.0 {
+                    for group in &movement_priority.0 {
                         let mut indices: Vec<usize> = (0..group.len()).collect();
                         rng.shuffle(&mut indices);
                         for idx in indices {
@@ -58,17 +60,18 @@ pub fn handle_particles(
                                     if let Ok((
                                         _,
                                         neighbor_particle_type,
-                                        neighbor_particle,
                                         mut neighbor_coordinates,
                                         mut neighbor_transform,
                                         _,
-                                        _,
+					_,
+					neighbor_density,
+					_
                                     )) = particle_query.get_unchecked(*neighbor_entity)
                                     {
                                         if *particle_type == *neighbor_particle_type {
                                             continue;
                                         }
-                                        if particle.density > neighbor_particle.density {
+                                        if density > neighbor_density {
                                             map.swap(
 						neighbor_coordinates.0,
                                                 coordinates.0,
@@ -89,7 +92,6 @@ pub fn handle_particles(
                                         // be awoken on the next frame with the logic contained in ChunkMap.reset_chunks()
                                         else {
                                             obstructed.insert(relative_coordinates.signum());
-                                            velocity.decrement();
 
                                             continue;
                                         }
@@ -97,7 +99,6 @@ pub fn handle_particles(
                                     // We've encountered an anchored particle
                                     else {
                                         obstructed.insert(relative_coordinates.signum());
-                                        velocity.decrement();
 
                                         continue;
                                     }
@@ -122,7 +123,9 @@ pub fn handle_particles(
                 }
                 if moved == true {
                     visited.insert(coordinates.0);
-                }
+                } else {
+		    velocity.decrement();
+		}
             },
         );
     }
