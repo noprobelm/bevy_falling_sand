@@ -45,6 +45,8 @@ fn main() {
 
     // UI
     app.add_systems(Update, render_ui);
+    app.add_systems(OnEnter(AppState::Ui), show_cursor);
+    app.add_systems(OnEnter(AppState::Canvas), hide_cursor);
 
     // Brush systems
     app.add_systems(Startup, setup_brush)
@@ -52,8 +54,6 @@ fn main() {
 
     app.add_systems(Update, update_cursor_coordinates);
     app.add_systems(Update, update_app_state.after(render_ui));
-    app.add_systems(OnEnter(AppState::Ui), show_cursor);
-    app.add_systems(OnEnter(AppState::Canvas), hide_cursor);
 
     // Particle management systems
     app.add_systems(
