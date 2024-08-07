@@ -29,6 +29,7 @@ fn main() {
     // States
     app.init_state::<ParticleType>()
         .init_state::<SpawnState>()
+        .init_state::<AppState>()
         .init_state::<BrushType>();
 
     // Gizmos
@@ -46,16 +47,13 @@ fn main() {
     app.add_systems(Update, render_ui);
 
     // Brush systems
-    app.add_systems(Startup, setup_brush).add_systems(
-        Update,
-        (
-            update_brush,
-            resize_brush_event_listener,
-            hide_cursor.after(render_ui),
-        ),
-    );
+    app.add_systems(Startup, setup_brush)
+        .add_systems(Update, (update_brush, resize_brush_event_listener));
 
     app.add_systems(Update, update_cursor_coordinates);
+    app.add_systems(Update, update_app_state.after(render_ui));
+    app.add_systems(OnEnter(AppState::Ui), show_cursor);
+    app.add_systems(OnEnter(AppState::Canvas), hide_cursor);
 
     // Particle management systems
     app.add_systems(
@@ -63,6 +61,7 @@ fn main() {
         (spawn_particles
             .run_if(input_pressed(MouseButton::Left))
             .run_if(in_state(SpawnState::Add))
+            .run_if(in_state(AppState::Canvas))
             .after(update_cursor_coordinates)
             .after(render_ui),),
     );
@@ -71,6 +70,7 @@ fn main() {
         despawn_particles
             .run_if(input_pressed(MouseButton::Left))
             .run_if(in_state(SpawnState::Remove))
+            .run_if(in_state(AppState::Canvas))
             .before(handle_particles)
             .after(update_cursor_coordinates)
             .after(render_ui),
@@ -258,6 +258,13 @@ pub struct BrushResizeEvent(pub usize);
 pub struct CanvasResetEvent;
 
 #[derive(States, Reflect, Default, Debug, Clone, Eq, PartialEq, Hash)]
+pub enum AppState {
+    #[default]
+    Canvas,
+    Ui,
+}
+
+#[derive(States, Reflect, Default, Debug, Clone, Eq, PartialEq, Hash)]
 pub enum SpawnState {
     #[default]
     Add,
@@ -332,19 +339,34 @@ pub fn update_cursor_coordinates(
     }
 }
 
-// The cursor looks bad with the brush. Disable it when we're not hovering over a UI element
-pub fn hide_cursor(
-    mut primary_window: Query<&mut Window, With<PrimaryWindow>>,
+pub fn update_app_state(
     mut contexts: EguiContexts,
+    app_state: Res<State<AppState>>,
+    mut next_app_state: ResMut<NextState<AppState>>,
 ) {
-    let window = &mut primary_window.single_mut();
     let ctx = contexts.ctx_mut();
-
-    if ctx.is_pointer_over_area() {
-        window.cursor.visible = true;
-    } else {
-        window.cursor.visible = false;
+    match app_state.get() {
+        AppState::Ui => {
+            if !ctx.is_pointer_over_area() {
+                next_app_state.set(AppState::Canvas);
+            }
+        }
+        AppState::Canvas => {
+            if ctx.is_pointer_over_area() {
+                next_app_state.set(AppState::Ui);
+            }
+        }
     }
+}
+
+pub fn hide_cursor(mut primary_window: Query<&mut Window, With<PrimaryWindow>>) {
+    let window = &mut primary_window.single_mut();
+    window.cursor.visible = false;
+}
+
+pub fn show_cursor(mut primary_window: Query<&mut Window, With<PrimaryWindow>>) {
+    let window = &mut primary_window.single_mut();
+    window.cursor.visible = true;
 }
 
 pub fn setup_brush(
@@ -385,13 +407,7 @@ pub fn spawn_particles(
     selected: Res<State<ParticleType>>,
     brush_type: Res<State<BrushType>>,
     brush_query: Query<&Brush>,
-    mut contexts: EguiContexts,
 ) {
-    let ctx = contexts.ctx_mut();
-    if ctx.is_pointer_over_area() {
-        return;
-    }
-
     let brush = brush_query.single();
     let brush_type = brush_type.get();
     brush_type.spawn_particles(
