@@ -28,7 +28,7 @@ fn main() {
 
     // States
     app.init_state::<ParticleType>()
-        .init_state::<SpawnState>()
+        .init_state::<BrushState>()
         .init_state::<AppState>()
         .init_state::<BrushType>();
 
@@ -60,7 +60,7 @@ fn main() {
         Update,
         (spawn_particles
             .run_if(input_pressed(MouseButton::Left))
-            .run_if(in_state(SpawnState::Add))
+            .run_if(in_state(BrushState::Spawn))
             .run_if(in_state(AppState::Canvas))
             .after(update_cursor_coordinates)
             .after(render_ui),),
@@ -69,7 +69,7 @@ fn main() {
         Update,
         despawn_particles
             .run_if(input_pressed(MouseButton::Left))
-            .run_if(in_state(SpawnState::Remove))
+            .run_if(in_state(BrushState::Despawn))
             .run_if(in_state(AppState::Canvas))
             .before(handle_particles)
             .after(update_cursor_coordinates)
@@ -265,10 +265,10 @@ pub enum AppState {
 }
 
 #[derive(States, Reflect, Default, Debug, Clone, Eq, PartialEq, Hash)]
-pub enum SpawnState {
+pub enum BrushState {
     #[default]
-    Add,
-    Remove,
+    Spawn,
+    Despawn,
 }
 
 pub fn setup_camera(mut commands: Commands) {
@@ -439,7 +439,7 @@ pub fn despawn_particles(
 pub fn render_ui(
     mut commands: Commands,
     mut particle_type_state: ResMut<NextState<ParticleType>>,
-    mut spawn_state: ResMut<NextState<SpawnState>>,
+    mut spawn_state: ResMut<NextState<BrushState>>,
     brush_query: Query<&Brush>,
     current_brush_type: Res<State<BrushType>>,
     mut next_brush_type: ResMut<NextState<BrushType>>,
@@ -461,36 +461,36 @@ pub fn render_ui(
             ui.horizontal_wrapped(|ui| {
                 if ui.button("Water").clicked() {
                     particle_type_state.set(ParticleType::Water);
-                    spawn_state.set(SpawnState::Add)
+                    spawn_state.set(BrushState::Spawn)
                 } else if ui.button("Oil").clicked() {
                     particle_type_state.set(ParticleType::Oil);
-                    spawn_state.set(SpawnState::Add);
+                    spawn_state.set(BrushState::Spawn);
                 } else if ui.button("Whiskey").clicked() {
                     particle_type_state.set(ParticleType::Whiskey);
-                    spawn_state.set(SpawnState::Add);
+                    spawn_state.set(BrushState::Spawn);
                 } else if ui.button("Sand").clicked() {
                     particle_type_state.set(ParticleType::Sand);
-                    spawn_state.set(SpawnState::Add);
+                    spawn_state.set(BrushState::Spawn);
                 } else if ui.button("Steam").clicked() {
                     particle_type_state.set(ParticleType::Steam);
-                    spawn_state.set(SpawnState::Add);
+                    spawn_state.set(BrushState::Spawn);
                 } else if ui.button("Wall").clicked() {
                     particle_type_state.set(ParticleType::Wall);
-                    spawn_state.set(SpawnState::Add);
+                    spawn_state.set(BrushState::Spawn);
                 } else if ui.button("Dirt Wall").clicked() {
                     particle_type_state.set(ParticleType::DirtWall);
-                    spawn_state.set(SpawnState::Add);
+                    spawn_state.set(BrushState::Spawn);
                 } else if ui.button("Grass Wall").clicked() {
                     particle_type_state.set(ParticleType::GrassWall);
-                    spawn_state.set(SpawnState::Add);
+                    spawn_state.set(BrushState::Spawn);
                 } else if ui.button("Rock Wall").clicked() {
                     particle_type_state.set(ParticleType::RockWall);
-                    spawn_state.set(SpawnState::Add);
+                    spawn_state.set(BrushState::Spawn);
                 } else if ui.button("Dense Rock Wall").clicked() {
                     particle_type_state.set(ParticleType::DenseRockWall);
-                    spawn_state.set(SpawnState::Add);
+                    spawn_state.set(BrushState::Spawn);
                 } else if ui.button("Remove").clicked() {
-                    spawn_state.set(SpawnState::Remove);
+                    spawn_state.set(BrushState::Despawn);
                 }
             });
 
