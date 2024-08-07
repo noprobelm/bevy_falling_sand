@@ -382,12 +382,12 @@ pub fn setup_brush(
 }
 
 pub fn update_brush(
-    mut brush_query: Query<&Brush>,
+    brush_query: Query<&Brush>,
     cursor_coords: Res<CursorCoords>,
     mut brush_gizmos: Gizmos<BrushGizmos>,
     brush_type: Res<State<BrushType>>,
 ) {
-    let brush = brush_query.single_mut();
+    let brush = brush_query.single();
     brush_type.update_brush(cursor_coords.0, brush.size as f32, &mut brush_gizmos);
 }
 
