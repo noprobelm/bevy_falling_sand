@@ -1,11 +1,12 @@
+use std::fs::File;
+
 use bevy::input::mouse::MouseWheel;
 use bevy::utils::HashSet;
 use bevy::window::PrimaryWindow;
 use bevy::{prelude::*, window::WindowMode};
-use bevy_egui::{EguiContexts, EguiPlugin};
-
 use bevy::input::common_conditions::input_pressed;
 use bevy_falling_sand::*;
+use bevy_egui::{EguiContexts, EguiPlugin};
 
 fn main() {
     let mut app = App::new();
@@ -23,12 +24,13 @@ fn main() {
 
     // Resources
     app.init_resource::<DebugParticles>()
+        .init_resource::<SelectedParticle>()
+        .init_resource::<ParticleTypes>()
         .init_resource::<CursorCoords>()
         .init_resource::<MaxBrushSize>();
 
     // States
-    app.init_state::<ParticleType>()
-        .init_state::<BrushState>()
+    app.init_state::<BrushState>()
         .init_state::<AppState>()
         .init_state::<BrushType>();
 
@@ -79,6 +81,39 @@ fn main() {
     app.run();
 }
 
+/// Guarantees our particle type buttons are presented in a specific order.
+#[derive(Resource)]
+pub struct ParticleTypes {
+    particle_types: Vec<String>,
+}
+
+impl Default for ParticleTypes {
+    fn default() -> ParticleTypes {
+        let file_path = "assets/particles/particles.ron";
+        let file = File::open(file_path).unwrap();
+        let particle_types_map: ron::Map = ron::de::from_reader(file).unwrap();
+
+        let particle_types: Vec<String> = particle_types_map.keys().map(|key| {
+            key.clone().into_rust::<String>().unwrap()
+        }).collect();
+	ParticleTypes { particle_types }
+    }
+}
+
+impl ParticleTypes {
+    pub fn iter(&self) -> impl Iterator<Item = &String> {
+	self.particle_types.iter()
+    }
+}
+
+#[derive(Resource)]
+pub struct SelectedParticle(String);
+
+impl Default for SelectedParticle {
+    fn default() -> SelectedParticle {
+        SelectedParticle("Dirt Wall".to_string())
+    }
+}
 #[derive(Component)]
 pub struct MainCamera;
 
@@ -153,7 +188,7 @@ impl BrushType {
         commands: &mut Commands,
         coords: Vec2,
         brush_size: f32,
-        particle_type: ParticleType,
+        selected_particle: ParticleType,
     ) {
         let min_x = -(brush_size as i32) / 2;
         let max_x = (brush_size / 2.) as i32;
@@ -162,9 +197,10 @@ impl BrushType {
 
         match self {
             BrushType::Line => {
+                let particle = selected_particle.clone();
                 commands.spawn_batch((min_x * 3..=max_x * 3).map(move |x| {
                     (
-                        particle_type,
+                        particle.clone(), // Clone the particle for each x iteration
                         SpatialBundle::from_transform(Transform::from_xyz(
                             coords.x + x as f32,
                             coords.y,
@@ -174,6 +210,7 @@ impl BrushType {
                 }));
             }
             BrushType::Circle => {
+                let particle = selected_particle.clone();
                 let mut points: HashSet<IVec2> = HashSet::default();
                 let circle = Circle::new(brush_size);
                 for x in min_x * 2..=max_x * 2 {
@@ -185,7 +222,7 @@ impl BrushType {
                 }
                 commands.spawn_batch(points.into_iter().map(move |point| {
                     (
-                        particle_type,
+                        particle.clone(), // Clone the particle for each point iteration
                         SpatialBundle::from_transform(Transform::from_xyz(
                             point.x as f32,
                             point.y as f32,
@@ -195,10 +232,12 @@ impl BrushType {
                 }));
             }
             BrushType::Square => {
+                let particle = selected_particle.clone();
                 commands.spawn_batch((min_x..=max_x).flat_map(move |x| {
+                    let particle = particle.clone(); // Clone the particle for each x iteration
                     (min_y..=max_y).map(move |y| {
                         (
-                            particle_type,
+                            particle.clone(), // Clone the particle for each y iteration
                             SpatialBundle::from_transform(Transform::from_xyz(
                                 coords.x + x as f32,
                                 coords.y + y as f32,
@@ -404,7 +443,7 @@ pub fn resize_brush_event_listener(
 pub fn spawn_particles(
     mut commands: Commands,
     cursor_coords: Res<CursorCoords>,
-    selected: Res<State<ParticleType>>,
+    selected: Res<SelectedParticle>,
     brush_type: Res<State<BrushType>>,
     brush_query: Query<&Brush>,
 ) {
@@ -414,7 +453,9 @@ pub fn spawn_particles(
         &mut commands,
         cursor_coords.0,
         brush.size as f32,
-        selected.get().clone(),
+        ParticleType {
+            name: selected.0.clone(),
+        },
     );
 }
 
@@ -438,8 +479,7 @@ pub fn despawn_particles(
 
 pub fn render_ui(
     mut commands: Commands,
-    mut particle_type_state: ResMut<NextState<ParticleType>>,
-    mut spawn_state: ResMut<NextState<BrushState>>,
+    mut brush_state: ResMut<NextState<BrushState>>,
     brush_query: Query<&Brush>,
     current_brush_type: Res<State<BrushType>>,
     mut next_brush_type: ResMut<NextState<BrushType>>,
@@ -449,6 +489,8 @@ pub fn render_ui(
     debug_particles: Option<Res<DebugParticles>>,
     dynamic_particle_count: Res<DynamicParticleCount>,
     total_particle_count: Res<TotalParticleCount>,
+    particle_types: Res<ParticleTypes>,
+    mut selected_particle: ResMut<SelectedParticle>,
 ) {
     let ctx = contexts.ctx_mut();
     let brush = brush_query.single();
@@ -459,41 +501,17 @@ pub fn render_ui(
         .resizable(false)
         .show(ctx, |ui| {
             ui.horizontal_wrapped(|ui| {
-                if ui.button("Water").clicked() {
-                    particle_type_state.set(ParticleType::Water);
-                    spawn_state.set(BrushState::Spawn)
-                } else if ui.button("Oil").clicked() {
-                    particle_type_state.set(ParticleType::Oil);
-                    spawn_state.set(BrushState::Spawn);
-                } else if ui.button("Whiskey").clicked() {
-                    particle_type_state.set(ParticleType::Whiskey);
-                    spawn_state.set(BrushState::Spawn);
-                } else if ui.button("Sand").clicked() {
-                    particle_type_state.set(ParticleType::Sand);
-                    spawn_state.set(BrushState::Spawn);
-                } else if ui.button("Steam").clicked() {
-                    particle_type_state.set(ParticleType::Steam);
-                    spawn_state.set(BrushState::Spawn);
-                } else if ui.button("Wall").clicked() {
-                    particle_type_state.set(ParticleType::Wall);
-                    spawn_state.set(BrushState::Spawn);
-                } else if ui.button("Dirt Wall").clicked() {
-                    particle_type_state.set(ParticleType::DirtWall);
-                    spawn_state.set(BrushState::Spawn);
-                } else if ui.button("Grass Wall").clicked() {
-                    particle_type_state.set(ParticleType::GrassWall);
-                    spawn_state.set(BrushState::Spawn);
-                } else if ui.button("Rock Wall").clicked() {
-                    particle_type_state.set(ParticleType::RockWall);
-                    spawn_state.set(BrushState::Spawn);
-                } else if ui.button("Dense Rock Wall").clicked() {
-                    particle_type_state.set(ParticleType::DenseRockWall);
-                    spawn_state.set(BrushState::Spawn);
-                } else if ui.button("Remove").clicked() {
-                    spawn_state.set(BrushState::Despawn);
-                }
-            });
+                particle_types.iter().for_each(|particle| {
+                    if ui.button(particle).clicked() {
+                        selected_particle.0 = particle.clone();
+                        brush_state.set(BrushState::Spawn);
+                    }
+                });
+		if ui.button("Remove").clicked() {
+		    brush_state.set(BrushState::Despawn);
+		}
 
+            });
             if ui.button("Despawn All Particles").clicked() {
                 commands.trigger(ClearChunkMap);
             }

@@ -91,12 +91,11 @@ impl Plugin for FallingSandPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(RngPlugin::default())
             .init_resource::<ChunkMap>()
-            .init_resource::<ParticleParentMap>()
+            .init_resource::<ParticleTypeMap>()
             .init_resource::<DynamicParticleCount>()
             .init_resource::<TotalParticleCount>()
             .init_gizmo_group::<DebugGizmos>()
             .add_event::<ClearChunkMap>()
-            .add_systems(Startup, setup_particles)
             .add_systems(
                 Update,
                 (
@@ -115,5 +114,15 @@ impl Plugin for FallingSandPlugin {
             )
             .observe(on_remove_particle)
             .observe(on_clear_chunk_map);
+
+        app.register_type::<ParticleTypeMap>();
+        app.register_type::<ParticleParent>();
+        app.register_type::<Density>();
+        app.register_type::<ParticleColors>();
+        app.register_type::<Velocity>();
+        app.register_type::<Momentum>();
+        app.register_type::<Name>();
+        app.register_type::<ParticleType>();
+        app.add_systems(Startup, setup_particle_types);
     }
 }

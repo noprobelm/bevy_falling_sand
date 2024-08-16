@@ -1,0 +1,78 @@
+// Particle names are unique. Duplicates will overwrite previously mapped particles.
+//
+// Particles will behave as walls (which can be useful) unless they possess 3 properties required for movement:
+//     - "density": u32 - A particle's "weight"
+//     - "max_velocity": u32 - The number of times a particle will move in a frame.
+//     - "liquid" || "movable_solid" || "solid" || "gas" || "wall" - See the following section
+// 
+// STATES OF MATTER
+//     To define a state of matter, use one of the convenience "material" designators:
+//         - "liquid"
+//             - u32: The liquid's fluidity
+//         - "gas"
+//             - u32: The gas' fluidity
+//         - "movable_solid"
+//             - true: A required temporary flag until I've made a better config file system
+//         - "solid"
+//             - true: A required temporary flag until I've made a better config file system
+//         - "wall" (This is a temporary, optional flag. It contributes only to debugging statistics)
+//             - true: A required temporary flag until I've made a better config file system
+//
+// A particle requires a color set in order to render to the screen. Values are expressed in 4 f32 values
+// representing srgba https://docs.rs/bevy/latest/bevy/color/struct.Srgba.html
+// When a particle spawns, it will randomly be assigned one of the colors provided in this file.
+{
+    "Water": {
+        "density": 2,
+        "max_velocity": 3,
+        "liquid": 3,
+        "momentum": true,
+        "colors": [(0.043, 0.5, 0.67, 0.5)]
+    },
+    "Oil": {
+        "density": 1,
+        "max_velocity": 3,
+        "liquid": 3,
+        "momentum": true,
+        "colors": [(0.16, 0.12, 0.18, 0.5)]
+    },
+    "Sand": {
+        "density": 4,
+        "max_velocity": 3,
+        "movable_solid": true,
+        "momentum": true,
+        "colors": [(0.95, 0.88, 0.42, 1.0), (1.0, 0.92, 0.54, 1.0)]
+    },
+    "Steam": {
+        "density": 4,
+        "max_velocity": 1,
+        "gas": 3,
+        "colors": [(0.78, 0.84, 0.88, 1.)]
+    },
+    "Wall": {
+        "wall": true,
+        "colors": [(0.82, 0.84, 0.83, 1.0), (0.74, 0.76, 0.78, 1.0)]
+    },
+    "Dirt Wall": {
+        "wall": true,
+        "colors": [(0.57, 0.42, 0.3, 1.0), (0.45, 0.34, 0.24, 1.0)]
+    },
+    "Grass Wall": {
+        "wall": true,
+        "colors": [(0.36, 0.53, 0.19, 1.0), (0.24, 0.36, 0.13, 1.0), (0.32, 0.48, 0.18, 1.0), (0.36, 0.55, 0.2, 1.0)]
+    },
+    "Rock Wall": {
+        "wall": true,
+        "colors": [(0.23, 0.2, 0.2, 1.0), (0.29, 0.24, 0.24, 1.0), (0.36, 0.29, 0.29, 1.0), (0.4, 0.33, 0.33, 1.0)]
+    },
+    "Dense Rock Wall": {
+        "wall": true,
+        "colors": [(0.42, 0.45, 0.55, 1.0), (0.55, 0.59, 0.67, 1.0), (0.7, 0.77, 0.84, 1.0)]
+    },
+    "Rock": {
+        "density": 3,
+        "max_velocity": 3,
+        "solid": true,
+        "colors": [(0.23, 0.2, 0.2, 1.0), (0.29, 0.24, 0.24, 1.0), (0.36, 0.29, 0.29, 1.0), (0.4, 0.33, 0.33, 1.0)],
+    }
+}

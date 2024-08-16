@@ -15,7 +15,7 @@ pub struct MovementPriority(pub SmallVec<[SmallVec<[IVec2; 4]>; 8]>);
 pub struct Coordinates(pub IVec2);
 
 /// The density of a particle.
-#[derive(Copy, Clone, Hash, Debug, Default, Eq, PartialEq, PartialOrd, Component, Reflect)]
+#[derive(Copy, Clone, Hash, Debug, Default, Eq, PartialEq, PartialOrd, Component, Reflect)] 
 #[reflect(Component, Debug)]
 pub struct Density(pub u32);
 

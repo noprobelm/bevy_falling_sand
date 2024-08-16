@@ -15,7 +15,7 @@ pub fn on_remove_particle(
 pub fn on_clear_chunk_map(
     _trigger: Trigger<ClearChunkMap>,
     mut commands: Commands,
-    particle_parent_map: Res<ParticleParentMap>,
+    particle_parent_map: Res<ParticleTypeMap>,
     mut map: ResMut<ChunkMap>,
 ) {
     particle_parent_map.iter().for_each(|(_, entity)| {
@@ -31,9 +31,9 @@ pub fn handle_new_particles(
     parent_query: Query<
         (
             Entity,
-	    &Density,
-	    &MovementPriority,
-            &Velocity,
+	    Option<&Density>,
+	    Option<&MovementPriority>,
+            Option<&Velocity>,
             &ParticleColors,
             Option<&Momentum>,
             Option<&Anchored>,
@@ -43,7 +43,7 @@ pub fn handle_new_particles(
     particle_query: Query<(&ParticleType, &Transform, Entity), Changed<ParticleType>>,
     mut rng: ResMut<GlobalRng>,
     mut map: ResMut<ChunkMap>,
-    type_map: Res<ParticleParentMap>,
+    type_map: Res<ParticleTypeMap>,
 ) {
     let rng = rng.get_mut();
     for (particle_type, transform, entity) in particle_query.iter() {
@@ -58,7 +58,7 @@ pub fn handle_new_particles(
             continue;
         }
 
-        if let Some(parent_entity) = type_map.get(particle_type) {
+        if let Some(parent_entity) = type_map.get(&particle_type.name) {
             if let Ok((parent_entity, density, movement_priority, velocity, colors, momentum, anchored)) =
                 parent_query.get(*parent_entity)
             {
@@ -75,10 +75,19 @@ pub fn handle_new_particles(
                     Coordinates(coordinates),
                     ParticleColor(colors.random(rng)),
                     PhysicsRng::default(),
-		    *density,
-		    *velocity,
-		    movement_priority.clone()
                 ));
+
+                if let Some(density) = density {
+                    commands.entity(entity).insert(density.clone());
+                };
+
+                if let Some(velocity) = velocity {
+                    commands.entity(entity).insert(velocity.clone());
+                };
+
+		if let Some(movement_priority) = movement_priority {
+		    commands.entity(entity).insert(movement_priority.clone());
+		}
 
                 if momentum.is_some() {
                     commands.entity(entity).insert(Momentum(IVec2::ZERO));
@@ -99,107 +108,4 @@ pub fn handle_new_particles(
             );
         }
     }
-}
-
-/// Setup all particle parent types on startup
-pub fn setup_particles(mut commands: Commands, mut type_map: ResMut<ParticleParentMap>) {
-    let id = commands
-        .spawn((
-            ParticleParent,
-            WaterBundle::default(),
-            SpatialBundle::from_transform(Transform::from_xyz(0., 0., 0.)),
-        ))
-        .id();
-
-    type_map.insert(ParticleType::Water, id);
-
-    let id = commands
-        .spawn((
-            ParticleParent,
-            OilBundle::default(),
-            SpatialBundle::from_transform(Transform::from_xyz(0., 0., 0.)),
-        ))
-        .id();
-
-    type_map.insert(ParticleType::Oil, id);
-
-    let id = commands
-        .spawn((
-            ParticleParent,
-            WhiskeyBundle::default(),
-            SpatialBundle::from_transform(Transform::from_xyz(0., 0., 0.)),
-        ))
-        .id();
-
-    type_map.insert(ParticleType::Whiskey, id);
-
-    let id = commands
-        .spawn((
-            ParticleParent,
-            SandBundle::default(),
-            SpatialBundle::from_transform(Transform::from_xyz(0., 0., 0.)),
-        ))
-        .id();
-
-    type_map.insert(ParticleType::Sand, id);
-
-    let id = commands
-        .spawn((
-            ParticleParent,
-            WallBundle::default(),
-            SpatialBundle::from_transform(Transform::from_xyz(0., 0., 0.)),
-        ))
-        .id();
-
-    type_map.insert(ParticleType::Wall, id);
-
-    let id = commands
-        .spawn((
-            ParticleParent,
-            DirtWallBundle::default(),
-            SpatialBundle::from_transform(Transform::from_xyz(0., 0., 0.)),
-        ))
-        .id();
-
-    type_map.insert(ParticleType::DirtWall, id);
-
-    let id = commands
-        .spawn((
-            ParticleParent,
-            GrassWallBundle::default(),
-            SpatialBundle::from_transform(Transform::from_xyz(0., 0., 0.)),
-        ))
-        .id();
-
-    type_map.insert(ParticleType::GrassWall, id);
-
-    let id = commands
-        .spawn((
-            ParticleParent,
-            RockWallBundle::default(),
-            SpatialBundle::from_transform(Transform::from_xyz(0., 0., 0.)),
-        ))
-        .id();
-
-    type_map.insert(ParticleType::RockWall, id);
-
-    let id = commands
-        .spawn((
-            ParticleParent,
-            DenseRockWallBundle::default(),
-            SpatialBundle::from_transform(Transform::from_xyz(0., 0., 0.)),
-        ))
-        .id();
-
-    type_map.insert(ParticleType::DenseRockWall, id);
-
-    let id = commands
-        .spawn((
-            ParticleParent,
-            SteamBundle::default(),
-            SpatialBundle::from_transform(Transform::from_xyz(0., 0., 0.)),
-        ))
-        .id();
-
-    type_map.insert(ParticleType::Steam, id);
 }

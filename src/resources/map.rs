@@ -1,30 +1,37 @@
 //! All resources related to tracking/mapping particles.
-use crate::{ParticleType, Hibernating};
+use crate::Hibernating;
 use ahash::HashMap;
 use bevy::prelude::*;
 use rayon::iter::IntoParallelRefIterator;
 use rayon::prelude::*;
 
-/// Map of all parent particle types to their corresponding entity. Used to map child particles to their corresponding
-/// parent data.
-#[derive(Resource, Clone, Default, Debug)]
-pub struct ParticleParentMap {
+/// Map of all parent particle types to their corresponding entity. Used to map particle types to their corresponding data
+#[derive(Resource, Clone, Default, Debug, Reflect)]
+#[reflect(Resource)]
+pub struct ParticleTypeMap {
     /// The mapping resource for particle types.
-    map: HashMap<ParticleType, Entity>,
+    /// The std collections HashMap is used here because it supports type reflection by default, whereas ahash::HashMap does not.
+    map: std::collections::HashMap<String, Entity>,
 }
 
-impl ParticleParentMap {
-    /// Insert a new particle type to the map
-    pub fn iter(&self) -> impl Iterator<Item = (&ParticleType, &Entity)> {
+impl ParticleTypeMap {
+    /// Provides an iterator of the particle type map
+    pub fn iter(&self) -> impl Iterator<Item = (&String, &Entity)> {
         return self.map.iter()
     }
 
-    pub fn insert(&mut self, ptype: ParticleType, entity: Entity) -> &mut Entity {
+    /// Provides an iterator over the keys of the particle type map
+    pub fn keys(&self) -> impl Iterator<Item = &String> {
+        return self.map.keys()
+    }
+
+    /// Insert a new particle type to the map
+    pub fn insert(&mut self, ptype: String, entity: Entity) -> &mut Entity {
         self.map.entry(ptype).or_insert(entity)
     }
 
     /// Get an immutable reference to the corresponding entity, if it exists.
-    pub fn get(&self, ptype: &ParticleType) -> Option<&Entity> {
+    pub fn get(&self, ptype: &String) -> Option<&Entity> {
         self.map.get(ptype)
     }
 }

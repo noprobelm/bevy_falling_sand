@@ -17,7 +17,7 @@ pub fn handle_particles(
 	    &Density,
 	    &MovementPriority
         ),
-        (Without<Anchored>, Without<Hibernating>, With<Particle>),
+        (Without<Hibernating>, With<Particle>),
     >,
     mut map: ResMut<ChunkMap>,
 ) {

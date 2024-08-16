@@ -28,24 +28,10 @@ pub struct ParticleParent;
 #[derive(Clone, Eq, PartialEq, Hash, Debug, Default, Component)]
 pub struct Particle;
 
-/// Possible particle types. Add a variant of this enum to an entity to spawn the corresponding type into the world.
-///
-/// If a particle is spawned and [handle_new_particles] cannot map its variant to a
-/// corresponding collection in the [ParticleParentMap] resource, the program will panic.
-#[derive(Component, States, Resource, Reflect, Default, Debug, Copy, Clone, Eq, PartialEq, Hash)]
+#[derive(Component, Clone, Debug, PartialEq, Reflect)]
 #[reflect(Component)]
-pub enum ParticleType {
-    #[default]
-    Water,
-    Oil,
-    Whiskey,
-    Sand,
-    Wall,
-    DirtWall,
-    RockWall,
-    DenseRockWall,
-    GrassWall,
-    Steam,
+pub struct ParticleType {
+    pub name: String
 }
 
 /// Bundle of common particle components for whiskey

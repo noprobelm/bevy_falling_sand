@@ -2,12 +2,14 @@
 
 use bevy::prelude::SystemSet;
 
+pub use particle::*;
 pub use map::*;
 pub use movement::*;
 pub use hibernation::*;
 pub use color::*;
 pub use debug::*;
 
+mod particle;
 mod map;
 mod movement;
 mod hibernation;
