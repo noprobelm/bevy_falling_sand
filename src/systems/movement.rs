@@ -50,13 +50,12 @@ pub fn handle_particles(
 
                         // Check if the particle has momentum and if it matches any position in the group
                         if let Some(ref mut momentum) = momentum {
-                            for &relative_coordinates in group {
-                                let momentum_target = coordinates.0 + momentum.0;
-                                if momentum_target == coordinates.0 + relative_coordinates {
-                                    indices.clear();
-                                    indices.push(group.iter().position(|&r| r == relative_coordinates).unwrap());
-                                    break;
-                                }
+                            for (idx, &relative_coordinates) in group.iter().enumerate() {
+				if relative_coordinates == momentum.0 {
+				    indices.clear();
+				    indices.push(idx);
+				    break;
+				}
                             }
                         }
 
