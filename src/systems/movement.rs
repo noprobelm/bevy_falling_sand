@@ -35,7 +35,7 @@ pub fn handle_particles(
 		density,
 		movement_priority
             )| {
-                // Flag indicating whether the particle moved at all during this frame
+                // Used to determine if we should add the particle to set of visited particles.
                 let mut moved = false;
                 'velocity_loop: for _ in 0..velocity.val {
                     // If a particle is blocked on a certain vector, we shouldn't attempt to swap it with other particles along that
@@ -92,14 +92,12 @@ pub fn handle_particles(
                                         // be awoken on the next frame with the logic contained in ChunkMap.reset_chunks()
                                         else {
                                             obstructed.insert(relative_coordinates.signum());
-
                                             continue;
                                         }
                                     }
                                     // We've encountered an anchored particle
                                     else {
                                         obstructed.insert(relative_coordinates.signum());
-
                                         continue;
                                     }
                                 }
