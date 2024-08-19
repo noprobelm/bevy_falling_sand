@@ -5,6 +5,7 @@ use bevy::prelude::*;
 use crate::components::Material;
 use crate::*;
 
+/// Sets up particle types predefined in a .ron file from the assets path.
 pub fn setup_particle_types(mut commands: Commands, mut type_map: ResMut<ParticleTypeMap>) {
     let file_path = "assets/particles/particles.ron";
     let file = File::open(file_path).unwrap();

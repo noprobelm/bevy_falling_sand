@@ -5,6 +5,7 @@ use ron::de::from_reader;
 use std::fs::File;
 use std::io::Write;
 
+/// Saves a scene to the PathBuf specified by [`SaveSceneEvent`](crate::SaveSceneEvent)
 pub fn save_scene_system(
     particle_query: Query<(&ParticleType, &Coordinates)>,
     mut ev_save_scene: EventReader<SaveSceneEvent>,
@@ -26,6 +27,7 @@ pub fn save_scene_system(
     }
 }
 
+/// Loads a scene from the PathBuf specified by [`LoadSceneEvent`](crate::LoadSceneEvent)
 pub fn load_scene_system(mut commands: Commands, mut ev_load_scene: EventReader<LoadSceneEvent>) {
     for ev in ev_load_scene.read() {
         let file = File::open(ev.0.clone()).expect("Failed to open RON file");

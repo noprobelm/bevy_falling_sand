@@ -29,6 +29,7 @@ pub struct ParticleParent;
 #[derive(Clone, Eq, PartialEq, Hash, Debug, Default, Component)]
 pub struct Particle;
 
+/// Holds the particle type's name. Used to map to parent particle data.
 #[derive(Component, Clone, Debug, PartialEq, Reflect, Serialize, Deserialize)]
 #[reflect(Component)]
 pub struct ParticleType {

@@ -15,6 +15,7 @@ pub trait Material {
 pub struct Wall;
 
 impl Wall {
+    /// Creates a new Wall.
     pub fn new() -> Wall {
         Wall
     }
@@ -22,11 +23,11 @@ impl Wall {
 
 impl Material for Wall {}
 
-/// A solid material, which can only move downard.
+/// A solid material, which can only move downward.
 pub struct Solid;
 
 impl Solid {
-    /// Creates a new Solid
+    /// Creates a new Solid.
     pub fn new() -> Solid {
         Solid
     }
@@ -46,7 +47,7 @@ impl Material for Solid {
 pub struct MovableSolid;
 
 impl MovableSolid {
-    /// Creates a new MovableSolid
+    /// Creates a new MovableSolid.
     pub fn new() -> MovableSolid {
         MovableSolid
     }
@@ -70,7 +71,7 @@ pub struct Liquid {
 }
 
 impl Liquid {
-    /// Creates a new Liquid
+    /// Creates a new Liquid.
     pub fn new(fluidity: usize) -> Liquid {
 	Liquid { fluidity }
     }

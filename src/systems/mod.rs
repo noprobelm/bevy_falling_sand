@@ -18,12 +18,15 @@ pub use color::*;
 pub use debug::*;
 pub use scenes::*;
 
+/// System set for systems that influence particle management.
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ParticleSimulationSet;
 
+/// System set for systems that provide debugging functionality.
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ParticleDebugSet;
 
+/// Plugin for all systems related to falling sand particles.
 pub(super) struct ParticleSystemsPlugin;
 
 impl bevy::prelude::Plugin for ParticleSystemsPlugin {

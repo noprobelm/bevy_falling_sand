@@ -69,6 +69,14 @@
 //! ```rust
 //! app.init_resource::<DebugParticles>()
 //! ```
+#![forbid(missing_docs, unsafe_code)]
+#![warn(
+    clippy::nursery,
+    clippy::pedantic,
+    nonstandard_style,
+    rustdoc::broken_intra_doc_links
+)]
+#![allow(clippy::default_trait_access, clippy::module_name_repetitions)]
 
 use bevy::prelude::*;
 use bevy_turborand::prelude::*;
@@ -87,6 +95,7 @@ pub use events::*;
 pub use gizmos::*;
 use type_registry::ParticleTypeRegistryPlugin;
 
+/// Bevy Falling Sand Plugin
 pub struct FallingSandPlugin;
 
 impl Plugin for FallingSandPlugin {

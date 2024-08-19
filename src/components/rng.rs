@@ -10,6 +10,7 @@ use bevy_turborand::prelude::RngComponent;
 pub struct PhysicsRng(RngComponent);
 
 impl PhysicsRng {
+    /// Shuffles a given slice.
     pub fn shuffle<T>(&mut self, slice: &mut [T]) {
         self.0.shuffle(slice);
     }

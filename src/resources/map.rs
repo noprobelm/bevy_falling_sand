@@ -215,6 +215,7 @@ impl ChunkMap {
     }
 }
 
+/// A chunk which stores location information for entities.
 #[derive(Debug, Clone)]
 pub struct Chunk {
     /// The chunk containing the particle data
