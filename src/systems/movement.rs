@@ -3,32 +3,6 @@ use std::mem;
 use crate::*;
 use bevy::utils::HashSet;
 
-unsafe fn handle_neighbor(
-    mut map: &mut ChunkMap,
-    neighbor_coordinates: IVec2,
-    particle_query: &Query<
-        (
-            Entity,
-            &ParticleType,
-            &mut Coordinates,
-            &mut Transform,
-            &mut PhysicsRng,
-            &mut Velocity,
-            Option<&mut Momentum>,
-            &Density,
-            &MovementPriority,
-        ),
-        Without<Hibernating>,
-    >,
-    particle_type: &ParticleType,
-    density: &Density,
-    coordinates: &mut Coordinates,
-    velocity: &mut Velocity,
-    obstructed: &mut HashSet<IVec2>,
-    visited: &mut HashSet<IVec2>
-) {
-}
-
 /// Moves all qualifying particles 'v' times equal to their current velocity
 #[allow(unused_mut)]
 pub fn handle_particles(
@@ -73,6 +47,19 @@ pub fn handle_particles(
                     for group in &movement_priority.0 {
                         let mut indices: Vec<usize> = (0..group.len()).collect();
                         rng.shuffle(&mut indices);
+
+                        // Check if the particle has momentum and if it matches any position in the group
+                        if let Some(ref mut momentum) = momentum {
+                            for &relative_coordinates in group {
+                                let momentum_target = coordinates.0 + momentum.0;
+                                if momentum_target == coordinates.0 + relative_coordinates {
+                                    indices.clear();
+                                    indices.push(group.iter().position(|&r| r == relative_coordinates).unwrap());
+                                    break;
+                                }
+                            }
+                        }
+
                         for idx in indices {
                             let relative_coordinates = group[idx];
                             let neighbor_coordinates = coordinates.0 + relative_coordinates;
@@ -83,17 +70,6 @@ pub fn handle_particles(
                                 continue;
                             }
 
-                            handle_neighbor(
-                                &mut map,
-                                neighbor_coordinates,
-                                &particle_query,
-                                particle_type,
-				density,
-				&mut coordinates,
-				&mut velocity,
-				&mut obstructed,
-				&mut visited
-                            );
                             match map.entity(&neighbor_coordinates) {
                                 Some(neighbor_entity) => {
                                     if let Ok((
@@ -121,6 +97,10 @@ pub fn handle_particles(
                                                 &mut neighbor_transform,
                                             );
 
+                                            if let Some(ref mut momentum) = momentum {
+                                                momentum.0 = IVec2::ZERO; // Reset momentum after a swap
+                                            }
+
                                             velocity.decrement();
                                             moved = true;
                                             break 'velocity_loop;
@@ -146,6 +126,10 @@ pub fn handle_particles(
                                     transform.translation.x = neighbor_coordinates.x as f32;
                                     transform.translation.y = neighbor_coordinates.y as f32;
 
+                                    if let Some(ref mut momentum) = momentum {
+                                        momentum.0 = relative_coordinates; // Set momentum relative to the current position
+                                    }
+
                                     velocity.increment();
 
                                     moved = true;
@@ -156,15 +140,21 @@ pub fn handle_particles(
                         }
                     }
                 }
-                if moved == true {
+
+                if moved {
                     visited.insert(coordinates.0);
                 } else {
+                    if let Some(ref mut momentum) = momentum {
+                        momentum.0 = IVec2::ZERO;
+                    }
                     velocity.decrement();
                 }
             },
         );
     }
 }
+
+
 
 /// Swaps the position of two particle's position information.
 pub fn swap_particle_positions(
