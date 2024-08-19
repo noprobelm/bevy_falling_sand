@@ -1,3 +1,4 @@
+/// Data structures used for reading particle scenes.
 use serde::{Serialize, Deserialize};
 
 use crate::*;
