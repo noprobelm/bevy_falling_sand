@@ -70,70 +70,34 @@
 //! app.init_resource::<DebugParticles>()
 //! ```
 
+use bevy::prelude::*;
+use bevy_turborand::prelude::*;
+
 mod components;
 mod events;
 mod gizmos;
 mod resources;
 mod systems;
-
-use bevy::prelude::*;
-use bevy_turborand::prelude::*;
+mod type_registry;
 
 pub use components::*;
 pub use events::*;
 pub use gizmos::*;
 pub use resources::*;
 pub use systems::*;
+use type_registry::ParticleTypeRegistryPlugin;
 
 pub struct FallingSandPlugin;
 
 impl Plugin for FallingSandPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(RngPlugin::default())
-            .init_resource::<ChunkMap>()
-            .init_resource::<ParticleTypeMap>()
-            .init_resource::<DynamicParticleCount>()
-            .init_resource::<TotalParticleCount>()
-            .init_gizmo_group::<DebugGizmos>()
-            .add_event::<ClearChunkMap>()
-            .add_event::<SaveSceneEvent>()
-            .add_event::<LoadSceneEvent>()
-            .add_systems(
-                Update,
-                (
-                    handle_new_particles.before(handle_particles),
-                    handle_particles,
-                    reset_chunks.after(handle_particles),
-                )
-                    .in_set(ParticleSimulationSet),
-            )
-            .add_systems(Update, color_particles)
-            .add_systems(
-                Update,
-                (color_chunks, count_dynamic_particles, count_total_particles)
-                    .in_set(ParticleDebugSet)
-                    .run_if(resource_exists::<DebugParticles>),
-            )
-            .observe(on_remove_particle)
-            .observe(on_clear_chunk_map);
-
-        app.register_type::<ParticleTypeMap>();
-        app.register_type::<ParticleParent>();
-        app.register_type::<Density>();
-        app.register_type::<ParticleColors>();
-        app.register_type::<Velocity>();
-        app.register_type::<Momentum>();
-        app.register_type::<Name>();
-        app.register_type::<ParticleType>();
-        app.add_systems(Startup, setup_particle_types);
-	app.add_systems(
-	    Update,
-	    save_scene_system.run_if(on_event::<SaveSceneEvent>()),
-	);
-	app.add_systems(
-	    Update,
-	    load_scene_system.run_if(on_event::<LoadSceneEvent>()),
-	);
-
+        app.add_plugins((
+            RngPlugin::default(),
+            ParticleEventsPlugin,
+            ParticleResourcesPlugin,
+            ParticleGizmosPlugin,
+	    ParticleSystemsPlugin,
+	    ParticleTypeRegistryPlugin
+        ));
     }
 }
