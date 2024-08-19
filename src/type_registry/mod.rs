@@ -1,3 +1,5 @@
+/// Registers simulation types.
+
 use crate::components::*;
 use crate::resources::*;
 
