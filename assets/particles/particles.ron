@@ -25,9 +25,16 @@
     "Water": {
         "density": 2,
         "max_velocity": 3,
-        "liquid": 3,
+        "liquid": 5,
         "momentum": true,
         "colors": [(0.043, 0.5, 0.67, 0.5)]
+    },
+    "Whiskey": {
+        "density": 3,
+        "max_velocity": 3,
+        "liquid": 5,
+        "momentum": true,
+        "colors": [(0.84, 0.6, 0.44, 0.5)]
     },
     "Oil": {
         "density": 1,
