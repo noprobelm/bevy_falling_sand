@@ -70,6 +70,12 @@
 //! app.init_resource::<DebugParticles>()
 //! ```
 
+mod components;
+mod events;
+mod gizmos;
+mod resources;
+mod systems;
+
 use bevy::prelude::*;
 use bevy_turborand::prelude::*;
 
@@ -78,12 +84,6 @@ pub use events::*;
 pub use gizmos::*;
 pub use resources::*;
 pub use systems::*;
-
-mod components;
-mod events;
-mod gizmos;
-mod resources;
-mod systems;
 
 pub struct FallingSandPlugin;
 

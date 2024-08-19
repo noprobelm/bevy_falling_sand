@@ -1,5 +1,5 @@
-pub use map::*;
-pub use scenes::*;
-
 mod map;
 mod scenes;
+
+pub use map::*;
+pub use scenes::*;
