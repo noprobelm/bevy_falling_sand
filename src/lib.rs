@@ -81,10 +81,10 @@ mod systems;
 mod type_registry;
 
 pub use components::*;
+pub use systems::*;
+pub use resources::*;
 pub use events::*;
 pub use gizmos::*;
-pub use resources::*;
-pub use systems::*;
 use type_registry::ParticleTypeRegistryPlugin;
 
 pub struct FallingSandPlugin;
@@ -93,10 +93,10 @@ impl Plugin for FallingSandPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
             RngPlugin::default(),
-            ParticleEventsPlugin,
-            ParticleResourcesPlugin,
-            ParticleGizmosPlugin,
 	    ParticleSystemsPlugin,
+            ParticleResourcesPlugin,
+            ParticleEventsPlugin,
+            ParticleGizmosPlugin,
 	    ParticleTypeRegistryPlugin
         ));
     }
