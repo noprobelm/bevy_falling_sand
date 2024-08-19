@@ -3,6 +3,32 @@ use std::mem;
 use crate::*;
 use bevy::utils::HashSet;
 
+unsafe fn handle_neighbor(
+    mut map: &mut ChunkMap,
+    neighbor_coordinates: IVec2,
+    particle_query: &Query<
+        (
+            Entity,
+            &ParticleType,
+            &mut Coordinates,
+            &mut Transform,
+            &mut PhysicsRng,
+            &mut Velocity,
+            Option<&mut Momentum>,
+            &Density,
+            &MovementPriority,
+        ),
+        Without<Hibernating>,
+    >,
+    particle_type: &ParticleType,
+    density: &Density,
+    coordinates: &mut Coordinates,
+    velocity: &mut Velocity,
+    obstructed: &mut HashSet<IVec2>,
+    visited: &mut HashSet<IVec2>
+) {
+}
+
 /// Moves all qualifying particles 'v' times equal to their current velocity
 #[allow(unused_mut)]
 pub fn handle_particles(
@@ -13,9 +39,10 @@ pub fn handle_particles(
             &mut Coordinates,
             &mut Transform,
             &mut PhysicsRng,
-	    &mut Velocity,
-	    &Density,
-	    &MovementPriority
+            &mut Velocity,
+            Option<&mut Momentum>,
+            &Density,
+            &MovementPriority,
         ),
         Without<Hibernating>,
     >,
@@ -31,9 +58,10 @@ pub fn handle_particles(
                 mut coordinates,
                 mut transform,
                 mut rng,
-		mut velocity,
-		density,
-		movement_priority
+                mut velocity,
+                mut momentum,
+                density,
+                movement_priority,
             )| {
                 // Used to determine if we should add the particle to set of visited particles.
                 let mut moved = false;
@@ -55,6 +83,17 @@ pub fn handle_particles(
                                 continue;
                             }
 
+                            handle_neighbor(
+                                &mut map,
+                                neighbor_coordinates,
+                                &particle_query,
+                                particle_type,
+				density,
+				&mut coordinates,
+				&mut velocity,
+				&mut obstructed,
+				&mut visited
+                            );
                             match map.entity(&neighbor_coordinates) {
                                 Some(neighbor_entity) => {
                                     if let Ok((
@@ -63,19 +102,17 @@ pub fn handle_particles(
                                         mut neighbor_coordinates,
                                         mut neighbor_transform,
                                         _,
-					_,
-					neighbor_density,
-					_
+                                        _,
+                                        _,
+                                        neighbor_density,
+                                        _,
                                     )) = particle_query.get_unchecked(*neighbor_entity)
                                     {
                                         if *particle_type == *neighbor_particle_type {
                                             continue;
                                         }
                                         if density > neighbor_density {
-                                            map.swap(
-						neighbor_coordinates.0,
-                                                coordinates.0,
-                                            );
+                                            map.swap(neighbor_coordinates.0, coordinates.0);
 
                                             swap_particle_positions(
                                                 &mut coordinates,
@@ -86,7 +123,7 @@ pub fn handle_particles(
 
                                             velocity.decrement();
                                             moved = true;
-					    break 'velocity_loop;
+                                            break 'velocity_loop;
                                         }
                                         // We've encountered an anchored or hibernating particle. If this is a hibernating particle, it's guaranteed to
                                         // be awoken on the next frame with the logic contained in ChunkMap.reset_chunks()
@@ -122,8 +159,8 @@ pub fn handle_particles(
                 if moved == true {
                     visited.insert(coordinates.0);
                 } else {
-		    velocity.decrement();
-		}
+                    velocity.decrement();
+                }
             },
         );
     }
