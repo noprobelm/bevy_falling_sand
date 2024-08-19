@@ -8,6 +8,7 @@ pub use movement::*;
 pub use hibernation::*;
 pub use color::*;
 pub use debug::*;
+pub use scenes::*;
 
 mod particle;
 mod map;
@@ -15,6 +16,7 @@ mod movement;
 mod hibernation;
 mod color;
 mod debug;
+mod scenes;
 
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ParticleSimulationSet;

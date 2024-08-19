@@ -1,12 +1,17 @@
 use std::fs::File;
+use std::path::PathBuf;
 
-use bevy::input::mouse::MouseWheel;
-use bevy::utils::HashSet;
-use bevy::window::PrimaryWindow;
-use bevy::{prelude::*, window::WindowMode};
-use bevy::input::common_conditions::input_pressed;
-use bevy_falling_sand::*;
+use bevy::{
+    input::common_conditions::input_pressed,
+    input::mouse::MouseWheel,
+    prelude::*,
+    utils::HashSet,
+    window::{PrimaryWindow, WindowMode},
+};
+
 use bevy_egui::{EguiContexts, EguiPlugin};
+
+use bevy_falling_sand::*;
 
 fn main() {
     let mut app = App::new();
@@ -27,7 +32,9 @@ fn main() {
         .init_resource::<SelectedParticle>()
         .init_resource::<ParticleTypes>()
         .init_resource::<CursorCoords>()
-        .init_resource::<MaxBrushSize>();
+        .init_resource::<MaxBrushSize>()
+        .init_resource::<ParticleSceneFilePath>()
+        .init_resource::<SceneSelectionDialog>();
 
     // States
     app.init_state::<BrushState>()
@@ -42,8 +49,10 @@ fn main() {
         .add_event::<CanvasResetEvent>();
 
     // Camera control
-    app.add_systems(Startup, setup_camera)
-        .add_systems(Update, (zoom_camera, pan_camera));
+    app.add_systems(Startup, setup_camera).add_systems(
+        Update,
+        (zoom_camera, pan_camera).run_if(in_state(AppState::Canvas)),
+    );
 
     // UI
     app.add_systems(Update, render_ui);
@@ -78,6 +87,8 @@ fn main() {
             .after(render_ui),
     );
 
+    // Use built-in systems for saving and loading particle scenes
+
     app.run();
 }
 
@@ -93,16 +104,17 @@ impl Default for ParticleTypes {
         let file = File::open(file_path).unwrap();
         let particle_types_map: ron::Map = ron::de::from_reader(file).unwrap();
 
-        let particle_types: Vec<String> = particle_types_map.keys().map(|key| {
-            key.clone().into_rust::<String>().unwrap()
-        }).collect();
-	ParticleTypes { particle_types }
+        let particle_types: Vec<String> = particle_types_map
+            .keys()
+            .map(|key| key.clone().into_rust::<String>().unwrap())
+            .collect();
+        ParticleTypes { particle_types }
     }
 }
 
 impl ParticleTypes {
     pub fn iter(&self) -> impl Iterator<Item = &String> {
-	self.particle_types.iter()
+        self.particle_types.iter()
     }
 }
 
@@ -289,6 +301,13 @@ impl BrushType {
     }
 }
 
+#[derive(States, Reflect, Default, Debug, Clone, Eq, PartialEq, Hash)]
+pub enum BrushState {
+    #[default]
+    Spawn,
+    Despawn,
+}
+
 #[derive(Event)]
 pub struct BrushResizeEvent(pub usize);
 
@@ -303,11 +322,230 @@ pub enum AppState {
     Ui,
 }
 
-#[derive(States, Reflect, Default, Debug, Clone, Eq, PartialEq, Hash)]
-pub enum BrushState {
-    #[default]
-    Spawn,
-    Despawn,
+#[derive(Resource, Default)]
+pub struct SceneSelectionDialog {
+    show_save_dialog: bool,
+    show_load_dialog: bool,
+    save_input_text: String,
+    load_input_text: String,
+}
+
+#[derive(Resource)]
+pub struct ParticleSceneFilePath(pub PathBuf);
+
+impl Default for ParticleSceneFilePath {
+    fn default() -> ParticleSceneFilePath {
+        let mut path = std::env::current_dir().unwrap();
+
+        while path.parent().is_some() {
+            if path.join("Cargo.toml").exists() {
+                path.push("assets/scenes/hourglass.ron");
+                break;
+            }
+            path.pop();
+        }
+
+        ParticleSceneFilePath(path)
+    }
+}
+
+
+
+struct ParticleControlUI;
+struct BrushControlUI;
+struct SceneManagementUI;
+struct DebugUI;
+
+impl ParticleControlUI {
+    fn render(
+        &self,
+        ui: &mut egui::Ui,
+        particle_types: &ParticleTypes,
+        selected_particle: &mut SelectedParticle,
+        brush_state: &mut ResMut<NextState<BrushState>>,
+        commands: &mut Commands,
+    ) {
+        ui.horizontal_wrapped(|ui| {
+            particle_types.iter().for_each(|particle| {
+                if ui.button(particle).clicked() {
+                    selected_particle.0 = particle.clone();
+                    brush_state.set(BrushState::Spawn);
+                }
+            });
+            if ui.button("Remove").clicked() {
+                brush_state.set(BrushState::Despawn);
+            }
+        });
+
+        ui.separator();
+
+        if ui.button("Despawn All Particles").clicked() {
+            commands.trigger(ClearChunkMap);
+        }
+    }
+}
+
+impl BrushControlUI {
+    fn render(
+        &self,
+        ui: &mut egui::Ui,
+        brush_size: &mut usize,
+        max_brush_size: usize,
+        ev_brush_resize: &mut EventWriter<BrushResizeEvent>,
+        mut current_brush_type: &BrushType,
+        next_brush_type: &mut ResMut<NextState<BrushType>>,
+    ) {
+        if ui
+            .add(egui::Slider::new(brush_size, 1..=max_brush_size))
+            .changed()
+        {
+            ev_brush_resize.send(BrushResizeEvent(*brush_size));
+        }
+
+        egui::ComboBox::from_label("Brush Type")
+            .selected_text(format!("{:?}", current_brush_type))
+            .show_ui(ui, |ui| {
+                if ui
+                    .selectable_value(&mut current_brush_type, &BrushType::Line, "Line")
+                    .changed()
+                {
+                    next_brush_type.set(BrushType::Line)
+                };
+                if ui
+                    .selectable_value(&mut current_brush_type, &BrushType::Circle, "Circle")
+                    .changed()
+                {
+                    next_brush_type.set(BrushType::Circle)
+                };
+                if ui
+                    .selectable_value(&mut current_brush_type, &BrushType::Square, "Square")
+                    .changed()
+                {
+                    next_brush_type.set(BrushType::Square)
+                };
+            });
+    }
+}
+
+impl SceneManagementUI {
+    fn render(
+        &self,
+        ui: &mut egui::Ui,
+        dialog_state: &mut ResMut<SceneSelectionDialog>,
+        scene_path: &mut ResMut<ParticleSceneFilePath>,
+        ev_save_scene: &mut EventWriter<SaveSceneEvent>,
+        ev_load_scene: &mut EventWriter<LoadSceneEvent>,
+    ) {
+        ui.horizontal_wrapped(|ui| {
+            if ui.button("SAVE SCENE").clicked() {
+                dialog_state.show_save_dialog = true;
+            }
+
+            if ui.button("LOAD SCENE").clicked() {
+                dialog_state.show_load_dialog = true;
+            }
+        });
+
+        if dialog_state.show_save_dialog {
+            egui::Window::new("Save Scene")
+                .collapsible(false)
+                .resizable(false)
+                .show(ui.ctx(), |ui| {
+                    ui.label("Enter a name to save the current scene:");
+                    ui.text_edit_singleline(&mut dialog_state.save_input_text);
+                    ui.horizontal_wrapped(|ui| {
+                        if ui.button("Save").clicked() {
+                            let mut file_name = dialog_state.save_input_text.clone();
+                            if !file_name.ends_with(".ron") {
+                                file_name.push_str(".ron");
+                            }
+                            scene_path.0.set_file_name(file_name);
+                            ev_save_scene.send(SaveSceneEvent(scene_path.0.clone()));
+                            dialog_state.show_save_dialog = false; // Close after saving
+                        }
+                        if ui.button("Cancel").clicked() {
+                            dialog_state.show_save_dialog = false;
+                        }
+                    });
+                });
+        }
+
+        if dialog_state.show_load_dialog {
+            // Fetch all `.ron` files in the directory
+            let ron_files: Vec<String> = std::fs::read_dir(&scene_path.0.parent().unwrap())
+                .unwrap()
+                .filter_map(|entry| {
+                    let path = entry.unwrap().path();
+                    if path.extension() == Some(std::ffi::OsStr::new("ron")) {
+                        path.file_name()
+                            .and_then(|name| name.to_str().map(String::from))
+                    } else {
+                        None
+                    }
+                })
+                .collect();
+
+            egui::Window::new("Load Scene")
+                .collapsible(false)
+                .resizable(false)
+                .show(ui.ctx(), |ui| {
+                    ui.label("Select the scene to load:");
+
+                    egui::ComboBox::from_label("Available Scenes")
+                        .selected_text(dialog_state.load_input_text.clone())
+                        .show_ui(ui, |ui| {
+                            for file_name in &ron_files {
+                                let display_name =
+                                    file_name.strip_suffix(".ron").unwrap_or(file_name);
+                                if ui
+                                    .selectable_value(
+                                        &mut dialog_state.load_input_text,
+                                        file_name.clone(),
+                                        display_name,
+                                    )
+                                    .changed()
+                                {
+                                    // Automatically update the scene path when a file is selected
+                                    scene_path.0.set_file_name(file_name.clone());
+                                }
+                            }
+                        });
+
+                    if ui.button("Load").clicked() {
+                        ev_load_scene.send(LoadSceneEvent(scene_path.0.clone()));
+                        dialog_state.show_load_dialog = false; // Close after loading
+                    }
+                    if ui.button("Cancel").clicked() {
+                        dialog_state.show_load_dialog = false;
+                    }
+                });
+        }
+    }
+}
+
+impl DebugUI {
+    fn render(
+        &self,
+        ui: &mut egui::Ui,
+        debug_particles: &Option<Res<DebugParticles>>,
+        dynamic_particle_count: u64,
+        total_particle_count: u64,
+        commands: &mut Commands,
+    ) {
+        let mut debugging = debug_particles.is_some();
+        if ui.checkbox(&mut debugging, "Debug Mode").clicked() {
+            if debugging {
+                commands.init_resource::<DebugParticles>();
+            } else {
+                commands.remove_resource::<DebugParticles>();
+            }
+        }
+
+        if debug_particles.is_some() {
+            ui.label(format!("Dynamic Particles: {}", dynamic_particle_count));
+            ui.label(format!("Total Particles: {}", total_particle_count));
+        }
+    }
 }
 
 pub fn setup_camera(mut commands: Commands) {
@@ -479,18 +717,34 @@ pub fn despawn_particles(
 
 pub fn render_ui(
     mut commands: Commands,
-    mut brush_state: ResMut<NextState<BrushState>>,
-    brush_query: Query<&Brush>,
-    current_brush_type: Res<State<BrushType>>,
-    mut next_brush_type: ResMut<NextState<BrushType>>,
-    mut ev_brush_resize: EventWriter<BrushResizeEvent>,
     mut contexts: EguiContexts,
-    max_brush_size: Res<MaxBrushSize>,
-    debug_particles: Option<Res<DebugParticles>>,
-    dynamic_particle_count: Res<DynamicParticleCount>,
-    total_particle_count: Res<TotalParticleCount>,
-    particle_types: Res<ParticleTypes>,
-    mut selected_particle: ResMut<SelectedParticle>,
+    (
+        mut brush_state,
+        brush_query,
+        current_brush_type,
+        mut next_brush_type,
+        mut ev_brush_resize,
+        max_brush_size,
+    ): (
+        ResMut<NextState<BrushState>>,
+        Query<&Brush>,
+        Res<State<BrushType>>,
+        ResMut<NextState<BrushType>>,
+        EventWriter<BrushResizeEvent>,
+        Res<MaxBrushSize>,
+    ),
+    (debug_particles, dynamic_particle_count, total_particle_count): (
+        Option<Res<DebugParticles>>,
+        Res<DynamicParticleCount>,
+        Res<TotalParticleCount>,
+    ),
+    (mut selected_particle, particle_types): (ResMut<SelectedParticle>, Res<ParticleTypes>),
+    (mut scene_selection_dialog, mut scene_path, mut ev_save_scene, mut ev_load_scene): (
+        ResMut<SceneSelectionDialog>,
+	ResMut<ParticleSceneFilePath>,
+        EventWriter<SaveSceneEvent>,
+        EventWriter<LoadSceneEvent>,
+    ),
 ) {
     let ctx = contexts.ctx_mut();
     let brush = brush_query.single();
@@ -500,74 +754,38 @@ pub fn render_ui(
         .exact_width(200.0)
         .resizable(false)
         .show(ctx, |ui| {
-            ui.horizontal_wrapped(|ui| {
-                particle_types.iter().for_each(|particle| {
-                    if ui.button(particle).clicked() {
-                        selected_particle.0 = particle.clone();
-                        brush_state.set(BrushState::Spawn);
-                    }
-                });
-		if ui.button("Remove").clicked() {
-		    brush_state.set(BrushState::Despawn);
-		}
-
-            });
-            if ui.button("Despawn All Particles").clicked() {
-                commands.trigger(ClearChunkMap);
-            }
-
-            if ui
-                .add(egui::Slider::new(&mut brush_size, 1..=max_brush_size.0))
-                .changed()
-            {
-                ev_brush_resize.send(BrushResizeEvent(brush_size));
-            };
-
-            egui::ComboBox::from_label("Brush Type")
-                .selected_text(format!("{:?}", current_brush_type.get()))
-                .show_ui(ui, |ui| {
-                    if ui
-                        .selectable_value(&mut current_brush_type.get(), &BrushType::Line, "Line")
-                        .changed()
-                    {
-                        next_brush_type.set(BrushType::Line)
-                    };
-                    if ui
-                        .selectable_value(
-                            &mut current_brush_type.get(),
-                            &BrushType::Circle,
-                            "Circle",
-                        )
-                        .changed()
-                    {
-                        next_brush_type.set(BrushType::Circle)
-                    };
-                    if ui
-                        .selectable_value(
-                            &mut current_brush_type.get(),
-                            &BrushType::Square,
-                            "Square",
-                        )
-                        .changed()
-                    {
-                        next_brush_type.set(BrushType::Square)
-                    };
-                });
-
-            ui.separator();
-
-            let mut debugging = debug_particles.is_some();
-            if ui.checkbox(&mut debugging, "Debug Mode").clicked() {
-                if debugging == true {
-                    commands.init_resource::<DebugParticles>();
-                } else {
-                    commands.remove_resource::<DebugParticles>();
-                }
-            }
-
-            if debug_particles.is_some() {
-                ui.label(format!("Dynamic Particles: {}", dynamic_particle_count.0));
-                ui.label(format!("Total Particles: {}", total_particle_count.0));
-            }
+            ParticleControlUI.render(
+                ui,
+                &particle_types,
+                &mut selected_particle,
+                &mut brush_state,
+                &mut commands,
+            );
+	    ui.separator();
+            BrushControlUI.render(
+                ui,
+                &mut brush_size,
+                max_brush_size.0,
+                &mut ev_brush_resize,
+                &current_brush_type.get(),
+                &mut next_brush_type,
+            );
+	    ui.separator();
+            SceneManagementUI.render(
+                ui,
+                &mut scene_selection_dialog,
+                &mut scene_path,
+                &mut ev_save_scene,
+                &mut ev_load_scene,
+            );
+	    ui.separator();
+            DebugUI.render(
+                ui,
+                &debug_particles,
+                dynamic_particle_count.0,
+                total_particle_count.0,
+                &mut commands,
+            );
         });
 }
+

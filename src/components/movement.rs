@@ -1,4 +1,5 @@
 //! Components directly related to particle movement
+use serde::{Serialize, Deserialize};
 use bevy::prelude::*;
 use smallvec::SmallVec;
 
@@ -10,7 +11,7 @@ use smallvec::SmallVec;
 pub struct MovementPriority(pub SmallVec<[SmallVec<[IVec2; 4]>; 8]>);
 
 /// Coordinates component for particles.
-#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, Default, Component, Reflect)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, Default, Component, Reflect, Serialize, Deserialize)]
 #[reflect(Component)]
 pub struct Coordinates(pub IVec2);
 

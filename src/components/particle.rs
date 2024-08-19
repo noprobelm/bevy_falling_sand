@@ -15,6 +15,7 @@
 //! - `anchored`: [Anchored]: If a particle should not be evaluated, and block the movement of all other particles (e.g., a 'wall'), it should have this component.
 //! - `name`: [Name]: Can be used for organizing data if `bevy_reflect` being used.
 
+use serde::{Serialize, Deserialize};
 use bevy::prelude::*;
 use crate::components::Material;
 use crate::*;
@@ -28,7 +29,7 @@ pub struct ParticleParent;
 #[derive(Clone, Eq, PartialEq, Hash, Debug, Default, Component)]
 pub struct Particle;
 
-#[derive(Component, Clone, Debug, PartialEq, Reflect)]
+#[derive(Component, Clone, Debug, PartialEq, Reflect, Serialize, Deserialize)]
 #[reflect(Component)]
 pub struct ParticleType {
     pub name: String

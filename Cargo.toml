@@ -19,6 +19,7 @@ bevy_reflect = "0.14.1"
 bevy_turborand = "0.9.0"
 rayon = "1.10.0"
 ron = "0.8.1"
+serde = "1.0.208"
 smallvec = "1.13.2"
 
 [dev-dependencies]

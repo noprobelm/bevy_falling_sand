@@ -52,8 +52,6 @@ impl Default for ChunkMap {
     /// A default chunk has a size of 32x32 entities. A default chunk map can hold 32 chunks, effectively capable of
     /// storing 1024x1024 (1,048,576) total entities.
     fn default() -> ChunkMap {
-        use bevy::math::IVec2;
-
         let chunks: Vec<Chunk> = (0..32_i32.pow(2))
             .map(|i| {
                 let x = (i % 32) * 32 - 512;

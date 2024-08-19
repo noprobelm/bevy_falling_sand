@@ -96,6 +96,8 @@ impl Plugin for FallingSandPlugin {
             .init_resource::<TotalParticleCount>()
             .init_gizmo_group::<DebugGizmos>()
             .add_event::<ClearChunkMap>()
+            .add_event::<SaveSceneEvent>()
+            .add_event::<LoadSceneEvent>()
             .add_systems(
                 Update,
                 (
@@ -124,5 +126,14 @@ impl Plugin for FallingSandPlugin {
         app.register_type::<Name>();
         app.register_type::<ParticleType>();
         app.add_systems(Startup, setup_particle_types);
+	app.add_systems(
+	    Update,
+	    save_scene_system.run_if(on_event::<SaveSceneEvent>()),
+	);
+	app.add_systems(
+	    Update,
+	    load_scene_system.run_if(on_event::<LoadSceneEvent>()),
+	);
+
     }
 }

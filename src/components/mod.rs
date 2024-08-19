@@ -5,6 +5,7 @@ pub use color::*;
 pub use hibernation::*;
 pub use movement::*;
 pub use material::*;
+pub use scenes::*;
 
 mod particle;
 mod rng;
@@ -12,3 +13,4 @@ mod color;
 mod hibernation;
 mod movement;
 mod material;
+mod scenes;
