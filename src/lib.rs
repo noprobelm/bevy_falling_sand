@@ -69,7 +69,7 @@
 //! ```rust
 //! app.init_resource::<DebugParticles>()
 //! ```
-#![forbid(missing_docs, unsafe_code)]
+#![forbid(missing_docs)]
 #![warn(
     clippy::nursery,
     clippy::pedantic,

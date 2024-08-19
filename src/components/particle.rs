@@ -17,8 +17,6 @@
 
 use serde::{Serialize, Deserialize};
 use bevy::prelude::*;
-use crate::components::Material;
-use crate::*;
 
 /// Marker component for particle parents.
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Component, Reflect)]
@@ -33,5 +31,6 @@ pub struct Particle;
 #[derive(Component, Clone, Debug, PartialEq, Reflect, Serialize, Deserialize)]
 #[reflect(Component)]
 pub struct ParticleType {
+    /// The particle's unique name.
     pub name: String
 }
