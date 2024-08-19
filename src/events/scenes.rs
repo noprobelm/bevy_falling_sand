@@ -1,3 +1,4 @@
+/// Events for saving/loading particle scenes.
 use bevy::prelude::*;
 use std::path::PathBuf;
 
