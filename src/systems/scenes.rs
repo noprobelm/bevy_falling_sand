@@ -1,3 +1,5 @@
+/// Systems for loading and saving particle scenes.
+
 use crate::*;
 use ron::de::from_reader;
 use std::fs::File;
