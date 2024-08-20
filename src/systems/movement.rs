@@ -1,3 +1,4 @@
+use smallvec::SmallVec;
 use std::mem;
 
 use crate::*;
@@ -48,15 +49,8 @@ pub fn handle_particles(
                         let mut indices: Vec<usize> = (0..group.len()).collect();
                         rng.shuffle(&mut indices);
 
-                        // Check if the particle has momentum and if it matches any position in the group
-                        if let Some(ref mut momentum) = momentum {
-                            for (idx, &relative_coordinates) in group.iter().enumerate() {
-				if relative_coordinates == momentum.0 {
-				    indices.clear();
-				    indices.push(idx);
-				    break;
-				}
-                            }
+                        if let Some(ref momentum) = momentum {
+                            filter_by_momentum(&mut indices, momentum, group)
                         }
 
                         for idx in indices {
@@ -153,10 +147,8 @@ pub fn handle_particles(
     }
 }
 
-
-
 /// Swaps the position of two particle's position information.
-pub fn swap_particle_positions(
+fn swap_particle_positions(
     first_coordinates: &mut Coordinates,
     first_transform: &mut Transform,
     second_coordinates: &mut Coordinates,
@@ -167,4 +159,14 @@ pub fn swap_particle_positions(
         &mut second_transform.translation,
     );
     mem::swap(&mut first_coordinates.0, &mut second_coordinates.0);
+}
+
+fn filter_by_momentum(indices: &mut Vec<usize>, momentum: &Momentum, group: &SmallVec<[IVec2; 4]>) {
+    for (idx, &relative_coordinates) in group.iter().enumerate() {
+        if relative_coordinates == momentum.0 {
+            indices.clear();
+            indices.push(idx);
+            break;
+        }
+    }
 }
