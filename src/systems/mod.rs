@@ -1,6 +1,7 @@
 //! All systems driving particle behavior are found in these modules.
 
 use bevy::prelude::*;
+use crate::SimulationRun;
 
 mod particle;
 mod map;
@@ -38,7 +39,8 @@ impl bevy::prelude::Plugin for ParticleSystemsPlugin {
                 handle_particles,
                 reset_chunks.after(handle_particles),
             )
-                .in_set(ParticleSimulationSet),
+                .in_set(ParticleSimulationSet)
+                .run_if(resource_exists::<SimulationRun>),
         )
         .add_systems(Update, color_particles)
         .add_systems(

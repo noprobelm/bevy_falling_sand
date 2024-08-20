@@ -14,6 +14,7 @@ impl bevy::prelude::Plugin for ParticleResourcesPlugin {
         app.init_resource::<ChunkMap>()
             .init_resource::<ParticleTypeMap>()
             .init_resource::<DynamicParticleCount>()
-            .init_resource::<TotalParticleCount>();
+            .init_resource::<TotalParticleCount>()
+            .init_resource::<SimulationRun>();
     }
 }

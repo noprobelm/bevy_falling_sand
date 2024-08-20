@@ -1,10 +1,10 @@
 //! Resources related how/when the particle simulation runs.
 use bevy::prelude::Resource;
 
-/// Resource to insert for pausing the simulation
-#[derive(Resource)]
-pub struct SimulationPause;
+/// Resource to insert for running the simulation
+#[derive(Resource, Default)]
+pub struct SimulationRun;
 
 /// Resource to insert for parallel queries and batching
-#[derive(Resource)]
+#[derive(Resource, Default)]
 pub struct SimulationBatch;

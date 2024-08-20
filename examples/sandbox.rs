@@ -2,7 +2,7 @@ use std::fs::File;
 use std::path::PathBuf;
 
 use bevy::{
-    input::common_conditions::input_pressed,
+    input::common_conditions::{input_just_pressed, input_pressed},
     input::mouse::MouseWheel,
     prelude::*,
     utils::HashSet,
@@ -69,6 +69,10 @@ fn main() {
     // Particle management systems
     app.add_systems(
         Update,
+        toggle_simulation.run_if(input_just_pressed(KeyCode::Space)),
+    );
+    app.add_systems(
+        Update,
         (spawn_particles
             .run_if(input_pressed(MouseButton::Left))
             .run_if(in_state(BrushState::Spawn))
@@ -94,7 +98,7 @@ fn main() {
 
 /// Guarantees our particle type buttons are presented in a specific order.
 #[derive(Resource)]
-pub struct ParticleTypes {
+struct ParticleTypes {
     particle_types: Vec<String>,
 }
 
@@ -113,13 +117,13 @@ impl Default for ParticleTypes {
 }
 
 impl ParticleTypes {
-    pub fn iter(&self) -> impl Iterator<Item = &String> {
+    fn iter(&self) -> impl Iterator<Item = &String> {
         self.particle_types.iter()
     }
 }
 
 #[derive(Resource)]
-pub struct SelectedParticle(String);
+struct SelectedParticle(String);
 
 impl Default for SelectedParticle {
     fn default() -> SelectedParticle {
@@ -127,20 +131,20 @@ impl Default for SelectedParticle {
     }
 }
 #[derive(Component)]
-pub struct MainCamera;
+struct MainCamera;
 
 #[derive(Default, Reflect, GizmoConfigGroup)]
-pub struct BrushGizmos;
+struct BrushGizmos;
 
 #[derive(Component)]
 #[allow(dead_code)]
-pub struct Brush {
-    pub size: usize,
-    pub color: Color,
+struct Brush {
+    size: usize,
+    color: Color,
 }
 
 impl Brush {
-    pub fn new(size: usize, color: Color) -> Self {
+    fn new(size: usize, color: Color) -> Self {
         Brush { size, color }
     }
 }
@@ -154,10 +158,10 @@ impl Default for Brush {
 }
 
 #[derive(Reflect, Resource)]
-pub struct MaxBrushSize(pub usize);
+struct MaxBrushSize(usize);
 
 #[derive(Resource, Default, Debug)]
-pub struct CursorCoords(pub Vec2);
+struct CursorCoords(Vec2);
 
 impl Default for MaxBrushSize {
     fn default() -> Self {
@@ -166,7 +170,7 @@ impl Default for MaxBrushSize {
 }
 
 #[derive(Default, Clone, Hash, Eq, PartialEq, Debug, States)]
-pub enum BrushType {
+enum BrushType {
     Line,
     #[default]
     Circle,
@@ -174,7 +178,7 @@ pub enum BrushType {
 }
 
 impl BrushType {
-    pub fn update_brush(
+    fn update_brush(
         &self,
         coords: Vec2,
         brush_size: f32,
@@ -195,7 +199,7 @@ impl BrushType {
         }
     }
 
-    pub fn spawn_particles(
+    fn spawn_particles(
         &self,
         commands: &mut Commands,
         coords: Vec2,
@@ -262,7 +266,7 @@ impl BrushType {
         }
     }
 
-    pub fn remove_particles(&self, commands: &mut Commands, coords: IVec2, brush_size: f32) {
+    fn remove_particles(&self, commands: &mut Commands, coords: IVec2, brush_size: f32) {
         let min_x = -(brush_size as i32) / 2;
         let max_x = (brush_size / 2.) as i32;
         let min_y = -(brush_size as i32) / 2;
@@ -302,28 +306,28 @@ impl BrushType {
 }
 
 #[derive(States, Reflect, Default, Debug, Clone, Eq, PartialEq, Hash)]
-pub enum BrushState {
+enum BrushState {
     #[default]
     Spawn,
     Despawn,
 }
 
 #[derive(Event)]
-pub struct BrushResizeEvent(pub usize);
+struct BrushResizeEvent(usize);
 
 // Triggers the removal of all particles when the corresponding UI button is clicked
 #[derive(Event)]
-pub struct CanvasResetEvent;
+struct CanvasResetEvent;
 
 #[derive(States, Reflect, Default, Debug, Clone, Eq, PartialEq, Hash)]
-pub enum AppState {
+enum AppState {
     #[default]
     Canvas,
     Ui,
 }
 
 #[derive(Resource, Default)]
-pub struct SceneSelectionDialog {
+struct SceneSelectionDialog {
     show_save_dialog: bool,
     show_load_dialog: bool,
     save_input_text: String,
@@ -331,7 +335,7 @@ pub struct SceneSelectionDialog {
 }
 
 #[derive(Resource)]
-pub struct ParticleSceneFilePath(pub PathBuf);
+struct ParticleSceneFilePath(PathBuf);
 
 impl Default for ParticleSceneFilePath {
     fn default() -> ParticleSceneFilePath {
@@ -348,8 +352,6 @@ impl Default for ParticleSceneFilePath {
         ParticleSceneFilePath(path)
     }
 }
-
-
 
 struct ParticleControlUI;
 struct BrushControlUI;
@@ -548,7 +550,7 @@ impl DebugUI {
     }
 }
 
-pub fn setup_camera(mut commands: Commands) {
+fn setup_camera(mut commands: Commands) {
     commands.spawn((
         Camera2dBundle {
             projection: OrthographicProjection {
@@ -562,7 +564,7 @@ pub fn setup_camera(mut commands: Commands) {
     ));
 }
 
-pub fn zoom_camera(
+fn zoom_camera(
     mut scroll_evr: EventReader<MouseWheel>,
     mut camera_query: Query<&mut OrthographicProjection, With<MainCamera>>,
 ) {
@@ -575,7 +577,7 @@ pub fn zoom_camera(
     }
 }
 
-pub fn pan_camera(
+fn pan_camera(
     mut camera_query: Query<&mut Transform, With<MainCamera>>,
     keys: Res<ButtonInput<KeyCode>>,
 ) {
@@ -598,7 +600,7 @@ pub fn pan_camera(
     }
 }
 
-pub fn update_cursor_coordinates(
+fn update_cursor_coordinates(
     mut coords: ResMut<CursorCoords>,
     q_window: Query<&Window, With<PrimaryWindow>>,
     q_camera: Query<(&Camera, &GlobalTransform), With<MainCamera>>,
@@ -616,7 +618,7 @@ pub fn update_cursor_coordinates(
     }
 }
 
-pub fn update_app_state(
+fn update_app_state(
     mut contexts: EguiContexts,
     app_state: Res<State<AppState>>,
     mut next_app_state: ResMut<NextState<AppState>>,
@@ -636,17 +638,17 @@ pub fn update_app_state(
     }
 }
 
-pub fn hide_cursor(mut primary_window: Query<&mut Window, With<PrimaryWindow>>) {
+fn hide_cursor(mut primary_window: Query<&mut Window, With<PrimaryWindow>>) {
     let window = &mut primary_window.single_mut();
     window.cursor.visible = false;
 }
 
-pub fn show_cursor(mut primary_window: Query<&mut Window, With<PrimaryWindow>>) {
+fn show_cursor(mut primary_window: Query<&mut Window, With<PrimaryWindow>>) {
     let window = &mut primary_window.single_mut();
     window.cursor.visible = true;
 }
 
-pub fn setup_brush(
+fn setup_brush(
     mut commands: Commands,
     mut brush_gizmos: Gizmos<BrushGizmos>,
     cursor_coords: Res<CursorCoords>,
@@ -658,7 +660,7 @@ pub fn setup_brush(
     brush_type.update_brush(cursor_coords.0, brush_size as f32, &mut brush_gizmos);
 }
 
-pub fn update_brush(
+fn update_brush(
     brush_query: Query<&Brush>,
     cursor_coords: Res<CursorCoords>,
     mut brush_gizmos: Gizmos<BrushGizmos>,
@@ -668,7 +670,7 @@ pub fn update_brush(
     brush_type.update_brush(cursor_coords.0, brush.size as f32, &mut brush_gizmos);
 }
 
-pub fn resize_brush_event_listener(
+fn resize_brush_event_listener(
     mut ev_brush_resize: EventReader<BrushResizeEvent>,
     mut brush_query: Query<&mut Brush>,
 ) {
@@ -678,7 +680,14 @@ pub fn resize_brush_event_listener(
     }
 }
 
-pub fn spawn_particles(
+fn toggle_simulation(mut commands: Commands, simulation_pause: Option<Res<SimulationRun>>) {
+    if simulation_pause.is_some() {
+        commands.remove_resource::<SimulationRun>();
+    } else {
+        commands.init_resource::<SimulationRun>();
+    }
+}
+fn spawn_particles(
     mut commands: Commands,
     cursor_coords: Res<CursorCoords>,
     selected: Res<SelectedParticle>,
@@ -697,7 +706,7 @@ pub fn spawn_particles(
     );
 }
 
-pub fn despawn_particles(
+fn despawn_particles(
     mut commands: Commands,
     cursor_coords: Res<CursorCoords>,
     brush_type: Res<State<BrushType>>,
@@ -715,7 +724,7 @@ pub fn despawn_particles(
     brush_type.remove_particles(&mut commands, cursor_coords.0.as_ivec2(), brush_size as f32)
 }
 
-pub fn render_ui(
+fn render_ui(
     mut commands: Commands,
     mut contexts: EguiContexts,
     (
@@ -741,7 +750,7 @@ pub fn render_ui(
     (mut selected_particle, particle_types): (ResMut<SelectedParticle>, Res<ParticleTypes>),
     (mut scene_selection_dialog, mut scene_path, mut ev_save_scene, mut ev_load_scene): (
         ResMut<SceneSelectionDialog>,
-	ResMut<ParticleSceneFilePath>,
+        ResMut<ParticleSceneFilePath>,
         EventWriter<SaveSceneEvent>,
         EventWriter<LoadSceneEvent>,
     ),
@@ -761,7 +770,7 @@ pub fn render_ui(
                 &mut brush_state,
                 &mut commands,
             );
-	    ui.separator();
+            ui.separator();
             BrushControlUI.render(
                 ui,
                 &mut brush_size,
@@ -770,7 +779,7 @@ pub fn render_ui(
                 &current_brush_type.get(),
                 &mut next_brush_type,
             );
-	    ui.separator();
+            ui.separator();
             SceneManagementUI.render(
                 ui,
                 &mut scene_selection_dialog,
@@ -778,7 +787,7 @@ pub fn render_ui(
                 &mut ev_save_scene,
                 &mut ev_load_scene,
             );
-	    ui.separator();
+            ui.separator();
             DebugUI.render(
                 ui,
                 &debug_particles,
@@ -788,4 +797,3 @@ pub fn render_ui(
             );
         });
 }
-
