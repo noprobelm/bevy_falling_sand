@@ -6,6 +6,7 @@ use smallvec::{smallvec, SmallVec};
 
 /// A trait for defining a material type. Materials can be translated into commonly used movement priorities.
 pub trait Material {
+    /// Builds a new movement priority.
     fn into_movement_priority(&self) -> MovementPriority {
         MovementPriority::empty()
     }
