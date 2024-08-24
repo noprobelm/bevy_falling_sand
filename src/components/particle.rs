@@ -28,12 +28,30 @@ pub struct ParticleType {
     pub name: String,
 }
 
+impl ParticleType {
+    /// Creates a new ParticleType
+    pub fn new(name: &str) -> ParticleType {
+        ParticleType {
+            name: name.to_string(),
+        }
+    }
+}
+
 /// Holds the particle type's name. Used to map to particle type data.
 #[derive(Component, Clone, Debug, PartialEq, Reflect, Serialize, Deserialize)]
 #[reflect(Component)]
 pub struct Particle {
     /// The particle's unique name.
     pub name: String,
+}
+
+impl Particle {
+    /// Creates a new Particle
+    pub fn new(name: &str) -> Particle {
+        Particle {
+            name: name.to_string(),
+        }
+    }
 }
 
 /// Convenience bundle for adding new static particle types.
