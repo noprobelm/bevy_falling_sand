@@ -4,7 +4,7 @@ mod rng;
 mod color;
 mod hibernation;
 mod movement;
-mod material;
+pub mod material;
 mod scenes;
 
 pub use particle::*;
