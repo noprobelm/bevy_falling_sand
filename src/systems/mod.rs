@@ -32,10 +32,10 @@ pub(super) struct ParticleSystemsPlugin;
 
 impl bevy::prelude::Plugin for ParticleSystemsPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
+        app.add_systems(Update, handle_new_particles);
         app.add_systems(
             Update,
             (
-                handle_new_particles.before(handle_particles),
                 handle_particles,
                 reset_chunks.after(handle_particles),
             )
