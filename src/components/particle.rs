@@ -18,12 +18,12 @@
 use serde::{Serialize, Deserialize};
 use bevy::prelude::*;
 
-/// Marker component for particle parents.
+/// Marker component for entities holding data for a unique particle type.
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Component, Reflect)]
 #[reflect(Component)]
-pub struct ParticleParent;
+pub struct ParticleType;
 
-/// Holds the particle type's name. Used to map to parent particle data.
+/// Holds the particle type's name. Used to map to particle type data.
 #[derive(Component, Clone, Debug, PartialEq, Reflect, Serialize, Deserialize)]
 #[reflect(Component)]
 pub struct Particle {

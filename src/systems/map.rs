@@ -41,7 +41,7 @@ pub fn handle_new_particles(
             Option<&Momentum>,
             Option<&Anchored>,
         ),
-        With<ParticleParent>,
+        With<ParticleType>,
     >,
     particle_query: Query<(&Particle, &Transform, Entity), Changed<Particle>>,
     mut rng: ResMut<GlobalRng>,

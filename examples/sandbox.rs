@@ -562,7 +562,7 @@ fn setup_custom_particle(
 ) {
     let entity = commands
         .spawn((
-            ParticleParent,
+            ParticleType,
             Density(4),
             Velocity::new(1, 3),
             ParticleColors::new(vec![

@@ -17,7 +17,7 @@ pub fn setup_particle_types(mut commands: Commands, mut type_map: ResMut<Particl
 
         type_map.insert(particle_name.clone(), entity);
         commands.entity(entity).insert((
-            ParticleParent,
+            ParticleType,
             SpatialBundle::from_transform(Transform::from_xyz(0., 0., 0.))),
         );
         let particle_data = map
