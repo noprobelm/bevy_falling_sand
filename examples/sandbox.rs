@@ -11,7 +11,7 @@ use bevy::{
 
 use bevy_egui::{EguiContexts, EguiPlugin};
 
-use bevy_falling_sand::{*, material::Material};
+use bevy_falling_sand::{material::Material, *};
 
 fn main() {
     let mut app = App::new();
@@ -560,11 +560,39 @@ fn setup_custom_particle(
     mut particle_list: ResMut<ParticleList>,
     mut particle_type_map: ResMut<ParticleTypeMap>,
 ) {
+    // For particles that have movement, use the DynamicParticleTypeBundle
     let entity = commands
         .spawn((
-            ParticleType,
-            Density(4),
-            Velocity::new(1, 3),
+            DynamicParticleTypeBundle::new(
+                ParticleType {
+                    name: String::from("My Custom Particle"),
+                },
+                Density(4),
+                Velocity::new(1, 3),
+                MovableSolid::new().into_movement_priority(),
+                ParticleColors::new(vec![
+                    Color::srgba(0.22, 0.11, 0.16, 1.0),
+                    Color::srgba(0.24, 0.41, 0.56, 1.0),
+                    Color::srgba(0.67, 0.74, 0.55, 1.0),
+                    Color::srgba(0.91, 0.89, 0.71, 1.0),
+                    Color::srgba(0.95, 0.61, 0.43, 1.0),
+                ]),
+            ),
+            // If momentum effects are desired, insert the component.
+            Momentum::ZERO,
+        ))
+        .id();
+
+    let custom_particle = String::from("My Custom Particle");
+    particle_list.push(custom_particle.clone());
+    particle_type_map.insert(custom_particle, entity);
+
+    // For particles that have no movement, use the StaticParticleTypeBundle
+    let entity = commands
+        .spawn(StaticParticleTypeBundle::new(
+            ParticleType {
+                name: String::from("My Custom Wall Particle"),
+            },
             ParticleColors::new(vec![
                 Color::srgba(0.22, 0.11, 0.16, 1.0),
                 Color::srgba(0.24, 0.41, 0.56, 1.0),
@@ -572,12 +600,9 @@ fn setup_custom_particle(
                 Color::srgba(0.91, 0.89, 0.71, 1.0),
                 Color::srgba(0.95, 0.61, 0.43, 1.0),
             ]),
-            MovableSolid::new().into_movement_priority(),
-            SpatialBundle::from_transform(Transform::from_xyz(0., 0., 0.)),
         ))
         .id();
-
-    let custom_particle = String::from("My Custom Particle");
+    let custom_particle = String::from("My Custom Wall Particle");
     particle_list.push(custom_particle.clone());
     particle_type_map.insert(custom_particle, entity);
 }

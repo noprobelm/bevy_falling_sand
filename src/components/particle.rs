@@ -15,18 +15,82 @@
 //! - `anchored`: [Anchored]: If a particle should not be evaluated, and block the movement of all other particles (e.g., a 'wall'), it should have this component.
 //! - `name`: [Name]: Can be used for organizing data if `bevy_reflect` being used.
 
-use serde::{Serialize, Deserialize};
 use bevy::prelude::*;
+use serde::{Deserialize, Serialize};
+
+use crate::components::{Density, MovementPriority, ParticleColors, Velocity};
 
 /// Marker component for entities holding data for a unique particle type.
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Component, Reflect)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Component, Reflect)]
 #[reflect(Component)]
-pub struct ParticleType;
+pub struct ParticleType {
+    /// The particle type's unique name.
+    pub name: String,
+}
 
 /// Holds the particle type's name. Used to map to particle type data.
 #[derive(Component, Clone, Debug, PartialEq, Reflect, Serialize, Deserialize)]
 #[reflect(Component)]
 pub struct Particle {
     /// The particle's unique name.
-    pub name: String
+    pub name: String,
+}
+
+/// Convenience bundle for adding new static particle types.
+#[derive(Bundle)]
+pub struct StaticParticleTypeBundle {
+    /// The unique identifier for the particle.
+    pub particle_type: ParticleType,
+    /// The particle type's colors.
+    pub colors: ParticleColors,
+    /// The particle type's global transform.
+    pub spatial: SpatialBundle,
+}
+
+impl StaticParticleTypeBundle {
+    /// Creates a new StaticParticleTypeBundle
+    pub fn new(particle_type: ParticleType, colors: ParticleColors) -> StaticParticleTypeBundle {
+        StaticParticleTypeBundle {
+            particle_type,
+            colors,
+            spatial: SpatialBundle::from_transform(Transform::from_xyz(0., 0., 0.)),
+        }
+    }
+}
+
+/// Convenience bundle for adding new dynamic particle types.
+#[derive(Bundle)]
+pub struct DynamicParticleTypeBundle {
+    /// The unique identifier for the particle.
+    pub particle_type: ParticleType,
+    /// The particle type's density.
+    pub density: Density,
+    /// The particle type's velocity.
+    pub velocity: Velocity,
+    /// The particle type's movement priority.
+    pub movement_priority: MovementPriority,
+    /// The particle type's colors.
+    pub colors: ParticleColors,
+    /// The particle type's global transform.
+    pub spatial: SpatialBundle,
+}
+
+impl DynamicParticleTypeBundle {
+    /// Creates a new DynamicParticleTypeBundle
+    pub fn new(
+        particle_type: ParticleType,
+        density: Density,
+        velocity: Velocity,
+        movement_priority: MovementPriority,
+        colors: ParticleColors,
+    ) -> DynamicParticleTypeBundle {
+        DynamicParticleTypeBundle {
+            particle_type,
+            density,
+            velocity,
+            movement_priority,
+            colors,
+            spatial: SpatialBundle::from_transform(Transform::from_xyz(0., 0., 0.)),
+        }
+    }
 }
