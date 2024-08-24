@@ -208,7 +208,7 @@ impl BrushType {
         commands: &mut Commands,
         coords: Vec2,
         brush_size: f32,
-        selected_particle: ParticleType,
+        selected_particle: Particle,
     ) {
         let min_x = -(brush_size as i32) / 2;
         let max_x = (brush_size / 2.) as i32;
@@ -731,7 +731,7 @@ fn spawn_particles(
         &mut commands,
         cursor_coords.0,
         brush.size as f32,
-        ParticleType {
+        Particle {
             name: selected.0.clone(),
         },
     );

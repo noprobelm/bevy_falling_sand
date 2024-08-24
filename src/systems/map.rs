@@ -43,7 +43,7 @@ pub fn handle_new_particles(
         ),
         With<ParticleParent>,
     >,
-    particle_query: Query<(&ParticleType, &Transform, Entity), Changed<ParticleType>>,
+    particle_query: Query<(&Particle, &Transform, Entity), Changed<Particle>>,
     mut rng: ResMut<GlobalRng>,
     mut map: ResMut<ChunkMap>,
     type_map: Res<ParticleTypeMap>,
@@ -74,7 +74,6 @@ pub fn handle_new_particles(
                         transform: *transform,
                         ..default()
                     },
-                    Particle,
                     Coordinates(coordinates),
                     ParticleColor(colors.random(rng)),
                     PhysicsRng::default(),

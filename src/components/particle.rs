@@ -23,14 +23,10 @@ use bevy::prelude::*;
 #[reflect(Component)]
 pub struct ParticleParent;
 
-/// Marker component for particles.
-#[derive(Clone, Eq, PartialEq, Hash, Debug, Default, Component)]
-pub struct Particle;
-
 /// Holds the particle type's name. Used to map to parent particle data.
 #[derive(Component, Clone, Debug, PartialEq, Reflect, Serialize, Deserialize)]
 #[reflect(Component)]
-pub struct ParticleType {
+pub struct Particle {
     /// The particle's unique name.
     pub name: String
 }

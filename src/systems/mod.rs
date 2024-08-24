@@ -42,7 +42,7 @@ impl bevy::prelude::Plugin for ParticleSystemsPlugin {
                 .in_set(ParticleSimulationSet)
                 .run_if(resource_exists::<SimulationRun>),
         )
-        .add_systems(Update, color_particles)
+            .add_systems(Update, color_particles.after(handle_new_particles))
         .add_systems(
             Update,
             (color_chunks, count_dynamic_particles, count_total_particles)

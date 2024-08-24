@@ -7,9 +7,9 @@ use crate::*;
 #[derive(Serialize, Deserialize)]
 pub struct ParticleData {
     /// The particle type to load.
-    pub particle_type: ParticleType,
+    pub particle_type: Particle,
     /// The coordinates of the particle.
-    pub coordinates: Coordinates 
+    pub coordinates: Coordinates
 }
 
 /// A collection of particles that make up a scene.

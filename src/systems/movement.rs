@@ -9,7 +9,7 @@ pub fn handle_particles(
     mut particle_query: Query<
         (
             Entity,
-            &ParticleType,
+            &Particle,
             &mut Coordinates,
             &mut Transform,
             &mut PhysicsRng,

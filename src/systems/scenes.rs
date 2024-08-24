@@ -7,7 +7,7 @@ use std::io::Write;
 
 /// Saves a scene to the PathBuf specified by [`SaveSceneEvent`](crate::SaveSceneEvent)
 pub fn save_scene_system(
-    particle_query: Query<(&ParticleType, &Coordinates)>,
+    particle_query: Query<(&Particle, &Coordinates)>,
     mut ev_save_scene: EventReader<SaveSceneEvent>,
 ) {
     for ev in ev_save_scene.read() {

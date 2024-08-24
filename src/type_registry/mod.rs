@@ -14,6 +14,6 @@ impl bevy::prelude::Plugin for ParticleTypeRegistryPlugin {
             .register_type::<ParticleColors>()
             .register_type::<Velocity>()
             .register_type::<Momentum>()
-            .register_type::<ParticleType>();
+            .register_type::<Particle>();
     }
 }
