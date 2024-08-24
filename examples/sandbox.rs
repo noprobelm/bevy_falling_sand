@@ -558,15 +558,13 @@ impl DebugUI {
 fn setup_custom_particle(
     mut commands: Commands,
     mut particle_list: ResMut<ParticleList>,
-    mut particle_type_map: ResMut<ParticleTypeMap>,
 ) {
     // For particles that have movement, use the DynamicParticleTypeBundle
-    let entity = commands
+    let dynamic_particle_type = ParticleType::new("My Custom Particle");
+    commands
         .spawn((
             DynamicParticleTypeBundle::new(
-                ParticleType {
-                    name: String::from("My Custom Particle"),
-                },
+		dynamic_particle_type.clone(),
                 Density(4),
                 Velocity::new(1, 3),
                 MovableSolid::new().into_movement_priority(),
@@ -580,19 +578,13 @@ fn setup_custom_particle(
             ),
             // If momentum effects are desired, insert the component.
             Momentum::ZERO,
-        ))
-        .id();
-
-    let custom_particle = String::from("My Custom Particle");
-    particle_list.push(custom_particle.clone());
-    particle_type_map.insert(custom_particle, entity);
+        ));
 
     // For particles that have no movement, use the StaticParticleTypeBundle
-    let entity = commands
+    let static_particle_type = ParticleType::new("My Custom Wall Particle");
+    commands
         .spawn(StaticParticleTypeBundle::new(
-            ParticleType {
-                name: String::from("My Custom Wall Particle"),
-            },
+	    static_particle_type.clone(),
             ParticleColors::new(vec![
                 Color::srgba(0.22, 0.11, 0.16, 1.0),
                 Color::srgba(0.24, 0.41, 0.56, 1.0),
@@ -600,11 +592,11 @@ fn setup_custom_particle(
                 Color::srgba(0.91, 0.89, 0.71, 1.0),
                 Color::srgba(0.95, 0.61, 0.43, 1.0),
             ]),
-        ))
-        .id();
-    let custom_particle = String::from("My Custom Wall Particle");
-    particle_list.push(custom_particle.clone());
-    particle_type_map.insert(custom_particle, entity);
+        ));
+
+    // Add the particle types to the UI for this example code.
+    particle_list.push(dynamic_particle_type.name);
+    particle_list.push(static_particle_type.name);
 }
 fn setup_camera(mut commands: Commands) {
     commands.spawn((

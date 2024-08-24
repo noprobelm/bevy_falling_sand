@@ -111,3 +111,13 @@ pub fn handle_new_particles(
         }
     }
 }
+
+/// Map all particles to their respective parent when added/changed within the simulation
+pub fn handle_new_particle_types(
+    particle_type_query: Query<(Entity, &ParticleType), Changed<ParticleType>>,
+    mut type_map: ResMut<ParticleTypeMap>
+) {
+    particle_type_query.iter().for_each(|(entity, particle_type)| {
+        type_map.insert(particle_type.name.clone(), entity);
+    });
+}
