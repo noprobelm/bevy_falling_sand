@@ -11,7 +11,7 @@ use bevy::{
 
 use bevy_egui::{EguiContexts, EguiPlugin};
 
-use bevy_falling_sand::*;
+use bevy_falling_sand::{*, material::Material};
 
 fn main() {
     let mut app = App::new();
@@ -30,7 +30,7 @@ fn main() {
     // Resources
     app.init_resource::<DebugParticles>()
         .init_resource::<SelectedParticle>()
-        .init_resource::<ParticleTypes>()
+        .init_resource::<ParticleList>()
         .init_resource::<CursorCoords>()
         .init_resource::<MaxBrushSize>()
         .init_resource::<ParticleSceneFilePath>()
@@ -67,6 +67,8 @@ fn main() {
     app.add_systems(Update, update_app_state.after(render_ui));
 
     // Particle management systems
+    app.add_systems(Startup, setup_custom_particle);
+
     app.add_systems(
         Update,
         toggle_simulation.run_if(input_just_pressed(KeyCode::Space)),
@@ -96,14 +98,15 @@ fn main() {
     app.run();
 }
 
-/// Guarantees our particle type buttons are presented in a specific order.
+/// Exists to preserve the order of particle type buttons as they exist in particles.ron. If we were to use the
+/// ParticleTypeMap struct instead, the order in which keys are presented is not guaranteed after initialization.
 #[derive(Resource)]
-struct ParticleTypes {
-    particle_types: Vec<String>,
+struct ParticleList {
+    particle_list: Vec<String>,
 }
 
-impl Default for ParticleTypes {
-    fn default() -> ParticleTypes {
+impl Default for ParticleList {
+    fn default() -> ParticleList {
         let file_path = "assets/particles/particles.ron";
         let file = File::open(file_path).unwrap();
         let particle_types_map: ron::Map = ron::de::from_reader(file).unwrap();
@@ -112,13 +115,19 @@ impl Default for ParticleTypes {
             .keys()
             .map(|key| key.clone().into_rust::<String>().unwrap())
             .collect();
-        ParticleTypes { particle_types }
+        ParticleList {
+            particle_list: particle_types,
+        }
     }
 }
 
-impl ParticleTypes {
+impl ParticleList {
     fn iter(&self) -> impl Iterator<Item = &String> {
-        self.particle_types.iter()
+        self.particle_list.iter()
+    }
+
+    fn push(&mut self, value: String) {
+        self.particle_list.push(value);
     }
 }
 
@@ -178,12 +187,7 @@ enum BrushType {
 }
 
 impl BrushType {
-    fn update_brush(
-        &self,
-        coords: Vec2,
-        brush_size: f32,
-        brush_gizmos: &mut Gizmos<BrushGizmos>,
-    ) {
+    fn update_brush(&self, coords: Vec2, brush_size: f32, brush_gizmos: &mut Gizmos<BrushGizmos>) {
         match self {
             BrushType::Line => brush_gizmos.line_2d(
                 Vec2::new(coords.x - brush_size * 3. / 2., coords.y),
@@ -362,7 +366,7 @@ impl ParticleControlUI {
     fn render(
         &self,
         ui: &mut egui::Ui,
-        particle_types: &ParticleTypes,
+        particle_types: &ParticleList,
         selected_particle: &mut SelectedParticle,
         brush_state: &mut ResMut<NextState<BrushState>>,
         commands: &mut Commands,
@@ -550,6 +554,33 @@ impl DebugUI {
     }
 }
 
+// Demonstrates how to set up a custom particle through code instead of RON.
+fn setup_custom_particle(
+    mut commands: Commands,
+    mut particle_list: ResMut<ParticleList>,
+    mut particle_type_map: ResMut<ParticleTypeMap>,
+) {
+    let entity = commands
+        .spawn((
+            ParticleParent,
+            Density(4),
+            Velocity::new(1, 3),
+            ParticleColors::new(vec![
+                Color::srgba(0.22, 0.11, 0.16, 1.0),
+                Color::srgba(0.24, 0.41, 0.56, 1.0),
+                Color::srgba(0.67, 0.74, 0.55, 1.0),
+                Color::srgba(0.91, 0.89, 0.71, 1.0),
+                Color::srgba(0.95, 0.61, 0.43, 1.0),
+            ]),
+            MovableSolid::new().into_movement_priority(),
+            SpatialBundle::from_transform(Transform::from_xyz(0., 0., 0.)),
+        ))
+        .id();
+
+    let custom_particle = String::from("My Custom Particle");
+    particle_list.push(custom_particle.clone());
+    particle_type_map.insert(custom_particle, entity);
+}
 fn setup_camera(mut commands: Commands) {
     commands.spawn((
         Camera2dBundle {
@@ -747,7 +778,7 @@ fn render_ui(
         Res<DynamicParticleCount>,
         Res<TotalParticleCount>,
     ),
-    (mut selected_particle, particle_types): (ResMut<SelectedParticle>, Res<ParticleTypes>),
+    (mut selected_particle, particle_types): (ResMut<SelectedParticle>, Res<ParticleList>),
     (mut scene_selection_dialog, mut scene_path, mut ev_save_scene, mut ev_load_scene): (
         ResMut<SceneSelectionDialog>,
         ResMut<ParticleSceneFilePath>,
