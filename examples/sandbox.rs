@@ -17,7 +17,7 @@ fn main() {
     let mut app = App::new();
     app.add_plugins(DefaultPlugins.set(WindowPlugin {
         primary_window: Some(Window {
-            title: "Falling Sand Playground".into(),
+            title: "Falling Sandbox".into(),
             mode: WindowMode::BorderlessFullscreen,
             ..default()
         }),
