@@ -7,7 +7,7 @@ use bevy_turborand::prelude::RngComponent;
 /// RNG to use when dealing with any entity that needs random movement behaviors.
 #[derive(Clone, PartialEq, Debug, Default, Component, Reflect)]
 #[reflect(Component)]
-pub struct PhysicsRng(RngComponent);
+pub struct PhysicsRng(pub RngComponent);
 
 impl PhysicsRng {
     /// Shuffles a given slice.

@@ -1,17 +1,17 @@
 //! Convenience module for inserting common types of movement priorities.
 
+use crate::components::MovementPriority;
 use bevy::prelude::*;
 use smallvec::{smallvec, SmallVec};
-use crate::components::MovementPriority;
 
 /// A trait for defining a material type. Materials can be translated into commonly used movement priorities.
 pub trait Material {
     fn into_movement_priority(&self) -> MovementPriority {
-        MovementPriority(SmallVec::new())
+        MovementPriority::empty()
     }
 }
 
-/// A wall, which has no movement priority.
+/// A wall, which has no movement.
 pub struct Wall;
 
 impl Wall {
@@ -35,11 +35,7 @@ impl Solid {
 
 impl Material for Solid {
     fn into_movement_priority(&self) -> MovementPriority {
-        MovementPriority(
-            smallvec![
-                smallvec![IVec2::NEG_Y],
-            ]
-        )
+        MovementPriority::from(smallvec![smallvec![IVec2::NEG_Y],])
     }
 }
 
@@ -55,12 +51,10 @@ impl MovableSolid {
 
 impl Material for MovableSolid {
     fn into_movement_priority(&self) -> MovementPriority {
-        MovementPriority(
-            smallvec![
-                smallvec![IVec2::NEG_Y],
-                smallvec![IVec2::NEG_ONE, IVec2::new(1, -1)],
-            ]
-        )
+        MovementPriority::from(smallvec![
+            smallvec![IVec2::NEG_Y],
+            smallvec![IVec2::NEG_ONE, IVec2::new(1, -1)],
+        ])
     }
 }
 
@@ -73,7 +67,7 @@ pub struct Liquid {
 impl Liquid {
     /// Creates a new Liquid.
     pub fn new(fluidity: usize) -> Liquid {
-	Liquid { fluidity }
+        Liquid { fluidity }
     }
 }
 
@@ -86,10 +80,13 @@ impl Material for Liquid {
         ];
 
         for i in 0..self.fluidity {
-            neighbors.push(smallvec![IVec2::X * (i + 2) as i32, IVec2::NEG_X * (i + 2) as i32]);
+            neighbors.push(smallvec![
+                IVec2::X * (i + 2) as i32,
+                IVec2::NEG_X * (i + 2) as i32
+            ]);
         }
 
-        MovementPriority(neighbors)
+        MovementPriority::from(neighbors)
     }
 }
 
@@ -102,20 +99,22 @@ pub struct Gas {
 impl Gas {
     /// Creates a new Gas.
     pub fn new(fluidity: usize) -> Gas {
-	Gas { fluidity }
+        Gas { fluidity }
     }
 }
 
 impl Material for Gas {
     fn into_movement_priority(&self) -> MovementPriority {
-        let mut neighbors: SmallVec<[SmallVec<[IVec2; 4]>; 8]> = smallvec![
-            smallvec![IVec2::Y, IVec2::new(1, 1), IVec2::new(-1, 1)]
-        ];
+        let mut neighbors: SmallVec<[SmallVec<[IVec2; 4]>; 8]> =
+            smallvec![smallvec![IVec2::Y, IVec2::new(1, 1), IVec2::new(-1, 1)]];
 
         for i in 0..self.fluidity {
-            neighbors.push(smallvec![IVec2::X * (i + 2) as i32, IVec2::NEG_X * (i + 2) as i32]);
+            neighbors.push(smallvec![
+                IVec2::X * (i + 2) as i32,
+                IVec2::NEG_X * (i + 2) as i32
+            ]);
         }
 
-        MovementPriority(neighbors)
+        MovementPriority::from(neighbors)
     }
 }

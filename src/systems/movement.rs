@@ -1,4 +1,3 @@
-use smallvec::SmallVec;
 use std::mem;
 
 use crate::*;
@@ -17,7 +16,7 @@ pub fn handle_particles(
             &mut Velocity,
             Option<&mut Momentum>,
             &Density,
-            &MovementPriority,
+            &mut MovementPriority,
         ),
         Without<Hibernating>,
     >,
@@ -36,7 +35,7 @@ pub fn handle_particles(
                 mut velocity,
                 mut momentum,
                 density,
-                movement_priority,
+                mut movement_priority,
             )| {
                 // Used to determine if we should add the particle to set of visited particles.
                 let mut moved = false;
@@ -45,92 +44,84 @@ pub fn handle_particles(
                     // same vector.
                     let mut obstructed: HashSet<IVec2> = HashSet::default();
 
-                    for group in &movement_priority.0 {
-                        let mut indices: Vec<usize> = (0..group.len()).collect();
-                        rng.shuffle(&mut indices);
+                    for relative_coordinates in movement_priority
+                        .iter_candidates(&mut rng, momentum.as_deref().cloned().as_ref())
+                    {
+                        let neighbor_coordinates = coordinates.0 + *relative_coordinates;
 
-                        if let Some(ref momentum) = momentum {
-                            filter_by_momentum(&mut indices, momentum, group)
+                        if visited.contains(&neighbor_coordinates)
+                            || obstructed.contains(&relative_coordinates.signum())
+                        {
+                            continue;
                         }
 
-                        for idx in indices {
-                            let relative_coordinates = group[idx];
-                            let neighbor_coordinates = coordinates.0 + relative_coordinates;
-
-                            if visited.contains(&neighbor_coordinates)
-                                || obstructed.contains(&relative_coordinates.signum())
-                            {
-                                continue;
-                            }
-
-                            match map.entity(&neighbor_coordinates) {
-                                Some(neighbor_entity) => {
-                                    if let Ok((
-                                        _,
-                                        neighbor_particle_type,
-                                        mut neighbor_coordinates,
-                                        mut neighbor_transform,
-                                        _,
-                                        _,
-                                        _,
-                                        neighbor_density,
-                                        _,
-                                    )) = particle_query.get_unchecked(*neighbor_entity)
-                                    {
-                                        if *particle_type == *neighbor_particle_type {
-                                            continue;
-                                        }
-                                        if density > neighbor_density {
-                                            map.swap(neighbor_coordinates.0, coordinates.0);
-
-                                            swap_particle_positions(
-                                                &mut coordinates,
-                                                &mut transform,
-                                                &mut neighbor_coordinates,
-                                                &mut neighbor_transform,
-                                            );
-
-                                            if let Some(ref mut momentum) = momentum {
-                                                momentum.0 = IVec2::ZERO; // Reset momentum after a swap
-                                            }
-
-                                            velocity.decrement();
-                                            moved = true;
-                                            break 'velocity_loop;
-                                        }
-                                        // We've encountered an anchored or hibernating particle. If this is a hibernating particle, it's guaranteed to
-                                        // be awoken on the next frame with the logic contained in ChunkMap.reset_chunks()
-                                        else {
-                                            obstructed.insert(relative_coordinates.signum());
-                                            continue;
-                                        }
+                        match map.entity(&neighbor_coordinates) {
+                            Some(neighbor_entity) => {
+                                if let Ok((
+                                    _,
+                                    neighbor_particle_type,
+                                    mut neighbor_coordinates,
+                                    mut neighbor_transform,
+                                    _,
+                                    _,
+                                    _,
+                                    neighbor_density,
+                                    _,
+                                )) = particle_query.get_unchecked(*neighbor_entity)
+                                {
+                                    if *particle_type == *neighbor_particle_type {
+                                        continue;
                                     }
-                                    // We've encountered an anchored particle
+                                    if density > neighbor_density {
+                                        map.swap(neighbor_coordinates.0, coordinates.0);
+
+                                        swap_particle_positions(
+                                            &mut coordinates,
+                                            &mut transform,
+                                            &mut neighbor_coordinates,
+                                            &mut neighbor_transform,
+                                        );
+
+                                        if let Some(ref mut momentum) = momentum {
+                                            momentum.0 = IVec2::ZERO; // Reset momentum after a swap
+                                        }
+
+                                        velocity.decrement();
+                                        moved = true;
+                                        break 'velocity_loop;
+                                    }
+                                    // We've encountered an anchored or hibernating particle. If this is a hibernating particle, it's guaranteed to
+                                    // be awoken on the next frame with the logic contained in ChunkMap.reset_chunks()
                                     else {
                                         obstructed.insert(relative_coordinates.signum());
                                         continue;
                                     }
                                 }
-                                // We've encountered a free slot for the target particle to move to
-                                None => {
-                                    map.swap(coordinates.0, neighbor_coordinates);
-                                    coordinates.0 = neighbor_coordinates;
-
-                                    transform.translation.x = neighbor_coordinates.x as f32;
-                                    transform.translation.y = neighbor_coordinates.y as f32;
-
-                                    if let Some(ref mut momentum) = momentum {
-                                        momentum.0 = relative_coordinates; // Set momentum relative to the current position
-                                    }
-
-                                    velocity.increment();
-
-                                    moved = true;
-
-                                    continue 'velocity_loop;
+                                // We've encountered an anchored particle
+                                else {
+                                    obstructed.insert(relative_coordinates.signum());
+                                    continue;
                                 }
-                            };
-                        }
+                            }
+                            // We've encountered a free slot for the target particle to move to
+                            None => {
+                                map.swap(coordinates.0, neighbor_coordinates);
+                                coordinates.0 = neighbor_coordinates;
+
+                                transform.translation.x = neighbor_coordinates.x as f32;
+                                transform.translation.y = neighbor_coordinates.y as f32;
+
+                                if let Some(ref mut momentum) = momentum {
+                                    momentum.0 = *relative_coordinates; // Set momentum relative to the current position
+                                }
+
+                                velocity.increment();
+
+                                moved = true;
+
+                                continue 'velocity_loop;
+                            }
+                        };
                     }
                 }
 
@@ -159,14 +150,4 @@ fn swap_particle_positions(
         &mut second_transform.translation,
     );
     mem::swap(&mut first_coordinates.0, &mut second_coordinates.0);
-}
-
-fn filter_by_momentum(indices: &mut Vec<usize>, momentum: &Momentum, group: &SmallVec<[IVec2; 4]>) {
-    for (idx, &relative_coordinates) in group.iter().enumerate() {
-        if relative_coordinates == momentum.0 {
-            indices.clear();
-            indices.push(idx);
-            break;
-        }
-    }
 }
