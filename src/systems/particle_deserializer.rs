@@ -10,7 +10,6 @@ pub fn deserialize_particle_types(
     mut type_map: ResMut<ParticleTypeMap>,
 ) {
     for ev in ev_particles_deserialize.read() {
-	println!("{:?}", ev.0);
 	let file = File::open(&ev.0).unwrap();
 
         let particle_types: ron::Map = ron::de::from_reader(file).unwrap();
