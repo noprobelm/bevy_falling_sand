@@ -9,6 +9,7 @@ mod hibernation;
 mod map;
 mod movement;
 mod scenes;
+mod particle_deserializer;
 
 pub use color::*;
 pub use debug::*;
@@ -16,6 +17,7 @@ pub use hibernation::*;
 pub use map::*;
 pub use movement::*;
 pub use scenes::*;
+pub use particle_deserializer::*;
 
 /// System set for systems that influence particle management.
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
