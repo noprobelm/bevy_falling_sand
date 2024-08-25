@@ -1,9 +1,16 @@
 //! All resources related to particle behavior are found in these modules.
 mod debug;
+mod kdtree;
 mod map;
 mod simulation;
 
+use bevy::utils::Duration;
+use bevy_spatial::{AutomaticUpdate, SpatialStructure};
+
+use crate::Particle;
+
 pub use debug::*;
+pub use kdtree::*;
 pub use map::*;
 pub use simulation::*;
 
@@ -15,6 +22,11 @@ impl bevy::prelude::Plugin for ParticleResourcesPlugin {
             .init_resource::<ParticleTypeMap>()
             .init_resource::<DynamicParticleCount>()
             .init_resource::<TotalParticleCount>()
-            .init_resource::<SimulationRun>();
+            .init_resource::<SimulationRun>()
+            .add_plugins(
+                AutomaticUpdate::<Particle>::new()
+                    .with_spatial_ds(SpatialStructure::KDTree2)
+                    .with_frequency(Duration::from_millis(200)),
+            );
     }
 }
