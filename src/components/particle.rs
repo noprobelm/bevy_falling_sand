@@ -14,7 +14,6 @@
 //! - `momentum`: [Momentum]: If a particle is capable of gaining momentum, it should be included in its bundle. Any starting value is valid, though Momentum::ZERO is recommended.
 //! - `anchored`: [Anchored]: If a particle should not be evaluated, and block the movement of all other particles (e.g., a 'wall'), it should have this component.
 //! - `name`: [Name]: Can be used for organizing data if `bevy_reflect` being used.
-
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 

@@ -51,7 +51,9 @@ impl bevy::prelude::Plugin for ParticleSystemsPlugin {
             )
             .add_systems(
                 Update,
-                load_scene_system.run_if(on_event::<crate::events::LoadSceneEvent>()),
+                load_scene_system
+                    .before(handle_new_particles)
+                    .run_if(on_event::<crate::events::LoadSceneEvent>()),
             )
             .observe(on_remove_particle)
             .observe(on_clear_chunk_map);

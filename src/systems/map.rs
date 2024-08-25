@@ -5,18 +5,22 @@ use bevy_turborand::prelude::{DelegatedRng, GlobalRng};
 /// Observer for disassociating a particle from its parent, despawning it, and removing it from the ChunkMap if a
 /// RemoveParticle event is triggered.
 pub fn on_remove_particle(
-    trigger: Trigger<RemoveParticle>,
+    trigger: Trigger<RemoveParticleEvent>,
     mut commands: Commands,
     mut map: ResMut<ChunkMap>,
 ) {
     if let Some(entity) = map.remove(&trigger.event().coordinates) {
-        commands.entity(entity).remove_parent().despawn();
+        if trigger.event().despawn == true {
+            commands.entity(entity).remove_parent().despawn();
+        } else {
+            commands.entity(entity).remove_parent();
+        }
     }
 }
 
 /// Observer for clearing all particles from the world as soon as a ClearChunkMap event is triggered.
 pub fn on_clear_chunk_map(
-    _trigger: Trigger<ClearChunkMap>,
+    _trigger: Trigger<ClearChunkMapEvent>,
     mut commands: Commands,
     particle_parent_map: Res<ParticleTypeMap>,
     mut map: ResMut<ChunkMap>,
