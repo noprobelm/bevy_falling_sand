@@ -1,8 +1,10 @@
 // Particle names are unique. Duplicates will overwrite previously mapped particles.
 //
-// Particles will behave as walls (which can be useful) unless they possess 3 properties required for movement:
+// Particles will behave as walls (which can be useful) unless they possess the 3 core properties required for movement:
 //     - "density": u32 - A particle's "weight"
-//     - "max_velocity": u32 - The number of times a particle will move in a frame.
+//     - "max_velocity": u32 - The maximum number of times a particle can move in a single frame. Be mindful of this
+//        number -- it has no limit other than the u8 range. High velocity particles can become quite resource
+//        intensive.
 //     - "liquid" || "movable_solid" || "solid" || "gas" || "wall" - See the following section
 // 
 // STATES OF MATTER
