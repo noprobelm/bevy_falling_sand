@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use bevy::{
     input::common_conditions::{input_just_pressed, input_pressed},
@@ -107,11 +107,12 @@ struct ParticleList {
 
 impl Default for ParticleList {
     fn default() -> ParticleList {
-        let file_path = "assets/particles/particles.ron";
-        let file = File::open(file_path).unwrap();
-        let particle_types_map: ron::Map = ron::de::from_reader(file).unwrap();
+        let mut example_path = Path::new(env!("CARGO_MANIFEST_DIR")).to_path_buf();
+        example_path.push("examples/assets/particles/particles.ron");
+        let file = File::open(example_path).unwrap();
+        let particle_types: ron::Map = ron::de::from_reader(file).unwrap();
 
-        let particle_types: Vec<String> = particle_types_map
+        let particle_types: Vec<String> = particle_types
             .keys()
             .map(|key| key.clone().into_rust::<String>().unwrap())
             .collect();
@@ -554,8 +555,9 @@ impl DebugUI {
     }
 }
 pub fn setup_particle_types(mut commands: Commands, mut type_map: ResMut<ParticleTypeMap>) {
-    let file_path = "assets/particles/particles.ron";
-    let file = File::open(file_path).unwrap();
+    let mut example_path = Path::new(env!("CARGO_MANIFEST_DIR")).to_path_buf();
+    example_path.push("examples/assets/particles/particles.ron");
+    let file = File::open(example_path).unwrap();
     let particle_types: ron::Map = ron::de::from_reader(file).unwrap();
 
     particle_types.iter().for_each(|(key, map)| {
@@ -564,9 +566,11 @@ pub fn setup_particle_types(mut commands: Commands, mut type_map: ResMut<Particl
 
         type_map.insert(particle_name.clone(), entity);
         commands.entity(entity).insert((
-            ParticleType{name: particle_name.clone()},
-            SpatialBundle::from_transform(Transform::from_xyz(0., 0., 0.))),
-        );
+            ParticleType {
+                name: particle_name.clone(),
+            },
+            SpatialBundle::from_transform(Transform::from_xyz(0., 0., 0.)),
+        ));
         let particle_data = map
             .clone()
             .into_rust::<ron::Map>()
@@ -648,36 +652,15 @@ pub fn setup_particle_types(mut commands: Commands, mut type_map: ResMut<Particl
 }
 
 // Demonstrates how to set up a custom particle through code instead of RON.
-fn setup_custom_particle(
-    mut commands: Commands,
-    mut particle_list: ResMut<ParticleList>,
-) {
+fn setup_custom_particle(mut commands: Commands, mut particle_list: ResMut<ParticleList>) {
     // For particles that have movement, use the DynamicParticleTypeBundle
     let dynamic_particle_type = ParticleType::new("My Custom Particle");
-    commands
-        .spawn((
-            DynamicParticleTypeBundle::new(
-		dynamic_particle_type.clone(),
-                Density(4),
-                Velocity::new(1, 3),
-                MovableSolid::new().into_movement_priority(),
-                ParticleColors::new(vec![
-                    Color::srgba(0.22, 0.11, 0.16, 1.0),
-                    Color::srgba(0.24, 0.41, 0.56, 1.0),
-                    Color::srgba(0.67, 0.74, 0.55, 1.0),
-                    Color::srgba(0.91, 0.89, 0.71, 1.0),
-                    Color::srgba(0.95, 0.61, 0.43, 1.0),
-                ]),
-            ),
-            // If momentum effects are desired, insert the component.
-            Momentum::ZERO,
-        ));
-
-    // For particles that have no movement, use the StaticParticleTypeBundle
-    let static_particle_type = ParticleType::new("My Custom Wall Particle");
-    commands
-        .spawn(StaticParticleTypeBundle::new(
-	    static_particle_type.clone(),
+    commands.spawn((
+        DynamicParticleTypeBundle::new(
+            dynamic_particle_type.clone(),
+            Density(4),
+            Velocity::new(1, 3),
+            MovableSolid::new().into_movement_priority(),
             ParticleColors::new(vec![
                 Color::srgba(0.22, 0.11, 0.16, 1.0),
                 Color::srgba(0.24, 0.41, 0.56, 1.0),
@@ -685,7 +668,23 @@ fn setup_custom_particle(
                 Color::srgba(0.91, 0.89, 0.71, 1.0),
                 Color::srgba(0.95, 0.61, 0.43, 1.0),
             ]),
-        ));
+        ),
+        // If momentum effects are desired, insert the component.
+        Momentum::ZERO,
+    ));
+
+    // For particles that have no movement, use the StaticParticleTypeBundle
+    let static_particle_type = ParticleType::new("My Custom Wall Particle");
+    commands.spawn(StaticParticleTypeBundle::new(
+        static_particle_type.clone(),
+        ParticleColors::new(vec![
+            Color::srgba(0.22, 0.11, 0.16, 1.0),
+            Color::srgba(0.24, 0.41, 0.56, 1.0),
+            Color::srgba(0.67, 0.74, 0.55, 1.0),
+            Color::srgba(0.91, 0.89, 0.71, 1.0),
+            Color::srgba(0.95, 0.61, 0.43, 1.0),
+        ]),
+    ));
 
     // Add the particle types to the UI for this example code.
     particle_list.push(dynamic_particle_type.name);
