@@ -8,7 +8,6 @@ mod debug;
 mod hibernation;
 mod map;
 mod movement;
-mod particle;
 mod scenes;
 
 pub use color::*;
@@ -16,7 +15,6 @@ pub use debug::*;
 pub use hibernation::*;
 pub use map::*;
 pub use movement::*;
-pub use particle::*;
 pub use scenes::*;
 
 /// System set for systems that influence particle management.
@@ -47,7 +45,6 @@ impl bevy::prelude::Plugin for ParticleSystemsPlugin {
                     .in_set(ParticleDebugSet)
                     .run_if(resource_exists::<crate::resources::DebugParticles>),
             )
-            .add_systems(Startup, setup_particle_types)
             .add_systems(
                 Update,
                 save_scene_system.run_if(on_event::<crate::events::SaveSceneEvent>()),
