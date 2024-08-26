@@ -7,7 +7,7 @@
 //! particle type:
 //!   - `StaticParticleTypeBundle`: For particles that have no movement behavior (i.e., walls)
 //!   - `DynamicParticleTypeBundle`: For particles that have movement behavior
-use bevy::prelude::*;
+use bevy::{prelude::*, utils::Duration};
 use std::path::Path;
 
 use crate::particle_management::ParticleList;
@@ -24,7 +24,9 @@ impl bevy::prelude::Plugin for ParticleSetupPlugin {
 }
 
 /// The easiest way to add new particles: publish a ParticleDeserializeEvent.
-pub fn setup_particle_types(mut ev_particle_deserialize: EventWriter<DeserializeParticleTypesEvent>) {
+pub fn setup_particle_types(
+    mut ev_particle_deserialize: EventWriter<DeserializeParticleTypesEvent>,
+) {
     let mut example_path = Path::new(env!("CARGO_MANIFEST_DIR")).to_path_buf();
     example_path.push("examples/assets/particles/particles.ron");
     ev_particle_deserialize.send(DeserializeParticleTypesEvent(example_path));
@@ -50,6 +52,11 @@ pub fn setup_custom_particle(mut commands: Commands, mut particle_list: ResMut<P
         ),
         // If momentum effects are desired, insert the marker component.
         Momentum::ZERO,
+        Burns::new(
+            Duration::from_secs(10),
+            Duration::from_secs(1),
+            Some(ParticleReaction::new(Particle::new("Steam"), 0.5)),
+        ),
     ));
 
     // For particles that have no movement, use the StaticParticleTypeBundle

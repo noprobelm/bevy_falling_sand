@@ -14,4 +14,10 @@ impl PhysicsRng {
     pub fn shuffle<T>(&mut self, slice: &mut [T]) {
         self.0.shuffle(slice);
     }
+
+    /// Returns a boolean value based on a rate. rate represents the chance to return a true value, with 0.0 being no
+    /// chance and 1.0 will always return true.
+    pub fn chance(&mut self, rate: f64) -> bool {
+        self.0.chance(rate)
+    }
 }

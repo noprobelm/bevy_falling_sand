@@ -5,6 +5,7 @@ mod color;
 mod hibernation;
 mod movement;
 pub mod material;
+mod burning;
 mod scenes;
 
 pub use particle::*;
@@ -13,4 +14,5 @@ pub use color::*;
 pub use hibernation::*;
 pub use movement::*;
 pub use material::*;
+pub use burning::*;
 pub use scenes::*;
