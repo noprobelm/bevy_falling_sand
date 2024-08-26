@@ -38,12 +38,14 @@ pub fn handle_new_particles(
     parent_query: Query<
         (
             Entity,
-	    Option<&Density>,
-	    Option<&MovementPriority>,
+            Option<&Density>,
+            Option<&MovementPriority>,
             Option<&Velocity>,
             &ParticleColors,
             Option<&Momentum>,
             Option<&Anchored>,
+            Option<&Fire>,
+            Option<&Burns>,
         ),
         With<ParticleType>,
     >,
@@ -66,8 +68,17 @@ pub fn handle_new_particles(
         }
 
         if let Some(parent_entity) = type_map.get(&particle_type.name) {
-            if let Ok((parent_entity, density, movement_priority, velocity, colors, momentum, anchored)) =
-                parent_query.get(*parent_entity)
+            if let Ok((
+                parent_entity,
+                density,
+                movement_priority,
+                velocity,
+                colors,
+                momentum,
+                anchored,
+                fire,
+                burns,
+            )) = parent_query.get(*parent_entity)
             {
                 commands.entity(entity).insert((
                     SpriteBundle {
@@ -91,9 +102,9 @@ pub fn handle_new_particles(
                     commands.entity(entity).insert(velocity.clone());
                 };
 
-		if let Some(movement_priority) = movement_priority {
-		    commands.entity(entity).insert(movement_priority.clone());
-		}
+                if let Some(movement_priority) = movement_priority {
+                    commands.entity(entity).insert(movement_priority.clone());
+                }
 
                 if momentum.is_some() {
                     commands.entity(entity).insert(Momentum(IVec2::ZERO));
@@ -103,6 +114,14 @@ pub fn handle_new_particles(
 
                 if anchored.is_some() {
                     commands.entity(entity).insert(Anchored);
+                }
+
+                if let Some(fire) = fire {
+                    commands.entity(entity).insert(fire.clone());
+                }
+
+                if let Some(burns) = burns {
+                    commands.entity(entity).insert(burns.clone());
                 }
 
                 commands.entity(parent_entity).add_child(entity);
@@ -119,9 +138,11 @@ pub fn handle_new_particles(
 /// Map all particles to their respective parent when added/changed within the simulation
 pub fn handle_new_particle_types(
     particle_type_query: Query<(Entity, &ParticleType), Changed<ParticleType>>,
-    mut type_map: ResMut<ParticleTypeMap>
+    mut type_map: ResMut<ParticleTypeMap>,
 ) {
-    particle_type_query.iter().for_each(|(entity, particle_type)| {
-        type_map.insert(particle_type.name.clone(), entity);
-    });
+    particle_type_query
+        .iter()
+        .for_each(|(entity, particle_type)| {
+            type_map.insert(particle_type.name.clone(), entity);
+        });
 }

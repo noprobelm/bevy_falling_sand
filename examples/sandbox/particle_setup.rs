@@ -90,11 +90,12 @@ pub fn setup_custom_particle(mut commands: Commands, mut particle_list: ResMut<P
         // If momentum effects are desired, insert the marker component.
         Momentum::ZERO,
         Fire {
-            burn_radius: 5,
+            burn_radius: 5.,
         },
     ));
 
     // Add the particle types to the UI for this example code.
     particle_list.push(dynamic_particle_type.name);
     particle_list.push(static_particle_type.name);
+    particle_list.push(fire.name);
 }
