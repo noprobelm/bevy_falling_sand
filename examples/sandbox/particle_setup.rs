@@ -72,6 +72,28 @@ pub fn setup_custom_particle(mut commands: Commands, mut particle_list: ResMut<P
         ]),
     ));
 
+    let fire = ParticleType::new("FIRE");
+    commands.spawn((
+        DynamicParticleTypeBundle::new(
+            fire.clone(),
+            Density(4),
+            Velocity::new(1, 3),
+            MovableSolid::new().into_movement_priority(),
+            ParticleColors::new(vec![
+                Color::srgba(1.0, 0.0, 0.0, 1.0),
+                Color::srgba(1.0, 0.35, 0.0, 1.0),
+                Color::srgba(1.0, 0.6, 0.0, 1.0),
+                Color::srgba(1.0, 0.81, 0.0, 1.0),
+                Color::srgba(1.0, 0.91, 0.03, 1.0),
+            ]),
+        ),
+        // If momentum effects are desired, insert the marker component.
+        Momentum::ZERO,
+        Fire {
+            burn_radius: 5,
+        },
+    ));
+
     // Add the particle types to the UI for this example code.
     particle_list.push(dynamic_particle_type.name);
     particle_list.push(static_particle_type.name);

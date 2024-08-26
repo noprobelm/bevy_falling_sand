@@ -7,7 +7,7 @@ use crate::{Particle, PhysicsRng};
 #[derive(Component)]
 pub struct Fire {
     /// The burn radius to use for the particle tree spatial query.
-    pub burn_radius: Vec2
+    pub burn_radius: usize
 }
 
 /// Stores information for a particle type's reaction behavior.
