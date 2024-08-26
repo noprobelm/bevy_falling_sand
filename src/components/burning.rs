@@ -55,7 +55,9 @@ pub struct Burns {
     /// Tick rate for which a reaction can occur.
     pub tick_timer: Timer,
     /// The ParticleReaction data.
-    pub reaction: Option<ParticleReaction>,
+    pub destroy: bool,
+    /// Destroy the burning particle on burning completion.
+    pub reaction: Option<ParticleReaction>
 }
 
 impl Burns {
@@ -63,11 +65,13 @@ impl Burns {
     pub fn new(
         duration: Duration,
         tick_rate: Duration,
+	destroy: bool,
         reaction: Option<ParticleReaction>,
     ) -> Burns {
         Burns {
             timer: Timer::new(duration, TimerMode::Once),
             tick_timer: Timer::new(tick_rate, TimerMode::Repeating),
+	    destroy,
             reaction,
         }
     }

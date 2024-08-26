@@ -55,6 +55,7 @@ pub fn setup_custom_particle(mut commands: Commands, mut particle_list: ResMut<P
         Burns::new(
             Duration::from_secs(10),
             Duration::from_secs(1),
+	    true,
             Some(ParticleReaction::new(Particle::new("Steam"), 0.5)),
         ),
     ));
