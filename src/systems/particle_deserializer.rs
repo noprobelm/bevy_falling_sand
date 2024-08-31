@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{utils::Duration, prelude::*};
 use std::fs::File;
 
 use crate::{components::material::Material, *};
@@ -10,7 +10,7 @@ pub fn deserialize_particle_types(
     mut type_map: ResMut<ParticleTypeMap>,
 ) {
     for ev in ev_particles_deserialize.read() {
-	let file = File::open(&ev.0).unwrap();
+        let file = File::open(&ev.0).unwrap();
 
         let particle_types: ron::Map = ron::de::from_reader(file).unwrap();
 
@@ -96,6 +96,87 @@ pub fn deserialize_particle_types(
                             "wall" => {
                                 commands.entity(entity).insert(Anchored);
                             }
+                            "burns" => {
+				let mut duration: Duration = Duration::from_millis(0);
+				let mut tick_rate : Duration = Duration::from_millis(0);
+				let mut chance_destroy_per_tick: Option<f64> = None;
+				let mut reaction: Option<Reacting> = None;
+				let mut random_colors: Option<RandomColors> = None;
+				let mut spreads: Option<Fire> = None;
+                                let burn_map =
+                                    component_data.clone().into_rust::<ron::Map>().expect(
+                                        "Config error: Expected burn data, found {component_str}",
+                                    );
+				burn_map.iter().for_each(|(burn_key, burn_value)| {
+				    let burn_str = burn_key.clone().into_rust::<String>().expect("Config error: Expected valid mapping for 'burns', found {burn_key}");
+				    match burn_str.as_str() {
+					"duration" => {
+					    duration = Duration::from_millis(burn_value.clone().into_rust::<u64>().expect("Config error: Expected milliseconds as u64 for 'duration', received {burn_value}"));
+					},
+					"tick_rate" => {
+					    tick_rate = Duration::from_millis(burn_value.clone().into_rust::<u64>().expect("Config error: Expected milliseconds as u64 for 'tick_rate', received {burn_value}"));
+					},
+					"chance_destroy_per_tick" => {
+					  chance_destroy_per_tick  = Some(burn_value.clone().into_rust::<f64>().expect("Config error: Expected milliseconds as u64 for 'tick_rate', received {burn_value}"));
+					},
+					"reaction" => {
+					    let mut produces = String::new();
+					    let mut chance_to_produce: f64 = 0.;
+					    let reaction_map = burn_value.clone().into_rust::<ron::Map>().expect("Config error: Expected valid mapping for 'reaction', found {reaction_value}");
+					    reaction_map.iter().for_each(|(reaction_key, reaction_value)| {
+						let reaction_str = reaction_key.clone().into_rust::<String>().expect("Config error: Expected valid mapping for 'reaction', found {reaction_value}");
+						match reaction_str.as_str() {
+						    "produces" => {
+							produces = reaction_value.clone().into_rust::<String>().expect("Config error: Expected string for 'produces', found {reaction_value}");
+						    },
+						    "chance_to_produce" => {
+							chance_to_produce = reaction_value.clone().into_rust::<f64>().expect("Config error: Expected chance as f64 for 'chance_to_produce', found {reaction_value}")
+						    }
+						    _ => {}
+						}
+					    });
+					    reaction = Some(Reacting::new(Particle::new(produces.as_str()), chance_to_produce));
+					},
+					"colors" => {
+					    let colors: Vec<Color> = burn_value
+						.clone()
+ .into_rust::<Vec<(f32, f32, f32, f32)>>()
+						.expect("Expected array of 4 tuples holding f32 values")
+						.iter()
+						.map(|vals| Color::srgba(vals.0, vals.1, vals.2, vals.3))
+						.collect();
+
+					    random_colors = Some(RandomColors::new(colors));
+					},
+					"spreads" => {
+					    let mut burn_radius: f32 = 0.;
+					    let mut chance_to_spread: f64 = 0.;
+					    let mut destroys_on_spread = false;
+					    let fire_map = burn_value.clone().into_rust::<ron::Map>().expect("Config error: Expected valid mapping for 'reaction', found {reaction_value}");
+					    fire_map.iter().for_each(|(fire_key, fire_value)| {
+						let reaction_str = fire_key.clone().into_rust::<String>().expect("Config error: Expected valid mapping for 'reaction', found {reaction_value}");
+						match reaction_str.as_str() {
+						    "radius" => {
+							burn_radius = fire_value.clone().into_rust::<f32>().expect("Config error: Expected f32 for 'radius', found {fire_value}");
+						    },
+						    "chance_to_produce" => {
+							chance_to_spread = fire_value.clone().into_rust::<f64>().expect("Config error: Expected chance as f64 for 'chance_to_spread', found {fire_value}")
+						    }
+						    "destroys_on_spread" => {
+							destroys_on_spread = fire_value.clone().into_rust::<bool>().expect("Config error: Expected bool for 'destroys_on_spread', found {fire_value}")
+						    }
+
+						    _ => {}
+						}
+					    });
+					    spreads = Some(Fire{burn_radius, chance_to_spread, destroys_on_spread})
+					}
+					_ => {}
+				    }
+				});
+				let burns = Burns::new(duration, tick_rate, chance_destroy_per_tick, reaction, random_colors, spreads);
+				commands.entity(entity).insert(burns);
+                            },
                             _ => {
                                 warn!["Erroneous config option found: {component_str}"]
                             }

@@ -140,36 +140,4 @@ pub fn setup_custom_particle(mut commands: Commands) {
             }),
         ),
     ));
-    commands.spawn((
-        StaticParticleTypeBundle::new(
-            ParticleType::new("Grass Wall"),
-            ParticleColors::new(vec![
-                Color::srgba(0.36, 0.53, 0.19, 1.0),
-                Color::srgba(0.24, 0.36, 0.13, 1.0),
-                Color::srgba(0.32, 0.48, 0.18, 1.0),
-                Color::srgba(0.36, 0.55, 0.2, 1.0),
-            ]),
-        ),
-        Burns::new(
-            Duration::from_secs(1),
-            Duration::from_millis(100),
-            Some(0.5),
-            Some(Reacting {
-                produces: Particle::new("FIRE"),
-                chance_to_produce: 1.,
-            }),
-            Some(RandomColors::new(vec![
-                Color::srgba(1.0, 0.0, 0.0, 1.0),
-                Color::srgba(1.0, 0.35, 0.0, 1.0),
-                Color::srgba(1.0, 0.6, 0.0, 1.0),
-                Color::srgba(1.0, 0.81, 0.0, 1.0),
-                Color::srgba(1.0, 0.91, 0.03, 1.0),
-            ])),
-            Some(Fire {
-                burn_radius: 1.5,
-                chance_to_spread: 0.75,
-                destroys_on_spread: false,
-            }),
-        ),
-    ));
 }
