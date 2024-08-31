@@ -1,5 +1,4 @@
 //! Convenience module for inserting common types of movement priorities.
-
 use crate::components::MovementPriority;
 use bevy::prelude::*;
 use smallvec::{smallvec, SmallVec};
