@@ -9,6 +9,7 @@ mod debug;
 mod hibernation;
 mod map;
 mod movement;
+mod material;
 mod particle_deserializer;
 mod scenes;
 
@@ -18,6 +19,7 @@ pub use debug::*;
 pub use hibernation::*;
 pub use map::*;
 pub use movement::*;
+pub use material::*;
 pub use particle_deserializer::*;
 pub use scenes::*;
 
@@ -79,6 +81,12 @@ impl bevy::prelude::Plugin for ParticleSystemsPlugin {
                     .run_if(on_event::<crate::events::DeserializeParticleTypesEvent>()),
             )
             .observe(on_remove_particle)
-            .observe(on_clear_chunk_map);
+            .observe(on_clear_chunk_map)
+            .observe(on_solid_added)
+            .observe(on_movable_solid_added)
+            .observe(on_liquid_added)
+            .observe(on_gas_added);
+
+
     }
 }

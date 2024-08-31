@@ -17,7 +17,7 @@
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::components::{Density, MovementPriority, ParticleColors, Velocity};
+use crate::*;
 
 /// Marker component for entities holding data for a unique particle type.
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Component, Reflect)]
@@ -107,6 +107,152 @@ impl DynamicParticleTypeBundle {
             velocity,
             movement_priority,
             colors,
+            spatial: SpatialBundle::from_transform(Transform::from_xyz(0., 0., 0.)),
+        }
+    }
+}
+
+/// Convenience bundle for adding new particles in a movable solid state.
+#[derive(Bundle)]
+pub struct MovableSolidBundle {
+    /// The unique identifier for the particle.
+    pub particle_type: ParticleType,
+    /// The particle type's density.
+    pub density: Density,
+    /// The particle type's velocity.
+    pub velocity: Velocity,
+    /// The particle type's colors.
+    pub colors: ParticleColors,
+    /// The MovableSolid component
+    pub movable_solid: MovableSolid,
+    /// The particle type's global transform.
+    pub spatial: SpatialBundle,
+}
+
+impl MovableSolidBundle {
+    /// Creates a new MovableSolidBundle
+    pub fn new(
+        particle_type: ParticleType,
+        density: Density,
+        velocity: Velocity,
+        colors: ParticleColors,
+    ) -> MovableSolidBundle {
+        MovableSolidBundle {
+            particle_type,
+            density,
+            velocity,
+            colors,
+            movable_solid: MovableSolid::new(),
+            spatial: SpatialBundle::from_transform(Transform::from_xyz(0., 0., 0.)),
+        }
+    }
+}
+
+/// Convenience bundle for adding new particles in a solid state.
+#[derive(Bundle)]
+pub struct SolidBundle {
+    /// The unique identifier for the particle.
+    pub particle_type: ParticleType,
+    /// The particle type's density.
+    pub density: Density,
+    /// The particle type's velocity.
+    pub velocity: Velocity,
+    /// The particle type's colors.
+    pub colors: ParticleColors,
+    /// The MovableSolid component
+    pub solid: Solid,
+    /// The particle type's global transform.
+    pub spatial: SpatialBundle,
+}
+
+impl SolidBundle {
+    /// Creates a new SolidBundle
+    pub fn new(
+        particle_type: ParticleType,
+        density: Density,
+        velocity: Velocity,
+        colors: ParticleColors,
+    ) -> SolidBundle {
+        SolidBundle {
+            particle_type,
+            density,
+            velocity,
+            colors,
+            solid: Solid::new(),
+            spatial: SpatialBundle::from_transform(Transform::from_xyz(0., 0., 0.)),
+        }
+    }
+}
+
+/// Convenience bundle for adding new particles in a liquid state.
+#[derive(Bundle)]
+pub struct LiquidBundle {
+    /// The unique identifier for the particle.
+    pub particle_type: ParticleType,
+    /// The particle type's density.
+    pub density: Density,
+    /// The particle type's velocity.
+    pub velocity: Velocity,
+    /// The particle type's colors.
+    pub colors: ParticleColors,
+    /// The MovableSolid component
+    pub liquid: Liquid,
+    /// The particle type's global transform.
+    pub spatial: SpatialBundle,
+}
+
+impl LiquidBundle {
+    /// Creates a new LiquidBundle
+    pub fn new(
+        particle_type: ParticleType,
+        density: Density,
+        velocity: Velocity,
+        fluidity: usize,
+        colors: ParticleColors,
+    ) -> LiquidBundle {
+        LiquidBundle {
+            particle_type,
+            density,
+            velocity,
+            colors,
+            liquid: Liquid::new(fluidity),
+            spatial: SpatialBundle::from_transform(Transform::from_xyz(0., 0., 0.)),
+        }
+    }
+}
+
+/// Convenience bundle for adding new dynamic particles in a gaseous state.
+#[derive(Bundle)]
+pub struct GasBundle {
+    /// The unique identifier for the particle.
+    pub particle_type: ParticleType,
+    /// The particle type's density.
+    pub density: Density,
+    /// The particle type's velocity.
+    pub velocity: Velocity,
+    /// The particle type's colors.
+    pub colors: ParticleColors,
+    /// The MovableSolid component
+    pub gas: Gas,
+    /// The particle type's global transform.
+    pub spatial: SpatialBundle,
+}
+
+impl GasBundle {
+    /// Creates a new GasBundle
+    pub fn new(
+        particle_type: ParticleType,
+        density: Density,
+        velocity: Velocity,
+        fluidity: usize,
+        colors: ParticleColors,
+    ) -> GasBundle {
+        GasBundle {
+            particle_type,
+            density,
+            velocity,
+            colors,
+            gas: Gas::new(fluidity),
             spatial: SpatialBundle::from_transform(Transform::from_xyz(0., 0., 0.)),
         }
     }

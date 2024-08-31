@@ -10,7 +10,7 @@
 use bevy::prelude::*;
 use std::path::Path;
 
-use bevy_falling_sand::{material::Material, *};
+use bevy_falling_sand::*;
 
 /// Particle Management Plugin
 pub(super) struct ParticleSetupPlugin;
@@ -34,11 +34,10 @@ pub fn setup_particle_types(
 /// Demonstrates how to set up a custom particle with code.
 pub fn setup_custom_particle(mut commands: Commands) {
     commands.spawn((
-        DynamicParticleTypeBundle::new(
+        MovableSolidBundle::new(
             ParticleType::new("My Custom Particle"),
             Density(4),
             Velocity::new(1, 3),
-            MovableSolid::new().into_movement_priority(),
             ParticleColors::new(vec![
                 Color::srgba(0.22, 0.11, 0.16, 1.0),
                 Color::srgba(0.24, 0.41, 0.56, 1.0),
