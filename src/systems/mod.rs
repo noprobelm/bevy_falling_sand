@@ -51,7 +51,9 @@ impl bevy::prelude::Plugin for ParticleSystemsPlugin {
                 Update,
                 (
                     color_particles.after(handle_new_particles),
-                    color_random_particles.after(handle_new_particles),
+                    color_random_particles
+                        .after(handle_new_particles)
+                        .run_if(resource_exists::<SimulationRun>),
                 ),
             )
             .add_systems(
