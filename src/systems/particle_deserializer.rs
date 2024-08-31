@@ -97,8 +97,8 @@ pub fn deserialize_particle_types(
                                 commands.entity(entity).insert(Anchored);
                             }
                             "burns" => {
-				let mut duration: Duration = Duration::from_millis(1000);
-				let mut tick_rate : Duration = Duration::from_millis(100);
+				let mut duration: Duration = Duration::from_millis(0);
+				let mut tick_rate : Duration = Duration::from_millis(0);
 				let mut chance_destroy_per_tick: Option<f64> = None;
 				let mut reaction: Option<Reacting> = None;
 				let mut random_colors: Option<RandomColors> = None;
@@ -161,22 +161,64 @@ pub fn deserialize_particle_types(
 						    },
 						    "chance_to_spread" => {
 							chance_to_spread = fire_value.clone().into_rust::<f64>().expect("Config error: Expected chance as f64 for 'chance_to_spread', found {fire_value}")
-						    }
+						    },
 						    "destroys_on_spread" => {
 							destroys_on_spread = fire_value.clone().into_rust::<bool>().expect("Config error: Expected bool for 'destroys_on_spread', found {fire_value}")
-						    }
-
+						    },
 						    _ => {}
 						}
 					    });
-					    spreads = Some(Fire{burn_radius, chance_to_spread, destroys_on_spread})
-					}
+					    spreads = Some(Fire{burn_radius, chance_to_spread, destroys_on_spread});
+					},
 					_ => {}
 				    }
 				});
 				let burns = Burns::new(duration, tick_rate, chance_destroy_per_tick, reaction, random_colors, spreads);
 				commands.entity(entity).insert(burns);
                             },
+					"fire" => {
+					    let mut burn_radius: f32 = 0.;
+					    let mut chance_to_spread: f64 = 0.;
+					    let mut destroys_on_spread = false;
+					    let fire_map = component_data.clone().into_rust::<ron::Map>().expect("Config error: Expected valid mapping for 'reaction', found {reaction_value}");
+					    fire_map.iter().for_each(|(fire_key, fire_value)| {
+						let reaction_str = fire_key.clone().into_rust::<String>().expect("Config error: Expected valid mapping for 'reaction', found {reaction_value}");
+						match reaction_str.as_str() {
+						    "burn_radius" => {
+							burn_radius = fire_value.clone().into_rust::<f32>().expect("Config error: Expected f32 for 'radius', found {fire_value}");
+						    },
+						    "chance_to_spread" => {
+							chance_to_spread = fire_value.clone().into_rust::<f64>().expect("Config error: Expected chance as f64 for 'chance_to_spread', found {fire_value}")
+						    },
+						    "destroys_on_spread" => {
+							destroys_on_spread = fire_value.clone().into_rust::<bool>().expect("Config error: Expected bool for 'destroys_on_spread', found {fire_value}")
+						    },
+						    _ => {}
+						}
+					    });
+					    commands.entity(entity).insert(Fire{burn_radius, chance_to_spread, destroys_on_spread});
+					},
+			    "burning" => {
+				let mut duration: Duration = Duration::from_millis(0);
+				let mut tick_rate: Duration = Duration::from_millis(0);
+                                let burning_map =
+                                    component_data.clone().into_rust::<ron::Map>().expect(
+                                        "Config error: Expected burn data, found {component_str}",
+                                    );
+				burning_map.iter().for_each(|(burn_key, burn_value)| {
+				    let burn_str = burn_key.clone().into_rust::<String>().expect("Config error: Expected valid mapping for 'burns', found {burn_key}");
+				    match burn_str.as_str() {
+					"duration" => {
+					    duration = Duration::from_millis(burn_value.clone().into_rust::<u64>().expect("Config error: Expected milliseconds as u64 for 'duration', received {burn_value}"));
+					},
+					"tick_rate" => {
+					    tick_rate = Duration::from_millis(burn_value.clone().into_rust::<u64>().expect("Config error: Expected milliseconds as u64 for 'tick_rate', received {burn_value}"));
+					},
+					_ => {}
+				    }
+				    commands.entity(entity).insert(Burning::new(duration, tick_rate));
+				});
+			    },
                             _ => {
                                 warn!["Erroneous config option found: {component_str}"]
                             }

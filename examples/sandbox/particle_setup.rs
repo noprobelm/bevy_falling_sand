@@ -7,7 +7,7 @@
 //! particle type:
 //!   - `StaticParticleTypeBundle`: For particles that have no movement behavior (i.e., walls)
 //!   - `DynamicParticleTypeBundle`: For particles that have movement behavior
-use bevy::{prelude::*, utils::Duration};
+use bevy::prelude::*;
 use std::path::Path;
 
 use bevy_falling_sand::{material::Material, *};
@@ -61,83 +61,5 @@ pub fn setup_custom_particle(mut commands: Commands) {
             Color::srgba(0.91, 0.89, 0.71, 1.0),
             Color::srgba(0.95, 0.61, 0.43, 1.0),
         ]),
-    ));
-
-    commands.spawn((
-        DynamicParticleTypeBundle::new(
-            ParticleType::new("Water"),
-            Density(2),
-            Velocity::new(1, 3),
-            Liquid::new(5).into_movement_priority(),
-            ParticleColors::new(vec![Color::srgba(0.043, 0.5, 0.67, 0.5)]),
-        ),
-        Momentum::ZERO,
-        // This particle type can burn when it comes within range of an entity with the Fire component.
-        Burns::new(
-            Duration::from_millis(0),
-            Duration::from_millis(0),
-            None,
-            None,
-            None,
-            None,
-        ),
-    ));
-
-    commands.spawn((
-        DynamicParticleTypeBundle::new(
-            ParticleType::new("FIRE"),
-            Density(4),
-            Velocity::new(1, 3),
-            Gas::new(1).into_movement_priority(),
-            ParticleColors::new(vec![
-                Color::srgba(1.0, 0.0, 0.0, 1.0),
-                Color::srgba(1.0, 0.35, 0.0, 1.0),
-                Color::srgba(1.0, 0.6, 0.0, 1.0),
-                Color::srgba(1.0, 0.81, 0.0, 1.0),
-                Color::srgba(1.0, 0.91, 0.03, 1.0),
-            ]),
-        ),
-        Fire {
-            burn_radius: 1.5,
-            chance_to_spread: 0.01,
-            destroys_on_spread: false,
-        },
-        Burns::new(
-            Duration::from_secs(1),
-            Duration::from_millis(100),
-            Some(0.5),
-            None,
-            None,
-            None,
-        ),
-        Burning::new(Duration::from_secs(1), Duration::from_millis(100)),
-    ));
-
-    commands.spawn((
-        StaticParticleTypeBundle::new(
-            ParticleType::new("Wood Wall"),
-            ParticleColors::new(vec![Color::srgba(0.63, 0.4, 0.18, 1.0)]),
-        ),
-        Burns::new(
-            Duration::from_secs(10),
-            Duration::from_millis(100),
-            Some(0.),
-            Some(Reacting {
-                produces: Particle::new("Steam"),
-                chance_to_produce: 0.015,
-            }),
-            Some(RandomColors::new(vec![
-                Color::srgba(1.0, 0.0, 0.0, 1.0),
-                Color::srgba(1.0, 0.35, 0.0, 1.0),
-                Color::srgba(1.0, 0.6, 0.0, 1.0),
-                Color::srgba(1.0, 0.81, 0.0, 1.0),
-                Color::srgba(1.0, 0.91, 0.03, 1.0),
-            ])),
-            Some(Fire {
-                burn_radius: 1.5,
-                chance_to_spread: 0.005,
-                destroys_on_spread: false,
-            }),
-        ),
     ));
 }

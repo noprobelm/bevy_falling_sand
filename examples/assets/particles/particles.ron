@@ -24,6 +24,38 @@
 // representing srgba https://docs.rs/bevy/latest/bevy/color/struct.Srgba.html
 // When a particle spawns, it will randomly be assigned one of the colors provided in this file.
 {
+    "Water": {
+        "density": 2,
+        "max_velocity": 3,
+        "liquid": 5,
+        "colors": [(0.043, 0.5, 0.67, 0.5)],
+        "momentum": true,
+    },
+    "FIRE": {
+        "density": 4,
+        "max_velocity": 3,
+        "gas": 1,
+        "colors": [
+            (1.0, 0.0, 0.0, 1.0),
+            (1.0, 0.35, 0.0, 1.0),
+            (1.0, 0.6, 0.0, 1.0),
+            (1.0, 0.81, 0.0, 1.0),
+            (1.0, 0.91, 0.03, 1.0),
+        ],
+        "fire": {
+            "burn_radius": 1.5,
+            "chance_to_spread": 0.01
+        },
+        "burning": {
+            "duration": 1000,
+            "tick_rate": 100
+        },
+        "burns": {
+            "duration": 1000,
+            "tick_rate": 100,
+            "chance_destroy_per_tick": 0.5,
+        }
+    },
     "Whiskey": {
         "density": 3,
         "max_velocity": 3,
@@ -75,10 +107,40 @@
                 "produces": "FIRE",
                 "chance_to_produce": 1.0
             },
-            "colors": [(1.0, 0.0, 0.0, 1.0), (1.0, 0.35, 0.0, 1.0), (1.0, 0.6, 0.0, 1.0), (1.0, 0.81, 0.0, 1.0), (1.0, 0.91, 0.03, 1.0)],
+            "colors": [
+                (1.0, 0.0, 0.0, 1.0),
+                (1.0, 0.35, 0.0, 1.0),
+                (1.0, 0.6, 0.0, 1.0),
+                (1.0, 0.81, 0.0, 1.0),
+                (1.0, 0.91, 0.03, 1.0)
+            ],
             "spreads": {
                 "burn_radius": 1.5,
                 "chance_to_spread": 1.,
+            }
+        }
+    },
+    "Wood Wall": {
+        "wall": true,
+        "colors": [(0.63, 0.4, 0.18, 1.0)],
+        "burns": {
+            "duration": 10000,
+            "tick_rate": 100,
+            "chance_destroy_per_tick": 0.0,
+            "reaction": {
+                "produces": "FIRE",
+                "chance_to_produce": 0.015
+            },
+            "colors": [
+                (1.0, 0.0, 0.0, 1.0),
+                (1.0, 0.35, 0.0, 1.0),
+                (1.0, 0.6, 0.0, 1.0),
+                (1.0, 0.81, 0.0, 1.0),
+                (1.0, 0.91, 0.03, 1.0)
+            ],
+            "spreads": {
+                "burn_radius": 1.5,
+                "chance_to_spread": 0.005
             }
         }
     },
