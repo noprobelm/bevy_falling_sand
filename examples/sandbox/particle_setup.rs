@@ -56,7 +56,7 @@ pub fn setup_custom_particle(mut commands: Commands) {
             Duration::from_secs(1),
             true,
             0.0,
-            Some(ParticleReaction::new(Particle::new("Steam"), 0.5)),
+            Some(Reacting::new(Particle::new("Steam"), 0.5)),
             None,
             None,
             None,
@@ -138,7 +138,7 @@ pub fn setup_custom_particle(mut commands: Commands) {
             Duration::from_millis(100),
             true,
             0.,
-            Some(ParticleReaction {
+            Some(Reacting {
                 produces: Particle::new("Steam"),
                 chance_to_produce: 0.015,
             }),

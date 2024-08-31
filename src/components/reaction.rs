@@ -1,16 +1,19 @@
+use bevy::prelude::*;
+use crate::*;
+
 /// Stores information for a particle type's reaction behavior.
 #[derive(Clone, Debug)]
-pub struct ParticleReaction {
+pub struct Reacting {
     /// What the reaction will produce.
     pub produces: Particle,
     /// The chance that the particle will produce something (0.0 is lowest chance, 1.0 is highest).
     pub chance_to_produce: f64,
 }
 
-impl ParticleReaction {
+impl Reacting {
     /// Creates a new ParticleReaction.
-    pub fn new(produces: Particle, chance_to_produce: f64) -> ParticleReaction {
-        ParticleReaction {
+    pub fn new(produces: Particle, chance_to_produce: f64) -> Reacting {
+        Reacting {
             produces,
             chance_to_produce,
         }

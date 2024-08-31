@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy::utils::Duration;
 
-use crate::{Coordinates, Particle, PhysicsRng, RandomColors, ParticleReaction};
+use crate::{Coordinates, Particle, PhysicsRng, RandomColors, Reacting};
 
 /// Marker for particle types that can inflict burning.
 #[derive(Clone, Debug, Component)]
@@ -26,7 +26,7 @@ pub struct Burns {
     /// Chance the particle with destroy per tick.
     pub chance_destroy_per_tick: f64,
     /// The ParticleReaction data.
-    pub reaction: Option<ParticleReaction>,
+    pub reaction: Option<Reacting>,
     /// What the particle should produce when it extinguishes.
     pub produces_on_completion: Option<Particle>,
     /// The colors to burn
@@ -42,7 +42,7 @@ impl Burns {
         tick_rate: Duration,
         destroy: bool,
 	chance_destroy_per_tick: f64,
-        reaction: Option<ParticleReaction>,
+        reaction: Option<Reacting>,
 	produces_on_completion: Option<Particle>,
 	colors: Option<RandomColors>,
 	spreads: Option<Fire>
