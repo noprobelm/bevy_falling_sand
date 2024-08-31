@@ -39,7 +39,7 @@ pub fn deserialize_particle_types(
     }
 }
 
-/// Handles deserialization of a single component for a given entity.
+/// Handles deserialization of a components for a given entity.
 fn handle_component(
     commands: &mut Commands,
     entity: Entity,
@@ -63,8 +63,6 @@ fn handle_component(
         _ => warn!("Erroneous config option found for particle '{}': {}", particle_name, component_str),
     }
 }
-
-/// Helper functions to insert various components.
 
 fn insert_density(commands: &mut Commands, entity: Entity, component_data: ron::Value) {
     let density = component_data.into_rust::<u32>().expect("Config error: Expected u32 for 'density'");
@@ -127,9 +125,6 @@ fn insert_burning(commands: &mut Commands, entity: Entity, component_data: ron::
     commands.entity(entity).insert(burning);
 }
 
-/// Helper functions for parsing nested structures like burns, fire, burning.
-
-/// Parses the `burns` component data into a tuple of its fields.
 fn parse_burns(component_data: ron::Value) -> (Duration, Duration, Option<f64>, Option<Reacting>, Option<RandomColors>, Option<Fire>) {
     let burn_map = component_data.into_rust::<ron::Map>().expect("Config error: Expected map for 'burns' component");
 
@@ -196,7 +191,6 @@ fn parse_reaction(reaction_value: ron::Value) -> Reacting {
     Reacting::new(Particle::new(&produces), chance_to_produce)
 }
 
-/// Parses the `fire` component data into its respective fields.
 fn parse_fire(component_data: ron::Value) -> Fire {
     let fire_map = component_data.into_rust::<ron::Map>().expect("Config error: Expected map for 'fire' component");
 
@@ -223,7 +217,6 @@ fn parse_fire(component_data: ron::Value) -> Fire {
     Fire {burn_radius, chance_to_spread, destroys_on_spread}
 }
 
-/// Parses the `burning` component data into its respective fields.
 fn parse_burning(component_data: ron::Value) -> Burning {
     let burning_map = component_data.into_rust::<ron::Map>().expect("Config error: Expected map for 'burning' component");
 
