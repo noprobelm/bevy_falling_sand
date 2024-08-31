@@ -1,38 +1,52 @@
 use bevy::prelude::*;
 use bevy::utils::Duration;
 
-use crate::{Particle, RandomColors, Reacting};
+use crate::{RandomColors, Reacting};
 
-/// Marker for particle types that can inflict burning.
+/// Marker for particle types that can inflict a burning status.
 #[derive(Clone, Debug, Component)]
 pub struct Fire {
-    /// The burn radius to use for the particle tree spatial query.
+    /// The radius of the fire effect.
     pub burn_radius: f32,
-    /// The chance that the particle will produce something (0.0 is lowest chance, 1.0 is highest).
+    /// The chance that the particle will attempt to burn particles within its radius (0.0 is the lowest chance, 1.0
+    /// is the highest).
     pub chance_to_spread: f64,
-    /// Destroys after lighting something on fire.
-    pub destroys_on_ignition: bool
+    /// The particle will destroy after spreading.
+    pub destroys_on_spread: bool,
 }
 
-/// Component for particles that have the capacity to burn.
+#[derive(Clone, Debug)]
+/// Behavior for particles that have a chance to be destroyed while in a burning state.
+pub struct BurnDestruction {
+    /// Chance the particle will be destroyed per tick.
+    pub chance_destroy_per_tick: f64,
+}
+
+impl BurnDestruction {
+    /// Creates a new BurnDestruction
+    pub fn new(chance_destroy_per_tick: f64) -> BurnDestruction {
+        BurnDestruction {
+            chance_destroy_per_tick,
+        }
+    }
+}
+
+/// Stores information about a particle that can burn.
 #[derive(Clone, Component, Debug)]
 pub struct Burns {
     /// Total duration for the burn effect.
-    pub timer: Timer,
+    pub duration: Duration,
     /// Tick rate for which a reaction can occur.
-    pub tick_timer: Timer,
-    /// Destroy the burning particle on burning completion.
-    pub destroy: bool,
-    /// Chance the particle with destroy per tick.
-    pub chance_destroy_per_tick: f64,
+    pub tick_rate: Duration,
+    /// Chance the particle with destroy per tick. If this is not none, the particle will be destroyed upon completion
+    /// of burning. Setting this value makes groups of burning particles look more natural as they disappear.
+    pub chance_destroy_per_tick: Option<f64>,
     /// The ParticleReaction data.
     pub reaction: Option<Reacting>,
-    /// What the particle should produce when it extinguishes.
-    pub produces_on_completion: Option<Particle>,
-    /// The colors to burn
+    /// The colors the particle should burn as.
     pub colors: Option<RandomColors>,
     /// Whether this particle will spread fire.
-    pub spreads: Option<Fire>
+    pub spreads: Option<Fire>,
 }
 
 impl Burns {
@@ -40,22 +54,42 @@ impl Burns {
     pub fn new(
         duration: Duration,
         tick_rate: Duration,
-        destroy: bool,
-	chance_destroy_per_tick: f64,
+        chance_destroy_per_tick: Option<f64>,
         reaction: Option<Reacting>,
-	produces_on_completion: Option<Particle>,
-	colors: Option<RandomColors>,
-	spreads: Option<Fire>
+        colors: Option<RandomColors>,
+        spreads: Option<Fire>,
     ) -> Burns {
         Burns {
+            duration,
+            tick_rate,
+            chance_destroy_per_tick,
+            reaction,
+            colors,
+            spreads,
+        }
+    }
+
+    /// Provides a new Burning
+    pub fn to_burning(&self) -> Burning {
+        Burning::new(self.duration, self.tick_rate)
+    }
+}
+
+/// Component for particles that have the capacity to burn.
+#[derive(Clone, Component, Debug)]
+pub struct Burning {
+    /// The Burning timer.
+    pub timer: Timer,
+    /// The tick rate timer.
+    pub tick_timer: Timer,
+}
+
+impl Burning {
+    /// Creates a new Burning.
+    pub fn new(duration: Duration, tick_rate: Duration) -> Burning {
+        Burning {
             timer: Timer::new(duration, TimerMode::Repeating),
             tick_timer: Timer::new(tick_rate, TimerMode::Repeating),
-            destroy,
-	    chance_destroy_per_tick,
-            reaction,
-	    produces_on_completion,
-	    colors,
-	    spreads
         }
     }
 
@@ -65,13 +99,9 @@ impl Burns {
         self.tick_timer.tick(duration);
     }
 
-    /// Resets the Burns status
+    /// Resets the Burning status
     pub fn reset(&mut self) {
         self.timer.reset();
         self.tick_timer.reset();
     }
 }
-
-/// Marker Component for particles that are currently burning
-#[derive(Clone, Component)]
-pub struct Burning;

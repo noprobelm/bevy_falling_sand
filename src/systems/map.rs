@@ -139,8 +139,8 @@ pub fn handle_new_particles(
                     commands.entity(entity).remove::<Burns>();
                 }
 
-                if let Some(_) = burning {
-                    commands.entity(entity).insert(Burning);
+                if let Some(burning) = burning {
+                    commands.entity(entity).insert(burning.clone());
                 }
 
                 commands.entity(parent_entity).add_child(entity);

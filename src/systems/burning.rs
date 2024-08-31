@@ -25,14 +25,14 @@ pub fn handle_fire(
                 .iter()
                 .for_each(|(_, entity)| {
                     if let Ok((entity, burns)) = burns_query.get(entity.unwrap()) {
-                        commands.entity(entity).insert(Burning);
+                        commands.entity(entity).insert(burns.to_burning());
                         if let Some(colors) = &burns.colors {
                             commands.entity(entity).insert(colors.clone());
                         }
                         if let Some(fire) = &burns.spreads {
                             commands.entity(entity).insert(fire.clone());
                         }
-                        if fire.destroys_on_ignition {
+                        if fire.destroys_on_spread {
                             destroy_fire = true;
                         }
                     }
@@ -52,23 +52,20 @@ pub fn handle_burning(
     mut burning_query: Query<
         (
             Entity,
-            &mut Particle,
             &mut Burns,
+            &mut Burning,
             &mut PhysicsRng,
             &Coordinates,
         ),
-        (With<Burning>, With<Particle>),
+        With<Particle>,
     >,
     time: Res<Time>,
 ) {
     burning_query
         .iter_mut()
-        .for_each(|(entity, mut particle, mut burns, mut rng, coordinates)| {
-            if burns.timer.tick(time.delta()).finished() {
-                if let Some(produces) = &burns.produces_on_completion {
-                    particle.name = produces.name.clone();
-                }
-                if burns.destroy {
+        .for_each(|(entity, mut burns, mut burning, mut rng, coordinates)| {
+            if burning.timer.tick(time.delta()).finished() {
+                if burns.chance_destroy_per_tick.is_some() {
                     commands.trigger(RemoveParticleEvent {
                         coordinates: coordinates.0,
                         despawn: true,
@@ -76,19 +73,20 @@ pub fn handle_burning(
                 } else {
                     commands.entity(entity).remove::<Burning>();
                     commands.entity(entity).remove::<RandomColors>();
-                    burns.reset();
                 }
                 return;
             }
-            if burns.tick_timer.tick(time.delta()).finished() {
+            if burning.tick_timer.tick(time.delta()).finished() {
                 if let Some(ref mut reaction) = &mut burns.reaction {
                     reaction.produce(&mut commands, &mut rng, coordinates);
                 }
-                if rng.chance(burns.chance_destroy_per_tick) {
-                    commands.trigger(RemoveParticleEvent {
-                        coordinates: coordinates.0,
-                        despawn: burns.destroy,
-                    })
+                if let Some(chance_destroy) = burns.chance_destroy_per_tick {
+                    if rng.chance(chance_destroy) {
+                        commands.trigger(RemoveParticleEvent {
+                            coordinates: coordinates.0,
+                            despawn: true,
+                        })
+                    }
                 }
             }
         });
