@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy::utils::Duration;
 
-use crate::{Coordinates, Particle, PhysicsRng, RandomColors, Reacting};
+use crate::{Particle, RandomColors, Reacting};
 
 /// Marker for particle types that can inflict burning.
 #[derive(Clone, Debug, Component)]

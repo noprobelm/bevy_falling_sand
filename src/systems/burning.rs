@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use bevy::utils::Duration;
 use bevy_spatial::SpatialAccess;
 
 use crate::{
@@ -83,9 +82,7 @@ pub fn handle_burning(
             }
             if burns.tick_timer.tick(time.delta()).finished() {
                 if let Some(ref mut reaction) = &mut burns.reaction {
-                    if reaction.chance(&mut rng) {
-                        reaction.produce(&mut commands, coordinates);
-                    }
+                    reaction.produce(&mut commands, &mut rng, coordinates);
                 }
                 if rng.chance(burns.chance_destroy_per_tick) {
                     commands.trigger(RemoveParticleEvent {

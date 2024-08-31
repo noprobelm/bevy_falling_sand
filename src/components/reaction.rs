@@ -1,7 +1,6 @@
-use bevy::prelude::*;
 use crate::*;
 
-/// Stores information for a particle type's reaction behavior.
+/// Provides particle reaction behavior.
 #[derive(Clone, Debug)]
 pub struct Reacting {
     /// What the reaction will produce.
@@ -20,15 +19,22 @@ impl Reacting {
     }
 
     /// Produces a new particle if the rng determines so.
-    pub fn produce(&self, commands: &mut Commands, coordinates: &Coordinates) {
-        commands.spawn((
-            self.produces.clone(),
-            SpatialBundle::from_transform(Transform::from_xyz(
-                coordinates.0.x as f32,
-                coordinates.0.y as f32 + 1.,
-                0.,
-            )),
-        ));
+    pub fn produce(
+        &self,
+        commands: &mut Commands,
+        rng: &mut PhysicsRng,
+        coordinates: &Coordinates,
+    ) {
+        if self.chance(rng) {
+            commands.spawn((
+                self.produces.clone(),
+                SpatialBundle::from_transform(Transform::from_xyz(
+                    coordinates.0.x as f32,
+                    coordinates.0.y as f32 + 1.,
+                    0.,
+                )),
+            ));
+        }
     }
 
     /// Returns a boolean value based on a rate. rate represents the chance to return a true value, with 0.0 being no
