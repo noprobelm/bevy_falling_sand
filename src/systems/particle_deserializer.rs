@@ -1,4 +1,4 @@
-use bevy::{utils::Duration, prelude::*};
+use bevy::{prelude::*, utils::Duration};
 use std::fs::File;
 
 use crate::{components::material::Material, *};
@@ -97,8 +97,8 @@ pub fn deserialize_particle_types(
                                 commands.entity(entity).insert(Anchored);
                             }
                             "burns" => {
-				let mut duration: Duration = Duration::from_millis(0);
-				let mut tick_rate : Duration = Duration::from_millis(0);
+				let mut duration: Duration = Duration::from_millis(1000);
+				let mut tick_rate : Duration = Duration::from_millis(100);
 				let mut chance_destroy_per_tick: Option<f64> = None;
 				let mut reaction: Option<Reacting> = None;
 				let mut random_colors: Option<RandomColors> = None;
@@ -156,10 +156,10 @@ pub fn deserialize_particle_types(
 					    fire_map.iter().for_each(|(fire_key, fire_value)| {
 						let reaction_str = fire_key.clone().into_rust::<String>().expect("Config error: Expected valid mapping for 'reaction', found {reaction_value}");
 						match reaction_str.as_str() {
-						    "radius" => {
+						    "burn_radius" => {
 							burn_radius = fire_value.clone().into_rust::<f32>().expect("Config error: Expected f32 for 'radius', found {fire_value}");
 						    },
-						    "chance_to_produce" => {
+						    "chance_to_spread" => {
 							chance_to_spread = fire_value.clone().into_rust::<f64>().expect("Config error: Expected chance as f64 for 'chance_to_spread', found {fire_value}")
 						    }
 						    "destroys_on_spread" => {

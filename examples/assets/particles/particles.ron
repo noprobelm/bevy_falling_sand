@@ -6,7 +6,7 @@
 //        number -- it has no limit other than the u8 range. High velocity particles can become quite resource
 //        intensive.
 //     - "liquid" || "movable_solid" || "solid" || "gas" || "wall" - See the following section
-// 
+//
 // STATES OF MATTER
 //     To define a state of matter, use one of the convenience "material" designators:
 //         - "liquid"
@@ -77,8 +77,8 @@
             },
             "colors": [(1.0, 0.0, 0.0, 1.0), (1.0, 0.35, 0.0, 1.0), (1.0, 0.6, 0.0, 1.0), (1.0, 0.81, 0.0, 1.0), (1.0, 0.91, 0.03, 1.0)],
             "spreads": {
-                "radius": 1.5,
-                "chance_to_spread": 0.75,
+                "burn_radius": 1.5,
+                "chance_to_spread": 1.,
             }
         }
     },
