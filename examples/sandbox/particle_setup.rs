@@ -18,7 +18,7 @@ pub(super) struct ParticleSetupPlugin;
 impl bevy::prelude::Plugin for ParticleSetupPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
         // Particle management systems
-        app.add_systems(Startup, (setup_particle_types, setup_custom_particle));
+        app.add_systems(Startup, (setup_particle_types, setup_custom_particles));
     }
 }
 
@@ -32,7 +32,7 @@ pub fn setup_particle_types(
 }
 
 /// Demonstrates how to set up a custom particle with code.
-pub fn setup_custom_particle(mut commands: Commands) {
+pub fn setup_custom_particles(mut commands: Commands) {
     commands.spawn((
         MovableSolidBundle::new(
             ParticleType::new("My Custom Particle"),
