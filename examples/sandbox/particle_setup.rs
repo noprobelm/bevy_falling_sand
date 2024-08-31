@@ -10,7 +10,6 @@
 use bevy::{prelude::*, utils::Duration};
 use std::path::Path;
 
-use crate::particle_management::ParticleList;
 use bevy_falling_sand::{material::Material, *};
 
 /// Particle Management Plugin

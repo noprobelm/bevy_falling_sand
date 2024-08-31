@@ -1,4 +1,4 @@
-use crate::{Particle, ParticleColor, PhysicsRng, RandomColors, ColorRng};
+use crate::{Particle, ParticleColor, PhysicsRng, RandomColors};
 use bevy::prelude::*;
 
 /// Colors newly added or changed particles
@@ -12,7 +12,7 @@ pub fn color_particles(
 
 /// Updates the color of a randomly colored particle.
 pub fn color_random_particles(
-    mut random_color_query: Query<(&mut ParticleColor, &RandomColors, &mut ColorRng)>,
+    mut random_color_query: Query<(&mut ParticleColor, &RandomColors, &mut PhysicsRng)>,
 ) {
     random_color_query
         .iter_mut()

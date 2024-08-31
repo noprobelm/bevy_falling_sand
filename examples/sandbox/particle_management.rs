@@ -1,6 +1,3 @@
-use std::fs::File;
-use std::path::Path;
-
 use bevy::{
     input::common_conditions::{input_just_pressed, input_pressed},
     prelude::*,
@@ -106,7 +103,7 @@ impl ParticleControlUI {
 
 pub fn update_particle_list(new_particle_query: Query<&ParticleType, Added<ParticleType>>, mut particle_list: ResMut<ParticleList>) {
     new_particle_query.iter().for_each(|particle_type| {
-	particle_list.particle_list.push(particle_type.name.clone())
+	particle_list.push(particle_type.name.clone())
     });
 }
 
