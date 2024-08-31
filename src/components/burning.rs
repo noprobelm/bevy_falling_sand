@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy::utils::Duration;
 
-use crate::{Coordinates, Particle, PhysicsRng, RandomColors};
+use crate::{Coordinates, Particle, PhysicsRng, RandomColors, ParticleReaction};
 
 /// Marker for particle types that can inflict burning.
 #[derive(Clone, Debug, Component)]
@@ -12,43 +12,6 @@ pub struct Fire {
     pub chance_to_spread: f64,
     /// Destroys after lighting something on fire.
     pub destroys_on_ignition: bool
-}
-
-/// Stores information for a particle type's reaction behavior.
-#[derive(Clone, Debug)]
-pub struct ParticleReaction {
-    /// What the reaction will produce.
-    pub produces: Particle,
-    /// The chance that the particle will produce something (0.0 is lowest chance, 1.0 is highest).
-    pub chance_to_produce: f64,
-}
-
-impl ParticleReaction {
-    /// Creates a new ParticleReaction.
-    pub fn new(produces: Particle, chance_to_produce: f64) -> ParticleReaction {
-        ParticleReaction {
-            produces,
-            chance_to_produce,
-        }
-    }
-
-    /// Produces a new particle if the rng determines so.
-    pub fn produce(&self, commands: &mut Commands, coordinates: &Coordinates) {
-        commands.spawn((
-            self.produces.clone(),
-            SpatialBundle::from_transform(Transform::from_xyz(
-                coordinates.0.x as f32,
-                coordinates.0.y as f32 + 1.,
-                0.,
-            )),
-        ));
-    }
-
-    /// Returns a boolean value based on a rate. rate represents the chance to return a true value, with 0.0 being no
-    /// chance and 1.0 will always return true.
-    pub fn chance(&self, rng: &mut PhysicsRng) -> bool {
-        rng.chance(self.chance_to_produce)
-    }
 }
 
 /// Component for particles that have the capacity to burn.

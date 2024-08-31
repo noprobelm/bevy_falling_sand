@@ -33,12 +33,10 @@ pub fn setup_particle_types(
 }
 
 /// Demonstrates how to set up a custom particle with code.
-pub fn setup_custom_particle(mut commands: Commands, mut particle_list: ResMut<ParticleList>) {
-    // For particles that have movement, use the DynamicParticleTypeBundle
-    let dynamic_particle_type = ParticleType::new("My Custom Particle");
+pub fn setup_custom_particle(mut commands: Commands) {
     commands.spawn((
         DynamicParticleTypeBundle::new(
-            dynamic_particle_type.clone(),
+            ParticleType::new("My Custom Particle"),
             Density(4),
             Velocity::new(1, 3),
             MovableSolid::new().into_movement_priority(),
@@ -60,15 +58,13 @@ pub fn setup_custom_particle(mut commands: Commands, mut particle_list: ResMut<P
             0.0,
             Some(ParticleReaction::new(Particle::new("Steam"), 0.5)),
             None,
-	    None,
-	    None
+            None,
+            None,
         ),
     ));
 
-    // For particles that have no movement, use the StaticParticleTypeBundle
-    let static_particle_type = ParticleType::new("My Custom Wall Particle");
     commands.spawn(StaticParticleTypeBundle::new(
-        static_particle_type.clone(),
+        ParticleType::new("My Custom Wall Particle"),
         ParticleColors::new(vec![
             Color::srgba(0.22, 0.11, 0.16, 1.0),
             Color::srgba(0.24, 0.41, 0.56, 1.0),
@@ -78,11 +74,9 @@ pub fn setup_custom_particle(mut commands: Commands, mut particle_list: ResMut<P
         ]),
     ));
 
-    // For particles that have no movement, use the StaticParticleTypeBundle
-    let water = ParticleType::new("Water");
     commands.spawn((
         DynamicParticleTypeBundle::new(
-            water.clone(),
+            ParticleType::new("Water"),
             Density(2),
             Velocity::new(1, 3),
             Liquid::new(5).into_movement_priority(),
@@ -97,15 +91,14 @@ pub fn setup_custom_particle(mut commands: Commands, mut particle_list: ResMut<P
             0.0,
             None,
             Some(Particle::new("Steam")),
-	    None,
-	    None
+            None,
+            None,
         ),
     ));
 
-    let fire = ParticleType::new("FIRE");
     commands.spawn((
         DynamicParticleTypeBundle::new(
-            fire.clone(),
+            ParticleType::new("FIRE"),
             Density(4),
             Velocity::new(1, 3),
             Gas::new(1).into_movement_priority(),
@@ -119,7 +112,7 @@ pub fn setup_custom_particle(mut commands: Commands, mut particle_list: ResMut<P
         ),
         Fire {
             burn_radius: 1.5,
-	    chance_to_spread: 0.01,
+            chance_to_spread: 0.01,
             destroys_on_ignition: false,
         },
         Burns::new(
@@ -129,41 +122,39 @@ pub fn setup_custom_particle(mut commands: Commands, mut particle_list: ResMut<P
             0.5,
             None,
             None,
-	    None,
-	    None,
+            None,
+            None,
         ),
         Burning,
     ));
 
-    let wood_wall = ParticleType::new("Wood Wall");
-    commands.spawn(
-        (StaticParticleTypeBundle::new(
-            wood_wall.clone(),
+    commands.spawn((
+        StaticParticleTypeBundle::new(
+            ParticleType::new("Wood Wall"),
             ParticleColors::new(vec![Color::srgba(0.63, 0.4, 0.18, 1.0)]),
-        ),         Burns::new(
+        ),
+        Burns::new(
             Duration::from_secs(10),
             Duration::from_millis(100),
             true,
             0.,
-            Some(ParticleReaction{produces: Particle::new("Steam"), chance_to_produce: 0.015}),
+            Some(ParticleReaction {
+                produces: Particle::new("Steam"),
+                chance_to_produce: 0.015,
+            }),
             None,
-	    Some(RandomColors::new(vec![
+            Some(RandomColors::new(vec![
                 Color::srgba(1.0, 0.0, 0.0, 1.0),
                 Color::srgba(1.0, 0.35, 0.0, 1.0),
                 Color::srgba(1.0, 0.6, 0.0, 1.0),
                 Color::srgba(1.0, 0.81, 0.0, 1.0),
                 Color::srgba(1.0, 0.91, 0.03, 1.0),
-            ]),
-	    ),
-	    Some(Fire{burn_radius: 1.5, chance_to_spread: 0.0025, destroys_on_ignition: false})
-	),
-),
-    );
-
-    // Add the particle types to the UI for this example code.
-    particle_list.push(water.name);
-    particle_list.push(dynamic_particle_type.name);
-    particle_list.push(static_particle_type.name);
-    particle_list.push(fire.name);
-    particle_list.push(wood_wall.name);
+            ])),
+            Some(Fire {
+                burn_radius: 1.5,
+                chance_to_spread: 0.0025,
+                destroys_on_ignition: false,
+            }),
+        ),
+    ));
 }

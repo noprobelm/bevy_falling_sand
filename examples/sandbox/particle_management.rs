@@ -18,6 +18,7 @@ impl bevy::prelude::Plugin for ParticleManagementPlugin {
         app.init_resource::<SelectedParticle>()
             .init_resource::<ParticleList>();
 
+	app.add_systems(Update, update_particle_list);
         app.add_systems(
             Update,
             spawn_particles
@@ -43,26 +44,9 @@ impl bevy::prelude::Plugin for ParticleManagementPlugin {
 }
 
 /// HashMap keys are unordered. This will ensure an ordered list of particles is available.
-#[derive(Resource)]
+#[derive(Resource, Default)]
 pub struct ParticleList {
     pub particle_list: Vec<String>,
-}
-
-impl Default for ParticleList {
-    fn default() -> ParticleList {
-        let mut example_path = Path::new(env!("CARGO_MANIFEST_DIR")).to_path_buf();
-        example_path.push("examples/assets/particles/particles.ron");
-        let file = File::open(example_path).unwrap();
-        let particle_types: ron::Map = ron::de::from_reader(file).unwrap();
-
-        let particle_types: Vec<String> = particle_types
-            .keys()
-            .map(|key| key.clone().into_rust::<String>().unwrap())
-            .collect();
-        ParticleList {
-            particle_list: particle_types,
-        }
-    }
 }
 
 impl ParticleList {
@@ -118,6 +102,12 @@ impl ParticleControlUI {
             commands.trigger(ClearChunkMapEvent);
         }
     }
+}
+
+pub fn update_particle_list(new_particle_query: Query<&ParticleType, Added<ParticleType>>, mut particle_list: ResMut<ParticleList>) {
+    new_particle_query.iter().for_each(|particle_type| {
+	particle_list.particle_list.push(particle_type.name.clone())
+    });
 }
 
 /// Spawns particles using current brush position and size information.

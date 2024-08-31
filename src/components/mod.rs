@@ -6,6 +6,7 @@ mod hibernation;
 mod movement;
 pub mod material;
 mod burning;
+mod reaction;
 mod scenes;
 
 pub use particle::*;
@@ -15,4 +16,5 @@ pub use hibernation::*;
 pub use movement::*;
 pub use material::*;
 pub use burning::*;
+pub use reaction::*;
 pub use scenes::*;
