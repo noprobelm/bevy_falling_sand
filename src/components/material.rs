@@ -13,6 +13,7 @@ pub trait Material {
 }
 
 /// A wall, which has no movement.
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Component, Reflect)]
 pub struct Wall;
 
 impl Wall {
@@ -25,6 +26,7 @@ impl Wall {
 impl Material for Wall {}
 
 /// A solid material, which can only move downward.
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Component, Reflect)]
 pub struct Solid;
 
 impl Solid {
@@ -41,6 +43,7 @@ impl Material for Solid {
 }
 
 /// A movable solid material, like sand.
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Component, Reflect)]
 pub struct MovableSolid;
 
 impl MovableSolid {
@@ -60,6 +63,7 @@ impl Material for MovableSolid {
 }
 
 /// A liquid material which flows like water.
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Component, Reflect)]
 pub struct Liquid {
     /// How fluid the liquid should be.
     fluidity: usize,
@@ -92,6 +96,7 @@ impl Material for Liquid {
 }
 
 /// A gaseous material, which flows upward.
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Component, Reflect)]
 pub struct Gas {
     /// How fluid the gas should be.
     fluidity: usize,
