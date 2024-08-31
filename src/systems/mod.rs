@@ -3,23 +3,23 @@
 use crate::SimulationRun;
 use bevy::prelude::*;
 
+mod burning;
 mod color;
 mod debug;
 mod hibernation;
 mod map;
 mod movement;
-mod burning;
-mod scenes;
 mod particle_deserializer;
+mod scenes;
 
+pub use burning::*;
 pub use color::*;
 pub use debug::*;
 pub use hibernation::*;
 pub use map::*;
 pub use movement::*;
-pub use burning::*;
-pub use scenes::*;
 pub use particle_deserializer::*;
+pub use scenes::*;
 
 /// System set for systems that influence particle management.
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
@@ -38,12 +38,22 @@ impl bevy::prelude::Plugin for ParticleSystemsPlugin {
             .add_systems(Update, handle_new_particle_types)
             .add_systems(
                 Update,
-                (handle_particles, reset_chunks.after(handle_particles))
+                (
+                    handle_particles,
+                    reset_chunks.after(handle_particles),
+                    handle_fire.before(handle_burning),
+                    handle_burning.before(handle_particles),
+                )
                     .in_set(ParticleSimulationSet)
                     .run_if(resource_exists::<SimulationRun>),
             )
-            .add_systems(Update, (handle_fire, handle_burning))
-            .add_systems(Update, color_particles.after(handle_new_particles))
+            .add_systems(
+                Update,
+                (
+                    color_particles.after(handle_new_particles),
+                    color_random_particles.after(handle_new_particles),
+                ),
+            )
             .add_systems(
                 Update,
                 (color_chunks, count_dynamic_particles, count_total_particles)

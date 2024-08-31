@@ -52,11 +52,16 @@ pub fn setup_custom_particle(mut commands: Commands, mut particle_list: ResMut<P
         ),
         // If momentum effects are desired, insert the marker component.
         Momentum::ZERO,
+        // This particle type can burn when it comes within range of an entity with the Fire component.
         Burns::new(
             Duration::from_secs(10),
             Duration::from_secs(1),
-	    true,
+            true,
+            0.0,
             Some(ParticleReaction::new(Particle::new("Steam"), 0.5)),
+            None,
+	    None,
+	    None
         ),
     ));
 
@@ -73,13 +78,37 @@ pub fn setup_custom_particle(mut commands: Commands, mut particle_list: ResMut<P
         ]),
     ));
 
+    // For particles that have no movement, use the StaticParticleTypeBundle
+    let water = ParticleType::new("Water");
+    commands.spawn((
+        DynamicParticleTypeBundle::new(
+            water.clone(),
+            Density(2),
+            Velocity::new(1, 3),
+            Liquid::new(5).into_movement_priority(),
+            ParticleColors::new(vec![Color::srgba(0.043, 0.5, 0.67, 0.5)]),
+        ),
+        Momentum::ZERO,
+        // This particle type can burn when it comes within range of an entity with the Fire component.
+        Burns::new(
+            Duration::from_millis(0),
+            Duration::from_millis(0),
+            false,
+            0.0,
+            None,
+            Some(Particle::new("Steam")),
+	    None,
+	    None
+        ),
+    ));
+
     let fire = ParticleType::new("FIRE");
     commands.spawn((
         DynamicParticleTypeBundle::new(
             fire.clone(),
             Density(4),
             Velocity::new(1, 3),
-            MovableSolid::new().into_movement_priority(),
+            Gas::new(1).into_movement_priority(),
             ParticleColors::new(vec![
                 Color::srgba(1.0, 0.0, 0.0, 1.0),
                 Color::srgba(1.0, 0.35, 0.0, 1.0),
@@ -88,15 +117,53 @@ pub fn setup_custom_particle(mut commands: Commands, mut particle_list: ResMut<P
                 Color::srgba(1.0, 0.91, 0.03, 1.0),
             ]),
         ),
-        // If momentum effects are desired, insert the marker component.
-        Momentum::ZERO,
         Fire {
-            burn_radius: 5.,
+            burn_radius: 1.5,
+	    chance_to_spread: 0.01,
+            destroys_on_ignition: false,
         },
+        Burns::new(
+            Duration::from_secs(1),
+            Duration::from_millis(100),
+            true,
+            0.5,
+            None,
+            None,
+	    None,
+	    None,
+        ),
+        Burning,
     ));
 
+    let wood_wall = ParticleType::new("Wood Wall");
+    commands.spawn(
+        (StaticParticleTypeBundle::new(
+            wood_wall.clone(),
+            ParticleColors::new(vec![Color::srgba(0.63, 0.4, 0.18, 1.0)]),
+        ),         Burns::new(
+            Duration::from_secs(10),
+            Duration::from_millis(100),
+            true,
+            0.,
+            Some(ParticleReaction{produces: Particle::new("Steam"), chance_to_produce: 0.015}),
+            None,
+	    Some(RandomColors::new(vec![
+                Color::srgba(1.0, 0.0, 0.0, 1.0),
+                Color::srgba(1.0, 0.35, 0.0, 1.0),
+                Color::srgba(1.0, 0.6, 0.0, 1.0),
+                Color::srgba(1.0, 0.81, 0.0, 1.0),
+                Color::srgba(1.0, 0.91, 0.03, 1.0),
+            ]),
+	    ),
+	    Some(Fire{burn_radius: 1.5, chance_to_spread: 0.0025, destroys_on_ignition: false})
+	),
+),
+    );
+
     // Add the particle types to the UI for this example code.
+    particle_list.push(water.name);
     particle_list.push(dynamic_particle_type.name);
     particle_list.push(static_particle_type.name);
     particle_list.push(fire.name);
+    particle_list.push(wood_wall.name);
 }

@@ -46,6 +46,7 @@ pub fn handle_new_particles(
             Option<&Anchored>,
             Option<&Fire>,
             Option<&Burns>,
+            Option<&Burning>,
         ),
         With<ParticleType>,
     >,
@@ -78,6 +79,7 @@ pub fn handle_new_particles(
                 anchored,
                 fire,
                 burns,
+                burning,
             )) = parent_query.get(*parent_entity)
             {
                 commands.entity(entity).insert((
@@ -92,18 +94,25 @@ pub fn handle_new_particles(
                     Coordinates(coordinates),
                     ParticleColor(colors.random(rng)),
                     PhysicsRng::default(),
+                    ColorRng::default(),
                 ));
 
                 if let Some(density) = density {
                     commands.entity(entity).insert(density.clone());
-                };
+                } else {
+                    commands.entity(entity).remove::<Density>();
+                }
 
                 if let Some(velocity) = velocity {
                     commands.entity(entity).insert(velocity.clone());
-                };
+                } else {
+                    commands.entity(entity).remove::<Velocity>();
+                }
 
                 if let Some(movement_priority) = movement_priority {
                     commands.entity(entity).insert(movement_priority.clone());
+                } else {
+                    commands.entity(entity).remove::<MovementPriority>();
                 }
 
                 if momentum.is_some() {
@@ -114,14 +123,24 @@ pub fn handle_new_particles(
 
                 if anchored.is_some() {
                     commands.entity(entity).insert(Anchored);
+                } else {
+                    commands.entity(entity).remove::<Anchored>();
                 }
 
                 if let Some(fire) = fire {
                     commands.entity(entity).insert(fire.clone());
+                } else {
+                    commands.entity(entity).remove::<Fire>();
                 }
 
                 if let Some(burns) = burns {
                     commands.entity(entity).insert(burns.clone());
+                } else {
+                    commands.entity(entity).remove::<Burns>();
+                }
+
+                if let Some(_) = burning {
+                    commands.entity(entity).insert(Burning);
                 }
 
                 commands.entity(parent_entity).add_child(entity);
