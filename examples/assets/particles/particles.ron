@@ -77,6 +77,13 @@
         "momentum": true,
         "colors": [(0.95, 0.88, 0.42, 1.0), (1.0, 0.92, 0.54, 1.0)]
     },
+    "Dirt": {
+        "density": 4,
+        "max_velocity": 3,
+        "movable_solid": true,
+        "momentum": true,
+        "colors": [(0.57, 0.42, 0.3, 1.0), (0.45, 0.34, 0.24, 1.0)]
+    },
     "Steam": {
         "density": 0,
         "max_velocity": 1,
