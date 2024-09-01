@@ -1,5 +1,5 @@
 //! UI module.
-use bevy::{window::PrimaryWindow, prelude::*};
+use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::EguiContexts;
 
 use crate::*;
@@ -113,7 +113,10 @@ pub fn render_ui(
         Res<DynamicParticleCount>,
         Res<TotalParticleCount>,
     ),
-    (mut selected_particle, particle_types): (ResMut<SelectedParticle>, Res<ParticleList>),
+    (mut selected_particle, particle_type_list): (
+        ResMut<SelectedParticle>,
+        Res<ParticleTypeList>,
+    ),
     (mut scene_selection_dialog, mut scene_path, mut ev_save_scene, mut ev_load_scene): (
         ResMut<SceneSelectionDialog>,
         ResMut<ParticleSceneFilePath>,
@@ -129,14 +132,13 @@ pub fn render_ui(
         .exact_width(200.0)
         .resizable(false)
         .show(ctx, |ui| {
-            ParticleControlUI.render(
+            SceneManagementUI.render(
                 ui,
-                &particle_types,
-                &mut selected_particle,
-                &mut brush_state,
-                &mut commands,
+                &mut scene_selection_dialog,
+                &mut scene_path,
+                &mut ev_save_scene,
+                &mut ev_load_scene,
             );
-            ui.separator();
             BrushControlUI.render(
                 ui,
                 &mut brush_size,
@@ -145,15 +147,13 @@ pub fn render_ui(
                 &current_brush_type.get(),
                 &mut next_brush_type,
             );
-            ui.separator();
-            SceneManagementUI.render(
+            ParticleControlUI.render(
                 ui,
-                &mut scene_selection_dialog,
-                &mut scene_path,
-                &mut ev_save_scene,
-                &mut ev_load_scene,
+                &particle_type_list,
+                &mut selected_particle,
+                &mut brush_state,
+                &mut commands,
             );
-            ui.separator();
             DebugUI.render(
                 ui,
                 &debug_particles,

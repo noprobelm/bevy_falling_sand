@@ -128,7 +128,7 @@
             "tick_rate": 100,
             "chance_destroy_per_tick": 0.0,
             "reaction": {
-                "produces": "FIRE",
+                "produces": "Steam",
                 "chance_to_produce": 0.015
             },
             "colors": [

@@ -245,13 +245,6 @@ impl BrushControlUI {
         mut current_brush_type: &BrushType,
         next_brush_type: &mut ResMut<NextState<BrushType>>,
     ) {
-        if ui
-            .add(egui::Slider::new(brush_size, 1..=max_brush_size))
-            .changed()
-        {
-            ev_brush_resize.send(BrushResizeEvent(*brush_size));
-        }
-
         egui::ComboBox::from_label("Brush Type")
             .selected_text(format!("{:?}", current_brush_type))
             .show_ui(ui, |ui| {
@@ -274,6 +267,14 @@ impl BrushControlUI {
                     next_brush_type.set(BrushType::Square)
                 };
             });
+        if ui
+            .add(egui::Slider::new(brush_size, 1..=max_brush_size))
+            .changed()
+        {
+            ev_brush_resize.send(BrushResizeEvent(*brush_size));
+        }
+
+
     }
 }
 

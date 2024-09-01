@@ -56,7 +56,7 @@ fn handle_component(
         "movable_solid" => insert_movable_solid(commands, entity),
         "solid" => insert_solid(commands, entity),
         "gas" => insert_gas(commands, entity, component_data),
-        "wall" => {commands.entity(entity).insert(Anchored);},
+        "wall" => {commands.entity(entity).insert(Wall);},
         "burns" => insert_burns(commands, entity, component_data),
         "fire" => insert_fire(commands, entity, component_data),
         "burning" => insert_burning(commands, entity, component_data),
@@ -91,22 +91,20 @@ fn insert_colors(commands: &mut Commands, entity: Entity, component_data: ron::V
 
 fn insert_liquid(commands: &mut Commands, entity: Entity, component_data: ron::Value) {
     let fluidity = component_data.into_rust::<usize>().expect("Config error: Expected usize for 'liquid'");
-    let movement_priority = Liquid::new(fluidity).into_movement_priority();
-    commands.entity(entity).insert(movement_priority);
+    commands.entity(entity).insert(Liquid::new(fluidity));
 }
 
 fn insert_movable_solid(commands: &mut Commands, entity: Entity) {
-    commands.entity(entity).insert(MovableSolid::new().into_movement_priority());
+    commands.entity(entity).insert(MovableSolid::new());
 }
 
 fn insert_solid(commands: &mut Commands, entity: Entity) {
-    commands.entity(entity).insert(Solid::new().into_movement_priority());
+    commands.entity(entity).insert(Solid::new());
 }
 
 fn insert_gas(commands: &mut Commands, entity: Entity, component_data: ron::Value) {
     let fluidity = component_data.into_rust::<usize>().expect("Config error: Expected usize for 'gas'");
-    let movement_priority = Gas::new(fluidity).into_movement_priority();
-    commands.entity(entity).insert(movement_priority);
+    commands.entity(entity).insert(Gas::new(fluidity));
 }
 
 fn insert_burns(commands: &mut Commands, entity: Entity, component_data: ron::Value) {
