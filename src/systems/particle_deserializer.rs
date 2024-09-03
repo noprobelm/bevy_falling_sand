@@ -52,6 +52,7 @@ fn handle_component(
         "max_velocity" => insert_max_velocity(commands, entity, component_data),
         "momentum" => insert_momentum(commands, entity, component_data),
         "colors" => insert_colors(commands, entity, component_data),
+	"randomizes_colors" => {commands.entity(entity).insert(RandomizeColors);},
         "liquid" => insert_liquid(commands, entity, component_data),
         "movable_solid" => insert_movable_solid(commands, entity),
         "solid" => insert_solid(commands, entity),
