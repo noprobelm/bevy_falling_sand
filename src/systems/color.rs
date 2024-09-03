@@ -6,7 +6,7 @@ pub fn color_particles(
     mut particle_query: Query<(&mut Sprite, &ParticleColor), Changed<ParticleColor>>,
 ) {
     particle_query.iter_mut().for_each(|(mut sprite, color)| {
-        sprite.color = color.0;
+        sprite.color = color.selected;
     });
 }
 
@@ -17,7 +17,7 @@ pub fn color_random_particles(
     random_color_query
         .iter_mut()
         .for_each(|(mut color, colors, mut rng)| {
-            color.0 = colors.random_with_color_rng(&mut rng);
+            color.selected = colors.random_with_color_rng(&mut rng);
         });
 }
 
@@ -27,7 +27,7 @@ pub fn color_randomizing_particles(
 ) {
     color_query.iter_mut().for_each(|(random_colors, mut color, mut rng)| {
 	if rng.chance(random_colors.chance) {
-	    color.0 = *rng.sample(&color.1).unwrap();
+	    color.selected = *rng.sample(&color.palette).unwrap();
 	}
     });
 }

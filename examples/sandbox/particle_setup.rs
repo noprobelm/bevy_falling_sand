@@ -38,13 +38,16 @@ pub fn setup_custom_particles(mut commands: Commands) {
             ParticleType::new("My Custom Particle"),
             Density(4),
             Velocity::new(1, 3),
-            ParticleColors::new(vec![
+            ParticleColor::new(
                 Color::srgba(0.22, 0.11, 0.16, 1.0),
-                Color::srgba(0.24, 0.41, 0.56, 1.0),
-                Color::srgba(0.67, 0.74, 0.55, 1.0),
-                Color::srgba(0.91, 0.89, 0.71, 1.0),
-                Color::srgba(0.95, 0.61, 0.43, 1.0),
-            ]),
+                vec![
+                    Color::srgba(0.22, 0.11, 0.16, 1.0),
+                    Color::srgba(0.24, 0.41, 0.56, 1.0),
+                    Color::srgba(0.67, 0.74, 0.55, 1.0),
+                    Color::srgba(0.91, 0.89, 0.71, 1.0),
+                    Color::srgba(0.95, 0.61, 0.43, 1.0),
+                ],
+            ),
         ),
         // If momentum effects are desired, insert the marker component.
         Momentum::ZERO,
@@ -53,12 +56,15 @@ pub fn setup_custom_particles(mut commands: Commands) {
 
     commands.spawn(StaticParticleTypeBundle::new(
         ParticleType::new("My Custom Wall Particle"),
-        ParticleColors::new(vec![
+        ParticleColor::new(
             Color::srgba(0.22, 0.11, 0.16, 1.0),
-            Color::srgba(0.24, 0.41, 0.56, 1.0),
-            Color::srgba(0.67, 0.74, 0.55, 1.0),
-            Color::srgba(0.91, 0.89, 0.71, 1.0),
-            Color::srgba(0.95, 0.61, 0.43, 1.0),
-        ]),
+            vec![
+                Color::srgba(0.22, 0.11, 0.16, 1.0),
+                Color::srgba(0.24, 0.41, 0.56, 1.0),
+                Color::srgba(0.67, 0.74, 0.55, 1.0),
+                Color::srgba(0.91, 0.89, 0.71, 1.0),
+                Color::srgba(0.95, 0.61, 0.43, 1.0),
+            ],
+        ),
     ));
 }

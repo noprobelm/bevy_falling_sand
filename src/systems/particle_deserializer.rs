@@ -87,7 +87,7 @@ fn insert_colors(commands: &mut Commands, entity: Entity, component_data: ron::V
         .iter()
         .map(|vals| Color::srgba(vals.0, vals.1, vals.2, vals.3))
         .collect();
-    commands.entity(entity).insert(ParticleColors::new(colors));
+    commands.entity(entity).insert(ParticleColor::new(*colors.get(0).unwrap(), colors));
 }
 
 fn insert_liquid(commands: &mut Commands, entity: Entity, component_data: ron::Value) {

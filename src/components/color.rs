@@ -9,25 +9,22 @@ use crate::PhysicsRng;
 /// random.
 #[derive(Clone, PartialEq, Debug, Default, Component, Reflect)]
 #[reflect(Component)]
-pub struct ParticleColors {
+pub struct ParticleColor {
+    /// The current color.
+    pub selected: Color,
     /// The possible range of colors.
-    pub colors: Vec<Color>,
+    pub palette: Vec<Color>,
 }
 
-impl ParticleColors {
+impl ParticleColor {
     /// Creates a new ParticleColors component with the specified colors.
-    pub fn new(colors: Vec<Color>) -> Self {
-        ParticleColors { colors }
+    pub fn new(selected: Color, palette: Vec<Color>) -> ParticleColor {
+        ParticleColor { selected, palette }
     }
 
     /// Select a random color from the colors sequence.
     pub fn random<R: TurboRand>(&self, rng: &mut R) -> Color {
-	rng.sample(&self.colors).unwrap().clone()
-    }
-
-    /// Docs
-    pub fn random_with_physics_rng(&self, rng: &mut PhysicsRng) -> Color {
-	rng.sample(&self.colors).unwrap().clone()
+	rng.sample(&self.palette).unwrap().clone()
     }
 }
 
@@ -71,7 +68,3 @@ impl RandomColors {
 	rng.sample(&self.colors).unwrap().clone()
     }
 }
-
-/// Docs
-#[derive(Clone, PartialEq, Debug, Default, Component, Reflect)]
-pub struct ParticleColor(pub Color, pub Vec<Color>);

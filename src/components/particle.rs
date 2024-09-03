@@ -59,14 +59,14 @@ pub struct StaticParticleTypeBundle {
     /// The unique identifier for the particle.
     pub particle_type: ParticleType,
     /// The particle type's colors.
-    pub colors: ParticleColors,
+    pub colors: ParticleColor,
     /// The particle type's global transform.
     pub spatial: SpatialBundle,
 }
 
 impl StaticParticleTypeBundle {
     /// Creates a new StaticParticleTypeBundle
-    pub fn new(particle_type: ParticleType, colors: ParticleColors) -> StaticParticleTypeBundle {
+    pub fn new(particle_type: ParticleType, colors: ParticleColor) -> StaticParticleTypeBundle {
         StaticParticleTypeBundle {
             particle_type,
             colors,
@@ -87,7 +87,7 @@ pub struct DynamicParticleTypeBundle {
     /// The particle type's movement priority.
     pub movement_priority: MovementPriority,
     /// The particle type's colors.
-    pub colors: ParticleColors,
+    pub colors: ParticleColor,
     /// The particle type's global transform.
     pub spatial: SpatialBundle,
 }
@@ -99,7 +99,7 @@ impl DynamicParticleTypeBundle {
         density: Density,
         velocity: Velocity,
         movement_priority: MovementPriority,
-        colors: ParticleColors,
+        colors: ParticleColor,
     ) -> DynamicParticleTypeBundle {
         DynamicParticleTypeBundle {
             particle_type,
@@ -122,7 +122,7 @@ pub struct MovableSolidBundle {
     /// The particle type's velocity.
     pub velocity: Velocity,
     /// The particle type's colors.
-    pub colors: ParticleColors,
+    pub colors: ParticleColor,
     /// The MovableSolid component
     pub movable_solid: MovableSolid,
     /// The particle type's global transform.
@@ -135,7 +135,7 @@ impl MovableSolidBundle {
         particle_type: ParticleType,
         density: Density,
         velocity: Velocity,
-        colors: ParticleColors,
+        colors: ParticleColor,
     ) -> MovableSolidBundle {
         MovableSolidBundle {
             particle_type,
@@ -158,7 +158,7 @@ pub struct SolidBundle {
     /// The particle type's velocity.
     pub velocity: Velocity,
     /// The particle type's colors.
-    pub colors: ParticleColors,
+    pub colors: ParticleColor,
     /// The MovableSolid component
     pub solid: Solid,
     /// The particle type's global transform.
@@ -171,7 +171,7 @@ impl SolidBundle {
         particle_type: ParticleType,
         density: Density,
         velocity: Velocity,
-        colors: ParticleColors,
+        colors: ParticleColor,
     ) -> SolidBundle {
         SolidBundle {
             particle_type,
@@ -194,7 +194,7 @@ pub struct LiquidBundle {
     /// The particle type's velocity.
     pub velocity: Velocity,
     /// The particle type's colors.
-    pub colors: ParticleColors,
+    pub colors: ParticleColor,
     /// The MovableSolid component
     pub liquid: Liquid,
     /// The particle type's global transform.
@@ -208,7 +208,7 @@ impl LiquidBundle {
         density: Density,
         velocity: Velocity,
         fluidity: usize,
-        colors: ParticleColors,
+        colors: ParticleColor,
     ) -> LiquidBundle {
         LiquidBundle {
             particle_type,
@@ -231,7 +231,7 @@ pub struct GasBundle {
     /// The particle type's velocity.
     pub velocity: Velocity,
     /// The particle type's colors.
-    pub colors: ParticleColors,
+    pub colors: ParticleColor,
     /// The MovableSolid component
     pub gas: Gas,
     /// The particle type's global transform.
@@ -245,7 +245,7 @@ impl GasBundle {
         density: Density,
         velocity: Velocity,
         fluidity: usize,
-        colors: ParticleColors,
+        colors: ParticleColor,
     ) -> GasBundle {
         GasBundle {
             particle_type,

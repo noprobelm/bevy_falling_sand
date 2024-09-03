@@ -41,7 +41,7 @@ pub fn handle_new_particles(
             Option<&Density>,
             Option<&MovementPriority>,
             Option<&Velocity>,
-            &ParticleColors,
+            &ParticleColor,
             Option<&Momentum>,
             Option<&Anchored>,
             Option<&Fire>,
@@ -75,7 +75,7 @@ pub fn handle_new_particles(
                 density,
                 movement_priority,
                 velocity,
-                colors,
+                color,
                 momentum,
                 anchored,
                 fire,
@@ -94,7 +94,7 @@ pub fn handle_new_particles(
                         ..default()
                     },
                     Coordinates(coordinates),
-                    ParticleColor(colors.random(rng), colors.colors.clone()),
+                    ParticleColor::new(color.random(rng), color.palette.clone()),
                     PhysicsRng::default(),
                     ColorRng::default(),
                 ));
