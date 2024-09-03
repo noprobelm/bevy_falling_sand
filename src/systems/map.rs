@@ -92,7 +92,7 @@ pub fn handle_new_particles(
                         ..default()
                     },
                     Coordinates(coordinates),
-                    ParticleColor(colors.random(rng)),
+                    ParticleColor(colors.random(rng), colors.colors.clone()),
                     PhysicsRng::default(),
                     ColorRng::default(),
                 ));

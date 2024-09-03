@@ -11,7 +11,7 @@ use crate::PhysicsRng;
 #[reflect(Component)]
 pub struct ParticleColors {
     /// The possible range of colors.
-    colors: Vec<Color>,
+    pub colors: Vec<Color>,
 }
 
 impl ParticleColors {
@@ -30,6 +30,10 @@ impl ParticleColors {
 	rng.sample(&self.colors).unwrap().clone()
     }
 }
+
+/// Flag indicating a particle should change to a new color from its ParticleColors
+#[derive(Component, Default, Reflect)]
+pub struct RandomizeColors;
 
 /// Provides a range of possible colors for a particle. Child particles will access
 /// this component from their parent particle when spawning to select a color for themselves at
@@ -60,4 +64,4 @@ impl RandomColors {
 
 /// Docs
 #[derive(Clone, PartialEq, Debug, Default, Component, Reflect)]
-pub struct ParticleColor(pub Color);
+pub struct ParticleColor(pub Color, pub Vec<Color>);
