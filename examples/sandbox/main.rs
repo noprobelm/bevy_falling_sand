@@ -1,18 +1,18 @@
 //! A complete example on how to build an interactive particle sandbox with bevy_falling_sand
-mod camera;
-mod particle_setup;
-mod particle_management;
 mod brush;
-mod scenes;
+mod camera;
 mod debug;
+mod particle_management;
+mod particle_setup;
+mod scenes;
 mod ui;
 
-use camera::*;
-use particle_setup::*;
-use particle_management::*;
 use brush::*;
-use scenes::*;
+use camera::*;
 use debug::*;
+use particle_management::*;
+use particle_setup::*;
+use scenes::*;
 use ui::*;
 
 use bevy::{prelude::*, window::WindowMode};
@@ -43,5 +43,6 @@ fn main() {
         DebugPlugin,
         UIPlugin,
     ))
+    .insert_resource(ClearColor(Color::srgba(0.17, 0.16, 0.15, 1.0)))
     .run();
 }
