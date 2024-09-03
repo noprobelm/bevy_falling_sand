@@ -21,6 +21,17 @@ pub fn color_random_particles(
         });
 }
 
+/// Updates the color of particles with the RandomizeColors component
+pub fn color_randomizing_particles(
+    mut color_query: Query<(&RandomizeColors, &mut ParticleColor, &mut PhysicsRng), With<Particle>>,
+) {
+    color_query.iter_mut().for_each(|(random_colors, mut color, mut rng)| {
+	if rng.chance(random_colors.chance) {
+	    color.0 = *rng.sample(&color.1).unwrap();
+	}
+    });
+}
+
 /// Flags the Particle component as changed so its color will be reset by the handle_new_particles system.
 pub fn on_remove_random_colors(
     trigger: Trigger<OnRemove, RandomColors>,
@@ -30,11 +41,3 @@ pub fn on_remove_random_colors(
     particle.into_inner();
 }
 
-/// Updates the color of particles with the RandomizeColors component
-pub fn color_changing_particles(
-    mut color_query: Query<(&mut ParticleColor, &mut PhysicsRng), With<RandomizeColors>>,
-) {
-    color_query.iter_mut().for_each(|(mut color, mut rng)| {
-	color.0 = *rng.sample(&color.1).unwrap();
-    });
-}

@@ -73,11 +73,11 @@
         "colors": [(0.84, 0.6, 0.44, 0.5)]
     },
     "Oil": {
-        "density": 770,
+        "density": 730,
         "max_velocity": 3,
         "liquid": 3,
         "momentum": true,
-        "colors": [(0.16, 0.12, 0.18, 0.5)]
+        "colors": [(0.17, 0.07, 0.16, 1.0)]
     },
     "Sand": {
         "density": 1250,
@@ -110,8 +110,8 @@
         "density": 250,
         "max_velocity": 1,
         "gas": 3,
-        "colors": [(0.18, 0.16, 0.16, 1.0), (0.25, 0.22, 0.24, 1.0)],
-        "changes_colors": true
+        "colors": [(0.44, 0.41, 0.4, 1.0), (0.52, 0.5, 0.45, 1.0)],
+        "changes_colors": 0.1
     },
     "Wall": {
         "wall": true,
@@ -158,8 +158,8 @@
             "tick_rate": 100,
             "chance_destroy_per_tick": 0.0,
             "reaction": {
-                "produces": "Steam",
-                "chance_to_produce": 0.015
+                "produces": "Smoke",
+                "chance_to_produce": 0.035
             },
             "colors": [
                 (1.0, 0.0, 0.0, 1.0),

@@ -32,8 +32,18 @@ impl ParticleColors {
 }
 
 /// Flag indicating a particle should change to a new color from its ParticleColors
-#[derive(Component, Default, Reflect)]
-pub struct RandomizeColors;
+#[derive(Component, Clone, Default, Reflect)]
+pub struct RandomizeColors {
+    /// The chance a particle's color will change.
+    pub chance: f64
+}
+
+impl RandomizeColors {
+    /// Creates a new RandomizesColors
+    pub fn new(chance: f64) -> RandomizeColors {
+        RandomizeColors{chance}
+    }
+}
 
 /// Provides a range of possible colors for a particle. Child particles will access
 /// this component from their parent particle when spawning to select a color for themselves at

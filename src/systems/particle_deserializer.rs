@@ -52,7 +52,7 @@ fn handle_component(
         "max_velocity" => insert_max_velocity(commands, entity, component_data),
         "momentum" => insert_momentum(commands, entity, component_data),
         "colors" => insert_colors(commands, entity, component_data),
-	"randomizes_colors" => {commands.entity(entity).insert(RandomizeColors);},
+	"changes_colors" => {insert_random_colors(commands, entity, component_data)},
         "liquid" => insert_liquid(commands, entity, component_data),
         "movable_solid" => insert_movable_solid(commands, entity),
         "solid" => insert_solid(commands, entity),
@@ -122,6 +122,11 @@ fn insert_fire(commands: &mut Commands, entity: Entity, component_data: ron::Val
 fn insert_burning(commands: &mut Commands, entity: Entity, component_data: ron::Value) {
     let burning = parse_burning(component_data);
     commands.entity(entity).insert(burning);
+}
+
+fn insert_random_colors(commands: &mut Commands, entity: Entity, component_data: ron::Value) {
+    let chance = component_data.into_rust::<f64>().expect("Config error: Expected usize for 'gas'");
+    commands.entity(entity).insert(RandomizeColors::new(chance));
 }
 
 fn parse_burns(component_data: ron::Value) -> (Duration, Duration, Option<f64>, Option<Reacting>, Option<RandomColors>, Option<Fire>) {

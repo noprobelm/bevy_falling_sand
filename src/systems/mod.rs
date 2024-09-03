@@ -8,8 +8,8 @@ mod color;
 mod debug;
 mod hibernation;
 mod map;
-mod movement;
 mod material;
+mod movement;
 mod particle_deserializer;
 mod scenes;
 
@@ -18,8 +18,8 @@ pub use color::*;
 pub use debug::*;
 pub use hibernation::*;
 pub use map::*;
-pub use movement::*;
 pub use material::*;
+pub use movement::*;
 pub use particle_deserializer::*;
 pub use scenes::*;
 
@@ -49,14 +49,14 @@ impl bevy::prelude::Plugin for ParticleSystemsPlugin {
                     .in_set(ParticleSimulationSet)
                     .run_if(resource_exists::<SimulationRun>),
             )
+            .add_systems(Update, (color_particles.after(handle_new_particles),))
             .add_systems(
                 Update,
                 (
-                    color_particles.after(handle_new_particles),
-                    color_random_particles
-                        .after(handle_new_particles)
-                        .run_if(resource_exists::<SimulationRun>),
-                ),
+                    color_randomizing_particles,
+                    color_random_particles.after(handle_new_particles),
+                )
+                    .run_if(resource_exists::<SimulationRun>),
             )
             .add_systems(
                 Update,
@@ -86,7 +86,5 @@ impl bevy::prelude::Plugin for ParticleSystemsPlugin {
             .observe(on_movable_solid_added)
             .observe(on_liquid_added)
             .observe(on_gas_added);
-
-
     }
 }

@@ -47,6 +47,7 @@ pub fn handle_new_particles(
             Option<&Fire>,
             Option<&Burns>,
             Option<&Burning>,
+	    Option<&RandomizeColors>
         ),
         With<ParticleType>,
     >,
@@ -80,6 +81,7 @@ pub fn handle_new_particles(
                 fire,
                 burns,
                 burning,
+		randomizes_colors
             )) = parent_query.get(*parent_entity)
             {
                 commands.entity(entity).insert((
@@ -142,6 +144,10 @@ pub fn handle_new_particles(
                 if let Some(burning) = burning {
                     commands.entity(entity).insert(burning.clone());
                 }
+
+		if let Some(randomizes) = randomizes_colors {
+		    commands.entity(entity).insert(randomizes.clone());
+		}
 
                 commands.entity(parent_entity).add_child(entity);
             }
