@@ -1,5 +1,4 @@
-use crate::{Particle, ParticleColor, PhysicsRng, RandomColors, RandomizeColors};
-use bevy::prelude::*;
+use crate::*;
 
 /// Colors newly added or changed particles
 pub fn color_particles(
@@ -21,17 +20,6 @@ pub fn color_random_particles(
         });
 }
 
-/// Updates the color of particles with the RandomizeColors component
-pub fn color_randomizing_particles(
-    mut color_query: Query<(&RandomizeColors, &mut ParticleColor, &mut PhysicsRng), With<Particle>>,
-) {
-    color_query.iter_mut().for_each(|(random_colors, mut color, mut rng)| {
-	if rng.chance(random_colors.chance) {
-	    color.selected = *rng.sample(&color.palette).unwrap();
-	}
-    });
-}
-
 /// Flags the Particle component as changed so its color will be reset by the handle_new_particles system.
 pub fn on_remove_random_colors(
     trigger: Trigger<OnRemove, RandomColors>,
@@ -41,3 +29,22 @@ pub fn on_remove_random_colors(
     particle.into_inner();
 }
 
+/// Changes the color for particles with the ChangesColor component
+pub fn color_flowing_particles (
+    mut particles_query: Query<(&mut ParticleColor, &mut PhysicsRng, &FlowsColor), With<Particle>>) {
+    particles_query.iter_mut().for_each(|(mut particle_color, mut rng, flows_color)| {
+	if rng.chance(flows_color.rate) {
+	    particle_color.set_next();
+	}
+    })
+}
+
+/// Randomizes the color for particles with the ChangesColor component
+pub fn color_randomizing_particles (
+    mut particles_query: Query<(&mut ParticleColor, &mut PhysicsRng, &RandomizesColor), With<Particle>>) {
+    particles_query.iter_mut().for_each(|(mut particle_color, mut rng, randomizes_color)| {
+	if rng.chance(randomizes_color.rate) {
+	    particle_color.randomize(&mut rng);
+	}
+    })
+}

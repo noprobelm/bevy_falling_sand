@@ -47,7 +47,8 @@ pub fn handle_new_particles(
             Option<&Fire>,
             Option<&Burns>,
             Option<&Burning>,
-	    Option<&RandomizeColors>
+	    Option<&RandomizesColor>,
+	    Option<&FlowsColor>
         ),
         With<ParticleType>,
     >,
@@ -81,7 +82,8 @@ pub fn handle_new_particles(
                 fire,
                 burns,
                 burning,
-		randomizes_colors
+		randomizes_color,
+		flows_color
             )) = parent_query.get(*parent_entity)
             {
                 commands.entity(entity).insert((
@@ -94,7 +96,7 @@ pub fn handle_new_particles(
                         ..default()
                     },
                     Coordinates(coordinates),
-                    ParticleColor::new(color.random(rng), color.palette.clone()),
+                    color.new_with_random(rng),
                     PhysicsRng::default(),
                     ColorRng::default(),
                 ));
@@ -145,9 +147,14 @@ pub fn handle_new_particles(
                     commands.entity(entity).insert(burning.clone());
                 }
 
-		if let Some(randomizes) = randomizes_colors {
+		if let Some(randomizes) = randomizes_color {
 		    commands.entity(entity).insert(randomizes.clone());
 		}
+
+		if let Some(flows) = flows_color {
+		    commands.entity(entity).insert(flows.clone());
+		}
+
 
                 commands.entity(parent_entity).add_child(entity);
             }
