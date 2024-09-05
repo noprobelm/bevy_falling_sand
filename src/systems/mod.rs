@@ -55,7 +55,6 @@ impl bevy::prelude::Plugin for ParticleSystemsPlugin {
                 (
 		    color_flowing_particles,
                     color_randomizing_particles,
-                    color_random_particles.after(handle_new_particles),
                 )
                     .run_if(resource_exists::<SimulationRun>),
             )

@@ -9,27 +9,7 @@ pub fn color_particles(
     });
 }
 
-/// Updates the color of a randomly colored particle.
-pub fn color_random_particles(
-    mut random_color_query: Query<(&mut ParticleColor, &RandomColors, &mut PhysicsRng)>,
-) {
-    random_color_query
-        .iter_mut()
-        .for_each(|(mut color, colors, mut rng)| {
-            color.selected = colors.random_with_color_rng(&mut rng);
-        });
-}
-
-/// Flags the Particle component as changed so its color will be reset by the handle_new_particles system.
-pub fn on_remove_random_colors(
-    trigger: Trigger<OnRemove, RandomColors>,
-    mut particles_query: Query<&mut Particle>,
-) {
-    let particle = particles_query.get_mut(trigger.entity()).unwrap();
-    particle.into_inner();
-}
-
-/// Changes the color for particles with the ChangesColor component
+/// Changes the color of particles with the ChangesColor component
 pub fn color_flowing_particles (
     mut particles_query: Query<(&mut ParticleColor, &mut PhysicsRng, &FlowsColor), With<Particle>>) {
     particles_query.iter_mut().for_each(|(mut particle_color, mut rng, flows_color)| {
@@ -39,7 +19,7 @@ pub fn color_flowing_particles (
     })
 }
 
-/// Randomizes the color for particles with the ChangesColor component
+/// Randomizes the color of particles with the ChangesColor component
 pub fn color_randomizing_particles (
     mut particles_query: Query<(&mut ParticleColor, &mut PhysicsRng, &RandomizesColor), With<Particle>>) {
     particles_query.iter_mut().for_each(|(mut particle_color, mut rng, randomizes_color)| {

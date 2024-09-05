@@ -47,7 +47,10 @@ impl ParticleColor {
     }
 }
 
-/// Indicates the logic for a particle that changes colors.
+/// BurningColors component for particles that change color while burning.
+pub type BurningColors = ParticleColor;
+
+/// Component for particles that randomly change colors from its palette.
 #[derive(Clone, PartialEq, Debug, Component, Reflect)]
 #[reflect(Component)]
 pub struct RandomizesColor {
@@ -62,7 +65,7 @@ impl RandomizesColor {
     }
 }
 
-/// Indicates the logic for a particle that changes colors.
+/// Component for particlce whose colors flows sequientally through its palette.
 #[derive(Clone, PartialEq, Debug, Component, Reflect)]
 #[reflect(Component)]
 pub struct FlowsColor {
@@ -85,7 +88,7 @@ impl FlowsColor {
 #[reflect(Component)]
 pub struct RandomColors {
     /// The possible range of colors.
-    colors: Vec<Color>,
+    pub colors: Vec<Color>,
 }
 
 impl RandomColors {

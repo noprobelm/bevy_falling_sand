@@ -1,10 +1,7 @@
 use bevy::prelude::*;
 use bevy_spatial::SpatialAccess;
 
-use crate::{
-    Burning, Burns, Coordinates, Fire, Particle, ParticleTree, PhysicsRng, RandomColors,
-    RemoveParticleEvent,
-};
+use crate::*;
 
 /// Burns particles within a radius of entities that posses the `Fire` component.
 pub fn handle_fire(
@@ -26,8 +23,9 @@ pub fn handle_fire(
                 .for_each(|(_, entity)| {
                     if let Ok((entity, burns)) = burns_query.get(entity.unwrap()) {
                         commands.entity(entity).insert(burns.to_burning());
-                        if let Some(colors) = &burns.colors {
+                        if let Some(colors) = &burns.color {
                             commands.entity(entity).insert(colors.clone());
+                            commands.entity(entity).insert(RandomizesColor::new(0.75));
                         }
                         if let Some(fire) = &burns.spreads {
                             commands.entity(entity).insert(fire.clone());
@@ -52,18 +50,18 @@ pub fn handle_burning(
     mut burning_query: Query<
         (
             Entity,
+	    &mut Particle,
             &mut Burns,
             &mut Burning,
             &mut PhysicsRng,
             &Coordinates,
         ),
-        With<Particle>,
     >,
     time: Res<Time>,
 ) {
     burning_query
         .iter_mut()
-        .for_each(|(entity, mut burns, mut burning, mut rng, coordinates)| {
+        .for_each(|(entity, particle, mut burns, mut burning, mut rng, coordinates)| {
             if burning.timer.tick(time.delta()).finished() {
                 if burns.chance_destroy_per_tick.is_some() {
                     commands.trigger(RemoveParticleEvent {
@@ -72,7 +70,9 @@ pub fn handle_burning(
                     })
                 } else {
                     commands.entity(entity).remove::<Burning>();
-                    commands.entity(entity).remove::<RandomColors>();
+		    // Causes the particle to resync with it's parent's data. This is a temporary solution
+		    // until I've written events to handle resetting a particle's specific component data.
+		    particle.into_inner();
                 }
                 return;
             }

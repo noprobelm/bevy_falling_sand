@@ -55,7 +55,7 @@
         "changes_colors": 0.1
     },
     "FIRE": {
-        "density": 200,
+        "density": 450,
         "max_velocity": 3,
         "gas": 1,
         "colors": [
