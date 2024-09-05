@@ -70,6 +70,15 @@ pub fn handle_new_particle_types(
         });
 }
 
+/// Observer for resetting all of a particle's data. This system simply marks the Particle as changed so it gets picked
+/// up by `handle_new_particles` the next frame.
+pub fn on_reset_particle(
+    trigger: Trigger<ResetParticleEvent>,
+    mut particle_query: Query<&mut Particle>,
+) {
+    particle_query.get_mut(trigger.event().entity).unwrap().into_inner();
+}
+
 /// Observer for resetting a particle's Density information to its parent's.
 pub fn on_reset_density(
     trigger: Trigger<ResetDensityEvent>,

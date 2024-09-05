@@ -15,6 +15,13 @@ pub struct RemoveParticleEvent {
 #[derive(Event)]
 pub struct ClearChunkMapEvent;
 
+/// Resets all of a particle's components to its parent's.
+#[derive(Event)]
+pub struct ResetParticleEvent {
+    /// The entity to reset data for.
+    pub entity: Entity
+}
+
 /// Triggers a particle to reset its Density information to its parent's.
 #[derive(Event)]
 pub struct ResetDensityEvent {
