@@ -15,22 +15,6 @@ pub struct Fire {
     pub destroys_on_spread: bool,
 }
 
-#[derive(Clone, Debug)]
-/// Behavior for particles that have a chance to be destroyed while in a burning state.
-pub struct BurnDestruction {
-    /// Chance the particle will be destroyed per tick.
-    pub chance_destroy_per_tick: f64,
-}
-
-impl BurnDestruction {
-    /// Creates a new BurnDestruction
-    pub fn new(chance_destroy_per_tick: f64) -> BurnDestruction {
-        BurnDestruction {
-            chance_destroy_per_tick,
-        }
-    }
-}
-
 /// Stores information about a particle that can burn.
 #[derive(Clone, Component, Debug)]
 pub struct Burns {
