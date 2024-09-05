@@ -2,34 +2,72 @@
 use crate::*;
 use bevy_turborand::prelude::{DelegatedRng, GlobalRng};
 
-/// Observer for disassociating a particle from its parent, despawning it, and removing it from the ChunkMap if a
-/// RemoveParticle event is triggered.
-pub fn on_remove_particle(
-    trigger: Trigger<RemoveParticleEvent>,
+/// Map all particles to their respective parent when added/changed within the simulation
+pub fn handle_new_particles(
     mut commands: Commands,
+    parent_query: Query<Entity, With<ParticleType>>,
+    particle_query: Query<(&Particle, &Transform, Entity), Changed<Particle>>,
     mut map: ResMut<ChunkMap>,
+    type_map: Res<ParticleTypeMap>,
 ) {
-    if let Some(entity) = map.remove(&trigger.event().coordinates) {
-        if trigger.event().despawn == true {
-            commands.entity(entity).remove_parent().despawn();
+    for (particle_type, transform, entity) in particle_query.iter() {
+        let coordinates = IVec2::new(
+            transform.translation.x as i32,
+            transform.translation.y as i32,
+        );
+
+        let new = map.insert_no_overwrite(coordinates, entity);
+        if *new != entity {
+            commands.entity(entity).despawn();
+            continue;
+        }
+        if let Some(parent_entity) = type_map.get(&particle_type.name) {
+            if let Ok(parent_entity) = parent_query.get(*parent_entity) {
+                commands.entity(parent_entity).add_child(entity);
+                commands.entity(entity).insert((
+                    SpriteBundle {
+                        sprite: Sprite {
+                            color: Color::srgba(0., 0., 0., 0.),
+                            ..default()
+                        },
+                        transform: *transform,
+                        ..default()
+                    },
+                    Coordinates(coordinates),
+                    PhysicsRng::default(),
+                    ColorRng::default(),
+                    ReactionRng::default(),
+                ));
+                commands.trigger(ResetDensityEvent { entity });
+                commands.trigger(ResetMovementPriorityEvent { entity });
+                commands.trigger(ResetVelocityEvent { entity });
+                commands.trigger(ResetParticleColorEvent { entity });
+                commands.trigger(ResetRandomizesColorEvent { entity });
+                commands.trigger(ResetFlowsColorEvent { entity });
+                commands.trigger(ResetMomentumEvent { entity });
+                commands.trigger(ResetFireEvent { entity });
+                commands.trigger(ResetBurnsEvent { entity });
+                commands.trigger(ResetBurningEvent { entity });
+            }
         } else {
-            commands.entity(entity).remove_parent();
+            panic!(
+                "No parent entity found for particle type {:?}",
+                particle_type
+            );
         }
     }
 }
 
-/// Observer for clearing all particles from the world as soon as a ClearChunkMap event is triggered.
-pub fn on_clear_chunk_map(
-    _trigger: Trigger<ClearChunkMapEvent>,
-    mut commands: Commands,
-    particle_parent_map: Res<ParticleTypeMap>,
-    mut map: ResMut<ChunkMap>,
+/// Map all particles to their respective parent when added/changed within the simulation
+pub fn handle_new_particle_types(
+    particle_type_query: Query<(Entity, &ParticleType), Changed<ParticleType>>,
+    mut type_map: ResMut<ParticleTypeMap>,
 ) {
-    particle_parent_map.iter().for_each(|(_, entity)| {
-        commands.entity(*entity).despawn_descendants();
-    });
-
-    map.clear();
+    particle_type_query
+        .iter()
+        .for_each(|(entity, particle_type)| {
+            type_map.insert(particle_type.name.clone(), entity);
+        });
 }
 
 /// Observer for resetting a particle's Density information to its parent's.
@@ -220,70 +258,32 @@ pub fn on_reset_flows_color(
     }
 }
 
-/// Map all particles to their respective parent when added/changed within the simulation
-pub fn handle_new_particles(
+/// Observer for disassociating a particle from its parent, despawning it, and removing it from the ChunkMap if a
+/// RemoveParticle event is triggered.
+pub fn on_remove_particle(
+    trigger: Trigger<RemoveParticleEvent>,
     mut commands: Commands,
-    parent_query: Query<Entity, With<ParticleType>>,
-    particle_query: Query<(&Particle, &Transform, Entity), Changed<Particle>>,
     mut map: ResMut<ChunkMap>,
-    type_map: Res<ParticleTypeMap>,
 ) {
-    for (particle_type, transform, entity) in particle_query.iter() {
-        let coordinates = IVec2::new(
-            transform.translation.x as i32,
-            transform.translation.y as i32,
-        );
-
-        let new = map.insert_no_overwrite(coordinates, entity);
-        if *new != entity {
-            commands.entity(entity).despawn();
-            continue;
-        }
-        if let Some(parent_entity) = type_map.get(&particle_type.name) {
-            if let Ok(parent_entity) = parent_query.get(*parent_entity) {
-                commands.entity(parent_entity).add_child(entity);
-                commands.entity(entity).insert((
-                    SpriteBundle {
-                        sprite: Sprite {
-                            color: Color::srgba(0., 0., 0., 0.),
-                            ..default()
-                        },
-                        transform: *transform,
-                        ..default()
-                    },
-                    Coordinates(coordinates),
-                    PhysicsRng::default(),
-                    ColorRng::default(),
-                    ReactionRng::default(),
-                ));
-                commands.trigger(ResetDensityEvent { entity });
-                commands.trigger(ResetMovementPriorityEvent { entity });
-                commands.trigger(ResetVelocityEvent { entity });
-                commands.trigger(ResetParticleColorEvent { entity });
-                commands.trigger(ResetRandomizesColorEvent { entity });
-                commands.trigger(ResetFlowsColorEvent { entity });
-                commands.trigger(ResetMomentumEvent { entity });
-                commands.trigger(ResetFireEvent { entity });
-                commands.trigger(ResetBurnsEvent { entity });
-                commands.trigger(ResetBurningEvent { entity });
-            }
+    if let Some(entity) = map.remove(&trigger.event().coordinates) {
+        if trigger.event().despawn == true {
+            commands.entity(entity).remove_parent().despawn();
         } else {
-            panic!(
-                "No parent entity found for particle type {:?}",
-                particle_type
-            );
+            commands.entity(entity).remove_parent();
         }
     }
 }
 
-/// Map all particles to their respective parent when added/changed within the simulation
-pub fn handle_new_particle_types(
-    particle_type_query: Query<(Entity, &ParticleType), Changed<ParticleType>>,
-    mut type_map: ResMut<ParticleTypeMap>,
+/// Observer for clearing all particles from the world as soon as a ClearChunkMap event is triggered.
+pub fn on_clear_chunk_map(
+    _trigger: Trigger<ClearChunkMapEvent>,
+    mut commands: Commands,
+    particle_parent_map: Res<ParticleTypeMap>,
+    mut map: ResMut<ChunkMap>,
 ) {
-    particle_type_query
-        .iter()
-        .for_each(|(entity, particle_type)| {
-            type_map.insert(particle_type.name.clone(), entity);
-        });
+    particle_parent_map.iter().for_each(|(_, entity)| {
+        commands.entity(*entity).despawn_descendants();
+    });
+
+    map.clear();
 }
