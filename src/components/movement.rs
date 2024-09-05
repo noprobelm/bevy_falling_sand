@@ -134,13 +134,6 @@ pub struct Coordinates(pub IVec2);
 #[reflect(Component, Debug)]
 pub struct Density(pub u32);
 
-/// Indicates whether a particle should be considered for movement. Examples of anchored particles might be the
-/// ground, or walls. We want anchored particles to be considered as impenetrable neighbors (excluding their ability to
-/// be destroyed), but without uninstigated movement.
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Component, Reflect)]
-#[reflect(Component)]
-pub struct Anchored;
-
 /// A particle's velocity.
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Component, Reflect)]
 #[reflect(Component)]

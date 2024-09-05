@@ -30,7 +30,7 @@ pub fn color_chunks(map: Res<ChunkMap>, mut chunk_gizmos: Gizmos<DebugGizmos>) {
 /// Counts the total number of dynamic particles in the simulation.
 pub fn count_dynamic_particles(
     mut dynamic_particle_count: ResMut<DynamicParticleCount>,
-    particle_query: Query<&Particle, Without<Anchored>>,
+    particle_query: Query<&Particle, Without<Wall>>,
 ) {
     dynamic_particle_count.0 = particle_query.iter().fold(0, |acc, _| acc + 1);
 }

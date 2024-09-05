@@ -1,7 +1,8 @@
 //! Events for particle map management.
 use bevy::prelude::*;
 
-/// Triggeres [on_remove_particle](crate::on_remove_particle) to remove a particle from the simulation.
+
+/// Triggers [on_remove_particle](crate::on_remove_particle) to remove a particle from the simulation.
 #[derive(Event)]
 pub struct RemoveParticleEvent {
     /// The coordinates of the particle to remove.
@@ -10,6 +11,76 @@ pub struct RemoveParticleEvent {
     pub despawn: bool
 }
 
-/// Triggeres [on_clear_chunk_map](crate::on_clear_chunk_map) to remove a particle from the simulation.
+/// Triggers [on_clear_chunk_map](crate::on_clear_chunk_map) to remove a particle from the simulation.
 #[derive(Event)]
 pub struct ClearChunkMapEvent;
+
+/// Triggers a particle to reset its Density information to its parent's.
+#[derive(Event)]
+pub struct ResetDensityEvent {
+    /// The entity to reset data for.
+    pub entity: Entity
+}
+
+/// Triggers a particle to reset its MovementPriority information to its parent's.
+#[derive(Event)]
+pub struct ResetMovementPriorityEvent {
+    /// The entity to reset data for.
+    pub entity: Entity
+}
+
+/// Triggers a particle to reset its Velocity information to its parent's.
+#[derive(Event)]
+pub struct ResetVelocityEvent {
+    /// The entity to reset data for.
+    pub entity: Entity
+}
+
+/// Triggers a particle to reset its ParticleColor information to its parent's.
+#[derive(Event)]
+pub struct ResetParticleColorEvent {
+    /// The entity to reset data for.
+    pub entity: Entity,
+}
+
+/// Triggers a particle to reset its RandomizesColor information to its parent's.
+#[derive(Event)]
+pub struct ResetRandomizesColorEvent {
+    /// The entity to reset data for.
+    pub entity: Entity
+}
+
+/// Triggers a particle to reset its FlowsColor information to its parent's.
+#[derive(Event)]
+pub struct ResetFlowsColorEvent {
+    /// The entity to reset data for.
+    pub entity: Entity
+}
+
+/// Triggers a particle to reset its ParticleColor information to its parent's.
+#[derive(Event)]
+pub struct ResetMomentumEvent {
+    /// The entity to reset data for.
+    pub entity: Entity
+}
+
+/// Triggers a particle to reset its Fire information to its parent's.
+#[derive(Event)]
+pub struct ResetFireEvent {
+    /// The entity to reset data for.
+    pub entity: Entity
+}
+
+/// Triggers a particle to reset its Burns information to its parent's.
+#[derive(Event)]
+pub struct ResetBurnsEvent {
+    /// The entity to reset data for.
+    pub entity: Entity
+}
+
+/// Triggers a particle to reset its Burning information to its parent's.
+#[derive(Event)]
+pub struct ResetBurningEvent {
+    /// The entity to reset data for.
+    pub entity: Entity
+}

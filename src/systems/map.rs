@@ -32,32 +32,202 @@ pub fn on_clear_chunk_map(
     map.clear();
 }
 
+/// Observer for resetting a particle's Density information to its parent's.
+pub fn on_reset_density(
+    trigger: Trigger<ResetDensityEvent>,
+    mut commands: Commands,
+    particle_query: Query<&Parent, With<Particle>>,
+    parent_query: Query<Option<&Density>, With<ParticleType>>,
+) {
+    if let Ok(parent) = particle_query.get(trigger.event().entity) {
+        if let Some(density) = parent_query.get(parent.get()).unwrap() {
+            commands
+                .entity(trigger.event().entity)
+                .insert(density.clone());
+        } else {
+            commands.entity(trigger.event().entity).remove::<Density>();
+        }
+    }
+}
+
+/// Observer for resetting a particle's MovementPriority information to its parent's.
+pub fn on_reset_movement_priority(
+    trigger: Trigger<ResetMovementPriorityEvent>,
+    mut commands: Commands,
+    particle_query: Query<&Parent, With<Particle>>,
+    parent_query: Query<Option<&MovementPriority>, With<ParticleType>>,
+) {
+    if let Ok(parent) = particle_query.get(trigger.event().entity) {
+        if let Some(movement_priority) = parent_query.get(parent.get()).unwrap() {
+            commands
+                .entity(trigger.event().entity)
+                .insert(movement_priority.clone());
+        } else {
+            commands
+                .entity(trigger.event().entity)
+                .remove::<MovementPriority>();
+        }
+    }
+}
+
+/// Observer for resetting a particle's Velocity information to its parent's.
+pub fn on_reset_velocity(
+    trigger: Trigger<ResetVelocityEvent>,
+    mut commands: Commands,
+    particle_query: Query<&Parent, With<Particle>>,
+    parent_query: Query<Option<&Velocity>, With<ParticleType>>,
+) {
+    if let Ok(parent) = particle_query.get(trigger.event().entity) {
+        if let Some(velocity) = parent_query.get(parent.get()).unwrap() {
+            commands
+                .entity(trigger.event().entity)
+                .insert(velocity.clone());
+        } else {
+            commands.entity(trigger.event().entity).remove::<Velocity>();
+        }
+    }
+}
+
+/// Observer for resetting a particle's Velocity information to its parent's.
+pub fn on_reset_particle_color(
+    trigger: Trigger<ResetParticleColorEvent>,
+    mut commands: Commands,
+    particle_query: Query<&Parent, With<Particle>>,
+    parent_query: Query<Option<&ParticleColor>, With<ParticleType>>,
+    mut rng: ResMut<GlobalRng>,
+) {
+    if let Ok(parent) = particle_query.get(trigger.event().entity) {
+        let rng = rng.get_mut();
+        if let Some(particle_color) = parent_query.get(parent.get()).unwrap() {
+            commands
+                .entity(trigger.event().entity)
+                .insert(particle_color.new_with_random(rng));
+        } else {
+            commands
+                .entity(trigger.event().entity)
+                .remove::<ParticleColor>();
+        }
+    }
+}
+
+/// Observer for resetting a particle's Momentum information to its parent's.
+pub fn on_reset_momentum(
+    trigger: Trigger<ResetMomentumEvent>,
+    mut commands: Commands,
+    particle_query: Query<&Parent, With<Particle>>,
+    parent_query: Query<Option<&Momentum>, With<ParticleType>>,
+) {
+    if let Ok(parent) = particle_query.get(trigger.event().entity) {
+        if let Some(momentum) = parent_query.get(parent.get()).unwrap() {
+            commands
+                .entity(trigger.event().entity)
+                .insert(momentum.clone());
+        } else {
+            commands.entity(trigger.event().entity).remove::<Momentum>();
+        }
+    }
+}
+
+/// Observer for resetting a particle's Fire information to its parent's.
+pub fn on_reset_fire(
+    trigger: Trigger<ResetFireEvent>,
+    mut commands: Commands,
+    particle_query: Query<&Parent, With<Particle>>,
+    parent_query: Query<Option<&Fire>, With<ParticleType>>,
+) {
+    if let Ok(parent) = particle_query.get(trigger.event().entity) {
+        if let Some(fire) = parent_query.get(parent.get()).unwrap() {
+            commands.entity(trigger.event().entity).insert(fire.clone());
+        } else {
+            commands.entity(trigger.event().entity).remove::<Fire>();
+        }
+    }
+}
+
+/// Observer for resetting a particle's Burns information to its parent's.
+pub fn on_reset_burns(
+    trigger: Trigger<ResetBurnsEvent>,
+    mut commands: Commands,
+    particle_query: Query<&Parent, With<Particle>>,
+    parent_query: Query<Option<&Burns>, With<ParticleType>>,
+) {
+    if let Ok(parent) = particle_query.get(trigger.event().entity) {
+        if let Some(burns) = parent_query.get(parent.get()).unwrap() {
+            commands
+                .entity(trigger.event().entity)
+                .insert(burns.clone());
+        } else {
+            commands.entity(trigger.event().entity).remove::<Burns>();
+        }
+    }
+}
+
+/// Observer for resetting a particle's Burning information to its parent's.
+pub fn on_reset_burning(
+    trigger: Trigger<ResetBurningEvent>,
+    mut commands: Commands,
+    particle_query: Query<&Parent, With<Particle>>,
+    parent_query: Query<Option<&Burning>, With<ParticleType>>,
+) {
+    if let Ok(parent) = particle_query.get(trigger.event().entity) {
+        if let Some(burning) = parent_query.get(parent.get()).unwrap() {
+            commands
+                .entity(trigger.event().entity)
+                .insert(burning.clone());
+        } else {
+            commands.entity(trigger.event().entity).remove::<Burning>();
+        }
+    }
+}
+
+/// Observer for resetting a particle's RandomizesColor information to its parent's.
+pub fn on_reset_randomizes_color(
+    trigger: Trigger<ResetRandomizesColorEvent>,
+    mut commands: Commands,
+    particle_query: Query<&Parent, With<Particle>>,
+    parent_query: Query<Option<&RandomizesColor>, With<ParticleType>>,
+) {
+    if let Ok(parent) = particle_query.get(trigger.event().entity) {
+        if let Some(color) = parent_query.get(parent.get()).unwrap() {
+            commands
+                .entity(trigger.event().entity)
+                .insert(color.clone());
+        } else {
+            commands
+                .entity(trigger.event().entity)
+                .remove::<RandomizesColor>();
+        }
+    }
+}
+
+/// Observer for resetting a particle's FlowsColor information to its parent's.
+pub fn on_reset_flows_color(
+    trigger: Trigger<ResetFlowsColorEvent>,
+    mut commands: Commands,
+    particle_query: Query<&Parent, With<Particle>>,
+    parent_query: Query<Option<&RandomizesColor>, With<ParticleType>>,
+) {
+    if let Ok(parent) = particle_query.get(trigger.event().entity) {
+        if let Some(color) = parent_query.get(parent.get()).unwrap() {
+            commands
+                .entity(trigger.event().entity)
+                .insert(color.clone());
+        } else {
+            commands
+                .entity(trigger.event().entity)
+                .remove::<FlowsColor>();
+        }
+    }
+}
+
 /// Map all particles to their respective parent when added/changed within the simulation
 pub fn handle_new_particles(
     mut commands: Commands,
-    parent_query: Query<
-        (
-            Entity,
-            Option<&Density>,
-            Option<&MovementPriority>,
-            Option<&Velocity>,
-            &ParticleColor,
-            Option<&Momentum>,
-            Option<&Anchored>,
-            Option<&Fire>,
-            Option<&Burns>,
-            Option<&Burning>,
-	    Option<&RandomizesColor>,
-	    Option<&FlowsColor>
-        ),
-        With<ParticleType>,
-    >,
+    parent_query: Query<Entity, With<ParticleType>>,
     particle_query: Query<(&Particle, &Transform, Entity), Changed<Particle>>,
-    mut rng: ResMut<GlobalRng>,
     mut map: ResMut<ChunkMap>,
     type_map: Res<ParticleTypeMap>,
 ) {
-    let rng = rng.get_mut();
     for (particle_type, transform, entity) in particle_query.iter() {
         let coordinates = IVec2::new(
             transform.translation.x as i32,
@@ -69,23 +239,9 @@ pub fn handle_new_particles(
             commands.entity(entity).despawn();
             continue;
         }
-
         if let Some(parent_entity) = type_map.get(&particle_type.name) {
-            if let Ok((
-                parent_entity,
-                density,
-                movement_priority,
-                velocity,
-                color,
-                momentum,
-                anchored,
-                fire,
-                burns,
-                burning,
-		randomizes_color,
-		flows_color
-            )) = parent_query.get(*parent_entity)
-            {
+            if let Ok(parent_entity) = parent_query.get(*parent_entity) {
+                commands.entity(parent_entity).add_child(entity);
                 commands.entity(entity).insert((
                     SpriteBundle {
                         sprite: Sprite {
@@ -96,68 +252,21 @@ pub fn handle_new_particles(
                         ..default()
                     },
                     Coordinates(coordinates),
-                    color.new_with_random(rng),
                     PhysicsRng::default(),
-		    ColorRng::default(),
-		    ReactionRng::default()
+                    ColorRng::default(),
+                    ReactionRng::default(),
                 ));
 
-                if let Some(density) = density {
-                    commands.entity(entity).insert(density.clone());
-                } else {
-                    commands.entity(entity).remove::<Density>();
-                }
-
-                if let Some(velocity) = velocity {
-                    commands.entity(entity).insert(velocity.clone());
-                } else {
-                    commands.entity(entity).remove::<Velocity>();
-                }
-
-                if let Some(movement_priority) = movement_priority {
-                    commands.entity(entity).insert(movement_priority.clone());
-                } else {
-                    commands.entity(entity).remove::<MovementPriority>();
-                }
-
-                if momentum.is_some() {
-                    commands.entity(entity).insert(Momentum(IVec2::ZERO));
-                } else {
-                    commands.entity(entity).remove::<Momentum>();
-                }
-
-                if anchored.is_some() {
-                    commands.entity(entity).insert(Anchored);
-                } else {
-                    commands.entity(entity).remove::<Anchored>();
-                }
-
-                if let Some(fire) = fire {
-                    commands.entity(entity).insert(fire.clone());
-                } else {
-                    commands.entity(entity).remove::<Fire>();
-                }
-
-                if let Some(burns) = burns {
-                    commands.entity(entity).insert(burns.clone());
-                } else {
-                    commands.entity(entity).remove::<Burns>();
-                }
-
-                if let Some(burning) = burning {
-                    commands.entity(entity).insert(burning.clone());
-                }
-
-		if let Some(randomizes) = randomizes_color {
-		    commands.entity(entity).insert(randomizes.clone());
-		}
-
-		if let Some(flows) = flows_color {
-		    commands.entity(entity).insert(flows.clone());
-		}
-
-
-                commands.entity(parent_entity).add_child(entity);
+	    commands.trigger(ResetDensityEvent { entity });
+	    commands.trigger(ResetMovementPriorityEvent { entity });
+	    commands.trigger(ResetVelocityEvent { entity });
+	    commands.trigger(ResetParticleColorEvent { entity });
+	    commands.trigger(ResetRandomizesColorEvent { entity });
+	    commands.trigger(ResetFlowsColorEvent { entity });
+	    commands.trigger(ResetMomentumEvent { entity });
+	    commands.trigger(ResetFireEvent { entity });
+	    commands.trigger(ResetBurnsEvent { entity });
+	    commands.trigger(ResetBurningEvent { entity });
             }
         } else {
             panic!(

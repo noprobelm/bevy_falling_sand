@@ -85,6 +85,16 @@ impl bevy::prelude::Plugin for ParticleSystemsPlugin {
             .observe(on_solid_added)
             .observe(on_movable_solid_added)
             .observe(on_liquid_added)
-            .observe(on_gas_added);
+            .observe(on_gas_added)
+            .observe(on_reset_density)
+            .observe(on_reset_movement_priority)
+            .observe(on_reset_velocity)
+            .observe(on_reset_particle_color)
+            .observe(on_reset_momentum)
+            .observe(on_reset_fire)
+            .observe(on_reset_burns)
+            .observe(on_reset_burning)
+            .observe(on_reset_randomizes_color)
+            .observe(on_reset_flows_color);
     }
 }
