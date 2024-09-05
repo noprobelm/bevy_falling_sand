@@ -47,9 +47,6 @@ impl ParticleColor {
     }
 }
 
-/// BurningColors component for particles that change color while burning.
-pub type BurningColors = ParticleColor;
-
 /// Component for particles that randomly change colors from its palette.
 #[derive(Clone, PartialEq, Debug, Component, Reflect)]
 #[reflect(Component)]
