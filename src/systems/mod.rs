@@ -80,12 +80,15 @@ impl bevy::prelude::Plugin for ParticleSystemsPlugin {
                     .before(handle_new_particles)
                     .run_if(on_event::<crate::events::DeserializeParticleTypesEvent>()),
             )
+	    // Particle removal observers.
             .observe(on_remove_particle)
             .observe(on_clear_chunk_map)
+	    // Particle state change observers.
             .observe(on_solid_added)
             .observe(on_movable_solid_added)
             .observe(on_liquid_added)
             .observe(on_gas_added)
+	    // Particle component reset observers.
             .observe(on_reset_density)
             .observe(on_reset_movement_priority)
             .observe(on_reset_velocity)

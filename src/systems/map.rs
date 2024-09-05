@@ -205,7 +205,7 @@ pub fn on_reset_flows_color(
     trigger: Trigger<ResetFlowsColorEvent>,
     mut commands: Commands,
     particle_query: Query<&Parent, With<Particle>>,
-    parent_query: Query<Option<&RandomizesColor>, With<ParticleType>>,
+    parent_query: Query<Option<&FlowsColor>, With<ParticleType>>,
 ) {
     if let Ok(parent) = particle_query.get(trigger.event().entity) {
         if let Some(color) = parent_query.get(parent.get()).unwrap() {
@@ -256,17 +256,16 @@ pub fn handle_new_particles(
                     ColorRng::default(),
                     ReactionRng::default(),
                 ));
-
-	    commands.trigger(ResetDensityEvent { entity });
-	    commands.trigger(ResetMovementPriorityEvent { entity });
-	    commands.trigger(ResetVelocityEvent { entity });
-	    commands.trigger(ResetParticleColorEvent { entity });
-	    commands.trigger(ResetRandomizesColorEvent { entity });
-	    commands.trigger(ResetFlowsColorEvent { entity });
-	    commands.trigger(ResetMomentumEvent { entity });
-	    commands.trigger(ResetFireEvent { entity });
-	    commands.trigger(ResetBurnsEvent { entity });
-	    commands.trigger(ResetBurningEvent { entity });
+                commands.trigger(ResetDensityEvent { entity });
+                commands.trigger(ResetMovementPriorityEvent { entity });
+                commands.trigger(ResetVelocityEvent { entity });
+                commands.trigger(ResetParticleColorEvent { entity });
+                commands.trigger(ResetRandomizesColorEvent { entity });
+                commands.trigger(ResetFlowsColorEvent { entity });
+                commands.trigger(ResetMomentumEvent { entity });
+                commands.trigger(ResetFireEvent { entity });
+                commands.trigger(ResetBurnsEvent { entity });
+                commands.trigger(ResetBurningEvent { entity });
             }
         } else {
             panic!(
