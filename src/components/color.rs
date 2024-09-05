@@ -2,7 +2,7 @@
 use bevy::prelude::*;
 use bevy_turborand::prelude::*;
 
-use crate::PhysicsRng;
+use crate::ColorRng;
 
 /// Provides a range of possible colors for a particle. Child particles will access
 /// this component from their parent particle when spawning to select a color for themselves at
@@ -31,7 +31,7 @@ impl ParticleColor {
     }
 
     /// Randomize the current color.
-    pub fn randomize(&mut self, rng: &mut PhysicsRng) {
+    pub fn randomize(&mut self, rng: &mut ColorRng) {
 	self.color_index = rng.index(0..self.palette.len());
 	self.selected = *self.palette.get(self.color_index).unwrap();
     }
@@ -100,7 +100,7 @@ impl RandomColors {
     }
 
     /// Docs
-    pub fn random_with_color_rng(&self, rng: &mut PhysicsRng) -> Color {
+    pub fn random_with_color_rng(&self, rng: &mut ColorRng) -> Color {
 	rng.sample(&self.colors).unwrap().clone()
     }
 }

@@ -98,7 +98,7 @@ pub fn handle_new_particles(
                     Coordinates(coordinates),
                     color.new_with_random(rng),
                     PhysicsRng::default(),
-                    ColorRng::default(),
+		    ColorRng::default(),
                 ));
 
                 if let Some(density) = density {
