@@ -22,7 +22,7 @@ impl Reacting {
     pub fn produce(
         &self,
         commands: &mut Commands,
-        rng: &mut PhysicsRng,
+        rng: &mut ReactionRng,
         coordinates: &Coordinates,
     ) {
         if self.chance(rng) {
@@ -39,7 +39,7 @@ impl Reacting {
 
     /// Returns a boolean value based on a rate. rate represents the chance to return a true value, with 0.0 being no
     /// chance and 1.0 will always return true.
-    pub fn chance(&self, rng: &mut PhysicsRng) -> bool {
+    pub fn chance(&self, rng: &mut ReactionRng) -> bool {
         rng.chance(self.chance_to_produce)
     }
 }

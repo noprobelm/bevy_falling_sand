@@ -99,6 +99,7 @@ pub fn handle_new_particles(
                     color.new_with_random(rng),
                     PhysicsRng::default(),
 		    ColorRng::default(),
+		    ReactionRng::default()
                 ));
 
                 if let Some(density) = density {

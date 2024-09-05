@@ -6,7 +6,7 @@ use crate::*;
 /// Burns particles within a radius of entities that posses the `Fire` component.
 pub fn handle_fire(
     mut commands: Commands,
-    mut fire_query: Query<(&Fire, &Coordinates, &mut PhysicsRng)>,
+    mut fire_query: Query<(&Fire, &Coordinates, &mut ReactionRng)>,
     burns_query: Query<(Entity, &Burns), (With<Particle>, Without<Burning>)>,
     particle_tree: Res<ParticleTree>,
 ) {
@@ -53,7 +53,7 @@ pub fn handle_burning(
 	    &mut Particle,
             &mut Burns,
             &mut Burning,
-            &mut PhysicsRng,
+            &mut ReactionRng,
             &Coordinates,
         ),
     >,
