@@ -47,21 +47,18 @@ pub fn handle_fire(
 /// Handles all burning particles for the frame.
 pub fn handle_burning(
     mut commands: Commands,
-    mut burning_query: Query<
-        (
-            Entity,
-	    &mut Particle,
-            &mut Burns,
-            &mut Burning,
-            &mut ReactionRng,
-            &Coordinates,
-        ),
-    >,
+    mut burning_query: Query<(
+        Entity,
+        &mut Particle,
+        &mut Burns,
+        &mut Burning,
+        &mut ReactionRng,
+        &Coordinates,
+    )>,
     time: Res<Time>,
 ) {
-    burning_query
-        .iter_mut()
-        .for_each(|(entity, particle, mut burns, mut burning, mut rng, coordinates)| {
+    burning_query.iter_mut().for_each(
+        |(entity, particle, mut burns, mut burning, mut rng, coordinates)| {
             if burning.timer.tick(time.delta()).finished() {
                 if burns.chance_destroy_per_tick.is_some() {
                     commands.trigger(RemoveParticleEvent {
@@ -70,9 +67,11 @@ pub fn handle_burning(
                     })
                 } else {
                     commands.entity(entity).remove::<Burning>();
-		    // Causes the particle to resync with it's parent's data. This is a temporary solution
-		    // until I've written events to handle resetting a particle's specific component data.
-		    particle.into_inner();
+                    commands.trigger(ResetParticleColorEvent { entity });
+                    commands.trigger(ResetRandomizesColorEvent { entity });
+                    commands.trigger(ResetFlowsColorEvent { entity });
+
+                    particle.into_inner();
                 }
                 return;
             }
@@ -89,5 +88,6 @@ pub fn handle_burning(
                     }
                 }
             }
-        });
+        },
+    );
 }
