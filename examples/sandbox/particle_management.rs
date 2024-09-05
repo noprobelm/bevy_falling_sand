@@ -77,11 +77,6 @@ pub struct ParticleList {
 }
 
 impl ParticleList {
-    /// Iterates through all particles in the ParticleList. This is used to construct buttons in the UI.
-    pub fn iter(&self) -> impl Iterator<Item = &String> {
-        self.particle_list.iter()
-    }
-
     /// Adds to the ParticleList.
     pub fn push(&mut self, value: String) {
         self.particle_list.push(value);

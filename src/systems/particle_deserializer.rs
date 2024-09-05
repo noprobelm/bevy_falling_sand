@@ -2,7 +2,7 @@
 use bevy::{prelude::*, utils::Duration};
 use std::fs::File;
 
-use crate::{components::material::Material, *};
+use crate::*;
 
 /// Deserialize RON strings into new particle types and add them to the world.
 pub fn deserialize_particle_types(
