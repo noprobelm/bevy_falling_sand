@@ -1,6 +1,6 @@
 //! All resources related to tracking/mapping particles.
 use crate::Hibernating;
-use ahash::HashMap;
+use ahash::{HashMap, HashMapExt};
 use bevy::prelude::*;
 use rayon::iter::IntoParallelRefIterator;
 use rayon::prelude::*;
@@ -17,12 +17,12 @@ pub struct ParticleTypeMap {
 impl ParticleTypeMap {
     /// Provides an iterator of the particle type map
     pub fn iter(&self) -> impl Iterator<Item = (&String, &Entity)> {
-        return self.map.iter()
+        self.map.iter()
     }
 
     /// Provides an iterator over the keys of the particle type map
     pub fn keys(&self) -> impl Iterator<Item = &String> {
-        return self.map.keys()
+        self.map.keys()
     }
 
     /// Insert a new particle type to the map
@@ -69,9 +69,14 @@ impl Default for ChunkMap {
 impl ChunkMap {
     /// Gets the index of the corresponding chunk
     fn chunk_index(&self, coord: &IVec2) -> usize {
-        let col = ((coord.x + 512) / 32) as usize;
-        let row = ((512 - coord.y) / 32) as usize;
-        row * 32 + col
+        const OFFSET: i32 = 512;
+        const CHUNK_SIZE: i32 = 32;
+        const GRID_WIDTH: usize = (OFFSET * 2 / CHUNK_SIZE) as usize; // 32
+
+        let col = ((coord.x + OFFSET) >> 5) as usize; // Divide by 32 using a right shift
+        let row = ((OFFSET - coord.y) >> 5) as usize; // Divide by 32 using a right shift
+
+        row * GRID_WIDTH + col
     }
 
     /// Gets an immutable reference to a chunk
@@ -232,7 +237,7 @@ impl Chunk {
     /// Creates a new Chunk instance
     pub fn new(upper_left: IVec2, lower_right: IVec2) -> Chunk {
         Chunk {
-            chunk: HashMap::default(),
+            chunk: HashMap::with_capacity(1024),
             irect: IRect::from_corners(upper_left, lower_right),
             should_process_next_frame: false,
             hibernating: false,
