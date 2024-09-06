@@ -1,6 +1,5 @@
-//! Events for particle map management.
-use bevy::prelude::*;
-
+//! Events for particle management.
+use bevy::prelude::{IVec2, Event, Entity};
 
 /// Triggers [on_remove_particle](crate::on_remove_particle) to remove a particle from the simulation.
 #[derive(Event)]

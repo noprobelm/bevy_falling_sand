@@ -1,5 +1,5 @@
 //! Events for saving/loading particle scenes.
-use bevy::prelude::*;
+use bevy::prelude::Event;
 use std::path::PathBuf;
 
 /// Triggers [save_scene_system](crate::save_scene_system) to save all particles in the world to the specified PathBuf.
