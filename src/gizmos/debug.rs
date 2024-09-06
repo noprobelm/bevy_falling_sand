@@ -1,5 +1,5 @@
 //! DebugGizmos group.
-use bevy::prelude::*;
+use bevy::prelude::{Reflect, GizmoConfigGroup};
 
 /// Indicates a gizmo used for debugging purposes
 #[derive(Default, Reflect, GizmoConfigGroup)]

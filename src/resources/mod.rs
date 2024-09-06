@@ -1,13 +1,13 @@
 //! All resources related to particle behavior are found in these modules.
+use bevy::utils::Duration;
+use bevy_spatial::{AutomaticUpdate, SpatialStructure};
+
+use super::Particle;
+
 mod debug;
 mod kdtree;
 mod map;
 mod simulation;
-
-use bevy::utils::Duration;
-use bevy_spatial::{AutomaticUpdate, SpatialStructure};
-
-use crate::Particle;
 
 pub use debug::*;
 pub use kdtree::*;

@@ -1,9 +1,10 @@
 //! All resources related to tracking/mapping particles.
-use crate::Hibernating;
 use ahash::{HashMap, HashMapExt};
 use bevy::prelude::*;
 use rayon::iter::IntoParallelRefIterator;
 use rayon::prelude::*;
+
+use crate::components::Hibernating;
 
 /// Map of all parent particle types to their corresponding entity. Used to map particle types to their corresponding data
 #[derive(Resource, Clone, Default, Debug, Reflect)]
