@@ -43,7 +43,6 @@ pub fn zoom_camera(
         let zoom = -(ev.y / 100.);
         if projection.scale + zoom > 0.01 {
             projection.scale += zoom;
-            println!("{:?}", projection.scale);
         }
     }
 }
