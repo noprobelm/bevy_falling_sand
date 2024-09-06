@@ -70,11 +70,10 @@ impl ChunkMap {
     /// Gets the index of the corresponding chunk
     fn chunk_index(&self, coord: &IVec2) -> usize {
         const OFFSET: i32 = 512;
-        const CHUNK_SIZE: i32 = 32;
-        const GRID_WIDTH: usize = (OFFSET * 2 / CHUNK_SIZE) as usize; // 32
+        const GRID_WIDTH: usize = 32;
 
-        let col = ((coord.x + OFFSET) >> 5) as usize; // Divide by 32 using a right shift
-        let row = ((OFFSET - coord.y) >> 5) as usize; // Divide by 32 using a right shift
+        let col = ((coord.x + OFFSET) >> 5) as usize;
+        let row = ((OFFSET - coord.y) >> 5) as usize;
 
         row * GRID_WIDTH + col
     }
