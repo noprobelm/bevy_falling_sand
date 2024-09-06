@@ -1,20 +1,21 @@
-//! All components related to particle behavior are found in these modules.
+//! All components related to particle behavior are found in these modules. The `material` module offers template 
+//! structs for defining realistic movement behavior.
 mod particle;
-mod rng;
-mod color;
 mod hibernation;
 mod movement;
-pub mod material;
+mod rng;
+mod color;
 mod burning;
 mod reaction;
 mod scenes;
+pub mod material;
 
 pub use particle::*;
-pub use rng::*;
-pub use color::*;
 pub use hibernation::*;
 pub use movement::*;
-pub use material::*;
+pub use rng::*;
+pub use color::*;
 pub use burning::*;
 pub use reaction::*;
 pub use scenes::*;
+pub use material::*;

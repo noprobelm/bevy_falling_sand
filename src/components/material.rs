@@ -1,7 +1,8 @@
 //! Convenience module for inserting common types of movement priorities.
-use crate::components::MovementPriority;
 use bevy::prelude::*;
 use smallvec::{smallvec, SmallVec};
+
+use super::MovementPriority;
 
 /// A trait for defining a material type. Materials can be translated into commonly used movement priorities.
 pub trait Material {

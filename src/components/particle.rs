@@ -6,7 +6,7 @@
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::*;
+use super::*;
 
 /// Marker component for entities holding data for a unique particle type.
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Component, Reflect)]

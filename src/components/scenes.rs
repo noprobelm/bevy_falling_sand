@@ -1,7 +1,7 @@
 /// Data structures used for reading particle scenes.
 use serde::{Serialize, Deserialize};
 
-use crate::*;
+use super::{Particle, Coordinates};
 
 /// Particle data for loading scenes.
 #[derive(Serialize, Deserialize)]

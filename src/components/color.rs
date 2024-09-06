@@ -2,7 +2,7 @@
 use bevy::prelude::*;
 use bevy_turborand::prelude::*;
 
-use crate::ColorRng;
+use super::ColorRng;
 
 /// Provides a range of possible colors for a particle. Child particles will access
 /// this component from their parent particle when spawning to select a color for themselves at

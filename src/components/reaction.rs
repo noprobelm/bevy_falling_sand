@@ -1,4 +1,5 @@
-use crate::*;
+use bevy::prelude::{Transform, Commands, SpatialBundle};
+use super::{Particle, Coordinates, ReactionRng};
 
 /// Provides particle reaction behavior.
 #[derive(Clone, Debug)]

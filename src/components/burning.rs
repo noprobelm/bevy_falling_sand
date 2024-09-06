@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy::utils::Duration;
 
-use crate::{ParticleColor, Reacting};
+use super::{ParticleColor, Reacting};
 
 /// Marker for particle types that can inflict a burning status.
 #[derive(Clone, Debug, Component)]
