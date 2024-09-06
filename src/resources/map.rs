@@ -155,10 +155,10 @@ impl ChunkMap {
     fn activate_neighbor_chunks(&mut self, coord: &IVec2, chunk_idx: usize) {
         let chunk = &self.chunks[chunk_idx];
         let neighbors = [
-            (coord.x == chunk.min().x, chunk_idx - 1),     // Left neighbor
-            (coord.x == chunk.max().x, chunk_idx + 1),     // Right neighbor
-            (coord.y == chunk.min().y, chunk_idx + 32),    // Bottom neighbor
-            (coord.y == chunk.max().y, chunk_idx - 32),    // Top neighbor
+            (coord.x == chunk.min().x, chunk_idx - 1),  // Left neighbor
+            (coord.x == chunk.max().x, chunk_idx + 1),  // Right neighbor
+            (coord.y == chunk.min().y, chunk_idx + 32), // Bottom neighbor
+            (coord.y == chunk.max().y, chunk_idx - 32), // Top neighbor
         ];
 
         for (condition, neighbor_idx) in neighbors.iter() {
@@ -173,17 +173,15 @@ impl ChunkMap {
     /// Inserts a new particle at a given coordinate if it is not already occupied. Calls to this method will
     /// wake up the subject chunk.
     pub fn insert_no_overwrite(&mut self, coords: IVec2, entity: Entity) -> &mut Entity {
-        self.chunk_mut(&coords)
-            .unwrap()
-            .insert_no_overwrite(coords, entity)
+        let chunk = self.chunk_mut(&coords).unwrap();
+        chunk.insert_no_overwrite(coords, entity)
     }
 
     /// Inserts a new particle at a given coordinate irrespective of its occupied state. Calls to this method will
     /// wake up the subject chunk.
     pub fn insert_overwrite(&mut self, coords: IVec2, entity: Entity) -> Option<Entity> {
-        self.chunk_mut(&coords)
-            .unwrap()
-            .insert_overwrite(coords, entity)
+        let chunk = self.chunk_mut(&coords).unwrap();
+        chunk.insert_overwrite(coords, entity)
     }
 
     /// Swaps two entities in the ChunkMap. This method is the preferred interface when carrying out component-based
@@ -191,16 +189,29 @@ impl ChunkMap {
     /// 'insert_overwrite' and 'insert_no_overwrite' will wake up the subject chunk, but they will NOT wake up
     /// neighboring chunks.
     pub fn swap(&mut self, first: IVec2, second: IVec2) {
-        let (first_chunk_idx, second_chunk_idx) =
-            (self.chunk_index(&first), self.chunk_index(&second));
+        let first_chunk_idx = self.chunk_index(&first);
+        let second_chunk_idx = self.chunk_index(&second);
 
-        if let Some(entity) = self.chunks[second_chunk_idx].remove(&second) {
-            if let Some(swapped) = self.chunks[first_chunk_idx].insert_overwrite(first, entity) {
-                self.chunks[second_chunk_idx].insert_overwrite(second, swapped);
+        // Short-circuit if both positions are in the same chunk
+        if first_chunk_idx == second_chunk_idx {
+            let chunk = &mut self.chunks[first_chunk_idx];
+
+            let entity_first = chunk.remove(&first).unwrap();
+            if let Some(entity_second) = chunk.remove(&second) {
+                chunk.insert_overwrite(first, entity_second);
+                chunk.insert_overwrite(second, entity_first);
+            } else {
+                chunk.insert_overwrite(second, entity_first);
             }
         } else {
-            let entity = self.chunks[first_chunk_idx].remove(&first).unwrap();
-            self.chunks[second_chunk_idx].insert_overwrite(second, entity);
+            // Handle when the positions are in different chunks
+            let entity_first = self.chunks[first_chunk_idx].remove(&first).unwrap();
+            if let Some(entity_second) = self.chunks[second_chunk_idx].remove(&second) {
+                self.chunks[first_chunk_idx].insert_overwrite(first, entity_second);
+                self.chunks[second_chunk_idx].insert_overwrite(second, entity_first);
+            } else {
+                self.chunks[second_chunk_idx].insert_overwrite(second, entity_first);
+            }
         }
 
         self.activate_neighbor_chunks(&first, first_chunk_idx);
@@ -288,7 +299,7 @@ impl Chunk {
 
     /// Iterate through all entities in the chunk
     pub fn entities(&self) -> impl Iterator<Item = &Entity> {
-	self.chunk.values()
+        self.chunk.values()
     }
 
     /// Parallel iter through all the key, value instances of the entity map
