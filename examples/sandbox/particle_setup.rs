@@ -36,7 +36,7 @@ pub fn setup_custom_particles(mut commands: Commands) {
     commands.spawn((
         MovableSolidBundle::new(
             ParticleType::new("My Custom Particle"),
-            Density(4),
+            Density(1250),
             Velocity::new(1, 3),
             ParticleColor::new(
                 Color::srgba(0.22, 0.11, 0.16, 1.0),
