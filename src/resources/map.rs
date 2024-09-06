@@ -128,38 +128,43 @@ impl ChunkMap {
     /// If a chunk was not activated and is currently awake, put it to sleep and add the Hibernating
     /// component to its entity.
     pub fn reset_chunks(&mut self, mut commands: Commands) {
-        self.chunks.iter_mut().for_each(|chunk| {
-            // Check for both so we're not needlessly removing components every frame
-            if chunk.should_process_next_frame == true && chunk.hibernating == true {
-                chunk.iter().for_each(|(_, entity)| {
-                    commands.entity(*entity).remove::<Hibernating>();
-                });
-                chunk.hibernating = false;
-
-            // Deactivate before the start of the next frame
-            } else if chunk.should_process_next_frame == false && chunk.hibernating == false {
-                chunk.iter().for_each(|(_, entity)| {
-                    commands.entity(*entity).insert(Hibernating);
-                });
-                chunk.hibernating = true;
+        for chunk in &mut self.chunks {
+            match (chunk.should_process_next_frame, chunk.hibernating) {
+                (true, true) => {
+                    // Wake up the chunk
+                    for entity in chunk.entities() {
+                        commands.entity(*entity).remove::<Hibernating>();
+                    }
+                    chunk.hibernating = false;
+                }
+                (false, false) => {
+                    // Put the chunk to sleep
+                    for entity in chunk.entities() {
+                        commands.entity(*entity).insert(Hibernating);
+                    }
+                    chunk.hibernating = true;
+                }
+                _ => {} // No state change needed
             }
-
+            // Reset processing flag for the next frame
             chunk.should_process_next_frame = false;
-        });
+        }
     }
 
     /// Checks if a coordinate lies on the border of a neighboring chunk and activates it if true.
     fn activate_neighbor_chunks(&mut self, coord: &IVec2, chunk_idx: usize) {
         let chunk = &self.chunks[chunk_idx];
+        let neighbors = [
+            (coord.x == chunk.min().x, chunk_idx - 1),     // Left neighbor
+            (coord.x == chunk.max().x, chunk_idx + 1),     // Right neighbor
+            (coord.y == chunk.min().y, chunk_idx + 32),    // Bottom neighbor
+            (coord.y == chunk.max().y, chunk_idx - 32),    // Top neighbor
+        ];
 
-        if coord.x == chunk.min().x {
-            self.chunks[chunk_idx - 1].should_process_next_frame = true;
-        } else if coord.x == chunk.max().x {
-            self.chunks[chunk_idx + 1].should_process_next_frame = true;
-        } else if coord.y == chunk.min().y {
-            self.chunks[chunk_idx + 32].should_process_next_frame = true;
-        } else if coord.y == chunk.max().y {
-            self.chunks[chunk_idx - 32].should_process_next_frame = true;
+        for (condition, neighbor_idx) in neighbors.iter() {
+            if *condition {
+                self.chunks[*neighbor_idx].should_process_next_frame = true;
+            }
         }
     }
 }
@@ -279,6 +284,11 @@ impl Chunk {
     /// Iterate through all key, value instances of the entity map
     pub fn iter(&self) -> impl Iterator<Item = (&IVec2, &Entity)> {
         self.chunk.iter()
+    }
+
+    /// Iterate through all entities in the chunk
+    pub fn entities(&self) -> impl Iterator<Item = &Entity> {
+	self.chunk.values()
     }
 
     /// Parallel iter through all the key, value instances of the entity map
