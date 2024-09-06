@@ -25,8 +25,6 @@ pub fn setup_camera(mut commands: Commands) {
         Camera2dBundle {
             projection: OrthographicProjection {
                 near: -1000.0,
-                // Particles occupy only 1 pixel each, so they're really tiny. Lower zoom scales are recommended for
-                // this crate in order to maximize "bang for buck". 0.1 is a good scale to start with.
                 scale: 0.11,
                 ..default()
             },
