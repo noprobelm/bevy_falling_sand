@@ -4,7 +4,10 @@ use bevy::{
     utils::{Entry, HashMap},
 };
 use bevy_egui::EguiContexts;
-use bevy_falling_sand::{ClearChunkMapEvent, Particle, SimulationRun};
+use bevy_falling_sand::{
+    ClearChunkMapEvent, Gas, Liquid, MovableSolid, Particle, ParticleSimulationSet, ParticleType,
+    SimulationRun, Solid, Wall,
+};
 
 use crate::*;
 
@@ -32,7 +35,7 @@ impl bevy::prelude::Plugin for ParticleManagementPlugin {
                 .run_if(input_pressed(MouseButton::Left))
                 .run_if(in_state(BrushState::Despawn))
                 .run_if(in_state(AppState::Canvas))
-                .before(handle_particles)
+                .before(ParticleSimulationSet)
                 .after(update_cursor_coordinates),
         );
         app.add_systems(
@@ -140,7 +143,6 @@ impl ParticleControlUI {
         });
     }
 }
-
 
 pub fn update_particle_list(
     new_particle_query: Query<

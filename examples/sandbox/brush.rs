@@ -1,7 +1,7 @@
 //! This module demonstrates how to spawn/despawn particles from the world using a brush tool.
 use bevy::{prelude::*, utils::HashSet};
 
-use crate::CursorCoords;
+use super::CursorCoords;
 use bevy_falling_sand::{Particle, RemoveParticleEvent};
 
 /// Brush plugin.

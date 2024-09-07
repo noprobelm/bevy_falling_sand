@@ -2,7 +2,10 @@
 use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::EguiContexts;
 
-use crate::*;
+use super::*;
+use bevy_falling_sand::{
+    DebugParticles, DynamicParticleCount, LoadSceneEvent, SaveSceneEvent, TotalParticleCount,
+};
 
 /// UI plugin
 pub(super) struct UIPlugin;
@@ -113,10 +116,7 @@ pub fn render_ui(
         Res<DynamicParticleCount>,
         Res<TotalParticleCount>,
     ),
-    (mut selected_particle, particle_type_list): (
-        ResMut<SelectedParticle>,
-        Res<ParticleTypeList>,
-    ),
+    (mut selected_particle, particle_type_list): (ResMut<SelectedParticle>, Res<ParticleTypeList>),
     (mut scene_selection_dialog, mut scene_path, mut ev_save_scene, mut ev_load_scene): (
         ResMut<SceneSelectionDialog>,
         ResMut<ParticleSceneFilePath>,
