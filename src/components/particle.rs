@@ -215,7 +215,7 @@ impl LiquidBundle {
 }
 
 /// Convenience bundle for adding new dynamic particles in a gaseous state.
-#[derive(Bundle, Serialize, Deserialize)]
+#[derive(Asset, TypePath, Bundle, Serialize, Deserialize)]
 pub struct GasBundle {
     /// The unique identifier for the particle.
     pub particle_type: ParticleType,

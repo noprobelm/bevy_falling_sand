@@ -197,7 +197,7 @@ impl Velocity {
 
 /// Momentum component for particles. If a particle possesses this component, it will dynamically attempt to move in the
 /// same direction it moved in the previous frame.
-#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, Default, Component, Reflect)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, Default, Component, Reflect, Serialize, Deserialize)]
 #[reflect(Component)]
 pub struct Momentum(pub IVec2);
 

@@ -86,6 +86,7 @@ mod events;
 mod gizmos;
 mod resources;
 mod systems;
+mod asset_loaders;
 mod type_registry;
 
 pub use components::*;
@@ -93,6 +94,7 @@ pub use systems::*;
 pub use resources::*;
 pub use events::*;
 pub use gizmos::*;
+pub use asset_loaders::*;
 use type_registry::ParticleTypeRegistryPlugin;
 
 /// Bevy Falling Sand Plugin
@@ -106,6 +108,7 @@ impl Plugin for FallingSandPlugin {
             ParticleResourcesPlugin,
             ParticleEventsPlugin,
             ParticleGizmosPlugin,
+	    AssetLoaderPlugin,
 	    ParticleTypeRegistryPlugin
         ));
     }

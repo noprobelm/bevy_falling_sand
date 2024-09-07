@@ -190,3 +190,29 @@ impl Material for Gas {
         MovementPriority::from(neighbors)
     }
 }
+
+/// Enum to mark different material types
+#[derive(
+    Clone,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Hash,
+    Debug,
+    Reflect,
+    Serialize,
+    Deserialize,
+)]
+pub enum MaterialType {
+    /// Marker for solid materials.
+    Solid,
+    /// Marker for movable solid materials.
+    MovableSolid,
+    /// Marker for liquid materials.
+    Liquid,
+    /// Marker for gaseous materials.
+    Gas,
+    /// Marker for custom materials.
+    Custom
+}

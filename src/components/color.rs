@@ -49,7 +49,7 @@ impl ParticleColor {
 }
 
 /// Component for particles that randomly change colors from its palette.
-#[derive(Clone, PartialEq, Debug, Component, Reflect)]
+#[derive(Clone, PartialEq, Debug, Component, Reflect, Serialize, Deserialize)]
 #[reflect(Component)]
 pub struct RandomizesColor {
     /// The chance a particle's color will change.
@@ -82,7 +82,7 @@ impl FlowsColor {
 /// Provides a range of possible colors for a particle. Child particles will access
 /// this component from their parent particle when spawning to select a color for themselves at
 /// random.
-#[derive(Clone, PartialEq, Debug, Default, Component, Reflect)]
+#[derive(Clone, PartialEq, Debug, Default, Component, Reflect, Serialize, Deserialize)]
 #[reflect(Component)]
 pub struct RandomColors {
     /// The possible range of colors.
