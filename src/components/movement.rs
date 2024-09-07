@@ -130,12 +130,39 @@ impl MovementPriority {
 pub struct Coordinates(pub IVec2);
 
 /// The density of a particle.
-#[derive(Copy, Clone, Hash, Debug, Default, Eq, PartialEq, PartialOrd, Component, Reflect)]
+#[derive(
+    Copy,
+    Clone,
+    Hash,
+    Debug,
+    Default,
+    Eq,
+    PartialEq,
+    PartialOrd,
+    Component,
+    Reflect,
+    Serialize,
+    Deserialize,
+)]
 #[reflect(Component, Debug)]
 pub struct Density(pub u32);
 
 /// A particle's velocity.
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Component, Reflect)]
+#[derive(
+    Copy,
+    Clone,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Hash,
+    Debug,
+    Default,
+    Component,
+    Reflect,
+    Serialize,
+    Deserialize,
+)]
 #[reflect(Component)]
 pub struct Velocity {
     /// The current velocity of the particle.

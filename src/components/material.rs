@@ -1,5 +1,6 @@
 //! Convenience module for inserting common types of movement priorities.
 use bevy::prelude::*;
+use serde::{Deserialize, Serialize};
 use smallvec::{smallvec, SmallVec};
 
 use super::MovementPriority;
@@ -13,7 +14,20 @@ pub trait Material {
 }
 
 /// A wall, which has no movement.
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Component, Reflect)]
+#[derive(
+    Clone,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Hash,
+    Debug,
+    Default,
+    Component,
+    Reflect,
+    Serialize,
+    Deserialize,
+)]
 pub struct Wall;
 
 impl Wall {
@@ -26,7 +40,20 @@ impl Wall {
 impl Material for Wall {}
 
 /// A solid material, which can only move downward.
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Component, Reflect)]
+#[derive(
+    Clone,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Hash,
+    Debug,
+    Default,
+    Component,
+    Reflect,
+    Serialize,
+    Deserialize,
+)]
 pub struct Solid;
 
 impl Solid {
@@ -43,7 +70,20 @@ impl Material for Solid {
 }
 
 /// A movable solid material, like sand.
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Component, Reflect)]
+#[derive(
+    Clone,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Hash,
+    Debug,
+    Default,
+    Component,
+    Reflect,
+    Serialize,
+    Deserialize,
+)]
 pub struct MovableSolid;
 
 impl MovableSolid {
@@ -63,7 +103,20 @@ impl Material for MovableSolid {
 }
 
 /// A liquid material which flows like water.
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Component, Reflect)]
+#[derive(
+    Clone,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Hash,
+    Debug,
+    Default,
+    Component,
+    Reflect,
+    Serialize,
+    Deserialize,
+)]
 pub struct Liquid {
     /// How fluid the liquid should be.
     fluidity: usize,
@@ -96,7 +149,20 @@ impl Material for Liquid {
 }
 
 /// A gaseous material, which flows upward.
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Component, Reflect)]
+#[derive(
+    Clone,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Hash,
+    Debug,
+    Default,
+    Component,
+    Reflect,
+    Serialize,
+    Deserialize,
+)]
 pub struct Gas {
     /// How fluid the gas should be.
     fluidity: usize,

@@ -1,13 +1,14 @@
 //! Particle color components.
 use bevy::prelude::*;
 use bevy_turborand::prelude::*;
+use serde::{Deserialize, Serialize};
 
 use super::ColorRng;
 
 /// Provides a range of possible colors for a particle. Child particles will access
 /// this component from their parent particle when spawning to select a color for themselves at
 /// random.
-#[derive(Clone, PartialEq, Debug, Default, Component, Reflect)]
+#[derive(Clone, PartialEq, Debug, Default, Component, Reflect, Serialize, Deserialize)]
 #[reflect(Component)]
 pub struct ParticleColor {
     /// The index to reference when changing through colors sequentially.

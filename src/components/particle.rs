@@ -9,7 +9,20 @@ use serde::{Deserialize, Serialize};
 use super::*;
 
 /// Marker component for entities holding data for a unique particle type.
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Component, Reflect)]
+#[derive(
+    Clone,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Hash,
+    Debug,
+    Default,
+    Component,
+    Reflect,
+    Serialize,
+    Deserialize,
+)]
 #[reflect(Component)]
 pub struct ParticleType {
     /// The particle type's unique name.
@@ -114,8 +127,6 @@ pub struct MovableSolidBundle {
     pub colors: ParticleColor,
     /// The MovableSolid component
     pub movable_solid: MovableSolid,
-    /// The particle type's global transform.
-    pub spatial: SpatialBundle,
 }
 
 impl MovableSolidBundle {
@@ -132,7 +143,6 @@ impl MovableSolidBundle {
             velocity,
             colors,
             movable_solid: MovableSolid::new(),
-            spatial: SpatialBundle::from_transform(Transform::from_xyz(0., 0., 0.)),
         }
     }
 }
@@ -150,8 +160,6 @@ pub struct SolidBundle {
     pub colors: ParticleColor,
     /// The MovableSolid component
     pub solid: Solid,
-    /// The particle type's global transform.
-    pub spatial: SpatialBundle,
 }
 
 impl SolidBundle {
@@ -168,7 +176,6 @@ impl SolidBundle {
             velocity,
             colors,
             solid: Solid::new(),
-            spatial: SpatialBundle::from_transform(Transform::from_xyz(0., 0., 0.)),
         }
     }
 }
@@ -186,8 +193,6 @@ pub struct LiquidBundle {
     pub colors: ParticleColor,
     /// The MovableSolid component
     pub liquid: Liquid,
-    /// The particle type's global transform.
-    pub spatial: SpatialBundle,
 }
 
 impl LiquidBundle {
@@ -205,13 +210,12 @@ impl LiquidBundle {
             velocity,
             colors,
             liquid: Liquid::new(fluidity),
-            spatial: SpatialBundle::from_transform(Transform::from_xyz(0., 0., 0.)),
         }
     }
 }
 
 /// Convenience bundle for adding new dynamic particles in a gaseous state.
-#[derive(Bundle)]
+#[derive(Bundle, Serialize, Deserialize)]
 pub struct GasBundle {
     /// The unique identifier for the particle.
     pub particle_type: ParticleType,
@@ -223,8 +227,6 @@ pub struct GasBundle {
     pub colors: ParticleColor,
     /// The MovableSolid component
     pub gas: Gas,
-    /// The particle type's global transform.
-    pub spatial: SpatialBundle,
 }
 
 impl GasBundle {
@@ -242,7 +244,6 @@ impl GasBundle {
             velocity,
             colors,
             gas: Gas::new(fluidity),
-            spatial: SpatialBundle::from_transform(Transform::from_xyz(0., 0., 0.)),
         }
     }
 }

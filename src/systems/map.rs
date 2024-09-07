@@ -60,12 +60,18 @@ pub fn handle_new_particles(
 
 /// Map all particles to their respective parent when added/changed within the simulation
 pub fn handle_new_particle_types(
+    mut commands: Commands,
     particle_type_query: Query<(Entity, &ParticleType), Changed<ParticleType>>,
     mut type_map: ResMut<ParticleTypeMap>,
 ) {
     particle_type_query
         .iter()
         .for_each(|(entity, particle_type)| {
+            commands
+                .entity(entity)
+                .insert(SpatialBundle::from_transform(Transform::from_xyz(
+                    0., 0., 0.,
+                )));
             type_map.insert(particle_type.name.clone(), entity);
         });
 }
@@ -76,7 +82,10 @@ pub fn on_reset_particle(
     trigger: Trigger<ResetParticleEvent>,
     mut particle_query: Query<&mut Particle>,
 ) {
-    particle_query.get_mut(trigger.event().entity).unwrap().into_inner();
+    particle_query
+        .get_mut(trigger.event().entity)
+        .unwrap()
+        .into_inner();
 }
 
 /// Observer for resetting a particle's Density information to its parent's.
