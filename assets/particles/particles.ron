@@ -1,37 +1,3 @@
-// Particle names are unique. Duplicates will overwrite previously mapped particles.
-//
-// Particles will behave as walls (which can be useful) unless they possess the 3 core properties required for movement:
-//     - "density": u32 - A particle's "weight"
-//     - "max_velocity": u32 - The maximum number of times a particle can move in a single frame. Be mindful of this
-//        number -- it has no limit other than the u8 range. High velocity particles can become quite resource
-//        intensive.
-//     - "liquid" || "movable_solid" || "solid" || "gas" || "wall" - See the following section
-//
-// STATES OF MATTER
-//     To define a state of matter, use one of the convenience "material" designators:
-//         - "liquid"
-//             - u32: The liquid's fluidity
-//         - "gas"
-//             - u32: The gas' fluidity
-//         - "movable_solid"
-//             - true: A required temporary flag until I've made a better config file system
-//         - "solid"
-//             - true: A required temporary flag until I've made a better config file system
-//         - "wall" (This is a temporary, optional flag. It contributes only to debugging statistics)
-//             - true: A required temporary flag until I've made a better config file system
-//
-// A particle requires a color set in order to render to the screen. Values are expressed in 4 f32 values
-// representing srgba https://docs.rs/bevy/latest/bevy/color/struct.Srgba.html
-// When a particle spawns, it will randomly be assigned one of the colors provided in this file.
-//
-// *** RECOMMENDED DENSITY RANGES ***
-//
-// To ensure realistic movement, it's recommended particles adhere to density ranges:
-// - Gas: 0-499
-// - Liquid: 500-999
-// - Solids: 1000 - 1500 (it's a good idea to generally keep solids at the same density so they stack on each other
-//   naturally, like sand on dirt)
-//   
 {
     "Water": {
         "density": 750,

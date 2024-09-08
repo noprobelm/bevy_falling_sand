@@ -8,7 +8,6 @@
 //!   - `StaticParticleTypeBundle`: For particles that have no movement behavior (i.e., walls)
 //!   - `DynamicParticleTypeBundle`: For particles that have movement behavior
 use bevy::prelude::*;
-use std::path::Path;
 
 use bevy_falling_sand::*;
 
@@ -20,21 +19,13 @@ impl bevy::prelude::Plugin for ParticleSetupPlugin {
         // Particle management systems
         app.add_event::<ParticleTypesAssetLoaded>().add_systems(
             Startup,
-            (setup_particle_types, setup_custom_particles, load_assets),
-        )
-        .add_systems(Update, print_assets);
+            (setup_custom_particles, load_assets),
+        );
+        app.add_systems(Update, load_particle_types);
     }
 }
 
 /// The easiest way to add new particles: publish a ParticleDeserializeEvent.
-pub fn setup_particle_types(
-    mut ev_particle_deserialize: EventWriter<DeserializeParticleTypesEvent>,
-) {
-    let mut example_path = Path::new(env!("CARGO_MANIFEST_DIR")).to_path_buf();
-    example_path.push("examples/assets/particles/particles.ron");
-    ev_particle_deserialize.send(DeserializeParticleTypesEvent(example_path));
-}
-
 /// Demonstrates how to set up a custom particle with code.
 pub fn setup_custom_particles(mut commands: Commands) {
     commands.spawn((
@@ -74,25 +65,27 @@ pub fn setup_custom_particles(mut commands: Commands) {
 }
 
 #[derive(Event)]
-pub struct ParticleTypesAssetLoaded {
+struct ParticleTypesAssetLoaded {
     handle: Handle<ParticleTypesAsset>,
 }
 
 fn load_assets(
-    mut ev_particle_types_asset_loaded: EventWriter<ParticleTypesAssetLoaded>,
+    mut ev_asset: EventWriter<ParticleTypesAssetLoaded>,
     asset_server: Res<AssetServer>,
 ) {
     let handle: Handle<ParticleTypesAsset> = asset_server
-        .load("/home/noprobelm/workshop/released/bevy_falling_sand/assets/particles/particles.ron");
-    ev_particle_types_asset_loaded.send(ParticleTypesAssetLoaded { handle });
+        .load("particles/particles.ron");
+    ev_asset.send(ParticleTypesAssetLoaded { handle });
 }
 
-fn print_assets(
-    mut ev_particle_types_asset_loaded: EventReader<ParticleTypesAssetLoaded>,
+fn load_particle_types(
+    mut commands: Commands,
+    mut type_map: ResMut<ParticleTypeMap>,
+    mut ev_asset: EventReader<ParticleTypesAssetLoaded>,
     particle_types_asset: Res<Assets<ParticleTypesAsset>>,
 ) {
-    for ev in ev_particle_types_asset_loaded.read() {
-	let asset = particle_types_asset.get(&ev.handle);
-	println!("{:?}", asset);
+    for ev in ev_asset.read() {
+        let asset = particle_types_asset.get(&ev.handle).unwrap();
+        asset.load_particle_types(&mut commands, &mut type_map);
     }
 }

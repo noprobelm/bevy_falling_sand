@@ -10,7 +10,6 @@ mod hibernation;
 mod map;
 mod material;
 mod movement;
-mod particle_deserializer;
 mod scenes;
 
 pub use burning::*;
@@ -20,7 +19,6 @@ pub use hibernation::*;
 pub use map::*;
 pub use material::*;
 pub use movement::*;
-pub use particle_deserializer::*;
 pub use scenes::*;
 
 /// System set for systems that influence particle management.
@@ -70,12 +68,6 @@ impl bevy::prelude::Plugin for ParticleSystemsPlugin {
                 load_scene_system
                     .before(handle_new_particles)
                     .run_if(on_event::<crate::events::LoadSceneEvent>()),
-            )
-            .add_systems(
-                Update,
-                deserialize_particle_types
-                    .before(handle_new_particles)
-                    .run_if(on_event::<crate::events::DeserializeParticleTypesEvent>()),
             )
             // Particle removal observers.
             .observe(on_remove_particle)
