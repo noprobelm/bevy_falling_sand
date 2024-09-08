@@ -78,7 +78,7 @@
         "max_velocity": 3,
         "movable_solid": true,
         "momentum": true,
-        "colors": ["#EDF2F5", "#FFFFFF"]
+        "colors": ["#EAFDF8", "#FFFFFF"]
     },
     "Steam": {
         "density": 250,
