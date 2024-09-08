@@ -25,7 +25,7 @@
         "density": 800,
         "max_velocity": 2,
         "liquid": 1,
-        "colors": ["#8FA739", "#829834"],
+        "colors": ["#8FA73980", "#82983480"],
         "momentum": true,
         "changes_colors": 0.01
     },
@@ -60,6 +60,13 @@
         "liquid": 5,
         "momentum": true,
         "colors": ["#D6997080"]
+    },
+    "Blood": {
+        "density": 800,
+        "max_velocity": 3,
+        "liquid": 5,
+        "momentum": true,
+        "colors": ["#780606"]
     },
     "Oil": {
         "density": 730,
@@ -211,5 +218,9 @@
             "#5C4A4A",
             "#665454"
         ],
+    },
+    "Ice Wall": {
+        "wall": true,
+        "colors": ["#8CDBF880"]
     }
 }
