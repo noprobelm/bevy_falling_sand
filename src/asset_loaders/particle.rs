@@ -123,10 +123,13 @@ impl ParticleTypesAsset {
 
     fn insert_colors(&self, commands: &mut Commands, entity: Entity, component_data: ron::Value) {
         let colors: Vec<Color> = component_data
-            .into_rust::<Vec<(f32, f32, f32, f32)>>()
+            .into_rust::<Vec<String>>()
             .expect("Expected array of 4 tuples holding f32 values")
             .iter()
-            .map(|vals| Color::srgba(vals.0, vals.1, vals.2, vals.3))
+            .map(|hex_str| {
+                let srgba = Srgba::hex(hex_str).unwrap();
+                Color::Srgba(srgba)
+            })
             .collect();
         commands
             .entity(entity)
@@ -257,10 +260,13 @@ impl ParticleTypesAsset {
                 "colors" => {
                     let colors: Vec<Color> = burn_value
                         .clone()
-                        .into_rust::<Vec<(f32, f32, f32, f32)>>()
-                        .expect("Config error: Expected array of 4-tuples holding f32 values")
+                        .into_rust::<Vec<String>>()
+                        .expect("Expected array of 4 tuples holding f32 values")
                         .iter()
-                        .map(|vals| Color::srgba(vals.0, vals.1, vals.2, vals.3))
+                        .map(|hex_str| {
+                            let srgba = Srgba::hex(hex_str).unwrap();
+                            Color::Srgba(srgba)
+                        })
                         .collect();
                     burning_colors = Some(ParticleColor::new(*colors.get(0).unwrap(), colors));
                 }

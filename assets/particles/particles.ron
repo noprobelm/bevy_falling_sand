@@ -3,7 +3,7 @@
         "density": 750,
         "max_velocity": 3,
         "liquid": 5,
-        "colors": [(0.043, 0.5, 0.67, 0.5)],
+        "colors": ["#0B80AB80"],
         "momentum": true,
     },
     "Sparkly Slime": {
@@ -11,12 +11,13 @@
         "max_velocity": 2,
         "liquid": 1,
         "colors": [
-            (0.58, 0.71, 0.78, 1.0),
-            (0.87, 0.93, 0.67, 1.0),
-            (0.94, 0.81, 0.4, 1.0),
-            (0.84, 0.51, 0.42, 1.0),
-            (0.74, 0.31, 0.42, 1.0),
-            (0.94, 0.36, 0.37, 1.0)],
+            "#94B5C7FF",
+            "#DEEDABFF",
+            "#F0CF66FF",
+            "#D6826BFF",
+            "#BD4F6BFF",
+            "#F05C5EFF"
+        ],
         "momentum": true,
         "changes_colors": 0.1
     },
@@ -25,10 +26,10 @@
         "max_velocity": 3,
         "gas": 1,
         "colors": [
-            (1.0, 0.35, 0.0, 1.0),
-            (1.0, 0.57, 0.0, 1.0),
-            (1.0, 0.81, 0.0, 1.0),
-            (0.78, 0.29, 0.02, 1.0)
+            "#FF5900FF",
+            "#FF9100FF",
+            "#FFCF00FF",
+            "#C74A05FF"
         ],
         "fire": {
             "burn_radius": 1.5,
@@ -49,64 +50,64 @@
         "max_velocity": 3,
         "liquid": 5,
         "momentum": true,
-        "colors": [(0.84, 0.6, 0.44, 0.5)]
+        "colors": ["#D6997080"]
     },
     "Oil": {
         "density": 730,
         "max_velocity": 3,
         "liquid": 3,
         "momentum": true,
-        "colors": [(0.17, 0.07, 0.16, 1.0)]
+        "colors": ["#2B1229"]
     },
     "Sand": {
         "density": 1250,
         "max_velocity": 3,
         "movable_solid": true,
         "momentum": true,
-        "colors": [(0.95, 0.88, 0.42, 1.0), (1.0, 0.92, 0.54, 1.0)]
+        "colors": ["#F2E06B", "#FFEB8A"]
     },
     "Dirt": {
         "density": 1250,
         "max_velocity": 3,
         "movable_solid": true,
         "momentum": true,
-        "colors": [(0.57, 0.42, 0.3, 1.0), (0.45, 0.34, 0.24, 1.0)]
+        "colors": ["#916B4C", "#73573D"]
     },
     "Snow": {
         "density": 1250,
         "max_velocity": 3,
         "movable_solid": true,
         "momentum": true,
-        "colors": [(0.93, 0.95, 0.96, 1.0), (1.0, 1.0, 1.0, 1.0),]
+        "colors": ["#EDF2F5", "#FFFFFF"]
     },
     "Steam": {
         "density": 250,
         "max_velocity": 1,
         "gas": 3,
-        "colors": [(0.78, 0.84, 0.88, 1.)]
+        "colors": ["#C7D6E0"]
     },
     "Smoke": {
         "density": 275,
         "max_velocity": 1,
         "gas": 1,
-        "colors": [(0.44, 0.41, 0.4, 1.0), (0.52, 0.5, 0.45, 1.0)],
+        "colors": ["#706966", "#858073"],
         "changes_colors": 0.1
     },
     "Wall": {
         "wall": true,
-        "colors": [(0.82, 0.84, 0.83, 1.0), (0.74, 0.76, 0.78, 1.0)]
+        "colors": ["#D1D6D4", "#BDC2C7"]
     },
     "Dirt Wall": {
         "wall": true,
-        "colors": [(0.57, 0.42, 0.3, 1.0), (0.45, 0.34, 0.24, 1.0)]
+        "colors": ["#916B4C", "#73573D"]
     },
     "Grass Wall": {
         "wall": true,
         "colors": [
-            (0.36, 0.53, 0.19, 1.0),
-            (0.24, 0.36, 0.13, 1.0),
-            (0.32, 0.48, 0.18, 1.0),
-            (0.36, 0.55, 0.2, 1.0),
+            "#5C8730",
+            "#3D5C21",
+            "#527A2E",
+            "#5C8C33",
         ],
         "burns": {
             "duration": 1000,
@@ -117,11 +118,11 @@
                 "chance_to_produce": 1.0
             },
             "colors": [
-                (1.0, 0.0, 0.0, 1.0),
-                (1.0, 0.35, 0.0, 1.0),
-                (1.0, 0.6, 0.0, 1.0),
-                (1.0, 0.81, 0.0, 1.0),
-                (1.0, 0.91, 0.03, 1.0)
+                "#FF0000",
+                "#FF5900",
+                "#FF9900",
+                "#FFCF00",
+                "#FFE808"
             ],
             "spreads": {
                 "burn_radius": 1.5,
@@ -131,7 +132,7 @@
     },
     "Wood Wall": {
         "wall": true,
-        "colors": [(0.63, 0.4, 0.18, 1.0)],
+        "colors": ["#A1662E"],
         "burns": {
             "duration": 10000,
             "tick_rate": 100,
@@ -141,11 +142,11 @@
                 "chance_to_produce": 0.035
             },
             "colors": [
-                (1.0, 0.0, 0.0, 1.0),
-                (1.0, 0.35, 0.0, 1.0),
-                (1.0, 0.6, 0.0, 1.0),
-                (1.0, 0.81, 0.0, 1.0),
-                (1.0, 0.91, 0.03, 1.0)
+                "#FF0000",
+                "#FF5900",
+                "#FF9900",
+                "#FFCF00",
+                "#FFE808"
             ],
             "spreads": {
                 "burn_radius": 1.5,
@@ -155,16 +156,30 @@
     },
     "Rock Wall": {
         "wall": true,
-        "colors": [(0.23, 0.2, 0.2, 1.0), (0.29, 0.24, 0.24, 1.0), (0.36, 0.29, 0.29, 1.0), (0.4, 0.33, 0.33, 1.0)]
+        "colors": [
+            "#3B3333",
+            "#4A3D3D",
+            "#5C4A4A",
+            "#665454"
+        ]
     },
     "Dense Rock Wall": {
         "wall": true,
-        "colors": [(0.42, 0.45, 0.55, 1.0), (0.55, 0.59, 0.67, 1.0), (0.7, 0.77, 0.84, 1.0)]
+        "colors": [
+            "#6B738C",
+            "#8C96AB",
+            "#B2C4D6"
+        ]
     },
     "Rock": {
         "density": 1400,
         "max_velocity": 3,
         "solid": true,
-        "colors": [(0.23, 0.2, 0.2, 1.0), (0.29, 0.24, 0.24, 1.0), (0.36, 0.29, 0.29, 1.0), (0.4, 0.33, 0.33, 1.0)],
+        "colors": [
+            "#3B3333",
+            "#4A3D3D",
+            "#5C4A4A",
+            "#665454"
+        ],
     }
 }
