@@ -21,6 +21,15 @@
         "momentum": true,
         "changes_colors": 0.1
     },
+    "Slime": {
+        "density": 800,
+        "max_velocity": 2,
+        "liquid": 1,
+        "colors": ["#8FA739", "#829834"],
+        "momentum": true,
+        "changes_colors": 0.01
+    },
+
     "FIRE": {
         "density": 450,
         "max_velocity": 3,
