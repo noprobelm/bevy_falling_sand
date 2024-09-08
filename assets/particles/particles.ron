@@ -57,7 +57,28 @@
         "max_velocity": 3,
         "liquid": 3,
         "momentum": true,
-        "colors": ["#2B1229"]
+        "colors": ["#2B1229"],
+        "burns": {
+            "duration": 5000,
+            "tick_rate": 100,
+            "chance_destroy_per_tick": 0.1,
+            "reaction": {
+                "produces": "Smoke",
+                "chance_to_produce": 0.035
+            },
+            "colors": [
+                "#FF0000",
+                "#FF5900",
+                "#FF9900",
+                "#FFCF00",
+                "#FFE808"
+            ],
+            "spreads": {
+                "burn_radius": 1.5,
+                "chance_to_spread": 0.2
+            }
+        }
+
     },
     "Sand": {
         "density": 1250,
