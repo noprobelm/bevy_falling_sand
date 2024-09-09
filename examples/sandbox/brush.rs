@@ -134,7 +134,7 @@ impl BrushType {
                 let particle = selected_particle.clone();
 
 		// If there's no distance between one cursor coordinate and the next, draw a circle instead.
-                if (coords.current - coords.previous).length() < f32::EPSILON {
+                if (coords.current - coords.previous).length() < 1.0 {
                     let circle_center = coords.current;
                     let mut points: HashSet<IVec2> = HashSet::default();
 
