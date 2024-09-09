@@ -108,8 +108,8 @@ impl Plugin for FallingSandPlugin {
             ParticleResourcesPlugin,
             ParticleEventsPlugin,
             ParticleGizmosPlugin,
-	    AssetLoaderPlugin,
-	    ParticleTypeRegistryPlugin
+	    ParticleTypeRegistryPlugin,
+	    AssetLoaderPlugin
         ));
     }
 }
