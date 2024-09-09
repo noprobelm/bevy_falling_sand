@@ -4,7 +4,7 @@ use bevy::utils::Duration;
 use super::{ParticleColor, Reacting};
 
 /// Marker for particle types that can inflict a burning status.
-#[derive(Clone, Debug, Component)]
+#[derive(Clone, PartialEq, PartialOrd, Debug, Default, Component, Reflect)]
 pub struct Fire {
     /// The radius of the fire effect.
     pub burn_radius: f32,
@@ -16,7 +16,7 @@ pub struct Fire {
 }
 
 /// Stores information about a particle that can burn.
-#[derive(Clone, Component, Debug)]
+#[derive(Clone, Debug, Default, Component)]
 pub struct Burns {
     /// Total duration for the burn effect.
     pub duration: Duration,
@@ -60,7 +60,7 @@ impl Burns {
 }
 
 /// Component for particles that have the capacity to burn.
-#[derive(Clone, Component, Debug)]
+#[derive(Clone, Eq, PartialEq, Debug, Default, Component, Reflect)]
 pub struct Burning {
     /// The Burning timer.
     pub timer: Timer,
