@@ -90,7 +90,7 @@
                 "#FFE808"
             ],
             "spreads": {
-                "burn_radius": 1.5,
+                "burn_radius": 2.,
                 "chance_to_spread": 0.2
             }
         }
