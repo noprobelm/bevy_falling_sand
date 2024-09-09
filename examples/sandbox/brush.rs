@@ -76,7 +76,6 @@ pub enum BrushType {
     Line,
     #[default]
     Circle,
-    Square,
 }
 
 impl BrushType {
@@ -95,9 +94,6 @@ impl BrushType {
             ),
             BrushType::Circle => {
                 brush_gizmos.circle_2d(coords, brush_size, Color::WHITE);
-            }
-            BrushType::Square => {
-                brush_gizmos.rect_2d(coords, 0., Vec2::splat(brush_size), Color::WHITE);
             }
         }
     }
@@ -119,8 +115,6 @@ impl BrushType {
         let half_length = (coords.current - coords.previous).length() / 2.0;
         let min_x = -(brush_size as i32) / 2;
         let max_x = (brush_size / 2.) as i32;
-        let min_y = -(brush_size as i32) / 2;
-        let max_y = (brush_size / 2.) as i32;
 
         match self {
             BrushType::Line => {
@@ -187,22 +181,6 @@ impl BrushType {
                     }));
                 }
             }
-            BrushType::Square => {
-                let particle = selected_particle.clone();
-                commands.spawn_batch((min_x..=max_x).flat_map(move |x| {
-                    let particle = particle.clone();
-                    (min_y..=max_y).map(move |y| {
-                        (
-                            particle.clone(),
-                            SpatialBundle::from_transform(Transform::from_xyz(
-                                coords.current.x + x as f32,
-                                coords.current.y + y as f32,
-                                0.,
-                            )),
-                        )
-                    })
-                }));
-            }
         }
     }
 
@@ -248,17 +226,6 @@ impl BrushType {
                     })
                 }
             }
-            BrushType::Square => {
-                for x in min_x..=max_x {
-                    for y in min_y..=max_y {
-                        let coordinates = IVec2::new(coords.x + x, coords.y + y);
-                        commands.trigger(RemoveParticleEvent {
-                            coordinates,
-                            despawn: true,
-                        })
-                    }
-                }
-            }
         }
     }
 }
@@ -291,12 +258,6 @@ impl BrushControlUI {
                     .changed()
                 {
                     next_brush_type.set(BrushType::Circle)
-                };
-                if ui
-                    .selectable_value(&mut current_brush_type, &BrushType::Square, "Square")
-                    .changed()
-                {
-                    next_brush_type.set(BrushType::Square)
                 };
             });
         if ui
@@ -347,28 +308,23 @@ pub fn resize_brush_event_listener(
 fn points_within_capsule(capsule: &Capsule2d, start: Vec2, end: Vec2) -> Vec<IVec2> {
     let mut points_inside = Vec::new();
 
-    // Calculate bounding box for potential points
     let min_x = (start.x.min(end.x) - capsule.radius).floor() as i32;
     let max_x = (start.x.max(end.x) + capsule.radius).ceil() as i32;
     let min_y = (start.y.min(end.y) - capsule.radius).floor() as i32;
     let max_y = (start.y.max(end.y) + capsule.radius).ceil() as i32;
 
-    // Iterate over all integer points in the bounding box
     for x in min_x..=max_x {
         for y in min_y..=max_y {
             let point = Vec2::new(x as f32, y as f32);
 
-            // Convert point to capsule's local space
             let to_point = point - start;
             let capsule_direction = (end - start).normalize();
             let projected_length = to_point.dot(capsule_direction);
             let clamped_length = projected_length.clamp(-capsule.half_length, capsule.half_length);
 
-            // Closest point on the central segment
             let closest_point = start + capsule_direction * clamped_length;
             let distance_to_line = (point - closest_point).length();
 
-            // Check if the distance is within the radius of the capsule
             if distance_to_line <= capsule.radius {
                 points_inside.push(IVec2::new(x, y));
             }
