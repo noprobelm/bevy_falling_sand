@@ -9,10 +9,10 @@ pub(super) struct BrushPlugin;
 
 impl bevy::prelude::Plugin for BrushPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
-	app.init_resource::<MaxBrushSize>();
-	app.init_state::<BrushState>().init_state::<BrushType>();
-	app.init_gizmo_group::<BrushGizmos>();
-	app.add_event::<BrushResizeEvent>();
+        app.init_resource::<MaxBrushSize>();
+        app.init_state::<BrushState>().init_state::<BrushType>();
+        app.init_gizmo_group::<BrushGizmos>();
+        app.add_event::<BrushResizeEvent>();
         app.add_systems(Startup, setup_brush)
             .add_systems(Update, (update_brush, resize_brush_event_listener));
     }
@@ -110,10 +110,13 @@ impl BrushType {
     pub fn spawn_particles(
         &self,
         commands: &mut Commands,
-        coords: Vec2,
+        coords: Res<CursorCoords>,
         brush_size: f32,
         selected_particle: Particle,
     ) {
+        let coords = coords.clone();
+        let radius = brush_size;
+        let half_length = (coords.current - coords.previous).length() / 2.0;
         let min_x = -(brush_size as i32) / 2;
         let max_x = (brush_size / 2.) as i32;
         let min_y = -(brush_size as i32) / 2;
@@ -126,8 +129,8 @@ impl BrushType {
                     (
                         particle.clone(), // Clone the particle for each x iteration
                         SpatialBundle::from_transform(Transform::from_xyz(
-                            coords.x + x as f32,
-                            coords.y,
+                            coords.current.x + x as f32,
+                            coords.current.y,
                             0.0,
                         )),
                     )
@@ -135,36 +138,65 @@ impl BrushType {
             }
             BrushType::Circle => {
                 let particle = selected_particle.clone();
-                let mut points: HashSet<IVec2> = HashSet::default();
-                let circle = Circle::new(brush_size);
-                for x in min_x * 2..=max_x * 2 {
-                    for y in min_y * 2..=max_y * 2 {
-                        let mut point = Vec2::new(x as f32, y as f32);
-                        point = circle.closest_point(point);
-                        points.insert((point + coords).as_ivec2());
+
+		// If there's no distance between one cursor coordinate and the next, draw a circle instead.
+                if (coords.current - coords.previous).length() < f32::EPSILON {
+                    let circle_center = coords.current;
+                    let mut points: HashSet<IVec2> = HashSet::default();
+
+                    let min_x = (circle_center.x - radius).floor() as i32;
+                    let max_x = (circle_center.x + radius).ceil() as i32;
+                    let min_y = (circle_center.y - radius).floor() as i32;
+                    let max_y = (circle_center.y + radius).ceil() as i32;
+
+                    for x in min_x..=max_x {
+                        for y in min_y..=max_y {
+                            let point = Vec2::new(x as f32, y as f32);
+                            if (point - circle_center).length() <= radius {
+                                points.insert(point.as_ivec2());
+                            }
+                        }
                     }
+
+                    commands.spawn_batch(points.into_iter().map(move |point| {
+                        (
+                            particle.clone(),
+                            SpatialBundle::from_transform(Transform::from_xyz(
+                                point.x as f32,
+                                point.y as f32,
+                                0.0,
+                            )),
+                        )
+                    }));
+                } else {
+                    let capsule = Capsule2d {
+                        radius,
+                        half_length,
+                    };
+
+                    let points = points_within_capsule(&capsule, coords.previous, coords.current);
+                    commands.spawn_batch(points.into_iter().map(move |point| {
+                        (
+                            particle.clone(),
+                            SpatialBundle::from_transform(Transform::from_xyz(
+                                point.x as f32,
+                                point.y as f32,
+                                0.0,
+                            )),
+                        )
+                    }));
                 }
-                commands.spawn_batch(points.into_iter().map(move |point| {
-                    (
-                        particle.clone(), // Clone the particle for each point iteration
-                        SpatialBundle::from_transform(Transform::from_xyz(
-                            point.x as f32,
-                            point.y as f32,
-                            0.,
-                        )),
-                    )
-                }));
             }
             BrushType::Square => {
                 let particle = selected_particle.clone();
                 commands.spawn_batch((min_x..=max_x).flat_map(move |x| {
-                    let particle = particle.clone(); // Clone the particle for each x iteration
+                    let particle = particle.clone();
                     (min_y..=max_y).map(move |y| {
                         (
-                            particle.clone(), // Clone the particle for each y iteration
+                            particle.clone(),
                             SpatialBundle::from_transform(Transform::from_xyz(
-                                coords.x + x as f32,
-                                coords.y + y as f32,
+                                coords.current.x + x as f32,
+                                coords.current.y + y as f32,
                                 0.,
                             )),
                         )
@@ -273,8 +305,6 @@ impl BrushControlUI {
         {
             ev_brush_resize.send(BrushResizeEvent(*brush_size));
         }
-
-
     }
 }
 
@@ -288,7 +318,7 @@ pub fn setup_brush(
     let brush = Brush::new(2, Color::WHITE);
     let brush_size = brush.size;
     commands.spawn(brush);
-    brush_type.update_brush(cursor_coords.0, brush_size as f32, &mut brush_gizmos);
+    brush_type.update_brush(cursor_coords.current, brush_size as f32, &mut brush_gizmos);
 }
 
 /// Updates the brush position and size each frame.
@@ -299,7 +329,7 @@ pub fn update_brush(
     brush_type: Res<State<BrushType>>,
 ) {
     let brush = brush_query.single();
-    brush_type.update_brush(cursor_coords.0, brush.size as f32, &mut brush_gizmos);
+    brush_type.update_brush(cursor_coords.current, brush.size as f32, &mut brush_gizmos);
 }
 
 /// Resizes the brush when a resize event is published.
@@ -311,4 +341,39 @@ pub fn resize_brush_event_listener(
     for ev in ev_brush_resize.read() {
         brush.size = ev.0;
     }
+}
+
+/// Function to get all points within a 2D capsule defined by two endpoints and a radius.
+fn points_within_capsule(capsule: &Capsule2d, start: Vec2, end: Vec2) -> Vec<IVec2> {
+    let mut points_inside = Vec::new();
+
+    // Calculate bounding box for potential points
+    let min_x = (start.x.min(end.x) - capsule.radius).floor() as i32;
+    let max_x = (start.x.max(end.x) + capsule.radius).ceil() as i32;
+    let min_y = (start.y.min(end.y) - capsule.radius).floor() as i32;
+    let max_y = (start.y.max(end.y) + capsule.radius).ceil() as i32;
+
+    // Iterate over all integer points in the bounding box
+    for x in min_x..=max_x {
+        for y in min_y..=max_y {
+            let point = Vec2::new(x as f32, y as f32);
+
+            // Convert point to capsule's local space
+            let to_point = point - start;
+            let capsule_direction = (end - start).normalize();
+            let projected_length = to_point.dot(capsule_direction);
+            let clamped_length = projected_length.clamp(-capsule.half_length, capsule.half_length);
+
+            // Closest point on the central segment
+            let closest_point = start + capsule_direction * clamped_length;
+            let distance_to_line = (point - closest_point).length();
+
+            // Check if the distance is within the radius of the capsule
+            if distance_to_line <= capsule.radius {
+                points_inside.push(IVec2::new(x, y));
+            }
+        }
+    }
+
+    points_inside
 }

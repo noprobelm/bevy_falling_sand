@@ -34,8 +34,11 @@ pub enum AppState {
 }
 
 /// Resource for tracking cursor coordinates.
-#[derive(Resource, Default, Debug)]
-pub struct CursorCoords(pub Vec2);
+#[derive(Clone, Resource, Default, Debug)]
+pub struct CursorCoords {
+    pub previous: Vec2,
+    pub current: Vec2,
+}
 
 /// Updates the cursor coordinates each frame.
 pub fn update_cursor_coordinates(
@@ -52,7 +55,8 @@ pub fn update_cursor_coordinates(
         .and_then(|cursor| camera.viewport_to_world(camera_transform, cursor))
         .map(|ray| ray.origin.truncate())
     {
-        coords.0 = world_position;
+	coords.previous = coords.current;
+        coords.current = world_position;
     }
 }
 

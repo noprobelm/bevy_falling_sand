@@ -57,16 +57,12 @@ impl ParticleTypeList {
     pub fn insert_or_modify(&mut self, material: String, particles: Vec<String>) {
         match self.map.entry(material) {
             Entry::Occupied(mut entry) => {
-                // Modify the existing value by extending the list
                 entry.get_mut().extend(particles);
-
-                // Sort the list alphabetically after modification
                 entry.get_mut().sort();
             }
             Entry::Vacant(entry) => {
-                // Insert the new value
                 let mut sorted_particles = particles;
-                sorted_particles.sort(); // Sort before inserting
+                sorted_particles.sort();
                 entry.insert(sorted_particles);
             }
         }
@@ -203,7 +199,7 @@ pub fn spawn_particles(
     let brush_type = brush_type.get();
     brush_type.spawn_particles(
         &mut commands,
-        cursor_coords.0,
+        cursor_coords,
         brush.size as f32,
         Particle {
             name: selected.0.clone(),
@@ -227,7 +223,7 @@ pub fn despawn_particles(
     let brush = brush_query.single();
     let brush_size = brush.size;
 
-    brush_type.remove_particles(&mut commands, cursor_coords.0.as_ivec2(), brush_size as f32)
+    brush_type.remove_particles(&mut commands, cursor_coords.current.as_ivec2(), brush_size as f32)
 }
 
 /// Stops or starts the simulation when scheduled.
