@@ -7,7 +7,7 @@
         "momentum": true,
     },
     "Sparkly Slime": {
-        "density": 800,
+        "density": 845,
         "max_velocity": 2,
         "liquid": 1,
         "colors": [
@@ -22,7 +22,7 @@
         "changes_colors": 0.1
     },
     "Slime": {
-        "density": 800,
+        "density": 850,
         "max_velocity": 2,
         "liquid": 1,
         "colors": ["#8FA73980", "#82983480"],
@@ -128,6 +128,29 @@
         "max_velocity": 1,
         "gas": 1,
         "colors": ["#706966", "#858073"],
+        "changes_colors": 0.1
+    },
+    "Flammable Gas": {
+        "density": 200,
+        "max_velocity": 1,
+        "gas": 1,
+        "colors": ["#40621880", "#4A731C80"],
+        "burns": {
+            "duration": 1000,
+            "tick_rate": 100,
+            "chance_destroy_per_tick": 0.5,
+            "colors": [
+                "#FF0000",
+                "#FF5900",
+                "#FF9900",
+                "#FFCF00",
+                "#FFE808"
+            ],
+            "spreads": {
+                "burn_radius": 2.,
+                "chance_to_spread": 1.,
+            }
+        },
         "changes_colors": 0.1
     },
     "Wall": {
