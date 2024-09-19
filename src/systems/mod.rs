@@ -10,6 +10,7 @@ mod hibernation;
 mod map;
 mod material;
 mod movement;
+mod reaction;
 mod scenes;
 
 pub use burning::*;
@@ -19,6 +20,7 @@ pub use hibernation::*;
 pub use map::*;
 pub use material::*;
 pub use movement::*;
+pub use reaction::*;
 pub use scenes::*;
 
 /// System set for systems that influence particle management.
@@ -43,6 +45,7 @@ impl bevy::prelude::Plugin for ParticleSystemsPlugin {
                     reset_chunks.after(handle_particles),
                     handle_fire.before(handle_burning),
                     handle_burning.before(handle_particles),
+		    react_particles.before(handle_particles),
                 )
                     .in_set(ParticleSimulationSet)
                     .run_if(resource_exists::<SimulationRun>),

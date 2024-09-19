@@ -1,4 +1,4 @@
-use bevy::prelude::{Transform, Commands, SpatialBundle};
+use bevy::prelude::{Component, Transform, Commands, SpatialBundle};
 use super::{Particle, Coordinates, ReactionRng};
 
 /// Provides particle reaction behavior.
@@ -44,3 +44,16 @@ impl Reacting {
         rng.chance(self.chance_to_produce)
     }
 }
+
+/// Marker component for particles that can react with one another.
+#[derive(Component, Clone, Debug)]
+pub struct Reacts {
+    /// The particle to react with.
+    pub other: Particle,
+    /// The particle to turn into upon reacting.
+    pub into: Particle
+}
+
+/// Marker component for a reactant particle.
+#[derive(Component, Clone, Debug)]
+pub struct Reactant;
