@@ -48,6 +48,7 @@ pub fn handle_new_particles(
                 commands.trigger(ResetFireEvent { entity });
                 commands.trigger(ResetBurnsEvent { entity });
                 commands.trigger(ResetBurningEvent { entity });
+		commands.trigger(ResetReactsEvent {entity} )
             }
         } else {
             panic!(
@@ -74,6 +75,17 @@ pub fn handle_new_particle_types(
                 )));
             type_map.insert(particle_type.name.clone(), entity);
         });
+}
+
+/// Event reader for particle type updates
+pub fn on_change_particle(
+    mut ev_change_particle: EventReader<ChangeParticleEvent>,
+    mut particle_query: Query<&mut Particle>
+) {
+    for ev in ev_change_particle.read() {
+	let mut particle = particle_query.get_mut(ev.entity).unwrap();
+	particle.name  = ev.particle.name.clone();
+    }
 }
 
 /// Observer for resetting all of a particle's data. This system simply marks the Particle as changed so it gets picked
@@ -272,6 +284,26 @@ pub fn on_reset_flows_color(
             commands
                 .entity(trigger.event().entity)
                 .remove::<FlowsColor>();
+        }
+    }
+}
+
+/// Observer for resetting a particle's FlowsColor information to its parent's.
+pub fn on_reset_reacts(
+    trigger: Trigger<ResetReactsEvent>,
+    mut commands: Commands,
+    particle_query: Query<&Parent, With<Particle>>,
+    parent_query: Query<Option<&Reacts>, With<ParticleType>>,
+) {
+    if let Ok(parent) = particle_query.get(trigger.event().entity) {
+        if let Some(reacts) = parent_query.get(parent.get()).unwrap() {
+            commands
+                .entity(trigger.event().entity)
+                .insert(reacts.clone());
+        } else {
+            commands
+                .entity(trigger.event().entity)
+                .remove::<Reacts>();
         }
     }
 }

@@ -22,6 +22,7 @@ pub use material::*;
 pub use movement::*;
 pub use reaction::*;
 pub use scenes::*;
+pub use reaction::*;
 
 /// System set for systems that influence particle management.
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
@@ -46,6 +47,7 @@ impl bevy::prelude::Plugin for ParticleSystemsPlugin {
                     handle_fire.before(handle_burning),
                     handle_burning.before(handle_particles),
 		    react_particles.before(handle_particles),
+		    on_change_particle
                 )
                     .in_set(ParticleSimulationSet)
                     .run_if(resource_exists::<SimulationRun>),
@@ -91,6 +93,7 @@ impl bevy::prelude::Plugin for ParticleSystemsPlugin {
             .observe(on_reset_burns)
             .observe(on_reset_burning)
             .observe(on_reset_randomizes_color)
-            .observe(on_reset_flows_color);
+            .observe(on_reset_flows_color)
+            .observe(on_reset_reacts);
     }
 }

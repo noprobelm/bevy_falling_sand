@@ -17,10 +17,8 @@ pub(super) struct ParticleSetupPlugin;
 impl bevy::prelude::Plugin for ParticleSetupPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
         // Particle management systems
-        app.add_event::<ParticleTypesAssetLoaded>().add_systems(
-            Startup,
-            (setup_custom_particles, load_assets),
-        );
+        app.add_event::<ParticleTypesAssetLoaded>()
+            .add_systems(Startup, (setup_custom_particles, load_assets));
         app.add_systems(Update, load_particle_types);
     }
 }
@@ -62,6 +60,23 @@ pub fn setup_custom_particles(mut commands: Commands) {
             ],
         ),
     ));
+
+    commands.spawn(
+        (LiquidBundle::new(
+            ParticleType::new("Other Slime"),
+            Density(850),
+            Velocity::new(1, 2),
+            1,
+            ParticleColor::new(
+                Color::Srgba(Srgba::hex("#8FA73980").unwrap()),
+                vec![
+		    Color::Srgba(Srgba::hex("#8FA73980").unwrap()),
+		    Color::Srgba(Srgba::hex("#82983480").unwrap())
+		],
+            ),
+        ),
+	Reacts{other: Particle::new("Water"), into: Particle::new("Water")}),
+    );
 }
 
 #[derive(Event)]
@@ -73,8 +88,7 @@ fn load_assets(
     mut ev_asset: EventWriter<ParticleTypesAssetLoaded>,
     asset_server: Res<AssetServer>,
 ) {
-    let handle: Handle<ParticleTypesAsset> = asset_server
-        .load("particles/particles.ron");
+    let handle: Handle<ParticleTypesAsset> = asset_server.load("particles/particles.ron");
     ev_asset.send(ParticleTypesAssetLoaded { handle });
 }
 

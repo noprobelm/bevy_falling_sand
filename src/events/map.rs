@@ -1,5 +1,6 @@
 //! Events for particle management.
 use bevy::prelude::{IVec2, Event, Entity};
+use crate::Particle;
 
 /// Triggers [on_remove_particle](crate::on_remove_particle) to remove a particle from the simulation.
 #[derive(Event)]
@@ -13,6 +14,15 @@ pub struct RemoveParticleEvent {
 /// Triggers [on_clear_chunk_map](crate::on_clear_chunk_map) to remove a particle from the simulation.
 #[derive(Event)]
 pub struct ClearChunkMapEvent;
+
+/// Changes a particle to the designated type
+#[derive(Event)]
+pub struct ChangeParticleEvent {
+    /// The entity to change the particle type of
+    pub entity: Entity,
+    /// The new particle type
+    pub particle: Particle
+}
 
 /// Resets all of a particle's components to its parent's.
 #[derive(Event)]
@@ -90,3 +100,11 @@ pub struct ResetBurningEvent {
     /// The entity to reset data for.
     pub entity: Entity
 }
+
+/// Triggers a particle to reset its Reacts information to its parent's.
+#[derive(Event)]
+pub struct ResetReactsEvent {
+    /// The entity to reset data for.
+    pub entity: Entity
+}
+

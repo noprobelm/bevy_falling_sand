@@ -53,7 +53,3 @@ pub struct Reacts {
     /// The particle to turn into upon reacting.
     pub into: Particle
 }
-
-/// Marker component for a reactant particle.
-#[derive(Component, Clone, Debug)]
-pub struct Reactant;
