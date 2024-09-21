@@ -61,8 +61,8 @@ pub fn setup_custom_particles(mut commands: Commands) {
         ),
     ));
 
-    commands.spawn(
-        (LiquidBundle::new(
+    commands.spawn((
+        LiquidBundle::new(
             ParticleType::new("Other Slime"),
             Density(850),
             Velocity::new(1, 2),
@@ -70,13 +70,17 @@ pub fn setup_custom_particles(mut commands: Commands) {
             ParticleColor::new(
                 Color::Srgba(Srgba::hex("#8FA73980").unwrap()),
                 vec![
-		    Color::Srgba(Srgba::hex("#8FA73980").unwrap()),
-		    Color::Srgba(Srgba::hex("#82983480").unwrap())
-		],
+                    Color::Srgba(Srgba::hex("#8FA73980").unwrap()),
+                    Color::Srgba(Srgba::hex("#82983480").unwrap()),
+                ],
             ),
         ),
-	Reacts{other: Particle::new("Water"), into: Particle::new("Water")}),
-    );
+        Reacts {
+            other: Particle::new("Water"),
+            into: Particle::new("Water"),
+        },
+        FlowsColor::new(0.1),
+    ));
 }
 
 #[derive(Event)]
