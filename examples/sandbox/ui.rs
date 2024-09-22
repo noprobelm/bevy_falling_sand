@@ -16,7 +16,7 @@ impl bevy::prelude::Plugin for UIPlugin {
             .add_systems(Update, render_ui)
             .add_systems(Update, update_app_state.after(render_ui))
             .init_resource::<CursorCoords>()
-            .add_systems(Update, update_cursor_coordinates)
+            .add_systems(First, update_cursor_coordinates)
             .add_systems(OnEnter(AppState::Ui), show_cursor)
             .add_systems(OnEnter(AppState::Canvas), hide_cursor);
     }

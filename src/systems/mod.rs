@@ -46,7 +46,6 @@ impl bevy::prelude::Plugin for ParticleSystemsPlugin {
                     reset_chunks.after(handle_particles),
                     handle_fire.before(handle_burning),
                     handle_burning.before(handle_particles),
-		    react_particles.before(handle_particles),
 		    on_change_particle
                 )
                     .in_set(ParticleSimulationSet)
