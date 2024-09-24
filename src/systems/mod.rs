@@ -10,7 +10,6 @@ mod hibernation;
 mod map;
 mod material;
 mod movement;
-mod reaction;
 mod scenes;
 
 pub use burning::*;
@@ -20,9 +19,7 @@ pub use hibernation::*;
 pub use map::*;
 pub use material::*;
 pub use movement::*;
-pub use reaction::*;
 pub use scenes::*;
-pub use reaction::*;
 
 /// System set for systems that influence particle management.
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
