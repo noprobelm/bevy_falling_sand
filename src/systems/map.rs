@@ -1,5 +1,6 @@
 //! Particle mapping behaviors.
 use crate::*;
+use crate::{Particle, ParticleType};
 use bevy_turborand::prelude::{DelegatedRng, GlobalRng};
 
 /// Map all particles to their respective parent when added/changed within the simulation
