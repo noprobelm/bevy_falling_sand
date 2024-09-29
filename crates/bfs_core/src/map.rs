@@ -3,7 +3,8 @@ use ahash::{HashMap, HashMapExt};
 use bevy::prelude::*;
 use rayon::iter::IntoParallelRefIterator;
 use rayon::prelude::*;
-use serde::{Serialize, Deserialize};
+
+use crate::hibernation::Hibernating;
 
 /// Maps particle type names to a corresponding entity
 #[derive(Resource, Clone, Default, Debug, Reflect)]
@@ -34,18 +35,6 @@ impl ParticleTypeMap {
         self.map.get(ptype)
     }
 }
-
-/// Provides a flag for indicating whether an entity is in a hibernating state. Entities with the Hibernating component
-/// can be used with bevy query filters to manage which particles are actually being simulated.
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Component)]
-pub struct Hibernating;
-
-/// Coordinates component for particles.
-#[derive(
-    Copy, Clone, Eq, PartialEq, Hash, Debug, Default, Component, Reflect, Serialize, Deserialize,
-)]
-#[reflect(Component)]
-pub struct Coordinates(pub IVec2);
 
 /// Chunk map for segmenting collections of entities into coordinate-based chunks.
 #[derive(Resource, Debug, Clone)]

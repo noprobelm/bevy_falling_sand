@@ -3,8 +3,7 @@ use smallvec::SmallVec;
 use std::iter;
 use std::slice::Iter;
 
-use crate::rng::PhysicsRng;
-use crate::physics_components::Momentum;
+use crate::physics_components::{Momentum, PhysicsRng};
 
 /// A group of neighbors representing equally prioritized candidates for particle movement.
 /// Positions are relative to the particle's position.
