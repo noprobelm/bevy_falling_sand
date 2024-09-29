@@ -1133,6 +1133,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "bfs_color"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy_turborand",
+ "bfs_core",
+ "serde",
+]
+
+[[package]]
 name = "bfs_core"
 version = "0.1.0"
 dependencies = [
@@ -1144,10 +1154,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "bfs_debug"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bfs_core",
+ "bfs_movement",
+]
+
+[[package]]
 name = "bfs_internal"
 version = "0.1.0"
 dependencies = [
+ "bfs_color",
  "bfs_core",
+ "bfs_debug",
  "bfs_movement",
 ]
 

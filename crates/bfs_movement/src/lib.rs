@@ -1,11 +1,11 @@
 use bevy::prelude::*;
 
 mod movement;
-mod movement_priority;
 mod physics_components;
+mod material;
 
+pub use material::*;
 pub use movement::*;
-pub use movement_priority::*;
 pub use physics_components::*;
 
 pub struct ParticleMovementPlugin;

@@ -10,14 +10,18 @@
 //! This crate provides core functionality for particles.
 
 mod particle;
-mod hibernation;
 mod map;
-mod events;
 
 use bevy::prelude::*;
 
 pub use particle::*;
-pub use hibernation::*;
 pub use map::*;
-pub use events::*;
 
+/// Core plugin for Bevy Falling Sand.
+pub struct FallingSandCorePlugin;
+
+impl Plugin for FallingSandCorePlugin {
+    fn build(&self, app: &mut App) {
+        app.add_plugins((ParticlePlugin, ChunkMapPlugin));
+    }
+}

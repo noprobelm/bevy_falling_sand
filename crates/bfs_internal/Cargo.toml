@@ -6,3 +6,5 @@ edition = "2021"
 [dependencies]
 bfs_core = { path = "../bfs_core" }
 bfs_movement = { path = "../bfs_movement" }
+bfs_color = { path = "../bfs_color" }
+bfs_debug = { path = "../bfs_debug" }

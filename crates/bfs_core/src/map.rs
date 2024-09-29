@@ -1,40 +1,44 @@
-//! Resources which provide mapping functionality to particle positions and types.
+//! Resources providing mapping functionality to particle positions and types.
 use ahash::{HashMap, HashMapExt};
 use bevy::prelude::*;
 use rayon::iter::IntoParallelRefIterator;
 use rayon::prelude::*;
+use serde::{Deserialize, Serialize};
 
-use crate::hibernation::Hibernating;
+/// Plugin for mapping particles to coordinate space.
+pub struct ChunkMapPlugin;
 
-/// Maps particle type names to a corresponding entity
-#[derive(Resource, Clone, Default, Debug, Reflect)]
-#[reflect(Resource)]
-pub struct ParticleTypeMap {
-    /// The mapping resource for particle types.
-    map: std::collections::HashMap<String, Entity>,
-}
-
-impl ParticleTypeMap {
-    /// Provides an iterator of the particle type map
-    pub fn iter(&self) -> impl Iterator<Item = (&String, &Entity)> {
-        self.map.iter()
-    }
-
-    /// Provides an iterator over the keys of the particle type map
-    pub fn keys(&self) -> impl Iterator<Item = &String> {
-        self.map.keys()
-    }
-
-    /// Insert a new particle type to the map
-    pub fn insert(&mut self, ptype: String, entity: Entity) -> &mut Entity {
-        self.map.entry(ptype).or_insert(entity)
-    }
-
-    /// Get an immutable reference to the corresponding entity, if it exists.
-    pub fn get(&self, ptype: &String) -> Option<&Entity> {
-        self.map.get(ptype)
+impl Plugin for ChunkMapPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_event::<ClearMapEvent>()
+            .init_resource::<ChunkMap>()
+            .register_type::<Hibernating>();
     }
 }
+
+/// Triggers [on_clear_chunk_map](crate::on_clear_chunk_map) to remove a particle from the simulation.
+#[derive(Event)]
+pub struct ClearMapEvent;
+
+/// Provides a flag for indicating whether an entity is in a hibernating state. Entities with the Hibernating component
+/// can be used with bevy query filters to manage which particles are actually being simulated.
+/// Marker component for entities that act as a central reference for particle type information.
+#[derive(
+    Clone,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Hash,
+    Debug,
+    Default,
+    Component,
+    Reflect,
+    Serialize,
+    Deserialize,
+)]
+#[reflect(Component)]
+pub struct Hibernating;
 
 /// Chunk map for segmenting collections of entities into coordinate-based chunks.
 #[derive(Resource, Debug, Clone)]
@@ -44,8 +48,7 @@ pub struct ChunkMap {
 }
 
 impl Default for ChunkMap {
-    /// A default chunk has a size of 32x32 entities. A default chunk map can hold 32 chunks, effectively capable of
-    /// storing 1024x1024 (1,048,576) total entities.
+    /// Gets a default ChunkMap
     fn default() -> ChunkMap {
         let chunks: Vec<Chunk> = (0..32_i32.pow(2))
             .map(|i| {
