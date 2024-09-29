@@ -1,16 +1,15 @@
-use std::mem;
 use bevy::prelude::*;
 use bevy::utils::HashSet;
+use std::mem;
 
-use bfs_core::{Coordinates, Particle, Hibernating, ChunkMap, ChangeParticleEvent};
-use crate::MovementPriority;
 use crate::physics_components::*;
 use crate::rng::PhysicsRng;
+use crate::MovementPriority;
+use bfs_core::{ChunkMap, Coordinates, Hibernating, Particle};
 
 /// Moves all qualifying particles 'v' times equal to their current velocity
 #[allow(unused_mut)]
 pub fn handle_particles(
-    mut ev_change_particle: EventWriter<ChangeParticleEvent>,
     mut particle_query: Query<
         (
             Entity,
@@ -22,7 +21,6 @@ pub fn handle_particles(
             Option<&mut Momentum>,
             &Density,
             &mut MovementPriority,
-	 gcc  Option<&Reacts>
         ),
         Without<Hibernating>,
     >,
@@ -33,7 +31,7 @@ pub fn handle_particles(
     unsafe {
         particle_query.iter_unsafe().for_each(
             |(
-                entity,
+                _,
                 particle_type,
                 mut coordinates,
                 mut transform,
@@ -42,7 +40,6 @@ pub fn handle_particles(
                 mut momentum,
                 density,
                 mut movement_priority,
-		reacts
             )| {
                 // Used to determine if we should add the particle to set of visited particles.
                 let mut moved = false;
@@ -74,20 +71,11 @@ pub fn handle_particles(
                                     _,
                                     neighbor_density,
                                     _,
-				    _
                                 )) = particle_query.get_unchecked(*neighbor_entity)
                                 {
                                     if *particle_type == *neighbor_particle_type {
                                         continue;
                                     }
-				    if let Some(reacts) = reacts {
-					if reacts.other == *neighbor_particle_type {
-					    ev_change_particle.send(ChangeParticleEvent {
-						entity,
-						particle: reacts.into.clone()
-					    });
-					}
-				    }
                                     if density > neighbor_density {
                                         map.swap(neighbor_coordinates.0, coordinates.0);
 

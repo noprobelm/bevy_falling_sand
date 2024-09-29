@@ -1148,6 +1148,18 @@ name = "bfs_internal"
 version = "0.1.0"
 dependencies = [
  "bfs_core",
+ "bfs_movement",
+]
+
+[[package]]
+name = "bfs_movement"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy_turborand",
+ "bfs_core",
+ "serde",
+ "smallvec",
 ]
 
 [[package]]
