@@ -1,9 +1,15 @@
-//! Basic components for marking particles.
+//! Minimum components a particle is comprised of.
 
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use super::*;
+/// Coordinates component for particles.
+#[derive(
+    Copy, Clone, Eq, PartialEq, Hash, Debug, Default, Component, Reflect, Serialize, Deserialize,
+)]
+#[reflect(Component)]
+pub struct Coordinates(pub IVec2);
+
 
 /// Marker component for entities that act as a central reference for particle type information.
 #[derive(

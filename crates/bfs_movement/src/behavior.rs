@@ -9,7 +9,7 @@ use bfs_core::{ChunkMap, Coordinates, Hibernating, Particle};
 
 /// Moves all qualifying particles 'v' times equal to their current velocity
 #[allow(unused_mut)]
-pub fn handle_particles(
+pub fn handle_movement(
     mut particle_query: Query<
         (
             Entity,
