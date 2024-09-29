@@ -142,7 +142,6 @@ pub fn handle_particles(
     }
 }
 
-/// Swaps the position of two particle's position information.
 fn swap_particle_positions(
     first_coordinates: &mut Coordinates,
     first_transform: &mut Transform,
