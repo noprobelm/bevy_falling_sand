@@ -8,9 +8,9 @@ pub use material::*;
 pub use movement::*;
 pub use physics_components::*;
 
-pub struct ParticleMovementPlugin;
+pub struct FallingSandMovementPlugin;
 
-impl Plugin for ParticleMovementPlugin {
+impl Plugin for FallingSandMovementPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Update, handle_movement)
             .register_type::<Density>()

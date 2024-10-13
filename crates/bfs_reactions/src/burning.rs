@@ -1,10 +1,21 @@
+use super::{Reacting, ReactionRng};
 use bevy::prelude::*;
 use bevy::utils::Duration;
 use bevy_spatial::SpatialAccess;
-use bfs_core::{Particle, Coordinates, RemoveParticleEvent};
-use bfs_spatial::ParticleTree;
 use bfs_color::*;
-use super::{Reacting, ReactionRng};
+use bfs_core::{Coordinates, Particle, RemoveParticleEvent};
+use bfs_spatial::ParticleTree;
+
+pub struct BurningPlugin;
+
+impl Plugin for BurningPlugin {
+    fn build(&self, app: &mut App) {
+        app.register_type::<Fire>()
+            .register_type::<Burns>()
+            .register_type::<Burning>();
+        app.add_systems(Update, (handle_fire, handle_burning));
+    }
+}
 
 /// Marker for particle types that can inflict a burning status.
 #[derive(Clone, PartialEq, PartialOrd, Debug, Default, Component, Reflect)]
@@ -39,6 +50,7 @@ pub struct Burns {
 }
 
 impl Burns {
+    #![allow(dead_code)]
     /// Creates a new Burns.
     pub fn new(
         duration: Duration,
@@ -73,6 +85,7 @@ pub struct Burning {
     pub tick_timer: Timer,
 }
 
+#[allow(dead_code)]
 impl Burning {
     /// Creates a new Burning.
     pub fn new(duration: Duration, tick_rate: Duration) -> Burning {

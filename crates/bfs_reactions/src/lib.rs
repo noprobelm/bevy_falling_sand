@@ -12,10 +12,8 @@ pub struct FallingSandReactionsPlugin;
 impl Plugin for FallingSandReactionsPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<ReactionRng>()
-            .register_type::<Reacting>()
-            .register_type::<Fire>()
-            .register_type::<Burns>()
-            .register_type::<Burning>();
+            .register_type::<Reacting>();
+	app.add_plugins(BurningPlugin);
     }
 }
 
