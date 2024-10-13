@@ -1,0 +1,9 @@
+[package]
+name = "bfs_debug"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bevy = "0.14.2"
+bfs_core = { path = "../bfs_core" }
+bfs_movement = { path = "../bfs_movement" }

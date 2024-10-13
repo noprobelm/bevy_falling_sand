@@ -1,0 +1,12 @@
+[package]
+name = "bfs_reactions"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bevy = "0.14.2"
+bevy_turborand = "0.9.0"
+bfs_color = { path = "../bfs_color" }
+bfs_spatial = { path = "../bfs_spatial" }
+bfs_core = { path = "../bfs_core" }
+bevy_spatial = "0.9.1"

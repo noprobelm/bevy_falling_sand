@@ -1,0 +1,9 @@
+[package]
+name = "bfs_spatial"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bevy = "0.14.2"
+bevy_spatial = "0.9.1"
+bfs_core = { path = "../bfs_core" }
