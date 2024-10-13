@@ -1,5 +1,5 @@
 //! Events for particle management.
-use bevy::prelude::{IVec2, Event, Entity, Event};
+use bevy::prelude::{IVec2, Event, Entity};
 use crate::Particle;
 
 /// Triggers [on_remove_particle](crate::on_remove_particle) to remove a particle from the simulation.
@@ -14,15 +14,6 @@ pub struct RemoveParticleEvent {
 /// Triggers [on_clear_chunk_map](crate::on_clear_chunk_map) to remove a particle from the simulation.
 #[derive(Event)]
 pub struct ClearChunkMapEvent;
-
-/// Triggers [on_remove_particle](crate::on_remove_particle) to remove a particle from the simulation.
-#[derive(Event)]
-pub struct RemoveParticleEvent {
-    /// The coordinates of the particle to remove.
-    pub coordinates: IVec2,
-    /// Whether the corresponding entity should be despawned from the world.
-    pub despawn: bool,
-}
 
 /// Changes a particle to the designated type
 #[derive(Event)]

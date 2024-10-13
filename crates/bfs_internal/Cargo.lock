@@ -905,6 +905,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_spatial"
+version = "0.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "61ee3ebc4f2d6e48edc95ada7ee72039f67f86eae58a00399ac8e5e7a3d81bc2"
+dependencies = [
+ "bevy",
+ "kd-tree",
+ "num-traits",
+ "typenum",
+]
+
+[[package]]
 name = "bevy_sprite"
 version = "0.14.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1170,6 +1182,8 @@ dependencies = [
  "bfs_core",
  "bfs_debug",
  "bfs_movement",
+ "bfs_reactions",
+ "bfs_spatial",
 ]
 
 [[package]]
@@ -1181,6 +1195,26 @@ dependencies = [
  "bfs_core",
  "serde",
  "smallvec",
+]
+
+[[package]]
+name = "bfs_reactions"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy_turborand",
+ "bfs_color",
+ "bfs_core",
+ "bfs_spatial",
+]
+
+[[package]]
+name = "bfs_spatial"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy_spatial",
+ "bfs_core",
 ]
 
 [[package]]
@@ -2278,6 +2312,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "kd-tree"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5f89ee4e60e82cf7024e5e94618c646fbf61ce7501dc5898b3d12786442d3682"
+dependencies = [
+ "num-traits",
+ "ordered-float",
+ "paste",
+ "rayon",
+ "typenum",
+]
+
+[[package]]
 name = "khronos-egl"
 version = "6.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2908,6 +2955,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "52f0d54bde9774d3a51dcf281a5def240c71996bc6ca05d2c847ec8b2b216166"
 dependencies = [
  "libredox",
+]
+
+[[package]]
+name = "ordered-float"
+version = "4.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "44d501f1a72f71d3c063a6bbc8f7271fa73aa09fe5d6283b6571e2ed176a2537"
+dependencies = [
+ "num-traits",
 ]
 
 [[package]]
@@ -3633,6 +3689,12 @@ name = "typeid"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0e13db2e0ccd5e14a544e8a246ba2312cd25223f616442d7f2cb0e3db614236e"
+
+[[package]]
+name = "typenum"
+version = "1.17.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "42ff0bf0c66b8238c6f3b578df37d0b7848e55df8577b3f74f92a69acceeb825"
 
 [[package]]
 name = "unicode-ident"

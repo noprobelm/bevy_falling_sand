@@ -11,6 +11,7 @@ impl Plugin for ParticlePlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<MutateParticleEvent>()
             .add_event::<ResetParticleEvent>()
+            .add_event::<RemoveParticleEvent>()
             .register_type::<Coordinates>()
             .register_type::<ParticleType>()
             .register_type::<Particle>();
@@ -115,6 +116,15 @@ pub struct MutateParticleEvent {
 pub struct ResetParticleEvent {
     /// The entity to reset data for.
     pub entity: Entity,
+}
+
+/// Triggers the removal of a particle from the simulation.
+#[derive(Event)]
+pub struct RemoveParticleEvent {
+    /// The coordinates of the particle to remove.
+    pub coordinates: IVec2,
+    /// Whether the corresponding entity should be despawned from the world.
+    pub despawn: bool
 }
 
 /// Map all particles to their respective parent when added/changed within the simulation

@@ -8,3 +8,5 @@ bfs_core = { path = "../bfs_core" }
 bfs_movement = { path = "../bfs_movement" }
 bfs_color = { path = "../bfs_color" }
 bfs_debug = { path = "../bfs_debug" }
+bfs_spatial = { path = "../bfs_spatial"}
+bfs_reactions = { path = "../bfs_reactions" }
