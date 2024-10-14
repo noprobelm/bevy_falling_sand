@@ -1,4 +1,5 @@
 mod burning;
+mod events;
 
 use bevy::prelude::*;
 use bevy_turborand::{prelude::RngComponent, DelegatedRng};
@@ -6,6 +7,7 @@ use std::ops::RangeBounds;
 use bfs_core::{Coordinates, Particle};
 
 pub use burning::*;
+pub use events::*;
 
 pub struct FallingSandReactionsPlugin;
 

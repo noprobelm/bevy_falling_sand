@@ -23,5 +23,13 @@ pub struct FallingSandCorePlugin;
 impl Plugin for FallingSandCorePlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((ParticlePlugin, ChunkMapPlugin));
+        app.init_resource::<SimulationRun>();
     }
 }
+/// Resource to insert for running the simulation
+#[derive(Resource, Default)]
+pub struct SimulationRun;
+
+/// System set for systems that influence particle management.
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ParticleSimulationSet;

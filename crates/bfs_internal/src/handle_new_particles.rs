@@ -1,7 +1,10 @@
 //! Particle mapping behaviors.
-use crate::*;
-use crate::{Particle, ParticleType};
+use bevy::prelude::*;
 use bevy_turborand::prelude::{DelegatedRng, GlobalRng};
+use bfs_core::*;
+use bfs_movement::*;
+use bfs_reactions::*;
+use bfs_color::*;
 
 /// Map all particles to their respective parent when added/changed within the simulation
 pub fn handle_new_particles(
@@ -49,7 +52,6 @@ pub fn handle_new_particles(
                 commands.trigger(ResetFireEvent { entity });
                 commands.trigger(ResetBurnsEvent { entity });
                 commands.trigger(ResetBurningEvent { entity });
-		commands.trigger(ResetReactsEvent {entity} )
             }
         } else {
             panic!(
@@ -80,7 +82,7 @@ pub fn handle_new_particle_types(
 
 /// Event reader for particle type updates
 pub fn on_change_particle(
-    mut ev_change_particle: EventReader<ChangeParticleEvent>,
+    mut ev_change_particle: EventReader<MutateParticleEvent>,
     mut particle_query: Query<&mut Particle>
 ) {
     for ev in ev_change_particle.read() {
@@ -289,26 +291,6 @@ pub fn on_reset_flows_color(
     }
 }
 
-/// Observer for resetting a particle's FlowsColor information to its parent's.
-pub fn on_reset_reacts(
-    trigger: Trigger<ResetReactsEvent>,
-    mut commands: Commands,
-    particle_query: Query<&Parent, With<Particle>>,
-    parent_query: Query<Option<&Reacts>, With<ParticleType>>,
-) {
-    if let Ok(parent) = particle_query.get(trigger.event().entity) {
-        if let Some(reacts) = parent_query.get(parent.get()).unwrap() {
-            commands
-                .entity(trigger.event().entity)
-                .insert(reacts.clone());
-        } else {
-            commands
-                .entity(trigger.event().entity)
-                .remove::<Reacts>();
-        }
-    }
-}
-
 /// Observer for disassociating a particle from its parent, despawning it, and removing it from the ChunkMap if a
 /// RemoveParticle event is triggered.
 pub fn on_remove_particle(
@@ -327,7 +309,7 @@ pub fn on_remove_particle(
 
 /// Observer for clearing all particles from the world as soon as a ClearChunkMap event is triggered.
 pub fn on_clear_chunk_map(
-    _trigger: Trigger<ClearChunkMapEvent>,
+    _trigger: Trigger<ClearMapEvent>,
     mut commands: Commands,
     particle_parent_map: Res<ParticleTypeMap>,
     mut map: ResMut<ChunkMap>,

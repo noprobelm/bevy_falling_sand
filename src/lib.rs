@@ -79,37 +79,29 @@
 #![allow(clippy::default_trait_access, clippy::module_name_repetitions)]
 
 use bevy::prelude::*;
-use bevy_turborand::prelude::*;
+pub use bfs_internal::*;
 
-mod components;
-mod events;
-mod gizmos;
-mod resources;
-mod systems;
-mod asset_loaders;
-mod type_registry;
+// mod components;
+// mod events;
+// mod gizmos;
+// mod resources;
+// mod systems;
+// mod asset_loaders;
+// mod type_registry;
 
-pub use components::*;
-pub use systems::*;
-pub use resources::*;
-pub use events::*;
-pub use gizmos::*;
-pub use asset_loaders::*;
-use type_registry::ParticleTypeRegistryPlugin;
+// pub use components::*;
+// pub use systems::*;
+// pub use resources::*;
+// pub use events::*;
+// pub use gizmos::*;
+// pub use asset_loaders::*;
+// use type_registry::ParticleTypeRegistryPlugin;
 
 /// Bevy Falling Sand Plugin
 pub struct FallingSandPlugin;
 
 impl Plugin for FallingSandPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((
-            RngPlugin::default(),
-	    ParticleSystemsPlugin,
-            ParticleResourcesPlugin,
-            ParticleEventsPlugin,
-            ParticleGizmosPlugin,
-	    ParticleTypeRegistryPlugin,
-	    AssetLoaderPlugin
-        ));
+        app.add_plugins(FallingSandPlugin);
     }
 }

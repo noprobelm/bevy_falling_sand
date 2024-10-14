@@ -4,10 +4,8 @@ use bevy::{
     utils::{Entry, HashMap},
 };
 use bevy_egui::EguiContexts;
-use bevy_falling_sand::{
-    ClearChunkMapEvent, Gas, Liquid, MovableSolid, Particle, ParticleSimulationSet, ParticleType,
-    SimulationRun, Solid, Wall,
-};
+use bevy_falling_sand::movement::*;
+use bevy_falling_sand::core::*;
 
 use crate::*;
 
@@ -134,7 +132,7 @@ impl ParticleControlUI {
             });
 
             if ui.button("Despawn All Particles").clicked() {
-                commands.trigger(ClearChunkMapEvent);
+                commands.trigger(ClearMapEvent);
             }
         });
     }

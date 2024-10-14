@@ -9,7 +9,11 @@
 //!   - `DynamicParticleTypeBundle`: For particles that have movement behavior
 use bevy::prelude::*;
 
-use bevy_falling_sand::*;
+use bevy_falling_sand::color::*;
+use bevy_falling_sand::movement::*;
+use bevy_falling_sand::core::*;
+use bevy_falling_sand::asset_loaders::*;
+use bevy_falling_sand::bundles::*;
 
 /// Particle Management Plugin
 pub(super) struct ParticleSetupPlugin;
@@ -59,27 +63,6 @@ pub fn setup_custom_particles(mut commands: Commands) {
                 Color::srgba(0.95, 0.61, 0.43, 1.0),
             ],
         ),
-    ));
-
-    commands.spawn((
-        LiquidBundle::new(
-            ParticleType::new("Other Slime"),
-            Density(850),
-            Velocity::new(1, 2),
-            1,
-            ParticleColor::new(
-                Color::Srgba(Srgba::hex("#8FA73980").unwrap()),
-                vec![
-                    Color::Srgba(Srgba::hex("#8FA73980").unwrap()),
-                    Color::Srgba(Srgba::hex("#82983480").unwrap()),
-                ],
-            ),
-        ),
-        Reacts {
-            other: Particle::new("Water"),
-            into: Particle::new("Water"),
-        },
-        FlowsColor::new(0.1),
     ));
 }
 

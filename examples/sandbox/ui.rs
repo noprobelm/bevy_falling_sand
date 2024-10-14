@@ -3,9 +3,8 @@ use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::EguiContexts;
 
 use super::*;
-use bevy_falling_sand::{
-    DebugParticles, DynamicParticleCount, LoadSceneEvent, SaveSceneEvent, TotalParticleCount,
-};
+use bevy_falling_sand::debug::{DebugParticles, TotalParticleCount};
+use bevy_falling_sand::scenes::{LoadSceneEvent, SaveSceneEvent};
 
 /// UI plugin
 pub(super) struct UIPlugin;
@@ -113,9 +112,8 @@ pub fn render_ui(
         EventWriter<BrushResizeEvent>,
         Res<MaxBrushSize>,
     ),
-    (debug_particles, dynamic_particle_count, total_particle_count): (
+    (debug_particles, total_particle_count): (
         Option<Res<DebugParticles>>,
-        Res<DynamicParticleCount>,
         Res<TotalParticleCount>,
     ),
     (mut selected_particle, particle_type_list): (ResMut<SelectedParticle>, Res<ParticleTypeList>),
@@ -159,7 +157,6 @@ pub fn render_ui(
             DebugUI.render(
                 ui,
                 &debug_particles,
-                dynamic_particle_count.0,
                 total_particle_count.0,
                 &mut commands,
             );

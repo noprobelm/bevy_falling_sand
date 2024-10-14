@@ -2,7 +2,7 @@
 use bevy::{prelude::*, utils::HashSet};
 
 use super::CursorCoords;
-use bevy_falling_sand::{Particle, RemoveParticleEvent};
+use bevy_falling_sand::core::{Particle, RemoveParticleEvent};
 
 /// Brush plugin.
 pub(super) struct BrushPlugin;

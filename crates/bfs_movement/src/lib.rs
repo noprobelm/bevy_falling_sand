@@ -3,10 +3,12 @@ use bevy::prelude::*;
 mod movement;
 mod physics_components;
 mod material;
+mod events;
 
 pub use material::*;
 pub use movement::*;
 pub use physics_components::*;
+pub use events::*;
 
 pub struct FallingSandMovementPlugin;
 

@@ -1193,13 +1193,16 @@ name = "bfs_internal"
 version = "0.1.0"
 dependencies = [
  "bevy",
+ "bevy_turborand",
  "bfs_asset_loaders",
  "bfs_color",
  "bfs_core",
  "bfs_debug",
  "bfs_movement",
  "bfs_reactions",
+ "bfs_scenes",
  "bfs_spatial",
+ "serde",
 ]
 
 [[package]]
@@ -1223,6 +1226,16 @@ dependencies = [
  "bfs_color",
  "bfs_core",
  "bfs_spatial",
+]
+
+[[package]]
+name = "bfs_scenes"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bfs_core",
+ "ron",
+ "serde",
 ]
 
 [[package]]

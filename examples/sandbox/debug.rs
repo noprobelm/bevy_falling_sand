@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_falling_sand::DebugParticles;
+use bevy_falling_sand::debug::DebugParticles;
 
 /// UI plugin
 pub(super) struct DebugPlugin;
@@ -19,7 +19,6 @@ impl DebugUI {
         &self,
         ui: &mut egui::Ui,
         debug_particles: &Option<Res<DebugParticles>>,
-        dynamic_particle_count: u64,
         total_particle_count: u64,
         commands: &mut Commands,
     ) {
@@ -33,7 +32,6 @@ impl DebugUI {
         }
 
         if debug_particles.is_some() {
-            ui.label(format!("Dynamic Particles: {}", dynamic_particle_count));
             ui.label(format!("Total Particles: {}", total_particle_count));
         }
     }

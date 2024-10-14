@@ -11,4 +11,7 @@ bfs_debug = { path = "../bfs_debug" }
 bfs_spatial = { path = "../bfs_spatial"}
 bfs_reactions = { path = "../bfs_reactions" }
 bfs_asset_loaders = { path = "../bfs_asset_loaders" }
+bfs_scenes = { path = "../bfs_scenes" }
 bevy = "0.14.2"
+bevy_turborand = "0.9.0"
+serde = "1.0.210"
