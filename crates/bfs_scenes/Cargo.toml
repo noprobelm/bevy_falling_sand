@@ -1,0 +1,10 @@
+[package]
+name = "bfs_scenes"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bfs_core = { path = "../bfs_core" }
+bevy = "0.14.2"
+ron = "0.8.1"
+serde = "1.0.210"
