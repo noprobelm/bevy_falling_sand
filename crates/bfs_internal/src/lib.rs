@@ -1,3 +1,8 @@
+//! This crate adds bevy_core and other extensions used by the `bevy_falling_sand` crate.
+//!
+//! Additionally, any logic utilizing types or systems from the core or extended plugins should be
+//! defined here.
+
 #![forbid(missing_docs)]
 #![warn(
     clippy::nursery,
@@ -10,6 +15,7 @@
 //! This crate sources bevy_falling_sand crates.
 pub mod bundles;
 pub mod handle_new_particles;
+pub mod observers;
 
 use bevy::prelude::{App, Plugin, Update};
 use bevy_turborand::prelude::*;
@@ -25,6 +31,7 @@ pub use bfs_scenes as scenes;
 
 pub use bundles::*;
 pub use handle_new_particles::*;
+pub use observers::*;
 
 /// Main plugin for Bevy Falling Sand
 pub struct FallingSandInternalPlugin;
@@ -41,7 +48,7 @@ impl Plugin for FallingSandInternalPlugin {
             reactions::FallingSandReactionsPlugin,
             asset_loaders::FallingSandAssetLoadersPlugin,
 	    scenes::FallingSandScenesPlugin,
-	    FallingSandObserversPlugin
+	    ObserversPlugin
         ));
 	app.add_systems(Update, handle_new_particles);
     }
