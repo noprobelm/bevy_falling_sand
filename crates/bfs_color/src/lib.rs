@@ -1,10 +1,12 @@
+//! This crate provides coloring for particles in the simulation.
+
 mod events;
 
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use bevy_turborand::{prelude::RngComponent, DelegatedRng, TurboRand};
-use bfs_core::Particle;
+use bfs_core::{Particle, ParticleSimulationSet, SimulationRun};
 use std::ops::RangeBounds;
 
 pub use events::*;
@@ -13,20 +15,18 @@ pub struct FallingSandColorPlugin;
 
 impl Plugin for FallingSandColorPlugin {
     fn build(&self, app: &mut App) {
+        app.add_plugins((EventsPlugin));
         app.register_type::<ColorRng>()
             .register_type::<ParticleColor>()
             .register_type::<FlowsColor>()
             .register_type::<RandomizesColor>();
-        app.add_event::<ResetParticleColorEvent>()
-            .add_event::<ResetRandomizesColorEvent>()
-            .add_event::<ResetFlowsColorEvent>();
         app.add_systems(
             Update,
             (
                 color_particles,
                 color_flowing_particles,
                 color_randomizing_particles,
-            ),
+            ).in_set(ParticleSimulationSet).run_if(resource_exists::<SimulationRun>),
         );
     }
 }

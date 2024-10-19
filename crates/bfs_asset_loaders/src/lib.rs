@@ -1,3 +1,5 @@
+//! This crate the capability to load particle types as assets from external sources.
+
 use bevy::{
     asset::{io::Reader, AssetLoader, AsyncReadExt, LoadContext},
     prelude::*,
