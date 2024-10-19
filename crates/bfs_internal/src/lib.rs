@@ -15,31 +15,30 @@
 //! This crate sources bevy_falling_sand crates.
 pub mod bundles;
 pub mod handle_new_particles;
-pub mod observers;
 
 use bevy::prelude::{App, Plugin, Update};
 use bevy_turborand::prelude::*;
 
+pub use bfs_asset_loaders as asset_loaders;
 pub use bfs_color as color;
 pub use bfs_core as core;
 pub use bfs_debug as debug;
 pub use bfs_movement as movement;
 pub use bfs_reactions as reactions;
-pub use bfs_spatial as spatial;
-pub use bfs_asset_loaders as asset_loaders;
 pub use bfs_scenes as scenes;
+pub use bfs_spatial as spatial;
 
 pub use bundles::*;
 pub use handle_new_particles::*;
-pub use observers::*;
 
-/// Main plugin for Bevy Falling Sand
+/// Main plugin for Bevy Falling Sand.
 pub struct FallingSandInternalPlugin;
 
 impl Plugin for FallingSandInternalPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
-	    RngPlugin::default(),
+            RngPlugin::default(),
+            SimulationManagementPlugin,
             core::FallingSandCorePlugin,
             movement::FallingSandMovementPlugin,
             color::FallingSandColorPlugin,
@@ -47,9 +46,8 @@ impl Plugin for FallingSandInternalPlugin {
             spatial::FallingSandSpatialPlugin,
             reactions::FallingSandReactionsPlugin,
             asset_loaders::FallingSandAssetLoadersPlugin,
-	    scenes::FallingSandScenesPlugin,
-	    ObserversPlugin
+            scenes::FallingSandScenesPlugin,
         ));
-	app.add_systems(Update, handle_new_particles);
+        app.add_systems(Update, handle_new_particles);
     }
 }
