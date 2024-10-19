@@ -33,3 +33,7 @@ pub struct SimulationRun;
 /// System set for systems that influence particle management.
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ParticleSimulationSet;
+
+/// System set for systems that provide debugging functionality.
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ParticleDebugSet;
