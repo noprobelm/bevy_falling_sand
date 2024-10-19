@@ -594,19 +594,10 @@ dependencies = [
 name = "bevy_falling_sand"
 version = "0.3.0"
 dependencies = [
- "ahash",
  "bevy",
  "bevy_egui",
- "bevy_reflect",
- "bevy_spatial",
- "bevy_turborand",
  "bfs_internal",
  "egui",
- "rayon",
- "ron",
- "serde",
- "smallvec",
- "thiserror",
 ]
 
 [[package]]
