@@ -13,6 +13,7 @@ pub mod handle_new_particles;
 pub mod observers;
 
 use bevy::prelude::{App, Plugin, Update};
+use bevy_turborand::prelude::*;
 
 pub use bfs_color as color;
 pub use bfs_core as core;
@@ -33,6 +34,7 @@ pub struct FallingSandInternalPlugin;
 impl Plugin for FallingSandInternalPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
+	    RngPlugin::default(),
             core::FallingSandCorePlugin,
             movement::FallingSandMovementPlugin,
             color::FallingSandColorPlugin,
