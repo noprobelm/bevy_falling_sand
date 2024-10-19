@@ -18,29 +18,19 @@
 
 mod particle;
 mod map;
+mod common;
 
 use bevy::prelude::*;
 
 pub use particle::*;
 pub use map::*;
+pub use common::*;
 
 /// Core plugin for Bevy Falling Sand.
 pub struct FallingSandCorePlugin;
 
 impl Plugin for FallingSandCorePlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((ParticlePlugin, ChunkMapPlugin));
-        app.init_resource::<SimulationRun>();
+        app.add_plugins((ParticlePlugin, ChunkMapPlugin, CommonUtilitiesPlugin));
     }
 }
-/// Resource to insert for running the simulation
-#[derive(Resource, Default)]
-pub struct SimulationRun;
-
-/// System set for systems that influence particle management.
-#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ParticleSimulationSet;
-
-/// System set for systems that provide debugging functionality.
-#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ParticleDebugSet;
