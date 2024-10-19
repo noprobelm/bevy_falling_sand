@@ -10,7 +10,6 @@
 //! This crate sources bevy_falling_sand crates.
 pub mod bundles;
 pub mod handle_new_particles;
-pub mod observers;
 
 use bevy::prelude::{App, Plugin, Update};
 use bevy_turborand::prelude::*;
@@ -26,7 +25,6 @@ pub use bfs_scenes as scenes;
 
 pub use bundles::*;
 pub use handle_new_particles::*;
-pub use observers::*;
 
 /// Main plugin for Bevy Falling Sand
 pub struct FallingSandInternalPlugin;
