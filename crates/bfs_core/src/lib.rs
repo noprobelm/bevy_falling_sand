@@ -1,3 +1,10 @@
+//! Provides core functionality for `bevy_falling_sand`. The types exposed in this crate are
+//! typically necessary for extending the functionality of the particle simulation, such as:
+//!   - Basic Particle type definitions
+//!   - Particle spatial mapping data structures
+//!   - System sets
+//!   - Particle mutation/reset events
+
 #![forbid(missing_docs)]
 #![warn(
     clippy::nursery,
