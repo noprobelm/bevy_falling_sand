@@ -9,7 +9,8 @@ impl Plugin for CommonUtilitiesPlugin {
     }
 }
 
-/// Resource to insert for running the simulation
+/// Conditional systems that are considered part of the particle simulation should check if this
+/// resource exists.
 #[derive(Resource, Default)]
 pub struct SimulationRun;
 
