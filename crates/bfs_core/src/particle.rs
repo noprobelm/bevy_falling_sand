@@ -9,7 +9,9 @@ pub struct ParticlePlugin;
 
 impl Plugin for ParticlePlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<MutateParticleEvent>()
+        app
+            .init_resource::<ParticleTypeMap>()
+            .add_event::<MutateParticleEvent>()
             .add_event::<ResetParticleEvent>()
             .add_event::<RemoveParticleEvent>()
             .register_type::<Coordinates>()

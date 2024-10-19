@@ -102,6 +102,6 @@ pub struct FallingSandPlugin;
 
 impl Plugin for FallingSandPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(FallingSandPlugin);
+        app.add_plugins(FallingSandInternalPlugin);
     }
 }

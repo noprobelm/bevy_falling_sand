@@ -1,11 +1,11 @@
 mod events;
 
 use bevy::prelude::*;
+use bfs_core::{Coordinates, MutateParticleEvent, Particle};
 use ron::de::from_reader;
+use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::Write;
-use serde::{Serialize, Deserialize};
-use bfs_core::{Particle, Coordinates, MutateParticleEvent};
 
 pub use events::*;
 
@@ -14,7 +14,8 @@ pub struct FallingSandScenesPlugin;
 
 impl Plugin for FallingSandScenesPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<SaveSceneEvent>()
+        app.add_event::<LoadSceneEvent>()
+            .add_event::<SaveSceneEvent>()
             .add_event::<MutateParticleEvent>()
             .add_systems(
                 Update,
@@ -22,15 +23,12 @@ impl Plugin for FallingSandScenesPlugin {
             )
             .add_systems(
                 Update,
-                load_scene_system
-//                    .before(handle_new_particles)
-                    .run_if(on_event::<crate::events::LoadSceneEvent>()),
+                load_scene_system.run_if(on_event::<crate::events::LoadSceneEvent>()),
             );
     }
 }
 
 /// Systems for loading and saving particle scenes.
-
 
 /// Particle data for loading scenes.
 #[derive(Serialize, Deserialize)]
@@ -38,16 +36,15 @@ pub struct ParticleData {
     /// The particle type to load.
     pub particle_type: Particle,
     /// The coordinates of the particle.
-    pub coordinates: Coordinates
+    pub coordinates: Coordinates,
 }
 
 /// A collection of particles that make up a scene.
 #[derive(Serialize, Deserialize)]
 pub struct ParticleScene {
     /// The particles to load.
-    pub particles: Vec<ParticleData>
+    pub particles: Vec<ParticleData>,
 }
-
 
 /// Saves a scene to the PathBuf specified by [`SaveSceneEvent`](crate::SaveSceneEvent)
 pub fn save_scene_system(
