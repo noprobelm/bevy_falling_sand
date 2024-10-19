@@ -15,7 +15,7 @@ pub struct FallingSandColorPlugin;
 
 impl Plugin for FallingSandColorPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((EventsPlugin));
+        app.add_plugins(EventsPlugin);
         app.register_type::<ColorRng>()
             .register_type::<ParticleColor>()
             .register_type::<FlowsColor>()
