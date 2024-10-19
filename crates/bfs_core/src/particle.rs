@@ -10,6 +10,7 @@ pub struct ParticlePlugin;
 impl Plugin for ParticlePlugin {
     fn build(&self, app: &mut App) {
         app
+            .add_systems(Update, handle_new_particle_types)
             .init_resource::<ParticleTypeMap>()
             .add_event::<MutateParticleEvent>()
             .add_event::<ResetParticleEvent>()

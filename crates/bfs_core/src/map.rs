@@ -5,12 +5,15 @@ use rayon::iter::IntoParallelRefIterator;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
+use crate::{MutateParticleEvent, Particle};
+
 /// Plugin for mapping particles to coordinate space.
 pub struct ChunkMapPlugin;
 
 impl Plugin for ChunkMapPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<ClearMapEvent>()
+        app.add_systems(Update, (reset_chunks, on_change_particle))
+            .add_event::<ClearMapEvent>()
             .init_resource::<ChunkMap>()
             .register_type::<Hibernating>();
     }
@@ -336,5 +339,25 @@ impl Chunk {
     pub fn insert_overwrite(&mut self, coords: IVec2, entity: Entity) -> Option<Entity> {
         self.should_process_next_frame = true;
         self.chunk.insert(coords, entity)
+    }
+}
+
+/// Resets all chunks in preparation for the next frame
+///
+/// When this system runs, all chunks are checked to see if they should be awakened in preparation for the next frame
+/// (see field `should_process_this_frame`). After this, their 'activated' status is reset (see field
+/// `should_process_next_frame`)
+pub fn reset_chunks(commands: Commands, mut map: ResMut<ChunkMap>) {
+    map.reset_chunks(commands);
+}
+
+/// Event reader for particle type updates
+pub fn on_change_particle(
+    mut ev_change_particle: EventReader<MutateParticleEvent>,
+    mut particle_query: Query<&mut Particle>
+) {
+    for ev in ev_change_particle.read() {
+	let mut particle = particle_query.get_mut(ev.entity).unwrap();
+	particle.name  = ev.particle.name.clone();
     }
 }

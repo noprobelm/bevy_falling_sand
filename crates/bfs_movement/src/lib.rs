@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 mod movement;
 mod physics_components;
-mod material;
+pub mod material;
 mod events;
 
 pub use material::*;
