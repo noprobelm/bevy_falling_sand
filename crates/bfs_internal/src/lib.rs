@@ -32,9 +32,9 @@ pub use bundles::*;
 pub use handle_new_particles::*;
 
 /// Main plugin for Bevy Falling Sand.
-pub struct FallingSandInternalPlugin;
+pub struct FallingSandPlugin;
 
-impl Plugin for FallingSandInternalPlugin {
+impl Plugin for FallingSandPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
             RngPlugin::default(),

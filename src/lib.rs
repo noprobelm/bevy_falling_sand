@@ -80,12 +80,3 @@
 
 use bevy::prelude::*;
 pub use bfs_internal::*;
-
-/// Bevy Falling Sand Plugin
-pub struct FallingSandPlugin;
-
-impl Plugin for FallingSandPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_plugins(FallingSandInternalPlugin);
-    }
-}
