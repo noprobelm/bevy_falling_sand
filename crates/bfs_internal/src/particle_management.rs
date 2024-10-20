@@ -15,7 +15,7 @@ impl Plugin for ParticleManagementPlugin {
     }
 }
 
-/// Map all particles to their respective parent when added/changed within the simulation
+/// Map all particles to their location and parent when added/changed within the simulation
 pub fn handle_new_particles(
     mut commands: Commands,
     parent_query: Query<Entity, With<ParticleType>>,
