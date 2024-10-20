@@ -5,18 +5,19 @@ use rayon::iter::IntoParallelRefIterator;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::{MutateParticleEvent, Particle, events::*};
+use crate::{events::*, ParticleSimulationSet, ParticleTypeMap};
 
 /// Plugin for mapping particles to coordinate space.
 pub struct ChunkMapPlugin;
 
 impl Plugin for ChunkMapPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, (reset_chunks, on_change_particle))
+        app.add_systems(Update, reset_chunks.in_set(ParticleSimulationSet))
             .add_event::<ClearMapEvent>()
             .init_resource::<ChunkMap>()
             .register_type::<Hibernating>()
-            .observe(on_reset_particle);
+            .observe(on_remove_particle)
+            .observe(on_clear_chunk_map);
     }
 }
 
@@ -352,25 +353,31 @@ pub fn reset_chunks(commands: Commands, mut map: ResMut<ChunkMap>) {
     map.reset_chunks(commands);
 }
 
-/// Event reader for particle type updates
-pub fn on_change_particle(
-    mut ev_change_particle: EventReader<MutateParticleEvent>,
-    mut particle_query: Query<&mut Particle>
+/// RemoveParticle event is triggered.
+pub fn on_remove_particle(
+    trigger: Trigger<RemoveParticleEvent>,
+    mut commands: Commands,
+    mut map: ResMut<ChunkMap>,
 ) {
-    for ev in ev_change_particle.read() {
-	let mut particle = particle_query.get_mut(ev.entity).unwrap();
-	particle.name  = ev.particle.name.clone();
+    if let Some(entity) = map.remove(&trigger.event().coordinates) {
+        if trigger.event().despawn == true {
+            commands.entity(entity).remove_parent().despawn();
+        } else {
+            commands.entity(entity).remove_parent();
+        }
     }
 }
 
-/// Observer for resetting all of a particle's data. This system simply marks the Particle as changed so it gets picked
-/// up by `handle_new_particles` the next frame.
-pub fn on_reset_particle(
-    trigger: Trigger<ResetParticleEvent>,
-    mut particle_query: Query<&mut Particle>,
+/// Observer for clearing all particles from the world as soon as a ClearMapEvent is triggered.
+pub fn on_clear_chunk_map(
+    _trigger: Trigger<ClearMapEvent>,
+    mut commands: Commands,
+    particle_parent_map: Res<ParticleTypeMap>,
+    mut map: ResMut<ChunkMap>,
 ) {
-    particle_query
-        .get_mut(trigger.event().entity)
-        .unwrap()
-        .into_inner();
+    particle_parent_map.iter().for_each(|(_, entity)| {
+        commands.entity(*entity).despawn_descendants();
+    });
+
+    map.clear();
 }

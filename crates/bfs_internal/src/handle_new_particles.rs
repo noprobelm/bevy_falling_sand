@@ -11,9 +11,7 @@ pub struct SimulationManagementPlugin;
 
 impl Plugin for SimulationManagementPlugin {
     fn build(&self, app: &mut App) {
-	app.add_systems(Update, handle_new_particles.before(ParticleSimulationSet));
-        app.observe(on_remove_particle)
-            .observe(on_clear_chunk_map);
+        app.add_systems(Update, handle_new_particles.before(ParticleSimulationSet));
     }
 }
 
@@ -71,53 +69,4 @@ pub fn handle_new_particles(
             );
         }
     }
-}
-
-
-// /// Observer for resetting a particle's FlowsColor information to its parent's.
-// pub fn on_reset_reacts(
-//     trigger: Trigger<ResetReactsEvent>,
-//     mut commands: Commands,
-//     particle_query: Query<&Parent, With<Particle>>,
-//     parent_query: Query<Option<&Reacts>, With<ParticleType>>,
-// ) {
-//     if let Ok(parent) = particle_query.get(trigger.event().entity) {
-//         if let Some(reacts) = parent_query.get(parent.get()).unwrap() {
-//             commands
-//                 .entity(trigger.event().entity)
-//                 .insert(reacts.clone());
-//         } else {
-//             commands.entity(trigger.event().entity).remove::<Reacts>();
-//         }
-//     }
-// }
-
-/// Observer for disassociating a particle from its parent, despawning it, and removing it from the ChunkMap if a
-/// RemoveParticle event is triggered.
-pub fn on_remove_particle(
-    trigger: Trigger<RemoveParticleEvent>,
-    mut commands: Commands,
-    mut map: ResMut<ChunkMap>,
-) {
-    if let Some(entity) = map.remove(&trigger.event().coordinates) {
-        if trigger.event().despawn == true {
-            commands.entity(entity).remove_parent().despawn();
-        } else {
-            commands.entity(entity).remove_parent();
-        }
-    }
-}
-
-/// Observer for clearing all particles from the world as soon as a ClearMapEvent is triggered.
-pub fn on_clear_chunk_map(
-    _trigger: Trigger<ClearMapEvent>,
-    mut commands: Commands,
-    particle_parent_map: Res<ParticleTypeMap>,
-    mut map: ResMut<ChunkMap>,
-) {
-    particle_parent_map.iter().for_each(|(_, entity)| {
-        commands.entity(*entity).despawn_descendants();
-    });
-
-    map.clear();
 }
