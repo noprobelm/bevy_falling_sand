@@ -5,19 +5,24 @@ use rayon::iter::IntoParallelRefIterator;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::{events::*, ParticleSimulationSet, ParticleTypeMap};
+use crate::{events::*, ParticleSimulationSet, ParticleTypeMap, SimulationRun};
 
 /// Plugin for mapping particles to coordinate space.
 pub struct ChunkMapPlugin;
 
 impl Plugin for ChunkMapPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, reset_chunks.in_set(ParticleSimulationSet))
-            .add_event::<ClearMapEvent>()
-            .init_resource::<ChunkMap>()
-            .register_type::<Hibernating>()
-            .observe(on_remove_particle)
-            .observe(on_clear_chunk_map);
+        app.add_systems(
+            Update,
+            reset_chunks
+                .in_set(ParticleSimulationSet)
+                .run_if(resource_exists::<SimulationRun>),
+        )
+        .add_event::<ClearMapEvent>()
+        .init_resource::<ChunkMap>()
+        .register_type::<Hibernating>()
+        .observe(on_remove_particle)
+        .observe(on_clear_chunk_map);
     }
 }
 
