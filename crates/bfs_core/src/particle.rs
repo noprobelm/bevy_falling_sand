@@ -3,7 +3,7 @@
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::events::*;
+use crate::{events::*, ParticleSimulationSet};
 
 /// Plugin for basic particle components and events, including the minimal components necessary for adding a particle
 /// to the simulation.
@@ -11,13 +11,18 @@ pub struct ParticlePlugin;
 
 impl Plugin for ParticlePlugin {
     fn build(&self, app: &mut App) {
-        app
-            .add_systems(Update, (handle_new_particle_types, on_change_particle))
-            .init_resource::<ParticleTypeMap>()
-            .register_type::<Coordinates>()
-            .register_type::<ParticleType>()
-            .register_type::<Particle>()
-            .observe(on_reset_particle);
+        app.add_systems(
+            Update,
+            (
+                handle_new_particle_types,
+                on_change_particle.in_set(ParticleSimulationSet),
+            ),
+        )
+        .init_resource::<ParticleTypeMap>()
+        .register_type::<Coordinates>()
+        .register_type::<ParticleType>()
+        .register_type::<Particle>()
+        .observe(on_reset_particle);
     }
 }
 
@@ -123,15 +128,14 @@ pub fn handle_new_particle_types(
         });
 }
 
-
 /// Event reader for particle type updates
 pub fn on_change_particle(
     mut ev_change_particle: EventReader<MutateParticleEvent>,
-    mut particle_query: Query<&mut Particle>
+    mut particle_query: Query<&mut Particle>,
 ) {
     for ev in ev_change_particle.read() {
-	let mut particle = particle_query.get_mut(ev.entity).unwrap();
-	particle.name  = ev.particle.name.clone();
+        let mut particle = particle_query.get_mut(ev.entity).unwrap();
+        particle.name = ev.particle.name.clone();
     }
 }
 

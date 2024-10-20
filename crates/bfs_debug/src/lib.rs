@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use bfs_core::{ChunkMap, Particle};
+use bfs_core::{ChunkMap, Particle, ParticleSimulationSet};
 use bfs_movement::Wall;
 
 /// Plugin for Bevy Falling Sand debugging functionality.
@@ -14,7 +14,8 @@ impl Plugin for FallingSandDebugPlugin {
             .add_systems(
                 Update,
                 (color_chunks, count_dynamic_particles, count_total_particles)
-                    .run_if(resource_exists::<DebugParticles>),
+                    .run_if(resource_exists::<DebugParticles>)
+                    .in_set(ParticleSimulationSet),
             );
     }
 }

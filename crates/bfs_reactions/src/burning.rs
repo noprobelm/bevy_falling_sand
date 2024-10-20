@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use bevy::utils::Duration;
 use bevy_spatial::SpatialAccess;
 use bfs_color::*;
-use bfs_core::{Coordinates, Particle, RemoveParticleEvent, ParticleType};
+use bfs_core::{Coordinates, Particle, RemoveParticleEvent, ParticleType, ParticleSimulationSet};
 use bfs_spatial::ParticleTree;
 
 use crate::events::*;
@@ -15,7 +15,7 @@ impl Plugin for BurningPlugin {
         app.register_type::<Fire>()
             .register_type::<Burns>()
             .register_type::<Burning>();
-        app.add_systems(Update, (handle_fire, handle_burning));
+        app.add_systems(Update, (handle_fire, handle_burning).in_set(ParticleSimulationSet));
         app.observe(on_reset_fire)
             .observe(on_reset_burns)
             .observe(on_reset_burning);
