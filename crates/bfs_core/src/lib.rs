@@ -19,18 +19,20 @@
 mod particle;
 mod map;
 mod common;
+mod events;
 
 use bevy::prelude::*;
 
 pub use particle::*;
 pub use map::*;
 pub use common::*;
+pub use events::*;
 
 /// Core plugin for Bevy Falling Sand.
 pub struct FallingSandCorePlugin;
 
 impl Plugin for FallingSandCorePlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((ParticlePlugin, ChunkMapPlugin, CommonUtilitiesPlugin));
+        app.add_plugins((ParticlePlugin, ChunkMapPlugin, CommonUtilitiesPlugin, EventsPlugin));
     }
 }

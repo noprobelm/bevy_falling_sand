@@ -2,12 +2,13 @@
 
 mod events;
 
-use bevy::prelude::*;
+use std::ops::RangeBounds;
 use serde::{Deserialize, Serialize};
+use bevy::prelude::*;
+use bevy_turborand::GlobalRng;
 
 use bevy_turborand::{prelude::RngComponent, DelegatedRng, TurboRand};
-use bfs_core::{Particle, ParticleSimulationSet, SimulationRun};
-use std::ops::RangeBounds;
+use bfs_core::{Particle, ParticleSimulationSet, SimulationRun, ParticleType};
 
 pub use events::*;
 
@@ -26,8 +27,13 @@ impl Plugin for FallingSandColorPlugin {
                 color_particles,
                 color_flowing_particles,
                 color_randomizing_particles,
-            ).in_set(ParticleSimulationSet).run_if(resource_exists::<SimulationRun>),
+            )
+                .in_set(ParticleSimulationSet)
+                .run_if(resource_exists::<SimulationRun>),
         );
+        app.observe(on_reset_particle_color)
+            .observe(on_reset_randomizes_color)
+            .observe(on_reset_flows_color);
     }
 }
 
@@ -176,4 +182,66 @@ pub fn color_randomizing_particles(
                 particle_color.randomize(&mut rng);
             }
         })
+}
+
+/// Observer for resetting a particle's Velocity information to its parent's.
+pub fn on_reset_particle_color(
+    trigger: Trigger<ResetParticleColorEvent>,
+    mut commands: Commands,
+    particle_query: Query<&Parent, With<Particle>>,
+    parent_query: Query<Option<&ParticleColor>, With<ParticleType>>,
+    mut rng: ResMut<GlobalRng>,
+) {
+    if let Ok(parent) = particle_query.get(trigger.event().entity) {
+        let rng = rng.get_mut();
+        if let Some(particle_color) = parent_query.get(parent.get()).unwrap() {
+            commands
+                .entity(trigger.event().entity)
+                .insert(particle_color.new_with_random(rng));
+        } else {
+            commands
+                .entity(trigger.event().entity)
+                .remove::<ParticleColor>();
+        }
+    }
+}
+
+/// Observer for resetting a particle's RandomizesColor information to its parent's.
+pub fn on_reset_randomizes_color(
+    trigger: Trigger<ResetRandomizesColorEvent>,
+    mut commands: Commands,
+    particle_query: Query<&Parent, With<Particle>>,
+    parent_query: Query<Option<&RandomizesColor>, With<ParticleType>>,
+) {
+    if let Ok(parent) = particle_query.get(trigger.event().entity) {
+        if let Some(color) = parent_query.get(parent.get()).unwrap() {
+            commands
+                .entity(trigger.event().entity)
+                .insert(color.clone());
+        } else {
+            commands
+                .entity(trigger.event().entity)
+                .remove::<RandomizesColor>();
+        }
+    }
+}
+
+/// Observer for resetting a particle's FlowsColor information to its parent's.
+pub fn on_reset_flows_color(
+    trigger: Trigger<ResetFlowsColorEvent>,
+    mut commands: Commands,
+    particle_query: Query<&Parent, With<Particle>>,
+    parent_query: Query<Option<&FlowsColor>, With<ParticleType>>,
+) {
+    if let Ok(parent) = particle_query.get(trigger.event().entity) {
+        if let Some(color) = parent_query.get(parent.get()).unwrap() {
+            commands
+                .entity(trigger.event().entity)
+                .insert(color.clone());
+        } else {
+            commands
+                .entity(trigger.event().entity)
+                .remove::<FlowsColor>();
+        }
+    }
 }

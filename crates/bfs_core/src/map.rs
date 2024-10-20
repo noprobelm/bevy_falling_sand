@@ -5,7 +5,7 @@ use rayon::iter::IntoParallelRefIterator;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::{MutateParticleEvent, Particle};
+use crate::{MutateParticleEvent, Particle, events::*};
 
 /// Plugin for mapping particles to coordinate space.
 pub struct ChunkMapPlugin;
@@ -15,11 +15,12 @@ impl Plugin for ChunkMapPlugin {
         app.add_systems(Update, (reset_chunks, on_change_particle))
             .add_event::<ClearMapEvent>()
             .init_resource::<ChunkMap>()
-            .register_type::<Hibernating>();
+            .register_type::<Hibernating>()
+            .observe(on_reset_particle);
     }
 }
 
-/// Triggers [on_clear_chunk_map](crate::on_clear_chunk_map) to remove a particle from the simulation.
+/// Remove all particles from the simulation.
 #[derive(Event)]
 pub struct ClearMapEvent;
 
@@ -360,4 +361,16 @@ pub fn on_change_particle(
 	let mut particle = particle_query.get_mut(ev.entity).unwrap();
 	particle.name  = ev.particle.name.clone();
     }
+}
+
+/// Observer for resetting all of a particle's data. This system simply marks the Particle as changed so it gets picked
+/// up by `handle_new_particles` the next frame.
+pub fn on_reset_particle(
+    trigger: Trigger<ResetParticleEvent>,
+    mut particle_query: Query<&mut Particle>,
+) {
+    particle_query
+        .get_mut(trigger.event().entity)
+        .unwrap()
+        .into_inner();
 }

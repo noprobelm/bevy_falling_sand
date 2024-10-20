@@ -3,8 +3,10 @@ use bevy::prelude::*;
 use bevy::utils::Duration;
 use bevy_spatial::SpatialAccess;
 use bfs_color::*;
-use bfs_core::{Coordinates, Particle, RemoveParticleEvent};
+use bfs_core::{Coordinates, Particle, RemoveParticleEvent, ParticleType};
 use bfs_spatial::ParticleTree;
+
+use crate::events::*;
 
 pub struct BurningPlugin;
 
@@ -14,6 +16,9 @@ impl Plugin for BurningPlugin {
             .register_type::<Burns>()
             .register_type::<Burning>();
         app.add_systems(Update, (handle_fire, handle_burning));
+        app.observe(on_reset_fire)
+            .observe(on_reset_burns)
+            .observe(on_reset_burning);
     }
 }
 
@@ -195,4 +200,56 @@ pub fn handle_burning(
             }
         },
     );
+}
+
+/// Observer for resetting a particle's Fire information to its parent's.
+pub fn on_reset_fire(
+    trigger: Trigger<ResetFireEvent>,
+    mut commands: Commands,
+    particle_query: Query<&Parent, With<Particle>>,
+    parent_query: Query<Option<&Fire>, With<ParticleType>>,
+) {
+    if let Ok(parent) = particle_query.get(trigger.event().entity) {
+        if let Some(fire) = parent_query.get(parent.get()).unwrap() {
+            commands.entity(trigger.event().entity).insert(fire.clone());
+        } else {
+            commands.entity(trigger.event().entity).remove::<Fire>();
+        }
+    }
+}
+
+/// Observer for resetting a particle's Burns information to its parent's.
+pub fn on_reset_burns(
+    trigger: Trigger<ResetBurnsEvent>,
+    mut commands: Commands,
+    particle_query: Query<&Parent, With<Particle>>,
+    parent_query: Query<Option<&Burns>, With<ParticleType>>,
+) {
+    if let Ok(parent) = particle_query.get(trigger.event().entity) {
+        if let Some(burns) = parent_query.get(parent.get()).unwrap() {
+            commands
+                .entity(trigger.event().entity)
+                .insert(burns.clone());
+        } else {
+            commands.entity(trigger.event().entity).remove::<Burns>();
+        }
+    }
+}
+
+/// Observer for resetting a particle's Burning information to its parent's.
+pub fn on_reset_burning(
+    trigger: Trigger<ResetBurningEvent>,
+    mut commands: Commands,
+    particle_query: Query<&Parent, With<Particle>>,
+    parent_query: Query<Option<&Burning>, With<ParticleType>>,
+) {
+    if let Ok(parent) = particle_query.get(trigger.event().entity) {
+        if let Some(burning) = parent_query.get(parent.get()).unwrap() {
+            commands
+                .entity(trigger.event().entity)
+                .insert(burning.clone());
+        } else {
+            commands.entity(trigger.event().entity).remove::<Burning>();
+        }
+    }
 }

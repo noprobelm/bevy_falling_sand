@@ -1,13 +1,18 @@
 use std::iter;
 use std::mem;
-use std::slice::Iter;
 use std::ops::RangeBounds;
+use std::slice::Iter;
 
 use bevy::{prelude::*, utils::HashSet};
-use bevy_turborand::{RngComponent, DelegatedRng};
-use serde::{Serialize, Deserialize};
+use bevy_turborand::{DelegatedRng, RngComponent};
+use bfs_core::{
+    ChunkMap, Coordinates, Hibernating, Particle, ParticleSimulationSet, ParticleType,
+    SimulationRun,
+};
+use serde::{Deserialize, Serialize};
 use smallvec::SmallVec;
-use bfs_core::{ChunkMap, Coordinates, Hibernating, Particle, ParticleSimulationSet, SimulationRun};
+
+use crate::events::*;
 
 pub struct MovementPlugin;
 
@@ -16,14 +21,18 @@ impl Plugin for MovementPlugin {
         app.add_systems(
             Update,
             handle_movement
-                .in_set(ParticleSimulationSet).run_if(resource_exists::<SimulationRun>)
+                .in_set(ParticleSimulationSet)
+                .run_if(resource_exists::<SimulationRun>),
         )
         .register_type::<Density>()
         .register_type::<Velocity>()
-        .register_type::<Momentum>();
+        .register_type::<Momentum>()
+        .observe(on_reset_density)
+        .observe(on_reset_movement_priority)
+        .observe(on_reset_momentum)
+        .observe(on_reset_velocity);
     }
 }
-
 
 /// RNG to use when dealing with any entity that needs random movement behaviors.
 #[derive(Clone, PartialEq, Debug, Default, Component, Reflect)]
@@ -118,7 +127,6 @@ impl Velocity {
         }
     }
 }
-
 
 /// Momentum component for particles. If a particle possesses this component, it will dynamically attempt to move in the
 /// same direction it moved in the previous frame.
@@ -248,6 +256,79 @@ impl MovementPriority {
     }
 }
 
+/// Observer for resetting a particle's Momentum information to its parent's.
+pub fn on_reset_momentum(
+    trigger: Trigger<ResetMomentumEvent>,
+    mut commands: Commands,
+    particle_query: Query<&Parent, With<Particle>>,
+    parent_query: Query<Option<&Momentum>, With<ParticleType>>,
+) {
+    if let Ok(parent) = particle_query.get(trigger.event().entity) {
+        if let Some(momentum) = parent_query.get(parent.get()).unwrap() {
+            commands
+                .entity(trigger.event().entity)
+                .insert(momentum.clone());
+        } else {
+            commands.entity(trigger.event().entity).remove::<Momentum>();
+        }
+    }
+}
+
+/// Observer for resetting a particle's Density information to its parent's.
+pub fn on_reset_density(
+    trigger: Trigger<ResetDensityEvent>,
+    mut commands: Commands,
+    particle_query: Query<&Parent, With<Particle>>,
+    parent_query: Query<Option<&Density>, With<ParticleType>>,
+) {
+    if let Ok(parent) = particle_query.get(trigger.event().entity) {
+        if let Some(density) = parent_query.get(parent.get()).unwrap() {
+            commands
+                .entity(trigger.event().entity)
+                .insert(density.clone());
+        } else {
+            commands.entity(trigger.event().entity).remove::<Density>();
+        }
+    }
+}
+
+/// Observer for resetting a particle's MovementPriority information to its parent's.
+pub fn on_reset_movement_priority(
+    trigger: Trigger<ResetMovementPriorityEvent>,
+    mut commands: Commands,
+    particle_query: Query<&Parent, With<Particle>>,
+    parent_query: Query<Option<&MovementPriority>, With<ParticleType>>,
+) {
+    if let Ok(parent) = particle_query.get(trigger.event().entity) {
+        if let Some(movement_priority) = parent_query.get(parent.get()).unwrap() {
+            commands
+                .entity(trigger.event().entity)
+                .insert(movement_priority.clone());
+        } else {
+            commands
+                .entity(trigger.event().entity)
+                .remove::<MovementPriority>();
+        }
+    }
+}
+
+/// Observer for resetting a particle's Velocity information to its parent's.
+pub fn on_reset_velocity(
+    trigger: Trigger<ResetVelocityEvent>,
+    mut commands: Commands,
+    particle_query: Query<&Parent, With<Particle>>,
+    parent_query: Query<Option<&Velocity>, With<ParticleType>>,
+) {
+    if let Ok(parent) = particle_query.get(trigger.event().entity) {
+        if let Some(velocity) = parent_query.get(parent.get()).unwrap() {
+            commands
+                .entity(trigger.event().entity)
+                .insert(velocity.clone());
+        } else {
+            commands.entity(trigger.event().entity).remove::<Velocity>();
+        }
+    }
+}
 /// Moves all qualifying particles 'v' times equal to their current velocity
 #[allow(unused_mut)]
 pub fn handle_movement(

@@ -12,6 +12,6 @@ pub struct FallingSandMovementPlugin;
 
 impl Plugin for FallingSandMovementPlugin {
     fn build(&self, app: &mut App) {
-	app.add_plugins(MovementPlugin);
+	app.add_plugins((MaterialPlugin, MovementPlugin));
     }
 }

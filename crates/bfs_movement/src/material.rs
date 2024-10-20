@@ -1,9 +1,22 @@
 //! Convenience module for inserting common types of movement priorities.
 use bevy::prelude::*;
+use bfs_core::ParticleType;
 use serde::{Deserialize, Serialize};
 use smallvec::{smallvec, SmallVec};
 
 use super::MovementPriority;
+
+pub struct MaterialPlugin;
+
+impl Plugin for MaterialPlugin {
+    fn build(&self, app: &mut App) {
+        app.observe(on_solid_added)
+            .observe(on_movable_solid_added)
+            .observe(on_liquid_added)
+            .observe(on_wall_added)
+            .observe(on_gas_added);
+    }
+}
 
 /// A trait for defining a material type. Materials can be translated into commonly used movement priorities.
 pub trait Material {
@@ -193,18 +206,7 @@ impl Material for Gas {
 }
 
 /// Enum to mark different material types
-#[derive(
-    Clone,
-    Eq,
-    PartialEq,
-    Ord,
-    PartialOrd,
-    Hash,
-    Debug,
-    Reflect,
-    Serialize,
-    Deserialize,
-)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Reflect, Serialize, Deserialize)]
 pub enum MaterialType {
     /// Marker for solid materials.
     Solid,
@@ -215,5 +217,71 @@ pub enum MaterialType {
     /// Marker for gaseous materials.
     Gas,
     /// Marker for custom materials.
-    Custom
+    Custom,
+}
+
+/// Observer for adding movement priority when a particle is given a new state of matter.
+pub fn on_solid_added(
+    trigger: Trigger<OnAdd, Solid>,
+    mut commands: Commands,
+    particle_query: Query<&Solid, With<ParticleType>>,
+) {
+    let entity = trigger.entity();
+    if let Ok(solid) = particle_query.get(entity) {
+        commands
+            .entity(entity)
+            .insert(solid.into_movement_priority());
+    }
+}
+
+/// Observer for adding movement priority when a particle is given a new state of matter.
+pub fn on_movable_solid_added(
+    trigger: Trigger<OnAdd, MovableSolid>,
+    mut commands: Commands,
+    particle_query: Query<&MovableSolid, With<ParticleType>>,
+) {
+    let entity = trigger.entity();
+    if let Ok(movable_solid) = particle_query.get(entity) {
+        commands
+            .entity(entity)
+            .insert(movable_solid.into_movement_priority());
+    }
+}
+
+/// Observer for adding movement priority when a particle is given a new state of matter.
+pub fn on_liquid_added(
+    trigger: Trigger<OnAdd, Liquid>,
+    mut commands: Commands,
+    particle_query: Query<&Liquid, With<ParticleType>>,
+) {
+    let entity = trigger.entity();
+    if let Ok(liquid) = particle_query.get(entity) {
+        commands
+            .entity(entity)
+            .insert(liquid.into_movement_priority());
+    }
+}
+
+/// Observer for adding movement priority when a particle is given a new state of matter.
+pub fn on_gas_added(
+    trigger: Trigger<OnAdd, Gas>,
+    mut commands: Commands,
+    particle_query: Query<&Gas, With<ParticleType>>,
+) {
+    let entity = trigger.entity();
+    if let Ok(gas) = particle_query.get(entity) {
+        commands.entity(entity).insert(gas.into_movement_priority());
+    }
+}
+
+/// Observer for adding movement priority when a particle is given a new state of matter.
+pub fn on_wall_added(
+    trigger: Trigger<OnAdd, Wall>,
+    mut commands: Commands,
+    particle_query: Query<&Wall, With<ParticleType>>,
+) {
+    let entity = trigger.entity();
+    if let Ok(gas) = particle_query.get(entity) {
+        commands.entity(entity).insert(gas.into_movement_priority());
+    }
 }

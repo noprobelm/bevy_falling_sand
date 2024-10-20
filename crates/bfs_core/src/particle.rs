@@ -12,9 +12,6 @@ impl Plugin for ParticlePlugin {
         app
             .add_systems(Update, handle_new_particle_types)
             .init_resource::<ParticleTypeMap>()
-            .add_event::<MutateParticleEvent>()
-            .add_event::<ResetParticleEvent>()
-            .add_event::<RemoveParticleEvent>()
             .register_type::<Coordinates>()
             .register_type::<ParticleType>()
             .register_type::<Particle>();
@@ -103,31 +100,6 @@ impl ParticleTypeMap {
     pub fn get(&self, ptype: &String) -> Option<&Entity> {
         self.map.get(ptype)
     }
-}
-
-/// Changes a particle to the designated type
-#[derive(Event)]
-pub struct MutateParticleEvent {
-    /// The entity to change the particle type of
-    pub entity: Entity,
-    /// The new particle type
-    pub particle: Particle,
-}
-
-/// Resets all of a particle's components to its parent's.
-#[derive(Event)]
-pub struct ResetParticleEvent {
-    /// The entity to reset data for.
-    pub entity: Entity,
-}
-
-/// Triggers the removal of a particle from the simulation.
-#[derive(Event)]
-pub struct RemoveParticleEvent {
-    /// The coordinates of the particle to remove.
-    pub coordinates: IVec2,
-    /// Whether the corresponding entity should be despawned from the world.
-    pub despawn: bool
 }
 
 /// Map all particles to their respective parent when added/changed within the simulation
