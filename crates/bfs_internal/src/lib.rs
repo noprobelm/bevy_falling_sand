@@ -14,7 +14,7 @@
 
 //! This crate sources bevy_falling_sand crates.
 pub mod bundles;
-pub mod handle_new_particles;
+pub mod particle_management;
 
 use bevy::prelude::{App, Plugin, Update};
 use bevy_turborand::prelude::*;
@@ -29,7 +29,7 @@ pub use bfs_scenes as scenes;
 pub use bfs_spatial as spatial;
 
 pub use bundles::*;
-pub use handle_new_particles::*;
+pub use particle_management::*;
 
 /// Main plugin for Bevy Falling Sand.
 pub struct FallingSandPlugin;
@@ -38,7 +38,7 @@ impl Plugin for FallingSandPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
             RngPlugin::default(),
-            SimulationManagementPlugin,
+            ParticleManagementPlugin,
             core::FallingSandCorePlugin,
             movement::FallingSandMovementPlugin,
             color::FallingSandColorPlugin,

@@ -7,9 +7,9 @@ use bfs_movement::*;
 use bfs_reactions::*;
 
 /// Plugin for handling newly added or changed particles within the simulation.
-pub struct SimulationManagementPlugin;
+pub struct ParticleManagementPlugin;
 
-impl Plugin for SimulationManagementPlugin {
+impl Plugin for ParticleManagementPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Update, handle_new_particles.before(ParticleSimulationSet));
     }
