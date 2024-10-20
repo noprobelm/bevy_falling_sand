@@ -1,7 +1,7 @@
 mod events;
 
 use bevy::prelude::*;
-use bfs_core::{Coordinates, MutateParticleEvent, Particle};
+use bfs_core::{Coordinates, Particle};
 use ron::de::from_reader;
 use serde::{Deserialize, Serialize};
 use std::fs::File;
@@ -14,17 +14,15 @@ pub struct FallingSandScenesPlugin;
 
 impl Plugin for FallingSandScenesPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<LoadSceneEvent>()
-            .add_event::<SaveSceneEvent>()
-            .add_event::<MutateParticleEvent>()
-            .add_systems(
-                Update,
-                save_scene_system.run_if(on_event::<crate::events::SaveSceneEvent>()),
-            )
-            .add_systems(
-                Update,
-                load_scene_system.run_if(on_event::<crate::events::LoadSceneEvent>()),
-            );
+	app.add_plugins(EventsPlugin);
+        app.add_systems(
+            Update,
+            save_scene_system.run_if(on_event::<crate::events::SaveSceneEvent>()),
+        )
+        .add_systems(
+            Update,
+            load_scene_system.run_if(on_event::<crate::events::LoadSceneEvent>()),
+        );
     }
 }
 
