@@ -16,9 +16,7 @@ use scenes::*;
 use ui::*;
 
 use bevy::{prelude::*, window::WindowMode};
-
 use bevy_egui::EguiPlugin;
-
 use bevy_falling_sand::FallingSandPlugin;
 
 fn main() {
