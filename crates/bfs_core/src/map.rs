@@ -15,7 +15,7 @@ impl Plugin for ChunkMapPlugin {
         app.add_systems(
             Update,
             reset_chunks
-                .in_set(ParticleSimulationSet)
+                .after(ParticleSimulationSet)
                 .run_if(resource_exists::<SimulationRun>),
         )
         .add_event::<ClearMapEvent>()
