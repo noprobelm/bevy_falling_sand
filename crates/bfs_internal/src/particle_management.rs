@@ -1,4 +1,13 @@
 //! Handle newly added or changed particles within the simulation.
+//!
+//! Some dependencies of this crate (e.g., bfs_movement; bfs_color) have modules titled
+//! `particle_definitions`. These modules contain comopnents that act as extensions to
+//! particle types, as well as events and observers which allow systems to trigger resets
+//! of a particle's component data to its parent's blueprint.
+//!
+//! This module makes heavy use of this pattern. By triggering the aforementioned events
+//! each time a particle is added or changed, we can essentially "reset" a particle to its
+//! parent's blueprint at will.
 
 use bevy::prelude::*;
 use bfs_color::*;
