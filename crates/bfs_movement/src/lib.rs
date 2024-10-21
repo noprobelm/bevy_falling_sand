@@ -1,17 +1,19 @@
 use bevy::prelude::*;
 
-mod events;
 pub mod material;
-mod movement;
+mod rng;
+mod particle_definitions;
+mod systems;
 
-pub use events::*;
 pub use material::*;
-pub use movement::*;
+pub use rng::*;
+pub use particle_definitions::*;
+pub use systems::*;
 
 pub struct FallingSandMovementPlugin;
 
 impl Plugin for FallingSandMovementPlugin {
     fn build(&self, app: &mut App) {
-	app.add_plugins((MaterialPlugin, MovementPlugin));
+	app.add_plugins((ParticleDefinitionsPlugin, MaterialPlugin, SystemsPlugin));
     }
 }

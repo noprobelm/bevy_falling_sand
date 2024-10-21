@@ -1,56 +1,39 @@
+//! Defines additional components for particle types to be used as blueprint data when spawning or
+//! resetting particles.
+//!
+//! This module is a standard template that can be followed when extending particle types. Its
+//! structure is as follows:
+//!   - Defines new components which will be associated with particle types as blueprint information
+//!     for child particles.
+//!   - Adds events for each new component which manage resetting information for child particles
+//!   - Adds observers for each event to specify granular logic through which a particle should have
+//!     its information reset. This usually involves referencing the parent `ParticleType`.
+//!
+//! When a particle should have its information reset (e.g., when spawning or resetting), we can
+//! trigger the events defined in this module and communicate with higher level systems that
+//! something needs to happen with a given particle.
+
 use std::iter;
-use std::mem;
-use std::ops::RangeBounds;
 use std::slice::Iter;
-
-use bevy::{prelude::*, utils::HashSet};
-use bevy_turborand::{DelegatedRng, RngComponent};
-use bfs_core::{ChunkMap, Coordinates, Hibernating, Particle, ParticleSimulationSet, ParticleType};
-use serde::{Deserialize, Serialize};
 use smallvec::SmallVec;
+use serde::{Deserialize, Serialize};
+use bevy::prelude::*;
+use bfs_core::{ParticleType, Particle};
 
-use crate::events::*;
+use crate::rng::PhysicsRng;
 
-pub struct MovementPlugin;
+pub struct ParticleDefinitionsPlugin;
 
-impl Plugin for MovementPlugin {
+impl Plugin for ParticleDefinitionsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, handle_movement.in_set(ParticleSimulationSet))
-            .register_type::<Density>()
+        app.register_type::<Density>()
             .register_type::<Velocity>()
             .register_type::<Momentum>()
+            .register_type::<MovementPriority>()
             .observe(on_reset_density)
-            .observe(on_reset_movement_priority)
+            .observe(on_reset_velocity)
             .observe(on_reset_momentum)
-            .observe(on_reset_velocity);
-    }
-}
-
-/// RNG to use when dealing with any entity that needs random movement behaviors.
-#[derive(Clone, PartialEq, Debug, Default, Component, Reflect)]
-#[reflect(Component)]
-pub struct PhysicsRng(pub RngComponent);
-
-impl PhysicsRng {
-    /// Shuffles a given slice.
-    pub fn shuffle<T>(&mut self, slice: &mut [T]) {
-        self.0.shuffle(slice);
-    }
-
-    /// Returns a boolean value based on a rate. rate represents the chance to return a true value, with 0.0 being no
-    /// chance and 1.0 will always return true.
-    pub fn chance(&mut self, rate: f64) -> bool {
-        self.0.chance(rate)
-    }
-
-    /// Samples a random item from a slice of values.
-    pub fn sample<'a, T>(&mut self, list: &'a [T]) -> Option<&'a T> {
-        self.0.sample(&list)
-    }
-
-    /// Returns a usize value for stable indexing across different word size platforms.
-    pub fn index(&mut self, bound: impl RangeBounds<usize>) -> usize {
-        self.0.index(bound)
+            .observe(on_reset_movement_priority);
     }
 }
 
@@ -248,6 +231,34 @@ impl MovementPriority {
     }
 }
 
+/// Triggers a particle to reset its ParticleColor information to its parent's.
+#[derive(Event)]
+pub struct ResetMomentumEvent {
+    /// The entity to reset data for.
+    pub entity: Entity
+}
+
+/// Triggers a particle to reset its Velocity information to its parent's.
+#[derive(Event)]
+pub struct ResetVelocityEvent {
+    /// The entity to reset data for.
+    pub entity: Entity
+}
+
+/// Triggers a particle to reset its Density information to its parent's.
+#[derive(Event)]
+pub struct ResetDensityEvent {
+    /// The entity to reset data for.
+    pub entity: Entity
+}
+
+/// Triggers a particle to reset its MovementPriority information to its parent's.
+#[derive(Event)]
+pub struct ResetMovementPriorityEvent {
+    /// The entity to reset data for.
+    pub entity: Entity
+}
+
 /// Observer for resetting a particle's Momentum information to its parent's.
 pub fn on_reset_momentum(
     trigger: Trigger<ResetMomentumEvent>,
@@ -320,151 +331,4 @@ pub fn on_reset_velocity(
             commands.entity(trigger.event().entity).remove::<Velocity>();
         }
     }
-}
-/// Moves all qualifying particles 'v' times equal to their current velocity
-#[allow(unused_mut)]
-pub fn handle_movement(
-    mut particle_query: Query<
-        (
-            Entity,
-            &Particle,
-            &mut Coordinates,
-            &mut Transform,
-            &mut PhysicsRng,
-            &mut Velocity,
-            Option<&mut Momentum>,
-            &Density,
-            &mut MovementPriority,
-        ),
-        Without<Hibernating>,
-    >,
-    mut map: ResMut<ChunkMap>,
-) {
-    // Check visited before we perform logic on a particle (particles shouldn't move more than once)
-    let mut visited: HashSet<IVec2> = HashSet::default();
-    unsafe {
-        particle_query.iter_unsafe().for_each(
-            |(
-                _,
-                particle_type,
-                mut coordinates,
-                mut transform,
-                mut rng,
-                mut velocity,
-                mut momentum,
-                density,
-                mut movement_priority,
-            )| {
-                // Used to determine if we should add the particle to set of visited particles.
-                let mut moved = false;
-                'velocity_loop: for _ in 0..velocity.val {
-                    // If a particle is blocked on a certain vector, we shouldn't attempt to swap it with other particles along that
-                    // same vector.
-                    let mut obstructed: HashSet<IVec2> = HashSet::default();
-
-                    for relative_coordinates in movement_priority
-                        .iter_candidates(&mut rng, momentum.as_deref().cloned().as_ref())
-                    {
-                        let neighbor_coordinates = coordinates.0 + *relative_coordinates;
-
-                        if visited.contains(&neighbor_coordinates)
-                            || obstructed.contains(&relative_coordinates.signum())
-                        {
-                            continue;
-                        }
-
-                        match map.entity(&neighbor_coordinates) {
-                            Some(neighbor_entity) => {
-                                if let Ok((
-                                    _,
-                                    neighbor_particle_type,
-                                    mut neighbor_coordinates,
-                                    mut neighbor_transform,
-                                    _,
-                                    _,
-                                    _,
-                                    neighbor_density,
-                                    _,
-                                )) = particle_query.get_unchecked(*neighbor_entity)
-                                {
-                                    if *particle_type == *neighbor_particle_type {
-                                        continue;
-                                    }
-                                    if density > neighbor_density {
-                                        map.swap(neighbor_coordinates.0, coordinates.0);
-
-                                        swap_particle_positions(
-                                            &mut coordinates,
-                                            &mut transform,
-                                            &mut neighbor_coordinates,
-                                            &mut neighbor_transform,
-                                        );
-
-                                        if let Some(ref mut momentum) = momentum {
-                                            momentum.0 = IVec2::ZERO; // Reset momentum after a swap
-                                        }
-
-                                        velocity.decrement();
-                                        moved = true;
-                                        break 'velocity_loop;
-                                    }
-                                    // We've encountered an anchored or hibernating particle. If this is a hibernating particle, it's guaranteed to
-                                    // be awoken on the next frame with the logic contained in ChunkMap.reset_chunks()
-                                    else {
-                                        obstructed.insert(relative_coordinates.signum());
-                                        continue;
-                                    }
-                                }
-                                // We've encountered an anchored particle
-                                else {
-                                    obstructed.insert(relative_coordinates.signum());
-                                    continue;
-                                }
-                            }
-                            // We've encountered a free slot for the target particle to move to
-                            None => {
-                                map.swap(coordinates.0, neighbor_coordinates);
-                                coordinates.0 = neighbor_coordinates;
-
-                                transform.translation.x = neighbor_coordinates.x as f32;
-                                transform.translation.y = neighbor_coordinates.y as f32;
-
-                                if let Some(ref mut momentum) = momentum {
-                                    momentum.0 = *relative_coordinates; // Set momentum relative to the current position
-                                }
-
-                                velocity.increment();
-
-                                moved = true;
-
-                                continue 'velocity_loop;
-                            }
-                        };
-                    }
-                }
-
-                if moved {
-                    visited.insert(coordinates.0);
-                } else {
-                    if let Some(ref mut momentum) = momentum {
-                        momentum.0 = IVec2::ZERO;
-                    }
-                    velocity.decrement();
-                }
-            },
-        );
-    }
-}
-
-fn swap_particle_positions(
-    first_coordinates: &mut Coordinates,
-    first_transform: &mut Transform,
-    second_coordinates: &mut Coordinates,
-    second_transform: &mut Transform,
-) {
-    mem::swap(
-        &mut first_transform.translation,
-        &mut second_transform.translation,
-    );
-    mem::swap(&mut first_coordinates.0, &mut second_coordinates.0);
 }
