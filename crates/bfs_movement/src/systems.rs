@@ -1,3 +1,5 @@
+//! Systems for moving particles.
+
 use std::mem;
 use crate::PhysicsRng;
 use crate::*;

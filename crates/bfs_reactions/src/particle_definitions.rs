@@ -1,21 +1,33 @@
-use super::{Reacting, ReactionRng};
+//! Defines additional components for particle types to be used as blueprint data when spawning or
+//! resetting particles.
+//!
+//! This module is a standard template that can be followed when extending particle types. Its
+//! structure is as follows:
+//!   - Defines new components which will be associated with particle types as blueprint information
+//!     for child particles.
+//!   - Adds events for each new component which manage resetting information for child particles
+//!   - Adds observers for each event to specify granular logic through which a particle should have
+//!     its information reset. This usually involves referencing the parent `ParticleType`.
+//!
+//! When a particle should have its information reset (e.g., when spawning or resetting), we can
+//! trigger the events defined in this module and communicate with higher level systems that
+//! something needs to happen with a given particle.
+
 use bevy::prelude::*;
 use bevy::utils::Duration;
-use bevy_spatial::SpatialAccess;
 use bfs_color::*;
-use bfs_core::{Coordinates, Particle, RemoveParticleEvent, ParticleType, ParticleSimulationSet};
-use bfs_spatial::ParticleTree;
+use bfs_core::{Coordinates, Particle, ParticleType};
 
-use crate::events::*;
+use crate::ReactionRng;
 
-pub struct BurningPlugin;
+pub struct ParticleDefinitionsPlugin;
 
-impl Plugin for BurningPlugin {
+impl Plugin for ParticleDefinitionsPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<Fire>()
             .register_type::<Burns>()
-            .register_type::<Burning>();
-        app.add_systems(Update, (handle_fire, handle_burning).in_set(ParticleSimulationSet));
+            .register_type::<Burning>()
+            .register_type::<Reacting>();
         app.observe(on_reset_fire)
             .observe(on_reset_burns)
             .observe(on_reset_burning);
@@ -113,94 +125,72 @@ impl Burning {
     }
 }
 
-/// Burns particles within a radius of entities that posses the `Fire` component.
-pub fn handle_fire(
-    mut commands: Commands,
-    mut fire_query: Query<(&Fire, &Coordinates, &mut ReactionRng)>,
-    burns_query: Query<(Entity, &Burns), (With<Particle>, Without<Burning>)>,
-    particle_tree: Res<ParticleTree>,
-) {
-    fire_query
-        .iter_mut()
-        .for_each(|(fire, coordinates, mut rng)| {
-            let mut destroy_fire: bool = false;
-            if !rng.chance(fire.chance_to_spread) {
-                return;
-            }
-            particle_tree
-                .within_distance(coordinates.0.as_vec2(), fire.burn_radius)
-                .iter()
-                .for_each(|(_, entity)| {
-                    if let Ok((entity, burns)) = burns_query.get(entity.unwrap()) {
-                        commands.entity(entity).insert(burns.to_burning());
-                        if let Some(colors) = &burns.color {
-                            commands.entity(entity).insert(colors.clone());
-                            commands.entity(entity).insert(RandomizesColor::new(0.75));
-                        }
-                        if let Some(fire) = &burns.spreads {
-                            commands.entity(entity).insert(fire.clone());
-                        }
-                        if fire.destroys_on_spread {
-                            destroy_fire = true;
-                        }
-                    }
-                });
-            if destroy_fire {
-                commands.trigger(RemoveParticleEvent {
-                    coordinates: coordinates.0,
-                    despawn: true,
-                });
-            }
-        });
+/// Component for particles that are creating new particles as part of a reaction.
+#[derive(Clone, PartialEq, Debug, Component, Reflect)]
+#[reflect(Component)]
+pub struct Reacting {
+    /// What the reaction will produce.
+    pub produces: Particle,
+    /// The chance that the particle will produce something (0.0 is lowest chance, 1.0 is highest).
+    pub chance_to_produce: f64,
 }
 
-/// Handles all burning particles for the frame.
-pub fn handle_burning(
-    mut commands: Commands,
-    mut burning_query: Query<(
-        Entity,
-        &mut Particle,
-        &mut Burns,
-        &mut Burning,
-        &mut ReactionRng,
-        &Coordinates,
-    )>,
-    time: Res<Time>,
-) {
-    burning_query.iter_mut().for_each(
-        |(entity, particle, mut burns, mut burning, mut rng, coordinates)| {
-            if burning.timer.tick(time.delta()).finished() {
-                if burns.chance_destroy_per_tick.is_some() {
-                    commands.trigger(RemoveParticleEvent {
-                        coordinates: coordinates.0,
-                        despawn: true,
-                    })
-                } else {
-                    commands.entity(entity).remove::<Burning>();
-                    commands.trigger(ResetParticleColorEvent { entity });
-                    commands.trigger(ResetRandomizesColorEvent { entity });
-                    commands.trigger(ResetFlowsColorEvent { entity });
+impl Reacting {
+    /// Creates a new Reacting.
+    pub fn new(produces: Particle, chance_to_produce: f64) -> Reacting {
+        Reacting {
+            produces,
+            chance_to_produce,
+        }
+    }
 
-                    particle.into_inner();
-                }
-                return;
-            }
-            if burning.tick_timer.tick(time.delta()).finished() {
-                if let Some(ref mut reaction) = &mut burns.reaction {
-                    reaction.produce(&mut commands, &mut rng, coordinates);
-                }
-                if let Some(chance_destroy) = burns.chance_destroy_per_tick {
-                    if rng.chance(chance_destroy) {
-                        commands.trigger(RemoveParticleEvent {
-                            coordinates: coordinates.0,
-                            despawn: true,
-                        })
-                    }
-                }
-            }
-        },
-    );
+    /// Produces a new particle if the rng determines so.
+    pub fn produce(
+        &self,
+        commands: &mut Commands,
+        rng: &mut ReactionRng,
+        coordinates: &Coordinates,
+    ) {
+        if self.chance(rng) {
+            commands.spawn((
+                self.produces.clone(),
+                SpatialBundle::from_transform(Transform::from_xyz(
+                    coordinates.0.x as f32,
+                    coordinates.0.y as f32 + 1.,
+                    0.,
+                )),
+            ));
+        }
+    }
+
+    /// Returns a boolean value based on a rate. rate represents the chance to return a true value, with 0.0 being no
+    /// chance and 1.0 will always return true.
+    pub fn chance(&self, rng: &mut ReactionRng) -> bool {
+        rng.chance(self.chance_to_produce)
+    }
 }
+
+/// Triggers a particle to reset its Burning information to its parent's.
+#[derive(Event)]
+pub struct ResetBurningEvent {
+    /// The entity to reset data for.
+    pub entity: Entity,
+}
+
+/// Triggers a particle to reset its Burns information to its parent's.
+#[derive(Event)]
+pub struct ResetBurnsEvent {
+    /// The entity to reset data for.
+    pub entity: Entity,
+}
+
+/// Triggers a particle to reset its Fire information to its parent's.
+#[derive(Event)]
+pub struct ResetFireEvent {
+    /// The entity to reset data for.
+    pub entity: Entity,
+}
+
 
 /// Observer for resetting a particle's Fire information to its parent's.
 pub fn on_reset_fire(
