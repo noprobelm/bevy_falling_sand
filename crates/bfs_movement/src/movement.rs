@@ -5,10 +5,7 @@ use std::slice::Iter;
 
 use bevy::{prelude::*, utils::HashSet};
 use bevy_turborand::{DelegatedRng, RngComponent};
-use bfs_core::{
-    ChunkMap, Coordinates, Hibernating, Particle, ParticleSimulationSet, ParticleType,
-    SimulationRun,
-};
+use bfs_core::{ChunkMap, Coordinates, Hibernating, Particle, ParticleSimulationSet, ParticleType};
 use serde::{Deserialize, Serialize};
 use smallvec::SmallVec;
 
@@ -18,19 +15,14 @@ pub struct MovementPlugin;
 
 impl Plugin for MovementPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            Update,
-            handle_movement
-                .in_set(ParticleSimulationSet)
-                .run_if(resource_exists::<SimulationRun>),
-        )
-        .register_type::<Density>()
-        .register_type::<Velocity>()
-        .register_type::<Momentum>()
-        .observe(on_reset_density)
-        .observe(on_reset_movement_priority)
-        .observe(on_reset_momentum)
-        .observe(on_reset_velocity);
+        app.add_systems(Update, handle_movement.in_set(ParticleSimulationSet))
+            .register_type::<Density>()
+            .register_type::<Velocity>()
+            .register_type::<Momentum>()
+            .observe(on_reset_density)
+            .observe(on_reset_movement_priority)
+            .observe(on_reset_momentum)
+            .observe(on_reset_velocity);
     }
 }
 

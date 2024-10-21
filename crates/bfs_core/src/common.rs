@@ -1,11 +1,15 @@
-use bevy::prelude::{Resource, SystemSet, Plugin, App};
+use bevy::prelude::*;
 
 /// Common utilities that have no direct relation to particles, such as flag resources and system sets.
 pub struct CommonUtilitiesPlugin;
 
 impl Plugin for CommonUtilitiesPlugin {
     fn build(&self, app: &mut App) {
-	app.init_resource::<SimulationRun>();
+        app.configure_sets(
+            Update,
+            ParticleSimulationSet.run_if(resource_exists::<SimulationRun>),
+        );
+        app.init_resource::<SimulationRun>();
     }
 }
 

@@ -8,7 +8,7 @@ use bevy::prelude::*;
 use bevy_turborand::GlobalRng;
 
 use bevy_turborand::{prelude::RngComponent, DelegatedRng, TurboRand};
-use bfs_core::{Particle, ParticleSimulationSet, SimulationRun, ParticleType};
+use bfs_core::{Particle, ParticleSimulationSet, ParticleType};
 
 pub use events::*;
 
@@ -29,7 +29,6 @@ impl Plugin for FallingSandColorPlugin {
                 color_randomizing_particles,
             )
                 .in_set(ParticleSimulationSet)
-                .run_if(resource_exists::<SimulationRun>),
         );
         app.observe(on_reset_particle_color)
             .observe(on_reset_randomizes_color)

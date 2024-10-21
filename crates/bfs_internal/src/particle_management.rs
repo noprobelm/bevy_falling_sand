@@ -11,7 +11,7 @@ pub struct ParticleManagementPlugin;
 
 impl Plugin for ParticleManagementPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, handle_new_particles.before(ParticleSimulationSet));
+        app.add_systems(PreUpdate, handle_new_particles.before(ParticleSimulationSet));
     }
 }
 

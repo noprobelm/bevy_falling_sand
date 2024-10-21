@@ -15,7 +15,7 @@ impl Plugin for ParticlePlugin {
             Update,
             (
                 handle_new_particle_types,
-                on_change_particle.in_set(ParticleSimulationSet),
+                ev_change_particle.in_set(ParticleSimulationSet),
             ),
         )
         .init_resource::<ParticleTypeMap>()
@@ -129,7 +129,7 @@ pub fn handle_new_particle_types(
 }
 
 /// Event reader for particle type updates
-pub fn on_change_particle(
+pub fn ev_change_particle(
     mut ev_change_particle: EventReader<MutateParticleEvent>,
     mut particle_query: Query<&mut Particle>,
 ) {
