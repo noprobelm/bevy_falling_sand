@@ -16,23 +16,31 @@
 
 //! This crate provides core functionality for particles.
 
-mod particle;
-mod map;
 mod common;
 mod events;
+mod map;
+mod particle;
+mod particle_type;
 
 use bevy::prelude::*;
 
-pub use particle::*;
-pub use map::*;
 pub use common::*;
 pub use events::*;
+pub use map::*;
+pub use particle::*;
+pub use particle_type::*;
 
 /// Core plugin for Bevy Falling Sand.
 pub struct FallingSandCorePlugin;
 
 impl Plugin for FallingSandCorePlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((ParticlePlugin, ChunkMapPlugin, CommonUtilitiesPlugin, EventsPlugin));
+        app.add_plugins((
+            ParticlePlugin,
+            ParticleTypePlugin,
+            ChunkMapPlugin,
+            CommonUtilitiesPlugin,
+            EventsPlugin,
+        ));
     }
 }
