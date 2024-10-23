@@ -16,18 +16,18 @@
 
 //! This crate provides core functionality for particles.
 
+mod particle;
+mod map;
+mod particle_type;
 mod common;
 mod events;
-mod map;
-mod particle;
-mod particle_type;
 
 use bevy::prelude::*;
 
+pub use particle::*;
 pub use common::*;
 pub use events::*;
 pub use map::*;
-pub use particle::*;
 pub use particle_type::*;
 
 /// Core plugin for Bevy Falling Sand.

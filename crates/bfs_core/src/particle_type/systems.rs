@@ -3,9 +3,9 @@
 use crate::*;
 
 /// Plugin for systems that interact with particle types.
-pub struct SystemsPlugin;
+pub struct ParticleTypeSystemsPlugin;
 
-impl Plugin for SystemsPlugin {
+impl Plugin for ParticleTypeSystemsPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Update, handle_new_particle_types);
     }

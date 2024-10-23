@@ -7,7 +7,6 @@ pub struct EventsPlugin;
 impl Plugin for EventsPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<MutateParticleEvent>()
-            .add_event::<ResetParticleEvent>()
             .add_event::<RemoveParticleEvent>();
     }
 }
@@ -19,13 +18,6 @@ pub struct MutateParticleEvent {
     pub entity: Entity,
     /// The new particle type
     pub particle: Particle,
-}
-
-/// Resets all of a particle's components to its parent's.
-#[derive(Event)]
-pub struct ResetParticleEvent {
-    /// The entity to reset data for.
-    pub entity: Entity,
 }
 
 /// Triggers the removal of a particle from the simulation.
