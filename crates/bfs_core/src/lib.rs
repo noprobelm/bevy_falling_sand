@@ -20,13 +20,11 @@ mod particle;
 mod map;
 mod particle_type;
 mod common;
-mod events;
 
 use bevy::prelude::*;
 
 pub use particle::*;
 pub use common::*;
-pub use events::*;
 pub use map::*;
 pub use particle_type::*;
 
@@ -40,7 +38,6 @@ impl Plugin for FallingSandCorePlugin {
             ParticleTypePlugin,
             ChunkMapPlugin,
             CommonUtilitiesPlugin,
-            EventsPlugin,
         ));
     }
 }

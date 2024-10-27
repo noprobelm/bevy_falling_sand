@@ -16,6 +16,20 @@
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
+/// Plugin for basic particle definitions.
+pub struct ParticleDefinitionsPlugin;
+
+impl Plugin for ParticleDefinitionsPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_event::<MutateParticleEvent>()
+            .register_type::<Coordinates>()
+            .register_type::<Particle>()
+            .add_event::<ResetParticleEvent>()
+            .add_event::<RemoveParticleEvent>()
+            .observe(on_reset_particle);
+    }
+}
+
 /// Holds the particle type's name. Used to map to particle type data.
 #[derive(Component, Clone, Debug, PartialEq, Reflect, Serialize, Deserialize)]
 #[reflect(Component)]
@@ -39,6 +53,24 @@ impl Particle {
 )]
 #[reflect(Component)]
 pub struct Coordinates(pub IVec2);
+
+/// Changes a particle to the designated type
+#[derive(Event)]
+pub struct MutateParticleEvent {
+    /// The entity to change the particle type of
+    pub entity: Entity,
+    /// The new particle type
+    pub particle: Particle,
+}
+
+/// Triggers the removal of a particle from the simulation.
+#[derive(Event)]
+pub struct RemoveParticleEvent {
+    /// The coordinates of the particle to remove.
+    pub coordinates: IVec2,
+    /// Whether the corresponding entity should be despawned from the world.
+    pub despawn: bool,
+}
 
 /// Resets all of a particle's components to its parent's.
 #[derive(Event)]

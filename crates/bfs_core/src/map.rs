@@ -5,7 +5,7 @@ use rayon::iter::IntoParallelRefIterator;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::{events::*, ParticleSimulationSet, ParticleTypeMap, SimulationRun};
+use crate::{RemoveParticleEvent, ParticleSimulationSet, ParticleTypeMap, SimulationRun};
 
 /// Plugin for mapping particles to coordinate space.
 pub struct ChunkMapPlugin;
