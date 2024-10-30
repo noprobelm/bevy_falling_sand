@@ -248,8 +248,10 @@ impl ChunkMap {
 pub struct Chunk {
     /// The chunk containing the particle data
     chunk: HashMap<IVec2, Entity>,
-    /// The area of the chunk
-    irect: IRect,
+    /// The region of the chunk
+    region: IRect,
+    /// A dirty rect showing all entities that changed position in the previous frame
+    dirty_rect: Option<IRect>,
     /// Flag indicating whether the chunk should be processed in the next frame
     should_process_next_frame: bool,
     /// Flag indicating whether the chunk should be processed this frame
@@ -261,7 +263,8 @@ impl Chunk {
     pub fn new(upper_left: IVec2, lower_right: IVec2) -> Chunk {
         Chunk {
             chunk: HashMap::with_capacity(1024),
-            irect: IRect::from_corners(upper_left, lower_right),
+            region: IRect::from_corners(upper_left, lower_right),
+	    dirty_rect: None,
             should_process_next_frame: false,
             hibernating: false,
         }
@@ -271,12 +274,12 @@ impl Chunk {
 impl Chunk {
     /// The minimum (upper left) point of the chunk's area
     pub fn min(&self) -> &IVec2 {
-        &self.irect.min
+        &self.region.min
     }
 
     /// The maximum (lower right) point of the chunk's area
     pub fn max(&self) -> &IVec2 {
-        &self.irect.max
+        &self.region.max
     }
 }
 
@@ -338,6 +341,14 @@ impl Chunk {
     /// wake up the subject chunk.
     pub fn insert_no_overwrite(&mut self, coords: IVec2, entity: Entity) -> &mut Entity {
         self.should_process_next_frame = true;
+
+	// Extend the dirty rect to include the newly added particle
+	if let Some(dirty_rect) = self.dirty_rect {
+	    self.dirty_rect = Some(dirty_rect.union_point(coords));
+	} else {
+	    self.dirty_rect = Some(IRect::from_center_size(coords, IVec2::ZERO));
+	}
+
         self.chunk.entry(coords).or_insert(entity)
     }
 
@@ -345,7 +356,22 @@ impl Chunk {
     /// wake up the subject chunk.
     pub fn insert_overwrite(&mut self, coords: IVec2, entity: Entity) -> Option<Entity> {
         self.should_process_next_frame = true;
+
+	// Extend the dirty rect to include the newly added particle
+	if let Some(dirty_rect) = self.dirty_rect {
+	    self.dirty_rect = Some(dirty_rect.union_point(coords));
+	} else {
+	    self.dirty_rect = Some(IRect::from_center_size(coords, IVec2::ZERO));
+	}
+
         self.chunk.insert(coords, entity)
+    }
+}
+
+impl Chunk {
+    /// Gets the dirty rect from the chunk
+    pub fn dirty_rect(&self) -> Option<IRect> {
+	self.dirty_rect
     }
 }
 
