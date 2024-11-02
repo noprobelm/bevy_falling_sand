@@ -24,64 +24,6 @@ impl Plugin for ChunkMapPlugin {
     }
 }
 
-/// The selected optimization strategy influences the way we simulate particle movement and ChunkMap
-/// behaviors.
-#[derive(States, Reflect, Default, Debug, Clone, Eq, PartialEq, Hash)]
-pub enum OptimizationStrategy {
-    /// `Hibernation` mode implements an algorithm that will *only* process the particles within 
-    /// a chunk if they need to be. This mode will reliably evaluate all particles requiring 
-    /// movement while maintaining the benefit of potentially simulating only a small number of
-    /// particles compared to the total number in the simulation.
-    ///
-    /// This mode works by adding the `Hibernating` component for particles, as well as the
-    /// `Chunk.should_process_next_frame` and `Chunk.hibernating` fields for flagging whether the
-    /// particles within a chunk should be processed in the following frame, or should be
-    /// processed in the current frame (respectively).
-    ///
-    /// Each frame, the system that handles particle movement will filter out particles
-    /// with the `Hibernating` component, iterating only through "awakened" particles.
-    /// If a particle moves anywhere within a chunk's region during a frame, or a particle is
-    /// inserted or removed from the chunk, its `Chunk.should_process_next_frame` is set to `true.`
-    ///
-    /// If a particle moves along the bounds of a chunk's region, the chunk's neighbor's
-    /// `should_process_next_frame` field is also set to `true.`
-    ///
-    /// At the end of each frame, we iterate through each `Chunk` in the `ChunkMap`.
-    ///   - If a `should_process_next_frame` == `true` and `hibernating` == `true`:
-    ///       - Remove the `Hibernating` component from all particle entities
-    ///       - Set `Chunk.hibernating` to `false`
-    ///   - Else if `should_process_next_frame` == `false` and `hibernating` == `false`:
-    ///       - insert the `Hibernating` component to all particle entities
-    ///       - Set `Chunk.hibernating` to `true`
-    ///   - Reset `Chunk.should_process_next_frame` to `false` for all chunks.
-    Hibernation,
-    /// `DirtyRect` mode is moderately faster than `Hibernation`, but as a tradeoff some particles
-    /// that could br processed may be excluded from processing for a frame.
-    ///
-    /// This mode works by adding `Chunk.dirty_rect` and `Chunk.prev_dirty_rect` fields, each of
-    /// which are `Option<IRect>`. A dirty rect is simply the smallest possible bounding box around
-    /// all particles within a chunk that have moved for a given frame.
-    ///
-    /// As we iterate through each particle, we check to see if it is contained within the region of
-    /// `Chunk.prev_dirty_rect`:
-    ///   - If yes, we will process this particle.
-    ///   - If no, there is a chance we will skip the particle.
-    ///
-    /// Even when setting the chance to skip as very high (>= 90%), particle movement looks natural.
-    /// If you set this chance to high, it will become increasingly evident that particles are
-    /// floating mid air. If set to 100%, particles will remain suspended until another particle
-    /// attempts to change positions with it.
-    ///
-    /// Each time a particle moves, `Chunk.dirty_rect` is created if it didn't exist. Otherwise,
-    /// a new IRect is created as a union point between the existing IRect and the particle's
-    /// coordinate.
-    ///
-    /// At the end of each frame, `Chunk.prev_dirty_rect` is cloned from `Chunk.dirty_rect`, and
-    /// `Chunk.dirty_rect` is reset to its original `None` state.
-    #[default]
-    DirtyRect,
-}
-
 /// Chunk map for segmenting collections of entities into coordinate-based chunks.
 #[derive(Resource, Debug, Clone)]
 pub struct ChunkMap {
