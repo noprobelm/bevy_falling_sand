@@ -14,7 +14,7 @@ impl Plugin for FallingSandDebugPlugin {
             .add_systems(
                 Update,
                 (color_chunks, count_dynamic_particles, count_total_particles)
-                    .run_if(resource_exists::<DebugParticles>)
+                    .run_if(resource_exists::<DebugParticles>),
             );
     }
 }
@@ -38,26 +38,13 @@ pub struct TotalParticleCount(pub u64);
 /// Provides gizmos rendering for visualizing dead/alive chunks
 pub fn color_chunks(map: Res<ChunkMap>, mut chunk_gizmos: Gizmos<DebugGizmos>) {
     map.iter_chunks().for_each(|chunk| {
-        let rect = Rect::from_corners(chunk.min().as_vec2(), chunk.max().as_vec2());
-        if chunk.hibernating() == true {
+        if let Some(dirty_rect) = chunk.prev_dirty_rect() {
             chunk_gizmos.rect_2d(
-                rect.center(),
+                dirty_rect.center().as_vec2(),
                 0.,
-                rect.size() + Vec2::splat(1.),
-                Color::srgba(0.67, 0.21, 0.24, 1.),
-            );
-        }
-    });
-
-    map.iter_chunks().for_each(|chunk| {
-        let rect = Rect::from_corners(chunk.min().as_vec2(), chunk.max().as_vec2());
-        if chunk.hibernating() == false {
-            chunk_gizmos.rect_2d(
-                rect.center(),
-                0.,
-                rect.size() + Vec2::splat(1.),
-                Color::srgba(0.52, 0.80, 0.51, 1.0),
-            );
+                dirty_rect.size().as_vec2() + Vec2::splat(1.),
+                Color::srgba(1., 1., 1., 1.),
+            )
         }
     });
 }
