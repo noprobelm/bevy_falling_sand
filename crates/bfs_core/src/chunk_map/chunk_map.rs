@@ -24,9 +24,63 @@ impl Plugin for ChunkMapPlugin {
     }
 }
 
-/// Remove all particles from the simulation.
-#[derive(Event)]
-pub struct ClearMapEvent;
+/// The selected optimization strategy influences the way we simulate particle movement and ChunkMap
+/// behaviors.
+#[derive(States, Reflect, Default, Debug, Clone, Eq, PartialEq, Hash)]
+pub enum OptimizationStrategy {
+    /// `Hibernation` mode implements an algorithm that will *only* process the particles within 
+    /// a chunk if they need to be. This mode will reliably evaluate all particles requiring 
+    /// movement while maintaining the benefit of potentially simulating only a small number of
+    /// particles compared to the total number in the simulation.
+    ///
+    /// This mode works by adding the `Hibernating` component for particles, as well as the
+    /// `Chunk.should_process_next_frame` and `Chunk.hibernating` fields for flagging whether the
+    /// particles within a chunk should be processed in the following frame, or should be
+    /// processed in the current frame (respectively).
+    ///
+    /// Each frame, the system that handles particle movement will filter out particles
+    /// with the `Hibernating` component, iterating only through "awakened" particles.
+    /// If a particle moves anywhere within a chunk's region during a frame, or a particle is
+    /// inserted or removed from the chunk, its `Chunk.should_process_next_frame` is set to `true.`
+    ///
+    /// If a particle moves along the bounds of a chunk's region, the chunk's neighbor's
+    /// `should_process_next_frame` field is also set to `true.`
+    ///
+    /// At the end of each frame, we iterate through each `Chunk` in the `ChunkMap`.
+    ///   - If a `should_process_next_frame` == `true` and `hibernating` == `true`:
+    ///       - Remove the `Hibernating` component from all particle entities
+    ///       - Set `Chunk.hibernating` to `false`
+    ///   - Else if `should_process_next_frame` == `false` and `hibernating` == `false`:
+    ///       - insert the `Hibernating` component to all particle entities
+    ///       - Set `Chunk.hibernating` to `true`
+    ///   - Reset `Chunk.should_process_next_frame` to `false` for all chunks.
+    Hibernation,
+    /// `DirtyRect` mode is moderately faster than `Hibernation`, but as a tradeoff some particles
+    /// that could br processed may be excluded from processing for a frame.
+    ///
+    /// This mode works by adding `Chunk.dirty_rect` and `Chunk.prev_dirty_rect` fields, each of
+    /// which are `Option<IRect>`. A dirty rect is simply the smallest possible bounding box around
+    /// all particles within a chunk that have moved for a given frame.
+    ///
+    /// As we iterate through each particle, we check to see if it is contained within the region of
+    /// `Chunk.prev_dirty_rect`:
+    ///   - If yes, we will process this particle.
+    ///   - If no, there is a chance we will skip the particle.
+    ///
+    /// Even when setting the chance to skip as very high (>= 90%), particle movement looks natural.
+    /// If you set this chance to high, it will become increasingly evident that particles are
+    /// floating mid air. If set to 100%, particles will remain suspended until another particle
+    /// attempts to change positions with it.
+    ///
+    /// Each time a particle moves, `Chunk.dirty_rect` is created if it didn't exist. Otherwise,
+    /// a new IRect is created as a union point between the existing IRect and the particle's
+    /// coordinate.
+    ///
+    /// At the end of each frame, `Chunk.prev_dirty_rect` is cloned from `Chunk.dirty_rect`, and
+    /// `Chunk.dirty_rect` is reset to its original `None` state.
+    #[default]
+    DirtyRect,
+}
 
 /// Chunk map for segmenting collections of entities into coordinate-based chunks.
 #[derive(Resource, Debug, Clone)]
@@ -119,23 +173,6 @@ impl ChunkMap {
             chunk.dirty_rect = None;
         }
     }
-
-    /// Checks if a coordinate lies on the border of a neighboring chunk and activates it if true.
-    fn activate_neighbor_chunks(&mut self, coord: &IVec2, chunk_idx: usize) {
-        let chunk = &self.chunks[chunk_idx];
-        let neighbors = [
-            (coord.x == chunk.min().x, chunk_idx - 1),  // Left neighbor
-            (coord.x == chunk.max().x, chunk_idx + 1),  // Right neighbor
-            (coord.y == chunk.min().y, chunk_idx + 32), // Bottom neighbor
-            (coord.y == chunk.max().y, chunk_idx - 32), // Top neighbor
-        ];
-
-        for (condition, neighbor_idx) in neighbors.iter() {
-            if *condition {
-                self.chunks[*neighbor_idx].should_process_next_frame = true;
-            }
-        }
-    }
 }
 
 impl ChunkMap {
@@ -182,9 +219,6 @@ impl ChunkMap {
                 self.chunks[second_chunk_idx].insert_overwrite(second, entity_first);
             }
         }
-
-        self.activate_neighbor_chunks(&first, first_chunk_idx);
-        self.activate_neighbor_chunks(&second, second_chunk_idx);
     }
 
     /// Get an immutable reference to an entity, if it exists.
@@ -224,10 +258,6 @@ pub struct Chunk {
     dirty_rect: Option<IRect>,
     /// A dirty rect for all particles that moved in the previous frame
     prev_dirty_rect: Option<IRect>,
-    /// Flag indicating whether the chunk should be processed in the next frame
-    should_process_next_frame: bool,
-    /// Flag indicating whether the chunk should be processed this frame
-    hibernating: bool,
 }
 
 impl Chunk {
@@ -238,8 +268,6 @@ impl Chunk {
             region: IRect::from_corners(upper_left, lower_right),
             dirty_rect: None,
             prev_dirty_rect: None,
-            should_process_next_frame: false,
-            hibernating: false,
         }
     }
 }
@@ -253,18 +281,6 @@ impl Chunk {
     /// The maximum (lower right) point of the chunk's area
     pub fn max(&self) -> &IVec2 {
         &self.region.max
-    }
-}
-
-impl Chunk {
-    /// The chunk should be processed in the current frame
-    pub fn hibernating(&self) -> bool {
-        self.hibernating
-    }
-
-    /// The chunk should be processed in the next frame
-    pub fn should_process_next_frame(&self) -> bool {
-        self.should_process_next_frame
     }
 }
 
@@ -306,15 +322,12 @@ impl Chunk {
     /// > Calling this method will cause major breakage to the simulation if entities are not
     /// simultaneously cleared within the same system from which this method was called.
     pub fn remove(&mut self, coords: &IVec2) -> Option<Entity> {
-        self.should_process_next_frame = true;
         self.chunk.remove(coords)
     }
 
     /// Inserts a new entity at a given coordinate if it is not already occupied. Calls to this method will
     /// wake up the subject chunk.
     pub fn insert_no_overwrite(&mut self, coords: IVec2, entity: Entity) -> &mut Entity {
-        self.should_process_next_frame = true;
-
         // Extend the dirty rect to include the newly added particle
         if let Some(dirty_rect) = self.dirty_rect {
             self.dirty_rect = Some(dirty_rect.union_point(coords));
@@ -328,13 +341,11 @@ impl Chunk {
     /// Inserts a new entity at a given coordinate irrespective of its occupied state. Calls to this method will
     /// wake up the subject chunk.
     pub fn insert_overwrite(&mut self, coords: IVec2, entity: Entity) -> Option<Entity> {
-        self.should_process_next_frame = true;
-
         // Extend the dirty rect to include the newly added particle
         if let Some(dirty_rect) = self.dirty_rect {
             self.dirty_rect = Some(dirty_rect.union_point(coords));
         } else {
-            self.dirty_rect = Some(IRect::from_center_size(coords, IVec2::ZERO));
+            self.dirty_rect = Some(IRect::from_center_size(coords, IVec2::ONE));
         }
 
         self.chunk.insert(coords, entity)
@@ -366,6 +377,10 @@ impl Chunk {
 pub fn reset_chunks(mut map: ResMut<ChunkMap>) {
     map.reset_chunks();
 }
+
+/// Remove all particles from the simulation.
+#[derive(Event)]
+pub struct ClearMapEvent;
 
 /// RemoveParticle event is triggered.
 pub fn on_remove_particle(
