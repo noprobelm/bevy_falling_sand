@@ -5,7 +5,7 @@ use crate::PhysicsRng;
 use crate::*;
 
 use bevy::utils::HashSet;
-use bfs_core::{ChunkMap, Coordinates, Hibernating, Particle, ParticleSimulationSet};
+use bfs_core::{ChunkMap, Coordinates, Particle, ParticleSimulationSet};
 
 pub struct SystemsPlugin;
 
@@ -29,7 +29,6 @@ pub fn handle_movement(
             &Density,
             &mut MovementPriority,
         ),
-        Without<Hibernating>,
     >,
     mut map: ResMut<ChunkMap>,
 ) {
@@ -48,6 +47,10 @@ pub fn handle_movement(
                 density,
                 mut movement_priority,
             )| {
+		if !map.should_process(&coordinates.0) && rng.chance(0.8) {
+		    return;
+		}
+
                 // Used to determine if we should add the particle to set of visited particles.
                 let mut moved = false;
                 'velocity_loop: for _ in 0..velocity.val {
@@ -101,8 +104,6 @@ pub fn handle_movement(
                                         moved = true;
                                         break 'velocity_loop;
                                     }
-                                    // We've encountered an anchored or hibernating particle. If this is a hibernating particle, it's guaranteed to
-                                    // be awoken on the next frame with the logic contained in ChunkMap.reset_chunks()
                                     else {
                                         obstructed.insert(relative_coordinates.signum());
                                         continue;

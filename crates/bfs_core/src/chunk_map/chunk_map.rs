@@ -3,9 +3,8 @@ use ahash::{HashMap, HashMapExt};
 use bevy::prelude::*;
 use rayon::iter::IntoParallelRefIterator;
 use rayon::prelude::*;
-use serde::{Deserialize, Serialize};
 
-use crate::{RemoveParticleEvent, ParticleSimulationSet, ParticleTypeMap, SimulationRun};
+use crate::{ParticleSimulationSet, ParticleTypeMap, RemoveParticleEvent, SimulationRun};
 
 /// Plugin for mapping particles to coordinate space.
 pub struct ChunkMapPlugin;
@@ -20,7 +19,6 @@ impl Plugin for ChunkMapPlugin {
         )
         .add_event::<ClearMapEvent>()
         .init_resource::<ChunkMap>()
-        .register_type::<Hibernating>()
         .observe(on_remove_particle)
         .observe(on_clear_chunk_map);
     }
@@ -30,31 +28,11 @@ impl Plugin for ChunkMapPlugin {
 #[derive(Event)]
 pub struct ClearMapEvent;
 
-/// Provides a flag for indicating whether an entity is in a hibernating state. Entities with the Hibernating component
-/// can be used with bevy query filters to manage which particles are actually being simulated.
-/// Marker component for entities that act as a central reference for particle type information.
-#[derive(
-    Clone,
-    Eq,
-    PartialEq,
-    Ord,
-    PartialOrd,
-    Hash,
-    Debug,
-    Default,
-    Component,
-    Reflect,
-    Serialize,
-    Deserialize,
-)]
-#[reflect(Component)]
-pub struct Hibernating;
-
 /// Chunk map for segmenting collections of entities into coordinate-based chunks.
 #[derive(Resource, Debug, Clone)]
 pub struct ChunkMap {
     /// The entity chunk maps
-    chunks: Vec<Chunk>,
+    pub chunks: Vec<Chunk>,
 }
 
 impl Default for ChunkMap {
@@ -135,27 +113,10 @@ impl ChunkMap {
     ///
     /// If a chunk was not activated and is currently awake, put it to sleep and add the Hibernating
     /// component to its entity.
-    pub fn reset_chunks(&mut self, mut commands: Commands) {
+    pub fn reset_chunks(&mut self) {
         for chunk in &mut self.chunks {
-            match (chunk.should_process_next_frame, chunk.hibernating) {
-                (true, true) => {
-                    // Wake up the chunk
-                    for entity in chunk.entities() {
-                        commands.entity(*entity).remove::<Hibernating>();
-                    }
-                    chunk.hibernating = false;
-                }
-                (false, false) => {
-                    // Put the chunk to sleep
-                    for entity in chunk.entities() {
-                        commands.entity(*entity).insert(Hibernating);
-                    }
-                    chunk.hibernating = true;
-                }
-                _ => {} // No state change needed
-            }
-            // Reset processing flag for the next frame
-            chunk.should_process_next_frame = false;
+            chunk.prev_dirty_rect = chunk.dirty_rect;
+            chunk.dirty_rect = None;
         }
     }
 
@@ -241,6 +202,15 @@ impl ChunkMap {
     pub fn par_iter(&self) -> impl IntoParallelIterator<Item = (&IVec2, &Entity)> {
         self.chunks.par_iter().flat_map(|chunk| chunk.par_iter())
     }
+
+    /// Should we process the entity this frame
+    pub fn should_process(&self, coords: &IVec2) -> bool {
+        if let Some(dirty_rect) = self.chunk(coords).unwrap().prev_dirty_rect {
+            return dirty_rect.contains(*coords);
+        }
+
+        false
+    }
 }
 
 /// A chunk which stores location information for entities.
@@ -250,8 +220,10 @@ pub struct Chunk {
     chunk: HashMap<IVec2, Entity>,
     /// The region of the chunk
     region: IRect,
-    /// A dirty rect showing all entities that changed position in the previous frame
+    /// A dirty rect for all particles that have moved in the current frame
     dirty_rect: Option<IRect>,
+    /// A dirty rect for all particles that moved in the previous frame
+    prev_dirty_rect: Option<IRect>,
     /// Flag indicating whether the chunk should be processed in the next frame
     should_process_next_frame: bool,
     /// Flag indicating whether the chunk should be processed this frame
@@ -264,7 +236,8 @@ impl Chunk {
         Chunk {
             chunk: HashMap::with_capacity(1024),
             region: IRect::from_corners(upper_left, lower_right),
-	    dirty_rect: None,
+            dirty_rect: None,
+            prev_dirty_rect: None,
             should_process_next_frame: false,
             hibernating: false,
         }
@@ -342,12 +315,12 @@ impl Chunk {
     pub fn insert_no_overwrite(&mut self, coords: IVec2, entity: Entity) -> &mut Entity {
         self.should_process_next_frame = true;
 
-	// Extend the dirty rect to include the newly added particle
-	if let Some(dirty_rect) = self.dirty_rect {
-	    self.dirty_rect = Some(dirty_rect.union_point(coords));
-	} else {
-	    self.dirty_rect = Some(IRect::from_center_size(coords, IVec2::ZERO));
-	}
+        // Extend the dirty rect to include the newly added particle
+        if let Some(dirty_rect) = self.dirty_rect {
+            self.dirty_rect = Some(dirty_rect.union_point(coords));
+        } else {
+            self.dirty_rect = Some(IRect::from_center_size(coords, IVec2::ONE));
+        }
 
         self.chunk.entry(coords).or_insert(entity)
     }
@@ -357,12 +330,12 @@ impl Chunk {
     pub fn insert_overwrite(&mut self, coords: IVec2, entity: Entity) -> Option<Entity> {
         self.should_process_next_frame = true;
 
-	// Extend the dirty rect to include the newly added particle
-	if let Some(dirty_rect) = self.dirty_rect {
-	    self.dirty_rect = Some(dirty_rect.union_point(coords));
-	} else {
-	    self.dirty_rect = Some(IRect::from_center_size(coords, IVec2::ZERO));
-	}
+        // Extend the dirty rect to include the newly added particle
+        if let Some(dirty_rect) = self.dirty_rect {
+            self.dirty_rect = Some(dirty_rect.union_point(coords));
+        } else {
+            self.dirty_rect = Some(IRect::from_center_size(coords, IVec2::ZERO));
+        }
 
         self.chunk.insert(coords, entity)
     }
@@ -371,7 +344,17 @@ impl Chunk {
 impl Chunk {
     /// Gets the dirty rect from the chunk
     pub fn dirty_rect(&self) -> Option<IRect> {
-	self.dirty_rect
+        self.dirty_rect
+    }
+
+    /// Gets the previous dirty rect from the chunk
+    pub fn prev_dirty_rect(&self) -> Option<IRect> {
+        self.prev_dirty_rect
+    }
+
+    /// Is the chunk empty
+    pub fn empty(&self) -> bool {
+	self.chunk.len() == 0
     }
 }
 
@@ -380,8 +363,8 @@ impl Chunk {
 /// When this system runs, all chunks are checked to see if they should be awakened in preparation for the next frame
 /// (see field `should_process_this_frame`). After this, their 'activated' status is reset (see field
 /// `should_process_next_frame`)
-pub fn reset_chunks(commands: Commands, mut map: ResMut<ChunkMap>) {
-    map.reset_chunks(commands);
+pub fn reset_chunks(mut map: ResMut<ChunkMap>) {
+    map.reset_chunks();
 }
 
 /// RemoveParticle event is triggered.
