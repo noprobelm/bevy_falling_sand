@@ -140,7 +140,7 @@ impl ChunkMap {
         let first_chunk_idx = self.chunk_index(&first);
         let second_chunk_idx = self.chunk_index(&second);
 
-        // Short-circuit if both positions are in the same chunk
+        // Short-circuit if both positions are in the same chunk to save ourselves a hashmap lookup.
         if first_chunk_idx == second_chunk_idx {
             let chunk = &mut self.chunks[first_chunk_idx];
 
@@ -152,7 +152,6 @@ impl ChunkMap {
                 chunk.insert_overwrite(second, entity_first);
             }
         } else {
-            // Handle when the positions are in different chunks
             let entity_first = self.chunks[first_chunk_idx].remove(&first).unwrap();
             if let Some(entity_second) = self.chunks[second_chunk_idx].remove(&second) {
                 self.chunks[first_chunk_idx].insert_overwrite(first, entity_second);
