@@ -212,11 +212,14 @@ impl ChunkMap {
 
     /// Should we process the entity this frame
     pub fn should_process_this_frame(&self, coords: &IVec2) -> bool {
-        if let Some(dirty_rect) = self.chunk(coords).unwrap().prev_dirty_rect {
-            return dirty_rect.contains(*coords);
-        }
-
-        false
+	if let Some(chunk) = self.chunk(coords) {
+	    if chunk.hibernating() == true {
+		return false
+	    } else if let Some(dirty_rect) = chunk.prev_dirty_rect() {
+		return dirty_rect.contains(*coords)
+	    }
+	}
+	false
     }
 }
 
