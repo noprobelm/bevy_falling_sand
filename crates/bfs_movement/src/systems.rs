@@ -47,7 +47,7 @@ pub fn handle_movement(
                 density,
                 mut movement_priority,
             )| {
-		if !map.should_process(&coordinates.0) && rng.chance(0.8) {
+		if !map.should_process_this_frame(&coordinates.0) && rng.chance(0.8) {
 		    return;
 		}
 

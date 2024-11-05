@@ -113,6 +113,35 @@ impl ChunkMap {
         for chunk in &mut self.chunks {
             chunk.prev_dirty_rect = chunk.dirty_rect;
             chunk.dirty_rect = None;
+
+            match (chunk.should_process_next_frame, chunk.hibernating) {
+                (true, true) => {
+                    chunk.hibernating = false;
+                }
+                (false, false) => {
+                    chunk.hibernating = true;
+                }
+                _ => {}
+            }
+
+            chunk.should_process_next_frame = false;
+        }
+    }
+
+    /// Checks if a coordinate lies on the border of a neighboring chunk and activates it if true.
+    fn activate_neighbor_chunks(&mut self, coord: &IVec2, chunk_idx: usize) {
+        let chunk = &self.chunks[chunk_idx];
+        let neighbors = [
+            (coord.x == chunk.min().x, chunk_idx - 1),  // Left neighbor
+            (coord.x == chunk.max().x, chunk_idx + 1),  // Right neighbor
+            (coord.y == chunk.min().y, chunk_idx + 32), // Bottom neighbor
+            (coord.y == chunk.max().y, chunk_idx - 32), // Top neighbor
+        ];
+
+        for (condition, neighbor_idx) in neighbors.iter() {
+            if *condition {
+                self.chunks[*neighbor_idx].should_process_next_frame = true;
+            }
         }
     }
 }
@@ -160,6 +189,9 @@ impl ChunkMap {
                 self.chunks[second_chunk_idx].insert_overwrite(second, entity_first);
             }
         }
+
+        self.activate_neighbor_chunks(&first, first_chunk_idx);
+        self.activate_neighbor_chunks(&second, second_chunk_idx);
     }
 
     /// Get an immutable reference to an entity, if it exists.
@@ -179,7 +211,7 @@ impl ChunkMap {
     }
 
     /// Should we process the entity this frame
-    pub fn should_process(&self, coords: &IVec2) -> bool {
+    pub fn should_process_this_frame(&self, coords: &IVec2) -> bool {
         if let Some(dirty_rect) = self.chunk(coords).unwrap().prev_dirty_rect {
             return dirty_rect.contains(*coords);
         }
@@ -199,6 +231,10 @@ pub struct Chunk {
     dirty_rect: Option<IRect>,
     /// A dirty rect for all particles that moved in the previous frame
     prev_dirty_rect: Option<IRect>,
+    /// Flag indicating whether the chunk should be processed in the next frame
+    should_process_next_frame: bool,
+    /// Flag indicating whether the chunk should be processed this frame
+    hibernating: bool,
 }
 
 impl Chunk {
@@ -209,6 +245,8 @@ impl Chunk {
             region: IRect::from_corners(upper_left, lower_right),
             dirty_rect: None,
             prev_dirty_rect: None,
+            should_process_next_frame: false,
+            hibernating: false
         }
     }
 }
@@ -222,6 +260,18 @@ impl Chunk {
     /// The maximum (lower right) point of the chunk's area
     pub fn max(&self) -> &IVec2 {
         &self.region.max
+    }
+}
+
+impl Chunk {
+    /// The chunk should be processed in the current frame
+    pub fn hibernating(&self) -> bool {
+        self.hibernating
+    }
+
+    /// The chunk should be processed in the next frame
+    pub fn should_process_next_frame(&self) -> bool {
+        self.should_process_next_frame
     }
 }
 
@@ -270,6 +320,7 @@ impl Chunk {
     /// wake up the subject chunk.
     pub fn insert_no_overwrite(&mut self, coords: IVec2, entity: Entity) -> &mut Entity {
         // Extend the dirty rect to include the newly added particle
+        self.should_process_next_frame = true;
         if let Some(dirty_rect) = self.dirty_rect {
             self.dirty_rect = Some(dirty_rect.union_point(coords));
         } else {
@@ -282,6 +333,7 @@ impl Chunk {
     /// Inserts a new entity at a given coordinate irrespective of its occupied state. Calls to this method will
     /// wake up the subject chunk.
     pub fn insert_overwrite(&mut self, coords: IVec2, entity: Entity) -> Option<Entity> {
+        self.should_process_next_frame = true;
         // Extend the dirty rect to include the newly added particle
         if let Some(dirty_rect) = self.dirty_rect {
             self.dirty_rect = Some(dirty_rect.union_point(coords));
