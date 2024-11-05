@@ -1,8 +1,8 @@
 //! Systems for moving particles.
 
-use std::mem;
 use crate::PhysicsRng;
 use crate::*;
+use std::mem;
 
 use bevy::utils::HashSet;
 use bfs_core::{ChunkMap, Coordinates, Particle, ParticleSimulationSet};
@@ -17,19 +17,17 @@ impl Plugin for SystemsPlugin {
 /// Moves all qualifying particles 'v' times equal to their current velocity
 #[allow(unused_mut)]
 pub fn handle_movement(
-    mut particle_query: Query<
-        (
-            Entity,
-            &Particle,
-            &mut Coordinates,
-            &mut Transform,
-            &mut PhysicsRng,
-            &mut Velocity,
-            Option<&mut Momentum>,
-            &Density,
-            &mut MovementPriority,
-        ),
-    >,
+    mut particle_query: Query<(
+        Entity,
+        &Particle,
+        &mut Coordinates,
+        &mut Transform,
+        &mut PhysicsRng,
+        &mut Velocity,
+        Option<&mut Momentum>,
+        &Density,
+        &mut MovementPriority,
+    )>,
     mut map: ResMut<ChunkMap>,
 ) {
     // Check visited before we perform logic on a particle (particles shouldn't move more than once)
@@ -47,9 +45,18 @@ pub fn handle_movement(
                 density,
                 mut movement_priority,
             )| {
-		if !map.should_process_this_frame(&coordinates.0) && rng.chance(0.8) {
-		    return;
-		}
+                if let Some(chunk) = map.chunk(&coordinates.0) {
+		    let hibernating = chunk.hibernating();
+                    if let Some(dirty_rect) = chunk.prev_dirty_rect() {
+			if hibernating {
+			    if rng.chance(0.95) {
+				return;
+			    }
+			} else if !dirty_rect.contains(coordinates.0) && rng.chance(0.8) {
+			    return;
+			}
+		    }
+                }
 
                 // Used to determine if we should add the particle to set of visited particles.
                 let mut moved = false;
@@ -103,8 +110,7 @@ pub fn handle_movement(
                                         velocity.decrement();
                                         moved = true;
                                         break 'velocity_loop;
-                                    }
-                                    else {
+                                    } else {
                                         obstructed.insert(relative_coordinates.signum());
                                         continue;
                                     }

@@ -61,7 +61,7 @@ impl ChunkMap {
     }
 
     /// Gets an immutable reference to a chunk
-    fn chunk(&self, coord: &IVec2) -> Option<&Chunk> {
+    pub fn chunk(&self, coord: &IVec2) -> Option<&Chunk> {
         let index = self.chunk_index(coord);
         self.chunks.get(index)
     }
@@ -316,6 +316,7 @@ impl Chunk {
     /// > Calling this method will cause major breakage to the simulation if entities are not
     /// simultaneously cleared within the same system from which this method was called.
     pub fn remove(&mut self, coords: &IVec2) -> Option<Entity> {
+        self.should_process_next_frame = true;
         self.chunk.remove(coords)
     }
 
