@@ -296,10 +296,10 @@ pub fn update_brush(
 /// Set the brush particle type to whatever the cursor is hovered on.
 fn sample_hovered(
     mouse_buttons: Res<ButtonInput<MouseButton>>,
-    mut selected_particle: ResMut<SelectedParticle>,
     cursor_coords: Res<CursorCoords>,
     chunk_map: Res<ChunkMap>,
     particle_query: Query<&Particle>,
+    mut selected_particle: ResMut<SelectedParticle>,
     mut brush_state: ResMut<NextState<BrushState>>,
 ) {
     if mouse_buttons.just_pressed(MouseButton::Middle) {
