@@ -9,11 +9,11 @@
 //!   - `DynamicParticleTypeBundle`: For particles that have movement behavior
 use bevy::prelude::*;
 
-use bevy_falling_sand::color::*;
-use bevy_falling_sand::movement::*;
-use bevy_falling_sand::core::*;
 use bevy_falling_sand::asset_loaders::*;
 use bevy_falling_sand::bundles::*;
+use bevy_falling_sand::color::*;
+use bevy_falling_sand::core::*;
+use bevy_falling_sand::movement::*;
 
 /// Particle Management Plugin
 pub(super) struct ParticleSetupPlugin;
@@ -48,21 +48,24 @@ pub fn setup_custom_particles(mut commands: Commands) {
         ),
         // If momentum effects are desired, insert the marker component.
         Momentum::ZERO,
-        // This particle type can burn when it comes within range of an entity with the Fire component.
+        Name::new("My Custom Particle"),
     ));
 
-    commands.spawn(StaticParticleTypeBundle::new(
-        ParticleType::new("My Custom Wall Particle"),
-        ParticleColor::new(
-            Color::srgba(0.22, 0.11, 0.16, 1.0),
-            vec![
+    commands.spawn((
+        StaticParticleTypeBundle::new(
+            ParticleType::new("My Custom Wall Particle"),
+            ParticleColor::new(
                 Color::srgba(0.22, 0.11, 0.16, 1.0),
-                Color::srgba(0.24, 0.41, 0.56, 1.0),
-                Color::srgba(0.67, 0.74, 0.55, 1.0),
-                Color::srgba(0.91, 0.89, 0.71, 1.0),
-                Color::srgba(0.95, 0.61, 0.43, 1.0),
-            ],
+                vec![
+                    Color::srgba(0.22, 0.11, 0.16, 1.0),
+                    Color::srgba(0.24, 0.41, 0.56, 1.0),
+                    Color::srgba(0.67, 0.74, 0.55, 1.0),
+                    Color::srgba(0.91, 0.89, 0.71, 1.0),
+                    Color::srgba(0.95, 0.61, 0.43, 1.0),
+                ],
+            ),
         ),
+        Name::new("My Custom Wall Particle"),
     ));
 }
 
