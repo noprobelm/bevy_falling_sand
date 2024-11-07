@@ -52,7 +52,7 @@ pub fn handle_movement(
 			    if rng.chance(0.95) {
 				return;
 			    }
-			} else if !dirty_rect.contains(coordinates.0) && rng.chance(0.8) {
+			} else if !dirty_rect.contains(coordinates.0) && rng.chance(0.7) {
 			    return;
 			}
 		    }
