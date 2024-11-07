@@ -2,6 +2,8 @@
 use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::EguiContexts;
 
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
+
 use super::*;
 use bevy_falling_sand::debug::{DebugParticles, TotalParticleCount};
 use bevy_falling_sand::scenes::{LoadSceneEvent, SaveSceneEvent};
@@ -17,7 +19,8 @@ impl bevy::prelude::Plugin for UIPlugin {
             .init_resource::<CursorCoords>()
             .add_systems(First, update_cursor_coordinates)
             .add_systems(OnEnter(AppState::Ui), show_cursor)
-            .add_systems(OnEnter(AppState::Canvas), hide_cursor);
+            .add_systems(OnEnter(AppState::Canvas), hide_cursor)
+            .add_plugins(WorldInspectorPlugin::new());
     }
 }
 
@@ -54,7 +57,7 @@ pub fn update_cursor_coordinates(
         .and_then(|cursor| camera.viewport_to_world(camera_transform, cursor))
         .map(|ray| ray.origin.truncate())
     {
-	coords.previous = coords.current;
+        coords.previous = coords.current;
         coords.current = world_position;
     }
 }
@@ -112,10 +115,7 @@ pub fn render_ui(
         EventWriter<BrushResizeEvent>,
         Res<MaxBrushSize>,
     ),
-    (debug_particles, total_particle_count): (
-        Option<Res<DebugParticles>>,
-        Res<TotalParticleCount>,
-    ),
+    (debug_particles, total_particle_count): (Option<Res<DebugParticles>>, Res<TotalParticleCount>),
     (mut selected_particle, particle_type_list): (ResMut<SelectedParticle>, Res<ParticleTypeList>),
     (mut scene_selection_dialog, mut scene_path, mut ev_save_scene, mut ev_load_scene): (
         ResMut<SceneSelectionDialog>,
@@ -154,11 +154,6 @@ pub fn render_ui(
                 &mut brush_state,
                 &mut commands,
             );
-            DebugUI.render(
-                ui,
-                &debug_particles,
-                total_particle_count.0,
-                &mut commands,
-            );
+            DebugUI.render(ui, &debug_particles, total_particle_count.0, &mut commands);
         });
 }

@@ -17,8 +17,9 @@ bfs_internal = { path = "crates/bfs_internal" }
 bevy = { version = "0.14.0", features = ["wayland"] }
 
 [dev-dependencies]
-bevy_egui = "0.28.0"
-egui = "0.28.1"
+bevy-inspector-egui = "0.27.0"
+bevy_egui = "0.30"
+egui = "0.29"
 
 [profile.release]
 lto = true
@@ -27,10 +28,10 @@ codegen-units = 1
 incremental = false
 debug = false
 
-# Enable max optimizations for dependencies, but not for our code:
-[profile.dev.package."*"]
-opt-level = 3
-
 # Enable only a small amount of optimization in debug mode
 [profile.dev]
 opt-level = 1
+
+# Enable max optimizations for dependencies, but not for our code:
+[profile.dev.package."*"]
+opt-level = 3
