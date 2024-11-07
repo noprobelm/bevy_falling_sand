@@ -1,12 +1,13 @@
 //! UI module.
 use bevy::{prelude::*, window::PrimaryWindow};
-use bevy_egui::EguiContexts;
+use bevy_egui::{EguiContext, EguiContexts};
 
-use bevy_inspector_egui::quick::WorldInspectorPlugin;
+use bevy_inspector_egui::quick::{ResourceInspectorPlugin, WorldInspectorPlugin};
 
 use super::*;
 use bevy_falling_sand::debug::{DebugParticles, TotalParticleCount};
 use bevy_falling_sand::scenes::{LoadSceneEvent, SaveSceneEvent};
+use bevy_falling_sand::core::ParticleType;
 
 /// UI plugin
 pub(super) struct UIPlugin;
@@ -20,7 +21,7 @@ impl bevy::prelude::Plugin for UIPlugin {
             .add_systems(First, update_cursor_coordinates)
             .add_systems(OnEnter(AppState::Ui), show_cursor)
             .add_systems(OnEnter(AppState::Canvas), hide_cursor)
-            .add_plugins(WorldInspectorPlugin::new());
+            .add_systems(Update, inspector_ui);
     }
 }
 
@@ -156,4 +157,21 @@ pub fn render_ui(
             );
             DebugUI.render(ui, &debug_particles, total_particle_count.0, &mut commands);
         });
+}
+
+fn inspector_ui(world: &mut World) {
+    let Ok(egui_context) = world
+        .query_filtered::<&mut EguiContext, With<PrimaryWindow>>()
+        .get_single(world)
+    else {
+        return;
+    };
+    let mut egui_context = egui_context.clone();
+
+    egui::Window::new("UI").show(egui_context.get_mut(), |ui| {
+        egui::ScrollArea::vertical().show(ui, |ui| {
+            ui.heading("Entities");
+            bevy_inspector_egui::bevy_inspector::ui_for_world_entities_filtered::<With<ParticleType>>(world, ui, false);
+        });
+    });
 }
