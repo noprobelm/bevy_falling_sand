@@ -16,4 +16,3 @@ impl Plugin for ParticleTypePlugin {
             .init_resource::<ParticleTypeMap>();
     }
 }
-
