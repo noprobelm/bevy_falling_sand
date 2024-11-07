@@ -300,11 +300,14 @@ fn sample_hovered(
     cursor_coords: Res<CursorCoords>,
     chunk_map: Res<ChunkMap>,
     particle_query: Query<&Particle>,
+    mut brush_state: ResMut<NextState<BrushState>>,
 ) {
     if mouse_buttons.just_pressed(MouseButton::Middle) {
-	let entity = chunk_map.entity(&cursor_coords.current.as_ivec2()).unwrap();
-	let particle = particle_query.get(*entity).unwrap();
-	selected_particle.0 = particle.name.clone();
+	if let Some(entity) = chunk_map.entity(&cursor_coords.current.as_ivec2()) {
+	    let particle = particle_query.get(*entity).unwrap();
+	    selected_particle.0 = particle.name.clone();
+	    brush_state.set(BrushState::Spawn);
+	}
     }
 }
 
