@@ -20,7 +20,10 @@ pub struct ParticleManagementPlugin;
 
 impl Plugin for ParticleManagementPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(PreUpdate, handle_new_particles.before(ParticleSimulationSet));
+        app.add_systems(Update, mutate_particle_type).add_systems(
+            PreUpdate,
+            handle_new_particles.before(ParticleSimulationSet),
+        );
     }
 }
 
@@ -78,4 +81,16 @@ pub fn handle_new_particles(
             );
         }
     }
+}
+
+/// Manage mutated particle types.
+pub fn mutate_particle_type(
+    mut commands: Commands,
+    particle_type_query: Query<(&ParticleType, &Children), Changed<ParticleColor>>,
+) {
+    particle_type_query.iter().for_each(|(_, children)| {
+        children.iter().for_each(|entity| {
+            commands.trigger(ResetParticleEvent { entity: *entity });
+        });
+    });
 }
