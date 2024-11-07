@@ -1,8 +1,8 @@
 //! This module demonstrates how to spawn/despawn particles from the world using a brush tool.
 use bevy::{prelude::*, utils::HashSet};
 
-use super::CursorCoords;
-use bevy_falling_sand::core::{Particle, RemoveParticleEvent};
+use super::{CursorCoords, SelectedParticle};
+use bevy_falling_sand::core::{Particle, RemoveParticleEvent, ChunkMap};
 
 /// Brush plugin.
 pub(super) struct BrushPlugin;
@@ -14,7 +14,7 @@ impl bevy::prelude::Plugin for BrushPlugin {
         app.init_gizmo_group::<BrushGizmos>();
         app.add_event::<BrushResizeEvent>();
         app.add_systems(Startup, setup_brush)
-            .add_systems(Update, (update_brush, resize_brush_event_listener));
+            .add_systems(Update, (update_brush, resize_brush_event_listener, sample_hovered));
     }
 }
 
@@ -133,7 +133,7 @@ impl BrushType {
             BrushType::Circle => {
                 let particle = selected_particle.clone();
 
-		// If there's no distance between one cursor coordinate and the next, draw a circle instead.
+                // If there's no distance between one cursor coordinate and the next, draw a circle instead.
                 if (coords.current - coords.previous).length() < 1.0 {
                     let circle_center = coords.current;
                     let mut points: HashSet<IVec2> = HashSet::default();
@@ -291,6 +291,21 @@ pub fn update_brush(
 ) {
     let brush = brush_query.single();
     brush_type.update_brush(cursor_coords.current, brush.size as f32, &mut brush_gizmos);
+}
+
+/// Set the brush particle type to whatever the cursor is hovered on.
+fn sample_hovered(
+    mouse_buttons: Res<ButtonInput<MouseButton>>,
+    mut selected_particle: ResMut<SelectedParticle>,
+    cursor_coords: Res<CursorCoords>,
+    chunk_map: Res<ChunkMap>,
+    particle_query: Query<&Particle>,
+) {
+    if mouse_buttons.just_pressed(MouseButton::Middle) {
+	let entity = chunk_map.entity(&cursor_coords.current.as_ivec2()).unwrap();
+	let particle = particle_query.get(*entity).unwrap();
+	selected_particle.0 = particle.name.clone();
+    }
 }
 
 /// Resizes the brush when a resize event is published.
