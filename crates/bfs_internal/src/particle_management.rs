@@ -86,7 +86,20 @@ pub fn handle_new_particles(
 /// Manage mutated particle types.
 pub fn mutate_particle_type(
     mut commands: Commands,
-    particle_type_query: Query<(&ParticleType, &Children), Changed<ParticleColor>>,
+    particle_type_query: Query<
+        (&ParticleType, &Children),
+        Or<(
+            Changed<Density>,
+            Changed<ParticleColor>,
+            Changed<MovementPriority>,
+            Changed<RandomizesColor>,
+            Changed<FlowsColor>,
+	    Changed<Momentum>,
+	    Changed<Fire>,
+	    Changed<Burns>,
+	    Changed<Burning>
+        )>,
+    >,
 ) {
     particle_type_query.iter().for_each(|(_, children)| {
         children.iter().for_each(|entity| {
