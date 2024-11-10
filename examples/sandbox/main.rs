@@ -1,14 +1,12 @@
 //! A complete example on how to build an interactive particle sandbox with bevy_falling_sand
 mod brush;
 mod camera;
-mod particle_management;
 mod particle_setup;
 mod scenes;
 mod ui;
 
 use brush::*;
 use camera::*;
-use particle_management::*;
 use particle_setup::*;
 use scenes::*;
 use ui::*;
@@ -36,7 +34,6 @@ fn main() {
         // Plugins provided by the modules defined in this example.
         CameraPlugin,
         ParticleSetupPlugin,
-        ParticleManagementPlugin,
         BrushPlugin,
         ScenesPlugin,
         UIPlugin,

@@ -1,8 +1,13 @@
 //! This module demonstrates how to spawn/despawn particles from the world using a brush tool.
-use bevy::{prelude::*, utils::HashSet};
+use bevy::{
+    input::common_conditions::input_pressed,
+    prelude::*,
+    utils::HashSet,
+};
+use bevy_egui::EguiContexts;
+use bevy_falling_sand::core::{ChunkMap, Particle, ParticleSimulationSet, RemoveParticleEvent};
 
-use super::{CursorCoords, SelectedParticle};
-use bevy_falling_sand::core::{Particle, RemoveParticleEvent, ChunkMap};
+use super::{update_cursor_coordinates, AppState, CursorCoords, SelectedParticle};
 
 /// Brush plugin.
 pub(super) struct BrushPlugin;
@@ -13,8 +18,27 @@ impl bevy::prelude::Plugin for BrushPlugin {
         app.init_state::<BrushState>().init_state::<BrushType>();
         app.init_gizmo_group::<BrushGizmos>();
         app.add_event::<BrushResizeEvent>();
-        app.add_systems(Startup, setup_brush)
-            .add_systems(Update, (update_brush, resize_brush_event_listener, sample_hovered));
+        app.add_systems(Startup, setup_brush).add_systems(
+            Update,
+            (update_brush, resize_brush_event_listener, sample_hovered),
+        );
+        app.add_systems(
+            Update,
+            spawn_particles
+                .run_if(input_pressed(MouseButton::Left))
+                .run_if(in_state(BrushState::Spawn))
+                .run_if(in_state(AppState::Canvas))
+                .after(update_cursor_coordinates),
+        );
+        app.add_systems(
+            Update,
+            despawn_particles
+                .run_if(input_pressed(MouseButton::Left))
+                .run_if(in_state(BrushState::Despawn))
+                .run_if(in_state(AppState::Canvas))
+                .before(ParticleSimulationSet)
+                .after(update_cursor_coordinates),
+        );
     }
 }
 
@@ -264,11 +288,11 @@ fn sample_hovered(
     mut brush_state: ResMut<NextState<BrushState>>,
 ) {
     if mouse_buttons.just_pressed(MouseButton::Middle) {
-	if let Some(entity) = chunk_map.entity(&cursor_coords.current.as_ivec2()) {
-	    let particle = particle_query.get(*entity).unwrap();
-	    selected_particle.0 = particle.name.clone();
-	    brush_state.set(BrushState::Spawn);
-	}
+        if let Some(entity) = chunk_map.entity(&cursor_coords.current.as_ivec2()) {
+            let particle = particle_query.get(*entity).unwrap();
+            selected_particle.0 = particle.name.clone();
+            brush_state.set(BrushState::Spawn);
+        }
     }
 }
 
@@ -311,4 +335,47 @@ fn points_within_capsule(capsule: &Capsule2d, start: Vec2, end: Vec2) -> Vec<IVe
     }
 
     points_inside
+}
+
+/// Spawns particles using current brush position and size information.
+pub fn spawn_particles(
+    mut commands: Commands,
+    cursor_coords: Res<CursorCoords>,
+    selected: Res<SelectedParticle>,
+    brush_type: Res<State<BrushType>>,
+    brush_query: Query<&Brush>,
+) {
+    let brush = brush_query.single();
+    let brush_type = brush_type.get();
+    brush_type.spawn_particles(
+        &mut commands,
+        cursor_coords,
+        brush.size as f32,
+        Particle {
+            name: selected.0.clone(),
+        },
+    );
+}
+
+/// Despawns particles using current brush position and size information.
+pub fn despawn_particles(
+    mut commands: Commands,
+    cursor_coords: Res<CursorCoords>,
+    brush_type: Res<State<BrushType>>,
+    brush_query: Query<&Brush>,
+    mut contexts: EguiContexts,
+) {
+    let ctx = contexts.ctx_mut();
+    if ctx.is_pointer_over_area() {
+        return;
+    }
+
+    let brush = brush_query.single();
+    let brush_size = brush.size;
+
+    brush_type.remove_particles(
+        &mut commands,
+        cursor_coords.current.as_ivec2(),
+        brush_size as f32,
+    )
 }

@@ -1,14 +1,18 @@
 //! UI module.
-use bevy::{prelude::*, window::PrimaryWindow, utils::{Entry, HashMap}};
+use bevy::{
+    input::common_conditions::input_just_pressed,
+    prelude::*,
+    utils::{Entry, HashMap},
+    window::PrimaryWindow,
+};
 use bevy_egui::{EguiContext, EguiContexts};
 
-use bevy_falling_sand::core::{ClearMapEvent, ParticleType};
+use bevy_falling_sand::core::{ClearMapEvent, ParticleType, SimulationRun};
 use bevy_falling_sand::debug::{DebugParticles, TotalParticleCount};
 use bevy_falling_sand::movement::*;
 use bevy_falling_sand::scenes::{LoadSceneEvent, SaveSceneEvent};
 
 use super::*;
-
 
 /// UI plugin
 pub(super) struct UIPlugin;
@@ -19,10 +23,15 @@ impl bevy::prelude::Plugin for UIPlugin {
             .add_systems(Update, render_ui)
             .add_systems(Update, update_particle_list)
             .add_systems(Update, update_app_state.after(render_ui))
+            .add_systems(
+                Update,
+                toggle_simulation.run_if(input_just_pressed(KeyCode::Space)),
+            )
             .init_resource::<CursorCoords>()
             .init_resource::<ParticleList>()
             .init_resource::<ParticleTypeList>()
             .init_resource::<DebugParticles>()
+            .init_resource::<SelectedParticle>()
             .add_systems(First, update_cursor_coordinates)
             .add_systems(OnEnter(AppState::Ui), show_cursor)
             .add_systems(OnEnter(AppState::Canvas), hide_cursor)
@@ -88,6 +97,16 @@ impl ParticleList {
     /// Adds to the ParticleList.
     pub fn push(&mut self, value: String) {
         self.particle_list.push(value);
+    }
+}
+
+/// The currently selected particle for spawning.
+#[derive(Resource)]
+pub struct SelectedParticle(pub String);
+
+impl Default for SelectedParticle {
+    fn default() -> SelectedParticle {
+        SelectedParticle("Dirt Wall".to_string())
     }
 }
 
@@ -383,4 +402,13 @@ pub fn update_particle_list(
             }
         },
     );
+}
+
+/// Stops or starts the simulation when scheduled.
+pub fn toggle_simulation(mut commands: Commands, simulation_pause: Option<Res<SimulationRun>>) {
+    if simulation_pause.is_some() {
+        commands.remove_resource::<SimulationRun>();
+    } else {
+        commands.init_resource::<SimulationRun>();
+    }
 }
