@@ -1,7 +1,6 @@
 //! A complete example on how to build an interactive particle sandbox with bevy_falling_sand
 mod brush;
 mod camera;
-mod debug;
 mod particle_management;
 mod particle_setup;
 mod scenes;
@@ -9,7 +8,6 @@ mod ui;
 
 use brush::*;
 use camera::*;
-use debug::*;
 use particle_management::*;
 use particle_setup::*;
 use scenes::*;
@@ -41,7 +39,6 @@ fn main() {
         ParticleManagementPlugin,
         BrushPlugin,
         ScenesPlugin,
-        DebugPlugin,
         UIPlugin,
     ))
     .insert_resource(ClearColor(Color::srgba(0.17, 0.16, 0.15, 1.0)))

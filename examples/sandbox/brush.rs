@@ -230,45 +230,6 @@ impl BrushType {
     }
 }
 
-/// UI for brush control mechanics.
-pub struct BrushControlUI;
-
-impl BrushControlUI {
-    /// Renders the brush control UI
-    pub fn render(
-        &self,
-        ui: &mut egui::Ui,
-        brush_size: &mut usize,
-        max_brush_size: usize,
-        ev_brush_resize: &mut EventWriter<BrushResizeEvent>,
-        mut current_brush_type: &BrushType,
-        next_brush_type: &mut ResMut<NextState<BrushType>>,
-    ) {
-        egui::ComboBox::from_label("Brush Type")
-            .selected_text(format!("{:?}", current_brush_type))
-            .show_ui(ui, |ui| {
-                if ui
-                    .selectable_value(&mut current_brush_type, &BrushType::Line, "Line")
-                    .changed()
-                {
-                    next_brush_type.set(BrushType::Line)
-                };
-                if ui
-                    .selectable_value(&mut current_brush_type, &BrushType::Circle, "Circle")
-                    .changed()
-                {
-                    next_brush_type.set(BrushType::Circle)
-                };
-            });
-        if ui
-            .add(egui::Slider::new(brush_size, 1..=max_brush_size))
-            .changed()
-        {
-            ev_brush_resize.send(BrushResizeEvent(*brush_size));
-        }
-    }
-}
-
 /// Sets up the brush.
 pub fn setup_brush(
     mut commands: Commands,

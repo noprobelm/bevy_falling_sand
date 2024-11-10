@@ -3,9 +3,9 @@ use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::{EguiContext, EguiContexts};
 
 use super::*;
+use bevy_falling_sand::core::ParticleType;
 use bevy_falling_sand::debug::{DebugParticles, TotalParticleCount};
 use bevy_falling_sand::scenes::{LoadSceneEvent, SaveSceneEvent};
-use bevy_falling_sand::core::ParticleType;
 
 /// UI plugin
 pub(super) struct UIPlugin;
@@ -16,10 +16,11 @@ impl bevy::prelude::Plugin for UIPlugin {
             .add_systems(Update, render_ui)
             .add_systems(Update, update_app_state.after(render_ui))
             .init_resource::<CursorCoords>()
+            .init_resource::<DebugParticles>()
             .add_systems(First, update_cursor_coordinates)
             .add_systems(OnEnter(AppState::Ui), show_cursor)
             .add_systems(OnEnter(AppState::Canvas), hide_cursor)
-	    .add_plugins(bevy_inspector_egui::DefaultInspectorConfigPlugin)
+            .add_plugins(bevy_inspector_egui::DefaultInspectorConfigPlugin)
             .add_systems(Update, inspector_ui);
     }
 }
@@ -40,6 +41,72 @@ pub enum AppState {
 pub struct CursorCoords {
     pub previous: Vec2,
     pub current: Vec2,
+}
+
+/// UI for brush control mechanics.
+pub struct BrushControlUI;
+
+impl BrushControlUI {
+    /// Renders the brush control UI
+    pub fn render(
+        &self,
+        ui: &mut egui::Ui,
+        brush_size: &mut usize,
+        max_brush_size: usize,
+        ev_brush_resize: &mut EventWriter<BrushResizeEvent>,
+        mut current_brush_type: &BrushType,
+        next_brush_type: &mut ResMut<NextState<BrushType>>,
+    ) {
+        egui::ComboBox::from_label("Brush Type")
+            .selected_text(format!("{:?}", current_brush_type))
+            .show_ui(ui, |ui| {
+                if ui
+                    .selectable_value(&mut current_brush_type, &BrushType::Line, "Line")
+                    .changed()
+                {
+                    next_brush_type.set(BrushType::Line)
+                };
+                if ui
+                    .selectable_value(&mut current_brush_type, &BrushType::Circle, "Circle")
+                    .changed()
+                {
+                    next_brush_type.set(BrushType::Circle)
+                };
+            });
+        if ui
+            .add(egui::Slider::new(brush_size, 1..=max_brush_size))
+            .changed()
+        {
+            ev_brush_resize.send(BrushResizeEvent(*brush_size));
+        }
+    }
+}
+
+/// UI for showing `bevy_falling_sand` debug capability.
+pub struct DebugUI;
+
+impl DebugUI {
+    /// Render the debug UI
+    pub fn render(
+        &self,
+        ui: &mut egui::Ui,
+        debug_particles: &Option<Res<DebugParticles>>,
+        total_particle_count: u64,
+        commands: &mut Commands,
+    ) {
+        let mut debugging = debug_particles.is_some();
+        if ui.checkbox(&mut debugging, "Debug Mode").clicked() {
+            if debugging {
+                commands.init_resource::<DebugParticles>();
+            } else {
+                commands.remove_resource::<DebugParticles>();
+            }
+        }
+
+        if debug_particles.is_some() {
+            ui.label(format!("Total Particles: {}", total_particle_count));
+        }
+    }
 }
 
 /// Updates the cursor coordinates each frame.
