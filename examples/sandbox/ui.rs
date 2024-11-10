@@ -1,11 +1,14 @@
 //! UI module.
-use bevy::{prelude::*, window::PrimaryWindow};
+use bevy::{prelude::*, window::PrimaryWindow, utils::{Entry, HashMap}};
 use bevy_egui::{EguiContext, EguiContexts};
 
-use super::*;
-use bevy_falling_sand::core::{ParticleType, ClearMapEvent};
+use bevy_falling_sand::core::{ClearMapEvent, ParticleType};
 use bevy_falling_sand::debug::{DebugParticles, TotalParticleCount};
+use bevy_falling_sand::movement::*;
 use bevy_falling_sand::scenes::{LoadSceneEvent, SaveSceneEvent};
+
+use super::*;
+
 
 /// UI plugin
 pub(super) struct UIPlugin;
@@ -14,8 +17,11 @@ impl bevy::prelude::Plugin for UIPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
         app.init_state::<AppState>()
             .add_systems(Update, render_ui)
+            .add_systems(Update, update_particle_list)
             .add_systems(Update, update_app_state.after(render_ui))
             .init_resource::<CursorCoords>()
+            .init_resource::<ParticleList>()
+            .init_resource::<ParticleTypeList>()
             .init_resource::<DebugParticles>()
             .add_systems(First, update_cursor_coordinates)
             .add_systems(OnEnter(AppState::Ui), show_cursor)
@@ -43,6 +49,47 @@ pub struct CursorCoords {
     pub current: Vec2,
 }
 
+/// A list of particle types organized by material type.
+#[derive(Resource, Default)]
+pub struct ParticleTypeList {
+    map: HashMap<String, Vec<String>>,
+}
+
+impl ParticleTypeList {
+    /// Get a particle type from the list
+    pub fn get(&self, name: &str) -> Option<&Vec<String>> {
+        self.map.get(name)
+    }
+
+    /// Insert a list of particles into the map for a given material. If the material already exists, modify the
+    /// existing list. Lists are sorted after each call to this method.
+    pub fn insert_or_modify(&mut self, material: String, particles: Vec<String>) {
+        match self.map.entry(material) {
+            Entry::Occupied(mut entry) => {
+                entry.get_mut().extend(particles);
+                entry.get_mut().sort();
+            }
+            Entry::Vacant(entry) => {
+                let mut sorted_particles = particles;
+                sorted_particles.sort();
+                entry.insert(sorted_particles);
+            }
+        }
+    }
+}
+
+/// Provides an ordered list of particles for the UI.
+#[derive(Resource, Default)]
+pub struct ParticleList {
+    pub particle_list: Vec<String>,
+}
+
+impl ParticleList {
+    /// Adds to the ParticleList.
+    pub fn push(&mut self, value: String) {
+        self.particle_list.push(value);
+    }
+}
 
 /// UI for particle control mechanics.
 pub struct ParticleControlUI;
@@ -130,7 +177,6 @@ impl BrushControlUI {
         }
     }
 }
-
 
 /// UI for showing `bevy_falling_sand` debug capability.
 pub struct DebugUI;
@@ -290,4 +336,51 @@ fn inspector_ui(world: &mut World) {
             bevy_inspector_egui::bevy_inspector::ui_for_world_entities_filtered::<With<ParticleType>>(world, ui, false);
         });
     });
+}
+
+pub fn update_particle_list(
+    new_particle_query: Query<
+        (
+            &ParticleType,
+            Option<&Wall>,
+            Option<&MovableSolid>,
+            Option<&Solid>,
+            Option<&Liquid>,
+            Option<&Gas>,
+        ),
+        Added<ParticleType>,
+    >,
+    mut particle_list: ResMut<ParticleList>,
+    mut particle_type_list: ResMut<ParticleTypeList>,
+) {
+    new_particle_query.iter().for_each(
+        |(particle_type, wall, movable_solid, solid, liquid, gas)| {
+            // Add the particle type name to the particle_list
+            particle_list.push(particle_type.name.clone());
+
+            // Check for the presence of each optional component and update particle_type_list accordingly
+            if wall.is_some() {
+                particle_type_list
+                    .insert_or_modify("Walls".to_string(), vec![particle_type.name.clone()]);
+            }
+            if movable_solid.is_some() {
+                particle_type_list.insert_or_modify(
+                    "Movable Solids".to_string(),
+                    vec![particle_type.name.clone()],
+                );
+            }
+            if solid.is_some() {
+                particle_type_list
+                    .insert_or_modify("Solids".to_string(), vec![particle_type.name.clone()]);
+            }
+            if liquid.is_some() {
+                particle_type_list
+                    .insert_or_modify("Liquids".to_string(), vec![particle_type.name.clone()]);
+            }
+            if gas.is_some() {
+                particle_type_list
+                    .insert_or_modify("Gases".to_string(), vec![particle_type.name.clone()]);
+            }
+        },
+    );
 }
