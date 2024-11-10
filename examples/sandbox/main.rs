@@ -1,13 +1,13 @@
 //! A complete example on how to build an interactive particle sandbox with bevy_falling_sand
+mod setup;
 mod brush;
 mod camera;
-mod particle_setup;
 mod scenes;
 mod ui;
 
+use setup::*;
 use brush::*;
 use camera::*;
-use particle_setup::*;
 use scenes::*;
 use ui::*;
 
