@@ -50,6 +50,11 @@ pub struct ParticleTypeList {
 }
 
 impl ParticleTypeList {
+    /// Get a particle type from the list
+    pub fn get(&self, name: &str) -> Option<&Vec<String>>{
+        self.map.get(name)
+    }
+
     /// Insert a list of particles into the map for a given material. If the material already exists, modify the
     /// existing list. Lists are sorted after each call to this method.
     pub fn insert_or_modify(&mut self, material: String, particles: Vec<String>) {
@@ -90,53 +95,6 @@ impl Default for SelectedParticle {
     }
 }
 
-/// UI for particle control mechanics.
-pub struct ParticleControlUI;
-
-impl ParticleControlUI {
-    /// Renders the particle control UI
-    pub fn render(
-        &self,
-        ui: &mut egui::Ui,
-        particle_type_list: &Res<ParticleTypeList>,
-        selected_particle: &mut ResMut<SelectedParticle>,
-        brush_state: &mut ResMut<NextState<BrushState>>,
-        commands: &mut Commands,
-    ) {
-        ui.vertical(|ui| {
-            // Define the fixed order of categories
-            let categories = ["Walls", "Solids", "Movable Solids", "Liquids", "Gases"];
-
-            // Iterate through categories in a deterministic order
-            for &category in &categories {
-                if let Some(particles) = particle_type_list.map.get(category) {
-                    egui::CollapsingHeader::new(category) // Use the category as the header title
-                        .default_open(false)
-                        .show(ui, |ui| {
-                            particles.iter().for_each(|particle_name| {
-                                // Create a button for each particle name
-                                if ui.button(particle_name).clicked() {
-                                    selected_particle.0 = particle_name.clone();
-                                    brush_state.set(BrushState::Spawn);
-                                }
-                            });
-                        });
-                }
-            }
-
-            // Existing UI elements for Remove and Despawn All Particles
-            ui.horizontal_wrapped(|ui| {
-                if ui.button("Remove").clicked() {
-                    brush_state.set(BrushState::Despawn);
-                }
-            });
-
-            if ui.button("Despawn All Particles").clicked() {
-                commands.trigger(ClearMapEvent);
-            }
-        });
-    }
-}
 
 pub fn update_particle_list(
     new_particle_query: Query<

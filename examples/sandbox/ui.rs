@@ -3,7 +3,7 @@ use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::{EguiContext, EguiContexts};
 
 use super::*;
-use bevy_falling_sand::core::ParticleType;
+use bevy_falling_sand::core::{ParticleType, ClearMapEvent};
 use bevy_falling_sand::debug::{DebugParticles, TotalParticleCount};
 use bevy_falling_sand::scenes::{LoadSceneEvent, SaveSceneEvent};
 
@@ -41,6 +41,55 @@ pub enum AppState {
 pub struct CursorCoords {
     pub previous: Vec2,
     pub current: Vec2,
+}
+
+
+/// UI for particle control mechanics.
+pub struct ParticleControlUI;
+
+impl ParticleControlUI {
+    /// Renders the particle control UI
+    pub fn render(
+        &self,
+        ui: &mut egui::Ui,
+        particle_type_list: &Res<ParticleTypeList>,
+        selected_particle: &mut ResMut<SelectedParticle>,
+        brush_state: &mut ResMut<NextState<BrushState>>,
+        commands: &mut Commands,
+    ) {
+        ui.vertical(|ui| {
+            // Define the fixed order of categories
+            let categories = ["Walls", "Solids", "Movable Solids", "Liquids", "Gases"];
+
+            // Iterate through categories in a deterministic order
+            for &category in &categories {
+                if let Some(particles) = particle_type_list.get(category) {
+                    egui::CollapsingHeader::new(category) // Use the category as the header title
+                        .default_open(false)
+                        .show(ui, |ui| {
+                            particles.iter().for_each(|particle_name| {
+                                // Create a button for each particle name
+                                if ui.button(particle_name).clicked() {
+                                    selected_particle.0 = particle_name.clone();
+                                    brush_state.set(BrushState::Spawn);
+                                }
+                            });
+                        });
+                }
+            }
+
+            // Existing UI elements for Remove and Despawn All Particles
+            ui.horizontal_wrapped(|ui| {
+                if ui.button("Remove").clicked() {
+                    brush_state.set(BrushState::Despawn);
+                }
+            });
+
+            if ui.button("Despawn All Particles").clicked() {
+                commands.trigger(ClearMapEvent);
+            }
+        });
+    }
 }
 
 /// UI for brush control mechanics.
@@ -81,6 +130,7 @@ impl BrushControlUI {
         }
     }
 }
+
 
 /// UI for showing `bevy_falling_sand` debug capability.
 pub struct DebugUI;
