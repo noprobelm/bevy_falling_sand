@@ -211,12 +211,13 @@ pub struct WallBundle {
     pub spatial: SpatialBundle,
 }
 
-impl StaticParticleTypeBundle {
+impl WallBundle {
     /// Creates a new StaticParticleTypeBundle
-    pub fn new(particle_type: ParticleType, colors: ParticleColor) -> StaticParticleTypeBundle {
-        StaticParticleTypeBundle {
+    pub fn new(particle_type: ParticleType, colors: ParticleColor) -> WallBundle {
+        WallBundle {
             particle_type,
             colors,
+            wall: Wall,
             spatial: SpatialBundle::from_transform(Transform::from_xyz(0., 0., 0.)),
         }
     }
