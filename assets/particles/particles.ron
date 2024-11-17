@@ -121,7 +121,19 @@
         "density": 250,
         "max_velocity": 1,
         "gas": 3,
-        "colors": ["#C7D6E0"]
+        "colors": ["#C7D6E0", "#EEF2F4"],
+        "changes_colors": 0.1,
+        "burns": {
+            "duration": 200,
+            "tick_rate": 100,
+            "chance_destroy_per_tick": 1.,
+            "reaction": {
+                "produces": "Water",
+                "chance_to_produce": 1.
+            },
+
+        },
+
     },
     "Smoke": {
         "density": 275,
