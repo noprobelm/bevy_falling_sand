@@ -108,7 +108,7 @@ pub struct SolidBundle {
     pub velocity: Velocity,
     /// The particle type's colors.
     pub colors: ParticleColor,
-    /// The MovableSolid component
+    /// The Solid component.
     pub solid: Solid,
 }
 
@@ -141,7 +141,7 @@ pub struct LiquidBundle {
     pub velocity: Velocity,
     /// The particle type's colors.
     pub colors: ParticleColor,
-    /// The MovableSolid component
+    /// The Liquid component.
     pub liquid: Liquid,
 }
 
@@ -175,7 +175,7 @@ pub struct GasBundle {
     pub velocity: Velocity,
     /// The particle type's colors.
     pub colors: ParticleColor,
-    /// The MovableSolid component
+    /// The Gas component.
     pub gas: Gas,
 }
 
@@ -194,6 +194,30 @@ impl GasBundle {
             velocity,
             colors,
             gas: Gas::new(fluidity),
+        }
+    }
+}
+
+/// Convenience bundle for adding new wall particle types.
+#[derive(Bundle)]
+pub struct WallBundle {
+    /// The unique identifier for the particle.
+    pub particle_type: ParticleType,
+    /// The particle type's colors.
+    pub colors: ParticleColor,
+    /// The Wall component.
+    pub wall: Wall,
+    /// The particle type's global transform.
+    pub spatial: SpatialBundle,
+}
+
+impl StaticParticleTypeBundle {
+    /// Creates a new StaticParticleTypeBundle
+    pub fn new(particle_type: ParticleType, colors: ParticleColor) -> StaticParticleTypeBundle {
+        StaticParticleTypeBundle {
+            particle_type,
+            colors,
+            spatial: SpatialBundle::from_transform(Transform::from_xyz(0., 0., 0.)),
         }
     }
 }
