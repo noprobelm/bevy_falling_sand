@@ -48,14 +48,20 @@ pub fn setup_custom_particles(mut commands: Commands) {
     ));
 
     commands.spawn((
-        SolidBundle::new(
+        WallBundle::new(
             ParticleType::new("Ice Wall"),
-            Density(1250),
-            Velocity::new(1, 3),
             ParticleColor::new(
                 Color::Srgba(Srgba::hex("#8CDBF880").unwrap()),
                 vec![Color::Srgba(Srgba::hex("#8CDBF880").unwrap())],
             ),
+        ),
+        Burns::new(
+            Duration::from_secs(2),
+            Duration::from_millis(100),
+            Some(0.01),
+            Some(Reacting::new(Particle::new("Water"), 0.2)),
+            None,
+            None
         ),
         Name::new("Ice Wall"),
     ));
