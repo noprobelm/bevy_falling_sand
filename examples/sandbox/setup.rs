@@ -316,14 +316,6 @@ pub fn setup_custom_particles(mut commands: Commands) {
             ),
         ),
         FlowsColor::new(0.1),
-        Burns::new(
-            Duration::from_millis(200),
-            Duration::from_millis(100),
-            Some(1.),
-            Some(Reacting::new(Particle::new("Water"), 1.)),
-            None,
-            None,
-        ),
         Name::new("Smoke"),
     ));
 
