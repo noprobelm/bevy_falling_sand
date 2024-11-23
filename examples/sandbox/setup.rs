@@ -483,9 +483,9 @@ pub fn setup_custom_particles(mut commands: Commands) {
             ),
         ),
         Burns::new(
-            Duration::from_secs(1),
+            Duration::from_secs(10),
             Duration::from_millis(100),
-            Some(0.5),
+            Some(0.0),
             Some(Reacting::new(Particle::new("Smoke"), 0.035)),
             Some(ParticleColor::new(
                 Color::Srgba(Srgba::hex("#FF0000").unwrap()),
