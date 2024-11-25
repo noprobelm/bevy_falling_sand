@@ -1,6 +1,6 @@
 //! UI module.
 use bevy::{
-    input::common_conditions::input_just_pressed,
+    input::{common_conditions::input_just_pressed, mouse::MouseWheel},
     prelude::*,
     utils::{Entry, HashMap},
     window::PrimaryWindow,
@@ -35,6 +35,7 @@ impl bevy::prelude::Plugin for UIPlugin {
             .add_systems(First, update_cursor_coordinates)
             .add_systems(OnEnter(AppState::Ui), show_cursor)
             .add_systems(OnEnter(AppState::Canvas), hide_cursor)
+            .add_systems(Update, ev_mouse_wheel)
             .add_plugins(bevy_inspector_egui::DefaultInspectorConfigPlugin)
             .add_systems(Update, inspector_ui);
     }
@@ -260,17 +261,18 @@ pub fn show_cursor(mut primary_window: Query<&mut Window, With<PrimaryWindow>>) 
 pub fn update_app_state(
     mut contexts: EguiContexts,
     app_state: Res<State<AppState>>,
+    keys: Res<ButtonInput<KeyCode>>,
     mut next_app_state: ResMut<NextState<AppState>>,
 ) {
     let ctx = contexts.ctx_mut();
     match app_state.get() {
         AppState::Ui => {
-            if !ctx.is_pointer_over_area() {
+            if !ctx.is_pointer_over_area() || keys.pressed(KeyCode::AltLeft) {
                 next_app_state.set(AppState::Canvas);
             }
         }
         AppState::Canvas => {
-            if ctx.is_pointer_over_area() {
+            if ctx.is_pointer_over_area() || !keys.pressed(KeyCode::AltLeft) {
                 next_app_state.set(AppState::Ui);
             }
         }
@@ -410,5 +412,38 @@ pub fn toggle_simulation(mut commands: Commands, simulation_pause: Option<Res<Si
         commands.remove_resource::<SimulationRun>();
     } else {
         commands.init_resource::<SimulationRun>();
+    }
+}
+
+/// Listens for scroll events and performs the corresponding action
+pub fn ev_mouse_wheel(
+    mut ev_scroll: EventReader<MouseWheel>,
+    app_state: Res<State<AppState>>,
+    mut camera_query: Query<&mut OrthographicProjection, With<MainCamera>>,
+    mut brush_query: Query<&mut Brush>,
+    max_brush_size: Res<MaxBrushSize>
+) {
+    if !ev_scroll.is_empty() {
+        match app_state.get() {
+            AppState::Ui => {
+                let mut projection = camera_query.single_mut();
+                ev_scroll.read().for_each(|ev| {
+                    let zoom = -(ev.y / 100.);
+                    if projection.scale + zoom > 0.01 {
+                        projection.scale += zoom;
+                    }
+                });
+            }
+            AppState::Canvas => {
+                let mut brush = brush_query.single_mut();
+                ev_scroll.read().for_each(|ev| {
+                    if ev.y < 0. && brush.size - 1 >= 1 {
+                        brush.size -= 1;
+                    } else if ev.y > 0. && brush.size + 1 <= max_brush_size.0 {
+                        brush.size += 1;
+                    }
+                });
+            }
+        };
     }
 }

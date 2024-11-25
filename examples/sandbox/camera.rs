@@ -10,7 +10,7 @@ impl bevy::prelude::Plugin for CameraPlugin {
         // Camera control
         app.add_systems(Startup, setup_camera).add_systems(
             Update,
-            (zoom_camera, pan_camera).run_if(in_state(AppState::Canvas)),
+            pan_camera.run_if(in_state(AppState::Canvas)),
         );
     }
 }
