@@ -7,10 +7,10 @@ use bevy::{
 };
 use bevy_egui::{EguiContext, EguiContexts};
 
-use bevy_falling_sand::core::{
-    ClearMapEvent, ParticleType, SimulationRun,
+use bevy_falling_sand::core::{ClearMapEvent, ParticleType, SimulationRun};
+use bevy_falling_sand::debug::{
+    DebugDirtyRects, DebugHibernatingChunks, DebugParticleCount, TotalParticleCount,
 };
-use bevy_falling_sand::debug::{DebugParticles, TotalParticleCount};
 use bevy_falling_sand::movement::*;
 use bevy_falling_sand::scenes::{LoadSceneEvent, SaveSceneEvent};
 
@@ -226,20 +226,49 @@ impl DebugUI {
     pub fn render(
         &self,
         ui: &mut egui::Ui,
-        debug_particles: &Option<Res<DebugParticles>>,
+        debug_hibernating_chunks: &Option<Res<DebugHibernatingChunks>>,
+        debug_dirty_rects: &Option<Res<DebugDirtyRects>>,
+        debug_particle_count: &Option<Res<DebugParticleCount>>,
         total_particle_count: u64,
         commands: &mut Commands,
     ) {
-        let mut debugging = debug_particles.is_some();
-        if ui.checkbox(&mut debugging, "Debug Mode").clicked() {
-            if debugging {
-                commands.init_resource::<DebugParticles>();
+        let mut show_hibernating = debug_hibernating_chunks.is_some();
+        let mut show_dirty_rects = debug_dirty_rects.is_some();
+        let mut show_particle_count = debug_particle_count.is_some();
+        if ui
+            .checkbox(&mut show_hibernating, "Hibernating Chunks")
+            .clicked()
+        {
+            if show_hibernating {
+                commands.init_resource::<DebugHibernatingChunks>();
             } else {
-                commands.remove_resource::<DebugParticles>();
+                commands.remove_resource::<DebugHibernatingChunks>();
             }
         }
 
-        if debug_particles.is_some() {
+        if ui
+            .checkbox(&mut show_dirty_rects, "Dirty Rectangles")
+            .clicked()
+        {
+            if show_dirty_rects {
+                commands.init_resource::<DebugDirtyRects>();
+            } else {
+                commands.remove_resource::<DebugDirtyRects>();
+            }
+        }
+
+        if ui
+            .checkbox(&mut show_particle_count, "Particle Count")
+            .clicked()
+        {
+            if show_particle_count {
+                commands.init_resource::<DebugParticleCount>();
+            } else {
+                commands.remove_resource::<DebugParticleCount>();
+            }
+        }
+
+        if show_particle_count {
             ui.label(format!("Total Particles: {}", total_particle_count));
         }
     }
@@ -319,7 +348,12 @@ pub fn render_ui(
         EventWriter<BrushResizeEvent>,
         Res<MaxBrushSize>,
     ),
-    (debug_particles, total_particle_count): (Option<Res<DebugParticles>>, Res<TotalParticleCount>),
+    (debug_hibernating_chunks, debug_dirty_rects, debug_particle_count, total_particle_count): (
+        Option<Res<DebugHibernatingChunks>>,
+        Option<Res<DebugDirtyRects>>,
+        Option<Res<DebugParticleCount>>,
+        Res<TotalParticleCount>,
+    ),
     (mut selected_particle, particle_type_list): (ResMut<SelectedParticle>, Res<ParticleTypeList>),
     (mut scene_selection_dialog, mut scene_path, mut ev_save_scene, mut ev_load_scene): (
         ResMut<SceneSelectionDialog>,
@@ -358,7 +392,14 @@ pub fn render_ui(
                 &mut brush_state,
                 &mut commands,
             );
-            DebugUI.render(ui, &debug_particles, total_particle_count.0, &mut commands);
+            DebugUI.render(
+                ui,
+                &debug_hibernating_chunks,
+                &debug_dirty_rects,
+                &debug_particle_count,
+                total_particle_count.0,
+                &mut commands,
+            );
         });
 }
 

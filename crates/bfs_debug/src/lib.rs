@@ -13,8 +13,16 @@ impl Plugin for FallingSandDebugPlugin {
             .init_resource::<TotalParticleCount>()
             .add_systems(
                 Update,
-                (color_chunks, count_dynamic_particles, count_total_particles)
-                    .run_if(resource_exists::<DebugParticles>),
+                color_hibernating_chunks.run_if(resource_exists::<DebugHibernatingChunks>),
+            )
+            .add_systems(
+                Update,
+                color_dirty_rects.run_if(resource_exists::<DebugDirtyRects>),
+            )
+            .add_systems(
+                Update,
+                (count_dynamic_particles, count_total_particles)
+                    .run_if(resource_exists::<DebugParticleCount>),
             );
     }
 }
@@ -23,9 +31,17 @@ impl Plugin for FallingSandDebugPlugin {
 #[derive(Default, Reflect, GizmoConfigGroup)]
 pub struct DebugGizmos;
 
-/// Indicates whether built-in debugging should be enabled.
+/// Indicates whether we should be counting the number of particles in the simulation
 #[derive(Default, Resource)]
-pub struct DebugParticles;
+pub struct DebugParticleCount;
+
+/// Indicates whether built-in chunk map debugging should be enabled.
+#[derive(Default, Resource)]
+pub struct DebugHibernatingChunks;
+
+/// Indicates whether built-in dirty rect debugging should be enabled.
+#[derive(Default, Resource)]
+pub struct DebugDirtyRects;
 
 /// The total number of dynamic particles in the simulation.
 #[derive(Default, Resource)]
@@ -35,8 +51,8 @@ pub struct DynamicParticleCount(pub u64);
 #[derive(Default, Resource)]
 pub struct TotalParticleCount(pub u64);
 
-/// Provides gizmos rendering for visualizing dead/alive chunks
-pub fn color_chunks(map: Res<ChunkMap>, mut chunk_gizmos: Gizmos<DebugGizmos>) {
+/// Provides gizmos rendering for visualizing hibernating/awake chunks
+pub fn color_dirty_rects(map: Res<ChunkMap>, mut chunk_gizmos: Gizmos<DebugGizmos>) {
     map.iter_chunks().for_each(|chunk| {
         if let Some(dirty_rect) = chunk.prev_dirty_rect() {
             chunk_gizmos.rect_2d(
@@ -46,7 +62,12 @@ pub fn color_chunks(map: Res<ChunkMap>, mut chunk_gizmos: Gizmos<DebugGizmos>) {
                 Color::srgba(1., 1., 1., 1.),
             )
         }
+    });
+}
 
+/// Provides gizmos rendering for visualizing hibernating/awake chunks
+pub fn color_hibernating_chunks(map: Res<ChunkMap>, mut chunk_gizmos: Gizmos<DebugGizmos>) {
+    map.iter_chunks().for_each(|chunk| {
         let rect = Rect::from_corners(chunk.min().as_vec2(), chunk.max().as_vec2());
         if chunk.hibernating() == true {
             chunk_gizmos.rect_2d(
