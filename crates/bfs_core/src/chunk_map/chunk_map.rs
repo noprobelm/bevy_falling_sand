@@ -4,7 +4,10 @@ use bevy::prelude::*;
 use rayon::iter::IntoParallelRefIterator;
 use rayon::prelude::*;
 
-use crate::{ParticleSimulationSet, ParticleTypeMap, RemoveParticleEvent, SimulationRun};
+use crate::{
+    Coordinates, Particle, ParticleSimulationSet, ParticleType, ParticleTypeMap,
+    RemoveParticleEvent, SimulationRun,
+};
 
 /// Plugin for mapping particles to coordinate space.
 pub struct ChunkMapPlugin;
@@ -18,9 +21,11 @@ impl Plugin for ChunkMapPlugin {
                 .run_if(resource_exists::<SimulationRun>),
         )
         .add_event::<ClearMapEvent>()
+        .add_event::<ClearParticleTypeChildrenEvent>()
         .init_resource::<ChunkMap>()
         .observe(on_remove_particle)
-        .observe(on_clear_chunk_map);
+        .observe(on_clear_chunk_map)
+        .observe(on_clear_particle_type_children);
     }
 }
 
@@ -97,6 +102,11 @@ impl ChunkMap {
     /// Immutable iterator over all chunks.
     pub fn iter_chunks(&self) -> impl Iterator<Item = &Chunk> {
         self.chunks.iter()
+    }
+
+    /// Immutable iterator over all chunks.
+    pub fn iter_chunks_mut(&mut self) -> impl Iterator<Item = &mut Chunk> {
+        self.chunks.iter_mut()
     }
 }
 
@@ -212,14 +222,14 @@ impl ChunkMap {
 
     /// Should we process the entity this frame
     pub fn should_process_this_frame(&self, coords: &IVec2) -> bool {
-	if let Some(chunk) = self.chunk(coords) {
-	    if chunk.hibernating() == true {
-		return false
-	    } else if let Some(dirty_rect) = chunk.prev_dirty_rect() {
-		return dirty_rect.contains(*coords)
-	    }
-	}
-	false
+        if let Some(chunk) = self.chunk(coords) {
+            if chunk.hibernating() == true {
+                return false;
+            } else if let Some(dirty_rect) = chunk.prev_dirty_rect() {
+                return dirty_rect.contains(*coords);
+            }
+        }
+        false
     }
 }
 
@@ -249,7 +259,7 @@ impl Chunk {
             dirty_rect: None,
             prev_dirty_rect: None,
             should_process_next_frame: false,
-            hibernating: false
+            hibernating: false,
         }
     }
 }
@@ -362,7 +372,7 @@ impl Chunk {
 
     /// Is the chunk empty
     pub fn empty(&self) -> bool {
-	self.chunk.len() == 0
+        self.chunk.len() == 0
     }
 }
 
@@ -374,6 +384,10 @@ pub fn reset_chunks(mut map: ResMut<ChunkMap>) {
 /// Remove all particles from the simulation.
 #[derive(Event)]
 pub struct ClearMapEvent;
+
+/// Remove all child particles of a specified type from the simulation.
+#[derive(Event)]
+pub struct ClearParticleTypeChildrenEvent(pub String);
 
 /// RemoveParticle event is triggered.
 pub fn on_remove_particle(
@@ -402,4 +416,32 @@ pub fn on_clear_chunk_map(
     });
 
     map.clear();
+}
+
+/// Observer for clearing dynamic particles
+pub fn on_clear_particle_type_children(
+    trigger: Trigger<ClearParticleTypeChildrenEvent>,
+    mut commands: Commands,
+    particle_query: Query<&Coordinates, With<Particle>>,
+    parent_query: Query<&Children, With<ParticleType>>,
+
+    particle_parent_map: Res<ParticleTypeMap>,
+    mut map: ResMut<ChunkMap>,
+) {
+    let particle_type = trigger.event().0.clone();
+    if let Some(parent_entity) = particle_parent_map.get(&particle_type) {
+        if let Ok(children) = parent_query.get(*parent_entity) {
+            children.iter().for_each(|child_entity| {
+                if let Ok(coordinates) = particle_query.get(*child_entity) {
+                    map.remove(&coordinates.0);
+                } else {
+                    // If this happens, something is seriously amiss.
+                    error!("No child entity found for particle type '{particle_type}' while removing child from chunk map.")
+                }
+            });
+            commands.entity(*parent_entity).despawn_descendants();
+        }
+    } else {
+        warn!("Ignoring particle type '{particle_type}': not found in particle type map.");
+    }
 }

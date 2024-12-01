@@ -7,7 +7,9 @@ use bevy::{
 };
 use bevy_egui::{EguiContext, EguiContexts};
 
-use bevy_falling_sand::core::{ClearMapEvent, ParticleType, SimulationRun};
+use bevy_falling_sand::core::{
+    ClearMapEvent, ClearParticleTypeChildrenEvent, ParticleType, SimulationRun,
+};
 use bevy_falling_sand::debug::{DebugParticles, TotalParticleCount};
 use bevy_falling_sand::movement::*;
 use bevy_falling_sand::scenes::{LoadSceneEvent, SaveSceneEvent};
@@ -128,6 +130,7 @@ impl ParticleControlUI {
         &self,
         ui: &mut egui::Ui,
         particle_type_list: &Res<ParticleTypeList>,
+        dynamic_particle_types: &Query<&ParticleType, Without<Wall>>,
         selected_particle: &mut ResMut<SelectedParticle>,
         brush_state: &mut ResMut<NextState<BrushState>>,
         commands: &mut Commands,
@@ -159,6 +162,12 @@ impl ParticleControlUI {
                     brush_state.set(BrushState::Despawn);
                 }
             });
+
+            if ui.button("Despawn Dynamic Particles").clicked() {
+                dynamic_particle_types.iter().for_each(|particle_type| {
+                    commands.trigger(ClearParticleTypeChildrenEvent(particle_type.name.clone()))
+                });
+            }
 
             if ui.button("Despawn All Particles").clicked() {
                 commands.trigger(ClearMapEvent);
@@ -308,7 +317,11 @@ pub fn render_ui(
         Res<MaxBrushSize>,
     ),
     (debug_particles, total_particle_count): (Option<Res<DebugParticles>>, Res<TotalParticleCount>),
-    (mut selected_particle, particle_type_list): (ResMut<SelectedParticle>, Res<ParticleTypeList>),
+    (mut selected_particle, particle_type_list, dynamic_particle_types): (
+        ResMut<SelectedParticle>,
+        Res<ParticleTypeList>,
+        Query<&ParticleType, Without<Wall>>,
+    ),
     (mut scene_selection_dialog, mut scene_path, mut ev_save_scene, mut ev_load_scene): (
         ResMut<SceneSelectionDialog>,
         ResMut<ParticleSceneFilePath>,
@@ -342,6 +355,7 @@ pub fn render_ui(
             ParticleControlUI.render(
                 ui,
                 &particle_type_list,
+                &dynamic_particle_types,
                 &mut selected_particle,
                 &mut brush_state,
                 &mut commands,
