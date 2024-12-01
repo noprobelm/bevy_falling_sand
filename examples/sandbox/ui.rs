@@ -52,10 +52,19 @@ pub enum AppState {
 }
 
 /// Resource for tracking cursor coordinates.
-#[derive(Clone, Resource, Default, Debug)]
+#[derive(Default, Resource, Clone, Debug)]
 pub struct CursorCoords {
-    pub previous: Vec2,
     pub current: Vec2,
+    pub previous: Vec2,
+    pub previous_previous: Vec2,
+}
+
+impl CursorCoords {
+    pub fn update(&mut self, new_coords: Vec2) {
+        self.previous_previous = self.previous;
+        self.previous = self.current;
+        self.current = new_coords;
+    }
 }
 
 /// A list of particle types organized by material type.
@@ -239,8 +248,7 @@ pub fn update_cursor_coordinates(
         .and_then(|cursor| camera.viewport_to_world(camera_transform, cursor))
         .map(|ray| ray.origin.truncate())
     {
-        coords.previous = coords.current;
-        coords.current = world_position;
+        coords.update(world_position);
     }
 }
 

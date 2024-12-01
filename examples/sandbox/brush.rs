@@ -158,6 +158,56 @@ impl BrushType {
                 let particle = selected_particle.clone();
 
                 // If there's no distance between one cursor coordinate and the next, draw a circle instead.
+                if (coords.previous - coords.previous_previous).length() < 1.0 {
+                    let circle_center = coords.previous;
+                    let mut points: HashSet<IVec2> = HashSet::default();
+
+                    let min_x = (circle_center.x - radius).floor() as i32;
+                    let max_x = (circle_center.x + radius).ceil() as i32;
+                    let min_y = (circle_center.y - radius).floor() as i32;
+                    let max_y = (circle_center.y + radius).ceil() as i32;
+
+                    for x in min_x..=max_x {
+                        for y in min_y..=max_y {
+                            let point = Vec2::new(x as f32, y as f32);
+                            if (point - circle_center).length() <= radius {
+                                points.insert(point.as_ivec2());
+                            }
+                        }
+                    }
+
+                    commands.spawn_batch(points.into_iter().map(move |point| {
+                        (
+                            particle.clone(),
+                            SpatialBundle::from_transform(Transform::from_xyz(
+                                point.x as f32,
+                                point.y as f32,
+                                0.0,
+                            )),
+                        )
+                    }));
+                } else {
+                    let capsule = Capsule2d {
+                        radius,
+                        half_length,
+                    };
+
+                    let points = points_within_capsule(&capsule, coords.previous, coords.previous_previous);
+                    commands.spawn_batch(points.into_iter().map(move |point| {
+                        (
+                            particle.clone(),
+                            SpatialBundle::from_transform(Transform::from_xyz(
+                                point.x as f32,
+                                point.y as f32,
+                                0.0,
+                            )),
+                        )
+                    }));
+                }
+
+                let particle = selected_particle.clone();
+
+                // If there's no distance between one cursor coordinate and the next, draw a circle instead.
                 if (coords.current - coords.previous).length() < 1.0 {
                     let circle_center = coords.current;
                     let mut points: HashSet<IVec2> = HashSet::default();
