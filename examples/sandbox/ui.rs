@@ -30,7 +30,6 @@ impl bevy::prelude::Plugin for UIPlugin {
             .init_resource::<CursorCoords>()
             .init_resource::<ParticleList>()
             .init_resource::<ParticleTypeList>()
-            .init_resource::<DebugParticles>()
             .init_resource::<SelectedParticle>()
             .add_systems(First, update_cursor_coordinates)
             .add_systems(OnEnter(AppState::Ui), show_cursor)
