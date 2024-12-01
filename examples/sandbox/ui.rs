@@ -267,12 +267,12 @@ pub fn update_app_state(
     let ctx = contexts.ctx_mut();
     match app_state.get() {
         AppState::Ui => {
-            if !ctx.is_pointer_over_area() || keys.pressed(KeyCode::AltLeft) {
+            if !ctx.is_pointer_over_area() {
                 next_app_state.set(AppState::Canvas);
             }
         }
         AppState::Canvas => {
-            if ctx.is_pointer_over_area() || !keys.pressed(KeyCode::AltLeft) {
+            if ctx.is_pointer_over_area() {
                 next_app_state.set(AppState::Ui);
             }
         }
@@ -421,26 +421,26 @@ pub fn ev_mouse_wheel(
     app_state: Res<State<AppState>>,
     mut camera_query: Query<&mut OrthographicProjection, With<MainCamera>>,
     mut brush_query: Query<&mut Brush>,
-    max_brush_size: Res<MaxBrushSize>
+    max_brush_size: Res<MaxBrushSize>,
 ) {
     if !ev_scroll.is_empty() {
         match app_state.get() {
             AppState::Ui => {
-                let mut projection = camera_query.single_mut();
-                ev_scroll.read().for_each(|ev| {
-                    let zoom = -(ev.y / 100.);
-                    if projection.scale + zoom > 0.01 {
-                        projection.scale += zoom;
-                    }
-                });
-            }
-            AppState::Canvas => {
                 let mut brush = brush_query.single_mut();
                 ev_scroll.read().for_each(|ev| {
                     if ev.y < 0. && brush.size - 1 >= 1 {
                         brush.size -= 1;
                     } else if ev.y > 0. && brush.size + 1 <= max_brush_size.0 {
                         brush.size += 1;
+                    }
+                });
+            }
+            AppState::Canvas => {
+                let mut projection = camera_query.single_mut();
+                ev_scroll.read().for_each(|ev| {
+                    let zoom = -(ev.y / 100.);
+                    if projection.scale + zoom > 0.01 {
+                        projection.scale += zoom;
                     }
                 });
             }
