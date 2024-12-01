@@ -1,4 +1,4 @@
-use bevy::{input::mouse::MouseWheel, prelude::*};
+use bevy::prelude::*;
 
 use crate::AppState;
 
@@ -32,19 +32,6 @@ pub fn setup_camera(mut commands: Commands) {
         },
         MainCamera,
     ));
-}
-
-pub fn zoom_camera(
-    mut scroll_evr: EventReader<MouseWheel>,
-    mut camera_query: Query<&mut OrthographicProjection, With<MainCamera>>,
-) {
-    let mut projection = camera_query.single_mut();
-    for ev in scroll_evr.read() {
-        let zoom = -(ev.y / 100.);
-        if projection.scale + zoom > 0.01 {
-            projection.scale += zoom;
-        }
-    }
 }
 
 pub fn pan_camera(
