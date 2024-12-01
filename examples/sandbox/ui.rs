@@ -8,7 +8,7 @@ use bevy::{
 use bevy_egui::{EguiContext, EguiContexts};
 
 use bevy_falling_sand::core::{
-    ClearMapEvent, ClearParticleTypeChildrenEvent, ParticleType, SimulationRun,
+    ClearMapEvent, ParticleType, SimulationRun,
 };
 use bevy_falling_sand::debug::{DebugParticles, TotalParticleCount};
 use bevy_falling_sand::movement::*;
@@ -130,7 +130,6 @@ impl ParticleControlUI {
         &self,
         ui: &mut egui::Ui,
         particle_type_list: &Res<ParticleTypeList>,
-        dynamic_particle_types: &Query<&ParticleType, Without<Wall>>,
         selected_particle: &mut ResMut<SelectedParticle>,
         brush_state: &mut ResMut<NextState<BrushState>>,
         commands: &mut Commands,
@@ -158,15 +157,19 @@ impl ParticleControlUI {
 
             // Existing UI elements for Remove and Despawn All Particles
             ui.horizontal_wrapped(|ui| {
-                if ui.button("Remove").clicked() {
+                if ui.button("Remove Tool").clicked() {
                     brush_state.set(BrushState::Despawn);
                 }
             });
 
-            if ui.button("Despawn Dynamic Particles").clicked() {
-                dynamic_particle_types.iter().for_each(|particle_type| {
-                    commands.trigger(ClearParticleTypeChildrenEvent(particle_type.name.clone()))
-                });
+            ui.separator();
+
+            if ui.button("Despawn All Dynamic Particles").clicked() {
+                commands.trigger(ClearDynamicParticlesEvent)
+            }
+
+            if ui.button("Despawn All Wall Particles").clicked() {
+                commands.trigger(ClearWallParticlesEvent)
             }
 
             if ui.button("Despawn All Particles").clicked() {
@@ -317,11 +320,7 @@ pub fn render_ui(
         Res<MaxBrushSize>,
     ),
     (debug_particles, total_particle_count): (Option<Res<DebugParticles>>, Res<TotalParticleCount>),
-    (mut selected_particle, particle_type_list, dynamic_particle_types): (
-        ResMut<SelectedParticle>,
-        Res<ParticleTypeList>,
-        Query<&ParticleType, Without<Wall>>,
-    ),
+    (mut selected_particle, particle_type_list): (ResMut<SelectedParticle>, Res<ParticleTypeList>),
     (mut scene_selection_dialog, mut scene_path, mut ev_save_scene, mut ev_load_scene): (
         ResMut<SceneSelectionDialog>,
         ResMut<ParticleSceneFilePath>,
@@ -355,7 +354,6 @@ pub fn render_ui(
             ParticleControlUI.render(
                 ui,
                 &particle_type_list,
-                &dynamic_particle_types,
                 &mut selected_particle,
                 &mut brush_state,
                 &mut commands,
