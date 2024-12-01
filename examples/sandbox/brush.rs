@@ -137,15 +137,16 @@ impl BrushType {
         let coords = coords.clone();
         let radius = brush_size;
         let half_length = (coords.current - coords.previous).length() / 2.0;
-        let min_x = -(brush_size as i32) / 2;
-        let max_x = (brush_size / 2.) as i32;
 
         match self {
             BrushType::Line => {
                 let particle = selected_particle.clone();
+                let min_x = -(brush_size as i32) / 2;
+                let max_x = (brush_size / 2.0) as i32;
+
                 commands.spawn_batch((min_x * 3..=max_x * 3).map(move |x| {
                     (
-                        particle.clone(), // Clone the particle for each x iteration
+                        particle.clone(),
                         SpatialBundle::from_transform(Transform::from_xyz(
                             coords.current.x + x as f32,
                             coords.current.y,
@@ -157,102 +158,16 @@ impl BrushType {
             BrushType::Circle => {
                 let particle = selected_particle.clone();
 
-                // If there's no distance between one cursor coordinate and the next, draw a circle instead.
                 if (coords.previous - coords.previous_previous).length() < 1.0 {
-                    let circle_center = coords.previous;
-                    let mut points: HashSet<IVec2> = HashSet::default();
-
-                    let min_x = (circle_center.x - radius).floor() as i32;
-                    let max_x = (circle_center.x + radius).ceil() as i32;
-                    let min_y = (circle_center.y - radius).floor() as i32;
-                    let max_y = (circle_center.y + radius).ceil() as i32;
-
-                    for x in min_x..=max_x {
-                        for y in min_y..=max_y {
-                            let point = Vec2::new(x as f32, y as f32);
-                            if (point - circle_center).length() <= radius {
-                                points.insert(point.as_ivec2());
-                            }
-                        }
-                    }
-
-                    commands.spawn_batch(points.into_iter().map(move |point| {
-                        (
-                            particle.clone(),
-                            SpatialBundle::from_transform(Transform::from_xyz(
-                                point.x as f32,
-                                point.y as f32,
-                                0.0,
-                            )),
-                        )
-                    }));
+                    spawn_circle(commands, particle.clone(), coords.previous, radius);
                 } else {
-                    let capsule = Capsule2d {
-                        radius,
-                        half_length,
-                    };
-
-                    let points = points_within_capsule(&capsule, coords.previous, coords.previous_previous);
-                    commands.spawn_batch(points.into_iter().map(move |point| {
-                        (
-                            particle.clone(),
-                            SpatialBundle::from_transform(Transform::from_xyz(
-                                point.x as f32,
-                                point.y as f32,
-                                0.0,
-                            )),
-                        )
-                    }));
+                    spawn_capsule(commands, particle.clone(), coords.previous, coords.previous_previous, radius, half_length);
                 }
 
-                let particle = selected_particle.clone();
-
-                // If there's no distance between one cursor coordinate and the next, draw a circle instead.
                 if (coords.current - coords.previous).length() < 1.0 {
-                    let circle_center = coords.current;
-                    let mut points: HashSet<IVec2> = HashSet::default();
-
-                    let min_x = (circle_center.x - radius).floor() as i32;
-                    let max_x = (circle_center.x + radius).ceil() as i32;
-                    let min_y = (circle_center.y - radius).floor() as i32;
-                    let max_y = (circle_center.y + radius).ceil() as i32;
-
-                    for x in min_x..=max_x {
-                        for y in min_y..=max_y {
-                            let point = Vec2::new(x as f32, y as f32);
-                            if (point - circle_center).length() <= radius {
-                                points.insert(point.as_ivec2());
-                            }
-                        }
-                    }
-
-                    commands.spawn_batch(points.into_iter().map(move |point| {
-                        (
-                            particle.clone(),
-                            SpatialBundle::from_transform(Transform::from_xyz(
-                                point.x as f32,
-                                point.y as f32,
-                                0.0,
-                            )),
-                        )
-                    }));
+                    spawn_circle(commands, particle, coords.current, radius);
                 } else {
-                    let capsule = Capsule2d {
-                        radius,
-                        half_length,
-                    };
-
-                    let points = points_within_capsule(&capsule, coords.previous, coords.current);
-                    commands.spawn_batch(points.into_iter().map(move |point| {
-                        (
-                            particle.clone(),
-                            SpatialBundle::from_transform(Transform::from_xyz(
-                                point.x as f32,
-                                point.y as f32,
-                                0.0,
-                            )),
-                        )
-                    }));
+                    spawn_capsule(commands, particle, coords.previous, coords.current, radius, half_length);
                 }
             }
         }
@@ -428,4 +343,61 @@ pub fn despawn_particles(
         cursor_coords.current.as_ivec2(),
         brush_size as f32,
     )
+}
+
+/// Helper function to spawn particles in a circular pattern.
+fn spawn_circle(commands: &mut Commands, particle: Particle, center: Vec2, radius: f32) {
+    let mut points: HashSet<IVec2> = HashSet::default();
+
+    let min_x = (center.x - radius).floor() as i32;
+    let max_x = (center.x + radius).ceil() as i32;
+    let min_y = (center.y - radius).floor() as i32;
+    let max_y = (center.y + radius).ceil() as i32;
+
+    for x in min_x..=max_x {
+        for y in min_y..=max_y {
+            let point = Vec2::new(x as f32, y as f32);
+            if (point - center).length() <= radius {
+                points.insert(point.as_ivec2());
+            }
+        }
+    }
+
+    commands.spawn_batch(points.into_iter().map(move |point| {
+        (
+            particle.clone(),
+            SpatialBundle::from_transform(Transform::from_xyz(
+                point.x as f32,
+                point.y as f32,
+                0.0,
+            )),
+        )
+    }));
+}
+
+/// Helper function to spawn particles within a capsule shape.
+fn spawn_capsule(
+    commands: &mut Commands,
+    particle: Particle,
+    start: Vec2,
+    end: Vec2,
+    radius: f32,
+    half_length: f32,
+) {
+    let capsule = Capsule2d {
+        radius,
+        half_length,
+    };
+
+    let points = points_within_capsule(&capsule, start, end);
+    commands.spawn_batch(points.into_iter().map(move |point| {
+        (
+            particle.clone(),
+            SpatialBundle::from_transform(Transform::from_xyz(
+                point.x as f32,
+                point.y as f32,
+                0.0,
+            )),
+        )
+    }));
 }
