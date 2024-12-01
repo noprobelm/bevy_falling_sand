@@ -264,15 +264,16 @@ pub fn update_app_state(
     keys: Res<ButtonInput<KeyCode>>,
     mut next_app_state: ResMut<NextState<AppState>>,
 ) {
-    let ctx = contexts.ctx_mut();
     match app_state.get() {
         AppState::Ui => {
-            if !ctx.is_pointer_over_area() {
+            let ctx = contexts.ctx_mut();
+            if !keys.pressed(KeyCode::AltLeft) && !ctx.is_pointer_over_area() {
                 next_app_state.set(AppState::Canvas);
             }
         }
         AppState::Canvas => {
-            if ctx.is_pointer_over_area() {
+            let ctx = contexts.ctx_mut();
+            if keys.pressed(KeyCode::AltLeft) || ctx.is_pointer_over_area() {
                 next_app_state.set(AppState::Ui);
             }
         }
