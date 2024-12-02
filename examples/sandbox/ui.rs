@@ -41,7 +41,6 @@ impl bevy::prelude::Plugin for UIPlugin {
             .add_systems(OnEnter(AppState::Ui), show_cursor)
             .add_systems(OnEnter(AppState::Canvas), hide_cursor)
             .add_systems(Update, ev_mouse_wheel)
-            .init_resource::<SearchBarState>()
             .add_systems(Update, handle_search_bar_input)
             .add_systems(
                 Update,
