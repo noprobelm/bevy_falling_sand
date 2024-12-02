@@ -43,8 +43,10 @@ impl bevy::prelude::Plugin for UIPlugin {
             .add_systems(Update, ev_mouse_wheel)
             .init_resource::<SearchBarState>()
             .add_systems(Update, handle_search_bar_input)
-            .add_systems(Update, render_search_bar_ui)
-            .add_plugins(bevy_inspector_egui::DefaultInspectorConfigPlugin)
+            .add_systems(
+                Update,
+                render_search_bar_ui.run_if(resource_exists::<SearchBarState>),
+            )            .add_plugins(bevy_inspector_egui::DefaultInspectorConfigPlugin)
             .add_systems(Update, inspector_ui);
     }
 }
@@ -519,39 +521,29 @@ pub fn ev_mouse_wheel(
 /// Resource to manage the state of the search bar.
 #[derive(Resource, Default)]
 pub struct SearchBarState {
-    pub is_open: bool,
-    pub just_opened: bool,
     pub input: String,
     pub filtered_results: Vec<String>,
     pub selected_index: Option<usize>,
 }
-
 pub fn handle_search_bar_input(
     keys: Res<ButtonInput<KeyCode>>,
     mut char_input_events: EventReader<KeyboardInput>,
-    mut search_bar_state: ResMut<SearchBarState>,
+    mut commands: Commands,
     particle_type_list: Res<ParticleTypeList>,
     mut selected_particle: ResMut<SelectedParticle>,
+    search_bar_state: Option<ResMut<SearchBarState>>,
 ) {
     if keys.just_pressed(KeyCode::KeyN) {
-        if !search_bar_state.is_open {
-            search_bar_state.is_open = true;
-            search_bar_state.input.clear();
-            search_bar_state.filtered_results.clear();
-            search_bar_state.selected_index = None;
-
-            search_bar_state.just_opened = true;
+        if search_bar_state.is_none() {
+            commands.insert_resource(SearchBarState::default());
+            return;
         }
     }
 
-    if !search_bar_state.is_open {
-        return;
-    }
-
-    if search_bar_state.just_opened {
-        search_bar_state.just_opened = false;
-        return;
-    }
+    let mut search_bar_state = match search_bar_state {
+        Some(state) => state,
+        None => return,
+    };
 
     if keys.just_pressed(KeyCode::Enter) {
         if let Some(index) = search_bar_state.selected_index {
@@ -559,11 +551,12 @@ pub fn handle_search_bar_input(
                 selected_particle.0 = selected_particle_name.clone();
             }
         }
-        search_bar_state.is_open = false;
+        commands.remove_resource::<SearchBarState>();
+        return;
     }
 
     if keys.just_pressed(KeyCode::Escape) {
-        search_bar_state.is_open = false;
+        commands.remove_resource::<SearchBarState>();
         return;
     }
 
@@ -623,13 +616,12 @@ pub fn handle_search_bar_input(
 pub fn render_search_bar_ui(
     mut contexts: EguiContexts,
     mut search_bar_state: ResMut<SearchBarState>,
+    mut commands: Commands,
     mut selected_particle: ResMut<SelectedParticle>,
 ) {
-    if !search_bar_state.is_open {
-        return;
-    }
-
     let ctx = contexts.ctx_mut();
+    let mut should_close = false;
+
     egui::Window::new("Search Particles")
         .collapsible(false)
         .resizable(false)
@@ -637,18 +629,15 @@ pub fn render_search_bar_ui(
             ui.text_edit_singleline(&mut search_bar_state.input);
 
             let mut new_selected_index = search_bar_state.selected_index;
-            let mut should_close = false;
 
             ui.separator();
             for (i, particle) in search_bar_state.filtered_results.iter().enumerate() {
                 let is_selected = Some(i) == search_bar_state.selected_index;
 
                 if ui.selectable_label(is_selected, particle).clicked() {
-                    // If the clicked particle is already selected, close the menu
                     if selected_particle.0 == *particle {
                         should_close = true;
                     } else {
-                        // Otherwise, update the selection
                         new_selected_index = Some(i);
                         selected_particle.0 = particle.clone();
                     }
@@ -656,9 +645,9 @@ pub fn render_search_bar_ui(
             }
 
             search_bar_state.selected_index = new_selected_index;
-
-            if should_close {
-                search_bar_state.is_open = false;
-            }
         });
+
+    if should_close {
+        commands.remove_resource::<SearchBarState>();
+    }
 }
