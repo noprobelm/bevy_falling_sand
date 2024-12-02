@@ -1,6 +1,10 @@
 //! UI module.
 use bevy::{
-    input::{common_conditions::input_just_pressed, mouse::MouseWheel},
+    input::{
+        common_conditions::input_just_pressed,
+        keyboard::{Key, KeyboardInput},
+        mouse::MouseWheel,
+    },
     prelude::*,
     utils::{Entry, HashMap},
     window::PrimaryWindow,
@@ -37,6 +41,9 @@ impl bevy::prelude::Plugin for UIPlugin {
             .add_systems(OnEnter(AppState::Ui), show_cursor)
             .add_systems(OnEnter(AppState::Canvas), hide_cursor)
             .add_systems(Update, ev_mouse_wheel)
+            .init_resource::<SearchBarState>()
+            .add_systems(Update, handle_search_bar_input)
+            .add_systems(Update, render_search_bar_ui)
             .add_plugins(bevy_inspector_egui::DefaultInspectorConfigPlugin)
             .add_systems(Update, inspector_ui);
     }
@@ -507,4 +514,151 @@ pub fn ev_mouse_wheel(
             }
         };
     }
+}
+
+/// Resource to manage the state of the search bar.
+#[derive(Resource, Default)]
+pub struct SearchBarState {
+    pub is_open: bool,
+    pub just_opened: bool,
+    pub input: String,
+    pub filtered_results: Vec<String>,
+    pub selected_index: Option<usize>,
+}
+
+pub fn handle_search_bar_input(
+    keys: Res<ButtonInput<KeyCode>>,
+    mut char_input_events: EventReader<KeyboardInput>,
+    mut search_bar_state: ResMut<SearchBarState>,
+    particle_type_list: Res<ParticleTypeList>,
+    mut selected_particle: ResMut<SelectedParticle>,
+) {
+    if keys.just_pressed(KeyCode::KeyN) {
+        if !search_bar_state.is_open {
+            search_bar_state.is_open = true;
+            search_bar_state.input.clear();
+            search_bar_state.filtered_results.clear();
+            search_bar_state.selected_index = None;
+
+            search_bar_state.just_opened = true;
+        }
+    }
+
+    if !search_bar_state.is_open {
+        return;
+    }
+
+    if search_bar_state.just_opened {
+        search_bar_state.just_opened = false;
+        return;
+    }
+
+    if keys.just_pressed(KeyCode::Enter) {
+        if let Some(index) = search_bar_state.selected_index {
+            if let Some(selected_particle_name) = search_bar_state.filtered_results.get(index) {
+                selected_particle.0 = selected_particle_name.clone();
+            }
+        }
+        search_bar_state.is_open = false;
+    }
+
+    if keys.just_pressed(KeyCode::Escape) {
+        search_bar_state.is_open = false;
+        return;
+    }
+
+    for ev in char_input_events.read() {
+        match &ev.logical_key {
+            Key::Character(ch) if ev.state.is_pressed() => {
+                search_bar_state.input.push_str(ch.as_str());
+            }
+            Key::Backspace if ev.state.is_pressed() => {
+                search_bar_state.input.pop();
+            }
+            Key::Space if ev.state.is_pressed() => {
+                search_bar_state.input.push(' ');
+            }
+            _ => {}
+        }
+    }
+
+    let old_filtered_results = search_bar_state.filtered_results.clone();
+    search_bar_state.filtered_results = particle_type_list
+        .map
+        .values()
+        .flat_map(|particles| particles.clone())
+        .filter(|particle| {
+            particle
+                .to_lowercase()
+                .contains(&search_bar_state.input.to_lowercase())
+        })
+        .collect();
+
+    if search_bar_state.filtered_results != old_filtered_results {
+        search_bar_state.selected_index = search_bar_state.filtered_results.first().map(|_| 0);
+    }
+
+    if keys.just_pressed(KeyCode::ArrowUp) {
+        if let Some(index) = search_bar_state.selected_index {
+            if index > 0 {
+                search_bar_state.selected_index = Some(index - 1);
+            }
+        } else {
+            search_bar_state.selected_index =
+                search_bar_state.filtered_results.len().checked_sub(1);
+        }
+    }
+
+    if keys.just_pressed(KeyCode::ArrowDown) {
+        if let Some(index) = search_bar_state.selected_index {
+            if index + 1 < search_bar_state.filtered_results.len() {
+                search_bar_state.selected_index = Some(index + 1);
+            }
+        } else if !search_bar_state.filtered_results.is_empty() {
+            search_bar_state.selected_index = Some(0);
+        }
+    }
+}
+
+pub fn render_search_bar_ui(
+    mut contexts: EguiContexts,
+    mut search_bar_state: ResMut<SearchBarState>,
+    mut selected_particle: ResMut<SelectedParticle>,
+) {
+    if !search_bar_state.is_open {
+        return;
+    }
+
+    let ctx = contexts.ctx_mut();
+    egui::Window::new("Search Particles")
+        .collapsible(false)
+        .resizable(false)
+        .show(ctx, |ui| {
+            ui.text_edit_singleline(&mut search_bar_state.input);
+
+            let mut new_selected_index = search_bar_state.selected_index;
+            let mut should_close = false;
+
+            ui.separator();
+            for (i, particle) in search_bar_state.filtered_results.iter().enumerate() {
+                let is_selected = Some(i) == search_bar_state.selected_index;
+
+                if ui.selectable_label(is_selected, particle).clicked() {
+                    // If the clicked particle is already selected, close the menu
+                    if selected_particle.0 == *particle {
+                        should_close = true;
+                    } else {
+                        // Otherwise, update the selection
+                        new_selected_index = Some(i);
+                        selected_particle.0 = particle.clone();
+                    }
+                }
+            }
+
+            search_bar_state.selected_index = new_selected_index;
+
+            if should_close {
+                search_bar_state.is_open = false;
+            }
+        });
 }
