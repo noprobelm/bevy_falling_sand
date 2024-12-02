@@ -320,22 +320,30 @@ pub fn update_app_state(
     app_state: Res<State<AppState>>,
     keys: Res<ButtonInput<KeyCode>>,
     mut next_app_state: ResMut<NextState<AppState>>,
+    search_bar_state: Option<Res<SearchBarState>>,
 ) {
     match app_state.get() {
         AppState::Ui => {
             let ctx = contexts.ctx_mut();
-            if !keys.pressed(KeyCode::AltLeft) && !ctx.is_pointer_over_area() {
+            if search_bar_state.is_none()
+                && !keys.pressed(KeyCode::AltLeft)
+                && !ctx.is_pointer_over_area()
+            {
                 next_app_state.set(AppState::Canvas);
             }
         }
         AppState::Canvas => {
             let ctx = contexts.ctx_mut();
-            if keys.pressed(KeyCode::AltLeft) || ctx.is_pointer_over_area() {
+            if search_bar_state.is_some()
+                || keys.pressed(KeyCode::AltLeft)
+                || ctx.is_pointer_over_area()
+            {
                 next_app_state.set(AppState::Ui);
             }
         }
     }
 }
+
 
 /// Bring it all together in the UI.
 /// This system basically pulls types from all modules in this example and assembles them into a side panel.
