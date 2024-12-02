@@ -44,7 +44,7 @@ impl bevy::prelude::Plugin for UIPlugin {
             .add_systems(Update, handle_search_bar_input)
             .add_systems(
                 Update,
-                render_search_bar_ui.run_if(resource_exists::<SearchBarState>),
+                render_search_bar_ui.run_if(resource_exists::<ParticleSearchBar>),
             )            .add_plugins(bevy_inspector_egui::DefaultInspectorConfigPlugin)
             .add_systems(Update, inspector_ui);
     }
@@ -319,12 +319,12 @@ pub fn update_app_state(
     app_state: Res<State<AppState>>,
     keys: Res<ButtonInput<KeyCode>>,
     mut next_app_state: ResMut<NextState<AppState>>,
-    search_bar_state: Option<Res<SearchBarState>>,
+    particle_search_bar: Option<Res<ParticleSearchBar>>,
 ) {
     match app_state.get() {
         AppState::Ui => {
             let ctx = contexts.ctx_mut();
-            if search_bar_state.is_none()
+            if particle_search_bar.is_none()
                 && !keys.pressed(KeyCode::AltLeft)
                 && !ctx.is_pointer_over_area()
             {
@@ -333,7 +333,7 @@ pub fn update_app_state(
         }
         AppState::Canvas => {
             let ctx = contexts.ctx_mut();
-            if search_bar_state.is_some()
+            if particle_search_bar.is_some()
                 || keys.pressed(KeyCode::AltLeft)
                 || ctx.is_pointer_over_area()
             {
@@ -525,9 +525,9 @@ pub fn ev_mouse_wheel(
     }
 }
 
-/// Resource to manage the state of the search bar.
+/// Resource to manage the state of the particle search bar.
 #[derive(Resource, Default)]
-pub struct SearchBarState {
+pub struct ParticleSearchBar {
     pub input: String,
     pub filtered_results: Vec<String>,
     pub selected_index: Option<usize>,
@@ -538,91 +538,91 @@ pub fn handle_search_bar_input(
     mut commands: Commands,
     particle_type_list: Res<ParticleTypeList>,
     mut selected_particle: ResMut<SelectedParticle>,
-    search_bar_state: Option<ResMut<SearchBarState>>,
+    particle_search_bar: Option<ResMut<ParticleSearchBar>>,
 ) {
     if keys.just_pressed(KeyCode::KeyN) {
-        if search_bar_state.is_none() {
-            commands.insert_resource(SearchBarState::default());
+        if particle_search_bar.is_none() {
+            commands.insert_resource(ParticleSearchBar::default());
             return;
         }
     }
 
-    let mut search_bar_state = match search_bar_state {
+    let mut particle_search_bar = match particle_search_bar {
         Some(state) => state,
         None => return,
     };
 
     if keys.just_pressed(KeyCode::Enter) {
-        if let Some(index) = search_bar_state.selected_index {
-            if let Some(selected_particle_name) = search_bar_state.filtered_results.get(index) {
+        if let Some(index) = particle_search_bar.selected_index {
+            if let Some(selected_particle_name) = particle_search_bar.filtered_results.get(index) {
                 selected_particle.0 = selected_particle_name.clone();
             }
         }
-        commands.remove_resource::<SearchBarState>();
+        commands.remove_resource::<ParticleSearchBar>();
         return;
     }
 
     if keys.just_pressed(KeyCode::Escape) {
-        commands.remove_resource::<SearchBarState>();
+        commands.remove_resource::<ParticleSearchBar>();
         return;
     }
 
     for ev in char_input_events.read() {
         match &ev.logical_key {
             Key::Character(ch) if ev.state.is_pressed() => {
-                search_bar_state.input.push_str(ch.as_str());
+                particle_search_bar.input.push_str(ch.as_str());
             }
             Key::Backspace if ev.state.is_pressed() => {
-                search_bar_state.input.pop();
+                particle_search_bar.input.pop();
             }
             Key::Space if ev.state.is_pressed() => {
-                search_bar_state.input.push(' ');
+                particle_search_bar.input.push(' ');
             }
             _ => {}
         }
     }
 
-    let old_filtered_results = search_bar_state.filtered_results.clone();
-    search_bar_state.filtered_results = particle_type_list
+    let old_filtered_results = particle_search_bar.filtered_results.clone();
+    particle_search_bar.filtered_results = particle_type_list
         .map
         .values()
         .flat_map(|particles| particles.clone())
         .filter(|particle| {
             particle
                 .to_lowercase()
-                .contains(&search_bar_state.input.to_lowercase())
+                .contains(&particle_search_bar.input.to_lowercase())
         })
         .collect();
 
-    if search_bar_state.filtered_results != old_filtered_results {
-        search_bar_state.selected_index = search_bar_state.filtered_results.first().map(|_| 0);
+    if particle_search_bar.filtered_results != old_filtered_results {
+        particle_search_bar.selected_index = particle_search_bar.filtered_results.first().map(|_| 0);
     }
 
     if keys.just_pressed(KeyCode::ArrowUp) {
-        if let Some(index) = search_bar_state.selected_index {
+        if let Some(index) = particle_search_bar.selected_index {
             if index > 0 {
-                search_bar_state.selected_index = Some(index - 1);
+                particle_search_bar.selected_index = Some(index - 1);
             }
         } else {
-            search_bar_state.selected_index =
-                search_bar_state.filtered_results.len().checked_sub(1);
+            particle_search_bar.selected_index =
+                particle_search_bar.filtered_results.len().checked_sub(1);
         }
     }
 
     if keys.just_pressed(KeyCode::ArrowDown) {
-        if let Some(index) = search_bar_state.selected_index {
-            if index + 1 < search_bar_state.filtered_results.len() {
-                search_bar_state.selected_index = Some(index + 1);
+        if let Some(index) = particle_search_bar.selected_index {
+            if index + 1 < particle_search_bar.filtered_results.len() {
+                particle_search_bar.selected_index = Some(index + 1);
             }
-        } else if !search_bar_state.filtered_results.is_empty() {
-            search_bar_state.selected_index = Some(0);
+        } else if !particle_search_bar.filtered_results.is_empty() {
+            particle_search_bar.selected_index = Some(0);
         }
     }
 }
 
 pub fn render_search_bar_ui(
     mut contexts: EguiContexts,
-    mut search_bar_state: ResMut<SearchBarState>,
+    mut particle_search_bar: ResMut<ParticleSearchBar>,
     mut commands: Commands,
     mut selected_particle: ResMut<SelectedParticle>,
 ) {
@@ -633,13 +633,13 @@ pub fn render_search_bar_ui(
         .collapsible(false)
         .resizable(false)
         .show(ctx, |ui| {
-            ui.text_edit_singleline(&mut search_bar_state.input);
+            ui.text_edit_singleline(&mut particle_search_bar.input);
 
-            let mut new_selected_index = search_bar_state.selected_index;
+            let mut new_selected_index = particle_search_bar.selected_index;
 
             ui.separator();
-            for (i, particle) in search_bar_state.filtered_results.iter().enumerate() {
-                let is_selected = Some(i) == search_bar_state.selected_index;
+            for (i, particle) in particle_search_bar.filtered_results.iter().enumerate() {
+                let is_selected = Some(i) == particle_search_bar.selected_index;
 
                 if ui.selectable_label(is_selected, particle).clicked() {
                     if selected_particle.0 == *particle {
@@ -651,10 +651,10 @@ pub fn render_search_bar_ui(
                 }
             }
 
-            search_bar_state.selected_index = new_selected_index;
+            particle_search_bar.selected_index = new_selected_index;
         });
 
     if should_close {
-        commands.remove_resource::<SearchBarState>();
+        commands.remove_resource::<ParticleSearchBar>();
     }
 }
