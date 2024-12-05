@@ -474,7 +474,7 @@ pub fn setup_custom_particles(mut commands: Commands) {
             Some(Fire {
                 burn_radius: 1.5,
                 chance_to_spread: 1.,
-                destroys_on_spread: true,
+                destroys_on_spread: false,
             }),
         ),
         Name::new("Grass Wall"),
