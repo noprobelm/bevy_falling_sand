@@ -615,6 +615,7 @@ pub fn render_search_bar_ui(
     mut particle_search_bar: ResMut<ParticleSearchBar>,
     mut commands: Commands,
     mut selected_particle: ResMut<SelectedParticle>,
+    mut brush_state: ResMut<NextState<BrushState>>,
     keys: Res<ButtonInput<KeyCode>>,
 ) {
     let ctx = contexts.ctx_mut();
@@ -633,13 +634,13 @@ pub fn render_search_bar_ui(
                 let is_selected = Some(i) == particle_search_bar.selected_index;
 
                 if ui.selectable_label(is_selected, particle).clicked()
-                    || keys.just_pressed(KeyCode::Enter)
                 {
                     if selected_particle.0 == *particle {
                         should_close = true;
                     } else {
                         new_selected_index = Some(i);
                         selected_particle.0 = particle.clone();
+                        brush_state.set(BrushState::Spawn);
                     }
                 }
 
@@ -647,6 +648,7 @@ pub fn render_search_bar_ui(
                     should_close = true;
                     selected_particle.0 = particle.clone();
                     new_selected_index = Some(i);
+                    brush_state.set(BrushState::Spawn);
                 }
 
             }
