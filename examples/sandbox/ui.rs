@@ -484,11 +484,20 @@ pub fn update_particle_list(
 }
 
 /// Stops or starts the simulation when scheduled.
-pub fn toggle_simulation(mut commands: Commands, simulation_pause: Option<Res<SimulationRun>>) {
-    if simulation_pause.is_some() {
-        commands.remove_resource::<SimulationRun>();
-    } else {
-        commands.init_resource::<SimulationRun>();
+pub fn toggle_simulation(
+    mut commands: Commands,
+    simulation_pause: Option<Res<SimulationRun>>,
+    app_state: Res<State<AppState>>,
+) {
+    match app_state.get() {
+        AppState::Canvas => {
+            if simulation_pause.is_some() {
+                commands.remove_resource::<SimulationRun>();
+            } else {
+                commands.init_resource::<SimulationRun>();
+            }
+        },
+        _ => {}
     }
 }
 
@@ -633,8 +642,7 @@ pub fn render_search_bar_ui(
             for (i, particle) in particle_search_bar.filtered_results.iter().enumerate() {
                 let is_selected = Some(i) == particle_search_bar.selected_index;
 
-                if ui.selectable_label(is_selected, particle).clicked()
-                {
+                if ui.selectable_label(is_selected, particle).clicked() {
                     if selected_particle.0 == *particle {
                         should_close = true;
                     } else {
@@ -650,7 +658,6 @@ pub fn render_search_bar_ui(
                     new_selected_index = Some(i);
                     brush_state.set(BrushState::Spawn);
                 }
-
             }
 
             particle_search_bar.selected_index = new_selected_index;
