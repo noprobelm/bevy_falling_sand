@@ -45,7 +45,8 @@ impl bevy::prelude::Plugin for UIPlugin {
             .add_systems(
                 Update,
                 render_search_bar_ui.run_if(resource_exists::<ParticleSearchBar>),
-            )            .add_plugins(bevy_inspector_egui::DefaultInspectorConfigPlugin)
+            )
+            .add_plugins(bevy_inspector_egui::DefaultInspectorConfigPlugin)
             .add_systems(Update, inspector_ui);
     }
 }
@@ -343,7 +344,6 @@ pub fn update_app_state(
     }
 }
 
-
 /// Bring it all together in the UI.
 /// This system basically pulls types from all modules in this example and assembles them into a side panel.
 pub fn render_ui(
@@ -537,7 +537,6 @@ pub fn handle_search_bar_input(
     mut char_input_events: EventReader<KeyboardInput>,
     mut commands: Commands,
     particle_type_list: Res<ParticleTypeList>,
-    mut selected_particle: ResMut<SelectedParticle>,
     particle_search_bar: Option<ResMut<ParticleSearchBar>>,
 ) {
     if keys.just_pressed(KeyCode::KeyN) {
@@ -551,16 +550,6 @@ pub fn handle_search_bar_input(
         Some(state) => state,
         None => return,
     };
-
-    if keys.just_pressed(KeyCode::Enter) {
-        if let Some(index) = particle_search_bar.selected_index {
-            if let Some(selected_particle_name) = particle_search_bar.filtered_results.get(index) {
-                selected_particle.0 = selected_particle_name.clone();
-            }
-        }
-        commands.remove_resource::<ParticleSearchBar>();
-        return;
-    }
 
     if keys.just_pressed(KeyCode::Escape) {
         commands.remove_resource::<ParticleSearchBar>();
@@ -595,7 +584,8 @@ pub fn handle_search_bar_input(
         .collect();
 
     if particle_search_bar.filtered_results != old_filtered_results {
-        particle_search_bar.selected_index = particle_search_bar.filtered_results.first().map(|_| 0);
+        particle_search_bar.selected_index =
+            particle_search_bar.filtered_results.first().map(|_| 0);
     }
 
     if keys.just_pressed(KeyCode::ArrowUp) {
@@ -625,6 +615,7 @@ pub fn render_search_bar_ui(
     mut particle_search_bar: ResMut<ParticleSearchBar>,
     mut commands: Commands,
     mut selected_particle: ResMut<SelectedParticle>,
+    keys: Res<ButtonInput<KeyCode>>,
 ) {
     let ctx = contexts.ctx_mut();
     let mut should_close = false;
@@ -641,7 +632,9 @@ pub fn render_search_bar_ui(
             for (i, particle) in particle_search_bar.filtered_results.iter().enumerate() {
                 let is_selected = Some(i) == particle_search_bar.selected_index;
 
-                if ui.selectable_label(is_selected, particle).clicked() {
+                if ui.selectable_label(is_selected, particle).clicked()
+                    || keys.just_pressed(KeyCode::Enter)
+                {
                     if selected_particle.0 == *particle {
                         should_close = true;
                     } else {
@@ -649,6 +642,13 @@ pub fn render_search_bar_ui(
                         selected_particle.0 = particle.clone();
                     }
                 }
+
+                if new_selected_index.is_some() && keys.just_pressed(KeyCode::Enter) {
+                    should_close = true;
+                    selected_particle.0 = particle.clone();
+                    new_selected_index = Some(i);
+                }
+
             }
 
             particle_search_bar.selected_index = new_selected_index;
