@@ -11,7 +11,7 @@ use bevy::{
 };
 use bevy_egui::{EguiContext, EguiContexts};
 
-use bevy_falling_sand::core::{ClearMapEvent, ParticleType, SimulationRun};
+use bevy_falling_sand::core::{ClearMapEvent, ParticleType, SimulationRun, ClearParticleTypeChildrenEvent};
 use bevy_falling_sand::debug::{
     DebugDirtyRects, DebugHibernatingChunks, DebugParticleCount, TotalParticleCount,
 };
