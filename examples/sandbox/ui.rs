@@ -47,6 +47,8 @@ impl bevy::prelude::Plugin for UIPlugin {
                 render_search_bar_ui.run_if(resource_exists::<ParticleSearchBar>),
             )
             .add_plugins(bevy_inspector_egui::DefaultInspectorConfigPlugin)
+            .observe(on_clear_dynamic_particles)
+            .observe(on_clear_wall_particles)
             .add_systems(Update, inspector_ui);
     }
 }
@@ -666,4 +668,39 @@ pub fn render_search_bar_ui(
     if should_close {
         commands.remove_resource::<ParticleSearchBar>();
     }
+}
+
+/// Remove all particles from the simulation.
+#[derive(Event)]
+pub struct ClearDynamicParticlesEvent;
+
+/// Remove all particles from the simulation.
+#[derive(Event)]
+pub struct ClearWallParticlesEvent;
+
+pub fn on_clear_dynamic_particles(
+    _trigger: Trigger<ClearDynamicParticlesEvent>,
+    mut commands: Commands,
+    dynamic_particle_types_query: Query<&ParticleType, Without<Wall>>,
+) {
+    dynamic_particle_types_query
+        .iter()
+        .for_each(|particle_type| {
+            commands.trigger(ClearParticleTypeChildrenEvent(particle_type.name.clone()))
+        });
+}
+
+pub fn on_clear_wall_particles(
+    _trigger: Trigger<ClearWallParticlesEvent>,
+    mut commands: Commands,
+    dynamic_particle_types_query: Query<&ParticleType, With<Wall>>,
+) {
+    dynamic_particle_types_query
+        .iter()
+        .for_each(|particle_type| {
+            if particle_type.name == "Invisible Wall" {
+                info!("true");
+            }
+            commands.trigger(ClearParticleTypeChildrenEvent(particle_type.name.clone()))
+        });
 }
