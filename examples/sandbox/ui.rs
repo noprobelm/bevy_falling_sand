@@ -11,7 +11,9 @@ use bevy::{
 };
 use bevy_egui::{EguiContext, EguiContexts};
 
-use bevy_falling_sand::core::{ClearMapEvent, ParticleType, SimulationRun, ClearParticleTypeChildrenEvent};
+use bevy_falling_sand::core::{
+    ClearMapEvent, ClearParticleTypeChildrenEvent, ParticleType, SimulationRun,
+};
 use bevy_falling_sand::debug::{
     DebugDirtyRects, DebugHibernatingChunks, DebugParticleCount, TotalParticleCount,
 };
@@ -27,6 +29,7 @@ impl bevy::prelude::Plugin for UIPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
         app.init_state::<AppState>()
             .add_systems(Update, render_ui)
+            .add_systems(Update, render_particle_editor)
             .add_systems(Update, update_particle_list)
             .add_systems(Update, update_app_state.after(render_ui))
             .add_systems(
@@ -37,6 +40,11 @@ impl bevy::prelude::Plugin for UIPlugin {
             .init_resource::<ParticleList>()
             .init_resource::<ParticleTypeList>()
             .init_resource::<SelectedParticle>()
+            .init_resource::<ParticleEditorNameField>()
+            .init_resource::<ParticleEditorDensity>()
+            .init_resource::<ParticleEditorMomentum>()
+            .init_resource::<ParticleEditorMaxVelocity>()
+            .init_resource::<ParticleEditorCategory>()
             .add_systems(First, update_cursor_coordinates)
             .add_systems(OnEnter(AppState::Ui), show_cursor)
             .add_systems(OnEnter(AppState::Canvas), hide_cursor)
@@ -498,7 +506,7 @@ pub fn toggle_simulation(
             } else {
                 commands.init_resource::<SimulationRun>();
             }
-        },
+        }
         _ => {}
     }
 }
@@ -703,4 +711,165 @@ pub fn on_clear_wall_particles(
             }
             commands.trigger(ClearParticleTypeChildrenEvent(particle_type.name.clone()))
         });
+}
+
+#[derive(Resource, Clone)]
+pub struct ParticleEditorNameField(pub String);
+
+impl Default for ParticleEditorNameField {
+    fn default() -> Self {
+        ParticleEditorNameField(String::from("Dirt Wall"))
+    }
+}
+
+pub fn render_particle_editor(
+    mut contexts: EguiContexts,
+    particle_type_list: Res<ParticleTypeList>,
+    mut selected_particle: ResMut<SelectedParticle>,
+    mut brush_state: ResMut<NextState<BrushState>>,
+    mut particle_name_field: ResMut<ParticleEditorNameField>,
+    mut particle_density_field: ResMut<ParticleEditorDensity>,
+    mut particle_max_velocity_field: ResMut<ParticleEditorMaxVelocity>,
+    mut particle_momentum_field: ResMut<ParticleEditorMomentum>,
+    mut particle_category_field: ResMut<ParticleEditorCategory>,
+) {
+    egui::Window::new("Particle Editor") // Title of the window
+        .resizable(true) // Allow resizing
+        .collapsible(true) // Allow collapsing
+        .show(contexts.ctx_mut(), |ui| {
+            let available_width = ui.available_width();
+            let available_height = ui.available_height();
+
+            // Split into two sections
+            ui.horizontal(|ui| {
+                // Left section: Particle type list
+                ui.allocate_ui_with_layout(
+                    egui::vec2(available_width / 3.0, available_height),
+                    egui::Layout::top_down(egui::Align::Min),
+                    |ui| {
+                        let categories = ["Walls", "Solids", "Movable Solids", "Liquids", "Gases"];
+
+                        // Iterate through categories
+                        for &category in &categories {
+                            if let Some(particles) = particle_type_list.get(category) {
+                                egui::CollapsingHeader::new(category)
+                                    .default_open(false)
+                                    .show(ui, |ui| {
+                                        for particle_name in particles {
+                                            if ui.button(particle_name).clicked() {
+                                                selected_particle.0 = particle_name.clone();
+                                                brush_state.set(BrushState::Spawn);
+                                            }
+                                        }
+                                    });
+                            }
+                        }
+
+                        // Button to add a new particle
+                        if ui.button("New Particle").clicked() {
+                            info!("Button clicked!");
+                        }
+                    },
+                );
+                // Right section: Placeholder for other tools or future functionalities
+                ui.allocate_ui_with_layout(
+                    egui::vec2(available_width * 2.0 / 3.0, available_height),
+                    egui::Layout::top_down(egui::Align::Min),
+                    |ui| {
+                        ui.vertical(|ui| {
+                            ui.horizontal(|ui| {
+                                ui.text_edit_singleline(&mut particle_name_field.0);
+                            });
+                            ui.separator();
+                            egui::ComboBox::from_label("Select one!")
+                                // .selected_text(format!("{:?}", ))
+                                .show_ui(ui, |ui| {
+                                    ui.selectable_value(&mut particle_category_field.as_str(), "Wall", "Wall");
+                                    ui.selectable_value(&mut particle_category_field.as_str(), "Liquid", "Liquid");
+                                    ui.selectable_value(&mut particle_category_field.as_str(), "Solid", "Solid");
+                                    ui.selectable_value(&mut particle_category_field.as_str(), "Gas", "Gas");
+                                    ui.selectable_value(&mut particle_category_field.as_str(), "Other", "Other");
+                                });
+                            ui.horizontal(|ui| {
+                                ui.label("Density: ");
+                                ui.add(
+                                    egui::Slider::new(&mut particle_density_field.0, 1..=1000)
+                                        .step_by(1.),
+                                );
+                            });
+                            ui.horizontal(|ui| {
+                                ui.label("Max Velocity: ");
+                                ui.add(
+                                    egui::Slider::new(&mut particle_max_velocity_field.0, 1..=5)
+                                        .step_by(1.),
+                                );
+                            });
+                            ui.horizontal(|ui| {
+                                ui.label("Momentum"); // Add the label to the left
+                                ui.checkbox(&mut particle_momentum_field.0, "");
+                                // Use an empty string for the checkbox text
+                            });
+                            ui.color_edit_button_rgb(&mut [255., 255., 255.]);
+                            // Display the current list of items
+                            let mut item_list: Vec<u32> = vec![1, 2, 3];
+                            for i in 0..item_list.len() {
+                                ui.horizontal(|ui| {
+                                    ui.label(format!("{}: {}", i + 1, item_list[i]));
+
+                                    // Move up button
+                                    if ui.button("⬆️ Move Up").clicked() && i > 0 {
+                                        item_list.swap(i, i - 1);
+                                    }
+
+                                    // Move down button
+                                    if ui.button("⬇️ Move Down").clicked()
+                                        && i < item_list.len() - 1
+                                    {
+                                        item_list.swap(i, i + 1);
+                                    }
+
+                                    // Optional: Remove item
+                                    if ui.button("❌ Remove").clicked() {
+                                        item_list.remove(i);
+                                    }
+                                });
+                            }
+                        });
+                    },
+                );
+            });
+        });
+}
+
+#[derive(Default, Resource, Clone)]
+pub struct ParticleEditorDensity(pub u32);
+
+#[derive(Default, Resource, Clone)]
+pub struct ParticleEditorMaxVelocity(pub u32);
+
+#[derive(Default, Resource, Clone)]
+pub struct ParticleEditorMomentum(pub bool);
+
+pub struct ParticleEditorColors(pub Vec<Color>);
+
+#[derive(Default, Resource, Clone)]
+pub enum ParticleEditorCategory {
+    #[default]
+    Wall,
+    Liquid,
+    Solid,
+    Gas,
+    Other,
+}
+
+impl ParticleEditorCategory {
+    pub fn as_str(&self) -> &str {
+        match self {
+            ParticleEditorCategory::Wall => "Wall",
+            ParticleEditorCategory::Liquid => "Liquid",
+            ParticleEditorCategory::Solid => "Solid",
+            ParticleEditorCategory::Gas => "Gas",
+            ParticleEditorCategory::Other => "Other",
+        }
+    }
 }
