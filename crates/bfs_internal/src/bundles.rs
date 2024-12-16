@@ -10,8 +10,8 @@ use bfs_core::*;
 pub struct StaticParticleTypeBundle {
     /// The unique identifier for the particle.
     pub particle_type: ParticleType,
-    /// The particle type's colors.
-    pub colors: ParticleColor,
+    /// The particle type's color blueprint.
+    pub colors: ParticleColorBlueprint,
     /// The particle type's global transform.
     pub spatial: SpatialBundle,
 }
@@ -21,7 +21,7 @@ impl StaticParticleTypeBundle {
     pub fn new(particle_type: ParticleType, colors: ParticleColor) -> StaticParticleTypeBundle {
         StaticParticleTypeBundle {
             particle_type,
-            colors,
+            colors: ParticleColorBlueprint(colors),
             spatial: SpatialBundle::from_transform(Transform::from_xyz(0., 0., 0.)),
         }
     }
@@ -32,14 +32,14 @@ impl StaticParticleTypeBundle {
 pub struct DynamicParticleTypeBundle {
     /// The unique identifier for the particle.
     pub particle_type: ParticleType,
-    /// The particle type's density.
-    pub density: Density,
-    /// The particle type's velocity.
-    pub velocity: Velocity,
-    /// The particle type's movement priority.
-    pub movement_priority: MovementPriority,
-    /// The particle type's colors.
-    pub colors: ParticleColor,
+    /// The particle type's density blueprint.
+    pub density: DensityBlueprint,
+    /// The particle type's velocity blueprint.
+    pub velocity: VelocityBlueprint,
+    /// The particle type's movement priority blueprint.
+    pub movement_priority: MovementPriorityBlueprint,
+    /// The particle type's colors blueprint.
+    pub colors: ParticleColorBlueprint,
     /// The particle type's global transform.
     pub spatial: SpatialBundle,
 }
@@ -55,10 +55,10 @@ impl DynamicParticleTypeBundle {
     ) -> DynamicParticleTypeBundle {
         DynamicParticleTypeBundle {
             particle_type,
-            density,
-            velocity,
-            movement_priority,
-            colors,
+            density: DensityBlueprint(density),
+            velocity: VelocityBlueprint(velocity),
+            movement_priority: MovementPriorityBlueprint(movement_priority),
+            colors: ParticleColorBlueprint(colors),
             spatial: SpatialBundle::from_transform(Transform::from_xyz(0., 0., 0.)),
         }
     }
