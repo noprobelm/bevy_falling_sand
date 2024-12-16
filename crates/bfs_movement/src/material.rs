@@ -44,6 +44,23 @@ pub trait Material {
 )]
 pub struct Wall;
 
+/// A wall blueprint.
+#[derive(
+    Clone,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Hash,
+    Debug,
+    Default,
+    Component,
+    Reflect,
+    Serialize,
+    Deserialize,
+)]
+pub struct WallBlueprint(pub Wall);
+
 impl Wall {
     /// Creates a new Wall.
     pub fn new() -> Wall {
@@ -83,6 +100,23 @@ impl Material for Solid {
     }
 }
 
+/// A solid blueprint
+#[derive(
+    Clone,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Hash,
+    Debug,
+    Default,
+    Component,
+    Reflect,
+    Serialize,
+    Deserialize,
+)]
+pub struct SolidBlueprint(pub Solid);
+
 /// A movable solid material, like sand.
 #[derive(
     Clone,
@@ -115,6 +149,23 @@ impl Material for MovableSolid {
         ])
     }
 }
+
+/// A movable solid material, like sand.
+#[derive(
+    Clone,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Hash,
+    Debug,
+    Default,
+    Component,
+    Reflect,
+    Serialize,
+    Deserialize,
+)]
+pub struct MovableSolidBlueprint;
 
 /// A liquid material which flows like water.
 #[derive(
@@ -162,6 +213,23 @@ impl Material for Liquid {
     }
 }
 
+/// A liquid blueprint.
+#[derive(
+    Clone,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Hash,
+    Debug,
+    Default,
+    Component,
+    Reflect,
+    Serialize,
+    Deserialize,
+)]
+pub struct LiquidBlueprint(pub Liquid);
+
 /// A gaseous material, which flows upward.
 #[derive(
     Clone,
@@ -204,6 +272,23 @@ impl Material for Gas {
         MovementPriority::from(neighbors)
     }
 }
+
+/// A gaseous material, which flows upward.
+#[derive(
+    Clone,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Hash,
+    Debug,
+    Default,
+    Component,
+    Reflect,
+    Serialize,
+    Deserialize,
+)]
+pub struct GasBlueprint(pub Gas);
 
 /// Enum to mark different material types
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Reflect, Serialize, Deserialize)]
