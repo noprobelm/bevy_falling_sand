@@ -157,7 +157,7 @@ pub fn on_reset_particle_color(
     trigger: Trigger<ResetParticleColorEvent>,
     mut commands: Commands,
     particle_query: Query<&Parent, With<Particle>>,
-    parent_query: Query<Option<&ParticleColor>, With<ParticleType>>,
+    parent_query: Query<Option<&ParticleColorBlueprint>, With<ParticleType>>,
     mut rng: ResMut<GlobalRng>,
 ) {
     if let Ok(parent) = particle_query.get(trigger.event().entity) {
@@ -165,7 +165,7 @@ pub fn on_reset_particle_color(
         if let Some(particle_color) = parent_query.get(parent.get()).unwrap() {
             commands
                 .entity(trigger.event().entity)
-                .insert(particle_color.new_with_random(rng));
+                .insert(particle_color.0.new_with_random(rng));
         } else {
             commands
                 .entity(trigger.event().entity)
@@ -179,13 +179,13 @@ pub fn on_reset_randomizes_color(
     trigger: Trigger<ResetRandomizesColorEvent>,
     mut commands: Commands,
     particle_query: Query<&Parent, With<Particle>>,
-    parent_query: Query<Option<&RandomizesColor>, With<ParticleType>>,
+    parent_query: Query<Option<&RandomizesColorBlueprint>, With<ParticleType>>,
 ) {
     if let Ok(parent) = particle_query.get(trigger.event().entity) {
         if let Some(color) = parent_query.get(parent.get()).unwrap() {
             commands
                 .entity(trigger.event().entity)
-                .insert(color.clone());
+                .insert(color.0);
         } else {
             commands
                 .entity(trigger.event().entity)
@@ -199,13 +199,13 @@ pub fn on_reset_flows_color(
     trigger: Trigger<ResetFlowsColorEvent>,
     mut commands: Commands,
     particle_query: Query<&Parent, With<Particle>>,
-    parent_query: Query<Option<&FlowsColor>, With<ParticleType>>,
+    parent_query: Query<Option<&FlowsColorBlueprint>, With<ParticleType>>,
 ) {
     if let Ok(parent) = particle_query.get(trigger.event().entity) {
         if let Some(color) = parent_query.get(parent.get()).unwrap() {
             commands
                 .entity(trigger.event().entity)
-                .insert(color.clone());
+                .insert(color.0);
         } else {
             commands
                 .entity(trigger.event().entity)
