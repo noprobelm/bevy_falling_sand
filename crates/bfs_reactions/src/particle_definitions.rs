@@ -35,7 +35,7 @@ impl Plugin for ParticleDefinitionsPlugin {
 }
 
 /// Marker for particle types that can inflict a burning status.
-#[derive(Clone, PartialEq, PartialOrd, Debug, Default, Component, Reflect)]
+#[derive(Copy, Clone, PartialEq, PartialOrd, Debug, Default, Component, Reflect)]
 #[reflect(Component)]
 pub struct Fire {
     /// The radius of the fire effect.
@@ -46,6 +46,11 @@ pub struct Fire {
     /// The particle will destroy after spreading.
     pub destroys_on_spread: bool,
 }
+
+/// The Fire blueprint.
+#[derive(Copy, Clone, PartialEq, PartialOrd, Debug, Default, Component, Reflect)]
+#[reflect(Component)]
+pub struct FireBlueprint(pub Fire);
 
 /// Stores information about a particle that can burn.
 #[derive(Clone, PartialEq, Debug, Default, Component, Reflect)]
@@ -93,6 +98,11 @@ impl Burns {
     }
 }
 
+/// The Burns blueprint.
+#[derive(Clone, PartialEq, Debug, Default, Component, Reflect)]
+#[reflect(Component)]
+pub struct BurnsBlueprint(pub Burns);
+
 /// Component for particles that have the capacity to burn.
 #[derive(Clone, Eq, PartialEq, Debug, Default, Component, Reflect)]
 pub struct Burning {
@@ -124,6 +134,10 @@ impl Burning {
         self.tick_timer.reset();
     }
 }
+
+/// The Burning blueprint
+#[derive(Clone, Eq, PartialEq, Debug, Default, Component, Reflect)]
+pub struct BurningBlueprint(pub Burning);
 
 /// Component for particles that are creating new particles as part of a reaction.
 #[derive(Clone, PartialEq, Debug, Component, Reflect)]

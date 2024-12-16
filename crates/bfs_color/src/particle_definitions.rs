@@ -88,13 +88,23 @@ impl ParticleColor {
     }
 }
 
+/// The ParticleColor blueprint.
+#[derive(Clone, PartialEq, Debug, Default, Component, Reflect, Serialize, Deserialize)]
+#[reflect(Component)]
+pub struct ParticleColorBlueprint(pub ParticleColor);
+
 /// Component for particles that randomly change colors from its palette.
-#[derive(Clone, PartialEq, Debug, Component, Reflect, Serialize, Deserialize)]
+#[derive(Copy, Clone, PartialEq, Debug, Component, Reflect, Serialize, Deserialize)]
 #[reflect(Component)]
 pub struct RandomizesColor {
     /// The chance a particle's color will change.
     pub rate: f64,
 }
+
+/// The RandomizesColor blueprint.
+#[derive(Copy, Clone, PartialEq, Debug, Component, Reflect, Serialize, Deserialize)]
+#[reflect(Component)]
+pub struct RandomizesColorBlueprint(pub RandomizesColor);
 
 impl RandomizesColor {
     /// Creates a new RandomizesColors
@@ -104,7 +114,7 @@ impl RandomizesColor {
 }
 
 /// Component for particlce whose colors flows sequientally through its palette.
-#[derive(Clone, PartialEq, Debug, Component, Reflect)]
+#[derive(Copy, Clone, PartialEq, Debug, Component, Reflect, Serialize, Deserialize)]
 #[reflect(Component)]
 pub struct FlowsColor {
     /// The chance a particle's color will change.
@@ -117,6 +127,10 @@ impl FlowsColor {
         FlowsColor { rate: chance }
     }
 }
+
+#[derive(Copy, Clone, PartialEq, Debug, Component, Reflect, Serialize, Deserialize)]
+#[reflect(Component)]
+pub struct FlowsColorBlueprint(pub FlowsColor);
 
 /// Triggers a particle to reset its ParticleColor information to its parent's.
 #[derive(Event)]

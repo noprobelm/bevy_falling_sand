@@ -47,6 +47,11 @@ impl Particle {
     }
 }
 
+/// Blueprint for the particle data
+#[derive(Component, Clone, Debug, PartialEq, Reflect, Serialize, Deserialize)]
+#[reflect(Component)]
+pub struct ParticleBlueprint(pub Particle);
+
 /// Coordinate component for particles.
 #[derive(
     Copy, Clone, Eq, PartialEq, Hash, Debug, Default, Component, Reflect, Serialize, Deserialize,
