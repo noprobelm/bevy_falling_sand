@@ -681,7 +681,7 @@ pub struct ClearWallParticlesEvent;
 pub fn on_clear_dynamic_particles(
     _trigger: Trigger<ClearDynamicParticlesEvent>,
     mut commands: Commands,
-    dynamic_particle_types_query: Query<&ParticleType, Without<Wall>>,
+    dynamic_particle_types_query: Query<&ParticleType, Without<WallBlueprint>>,
 ) {
     dynamic_particle_types_query
         .iter()
@@ -693,7 +693,7 @@ pub fn on_clear_dynamic_particles(
 pub fn on_clear_wall_particles(
     _trigger: Trigger<ClearWallParticlesEvent>,
     mut commands: Commands,
-    dynamic_particle_types_query: Query<&ParticleType, With<Wall>>,
+    dynamic_particle_types_query: Query<&ParticleType, With<WallBlueprint>>,
 ) {
     dynamic_particle_types_query
         .iter()
