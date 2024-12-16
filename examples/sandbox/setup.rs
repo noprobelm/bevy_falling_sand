@@ -83,7 +83,7 @@ pub fn setup_custom_particles(mut commands: Commands) {
             ),
         ),
         // If momentum effects are desired, insert the marker component.
-        Momentum::ZERO,
+        MomentumBlueprint(Momentum::ZERO),
         Name::new("My Custom Particle"),
     ));
 
@@ -115,7 +115,7 @@ pub fn setup_custom_particles(mut commands: Commands) {
                 vec![Color::Srgba(Srgba::hex("#0B80AB80").unwrap())],
             ),
         ),
-        Momentum::ZERO,
+        MomentumBlueprint(Momentum::ZERO),
         Name::new("Water"),
     ));
 
@@ -137,8 +137,8 @@ pub fn setup_custom_particles(mut commands: Commands) {
                 ],
             ),
         ),
-        Momentum::ZERO,
-        FlowsColor::new(0.1),
+        MomentumBlueprint(Momentum::ZERO),
+        FlowsColorBlueprint(FlowsColor::new(0.1)),
         Name::new("Sparkly Slime"),
     ));
 
@@ -156,8 +156,8 @@ pub fn setup_custom_particles(mut commands: Commands) {
                 ],
             ),
         ),
-        Momentum::ZERO,
-        FlowsColor::new(0.1),
+        MomentumBlueprint(Momentum::ZERO),
+        FlowsColorBlueprint(FlowsColor::new(0.1)),
         Name::new("Slime"),
     ));
 
@@ -172,7 +172,7 @@ pub fn setup_custom_particles(mut commands: Commands) {
                 vec![Color::Srgba(Srgba::hex("#D6997080").unwrap())],
             ),
         ),
-        Momentum::ZERO,
+        MomentumBlueprint(Momentum::ZERO),
         Name::new("Whiskey"),
     ));
 
@@ -187,7 +187,7 @@ pub fn setup_custom_particles(mut commands: Commands) {
                 vec![Color::Srgba(Srgba::hex("#780606").unwrap())],
             ),
         ),
-        Momentum::ZERO,
+        MomentumBlueprint(Momentum::ZERO),
         Name::new("Blood"),
     ));
 
@@ -202,7 +202,7 @@ pub fn setup_custom_particles(mut commands: Commands) {
                 vec![Color::Srgba(Srgba::hex("#2B1229").unwrap())],
             ),
         ),
-        Momentum::ZERO,
+        MomentumBlueprint(Momentum::ZERO),
         Burns::new(
             Duration::from_secs(5),
             Duration::from_millis(100),
@@ -241,7 +241,7 @@ pub fn setup_custom_particles(mut commands: Commands) {
             ),
         ),
         // If momentum effects are desired, insert the marker component.
-        Momentum::ZERO,
+        MomentumBlueprint(Momentum::ZERO),
         Name::new("Sand"),
     ));
 
@@ -259,7 +259,7 @@ pub fn setup_custom_particles(mut commands: Commands) {
             ),
         ),
         // If momentum effects are desired, insert the marker component.
-        Momentum::ZERO,
+        MomentumBlueprint(Momentum::ZERO),
         Name::new("Dirt"),
     ));
 
@@ -277,7 +277,7 @@ pub fn setup_custom_particles(mut commands: Commands) {
             ),
         ),
         // If momentum effects are desired, insert the marker component.
-        Momentum::ZERO,
+        MomentumBlueprint(Momentum::ZERO),
         Name::new("Snow"),
     ));
 
@@ -295,7 +295,7 @@ pub fn setup_custom_particles(mut commands: Commands) {
                 ],
             ),
         ),
-        FlowsColor::new(0.1),
+        FlowsColorBlueprint(FlowsColor::new(0.1)),
         Burns::new(
             Duration::from_millis(200),
             Duration::from_millis(100),
@@ -321,7 +321,7 @@ pub fn setup_custom_particles(mut commands: Commands) {
                 ],
             ),
         ),
-        FlowsColor::new(0.1),
+        FlowsColorBlueprint(FlowsColor::new(0.1)),
         Name::new("Smoke"),
     ));
 
@@ -339,7 +339,7 @@ pub fn setup_custom_particles(mut commands: Commands) {
                 ],
             ),
         ),
-        FlowsColor::new(0.1),
+        FlowsColorBlueprint(FlowsColor::new(0.1)),
         Burns::new(
             Duration::from_secs(1),
             Duration::from_millis(100),
@@ -380,7 +380,7 @@ pub fn setup_custom_particles(mut commands: Commands) {
                 ],
             ),
         ),
-        FlowsColor::new(0.1),
+        FlowsColorBlueprint(FlowsColor::new(0.1)),
         Fire {
             burn_radius: 1.5,
             chance_to_spread: 0.01,

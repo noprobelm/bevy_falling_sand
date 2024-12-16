@@ -4,17 +4,17 @@ use bfs_core::ParticleType;
 use serde::{Deserialize, Serialize};
 use smallvec::{smallvec, SmallVec};
 
-use super::MovementPriority;
+use super::{MovementPriority, MovementPriorityBlueprint};
 
 pub struct MaterialPlugin;
 
 impl Plugin for MaterialPlugin {
     fn build(&self, app: &mut App) {
-        app.observe(on_solid_added)
-            .observe(on_movable_solid_added)
-            .observe(on_liquid_added)
+        app.observe(on_solid_blueprint_added)
+            .observe(on_movable_solid_blueprint_added)
+            .observe(on_liquid_blueprint_added)
             .observe(on_wall_added)
-            .observe(on_gas_added);
+            .observe(on_gas_blueprint_added);
     }
 }
 
@@ -43,6 +43,23 @@ pub trait Material {
     Deserialize,
 )]
 pub struct Wall;
+
+/// A wall blueprint.
+#[derive(
+    Clone,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Hash,
+    Debug,
+    Default,
+    Component,
+    Reflect,
+    Serialize,
+    Deserialize,
+)]
+pub struct WallBlueprint(pub Wall);
 
 impl Wall {
     /// Creates a new Wall.
@@ -83,6 +100,23 @@ impl Material for Solid {
     }
 }
 
+/// A solid blueprint
+#[derive(
+    Clone,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Hash,
+    Debug,
+    Default,
+    Component,
+    Reflect,
+    Serialize,
+    Deserialize,
+)]
+pub struct SolidBlueprint(pub Solid);
+
 /// A movable solid material, like sand.
 #[derive(
     Clone,
@@ -115,6 +149,23 @@ impl Material for MovableSolid {
         ])
     }
 }
+
+/// A movable solid material, like sand.
+#[derive(
+    Clone,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Hash,
+    Debug,
+    Default,
+    Component,
+    Reflect,
+    Serialize,
+    Deserialize,
+)]
+pub struct MovableSolidBlueprint(pub MovableSolid);
 
 /// A liquid material which flows like water.
 #[derive(
@@ -162,6 +213,23 @@ impl Material for Liquid {
     }
 }
 
+/// A liquid blueprint.
+#[derive(
+    Clone,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Hash,
+    Debug,
+    Default,
+    Component,
+    Reflect,
+    Serialize,
+    Deserialize,
+)]
+pub struct LiquidBlueprint(pub Liquid);
+
 /// A gaseous material, which flows upward.
 #[derive(
     Clone,
@@ -205,6 +273,23 @@ impl Material for Gas {
     }
 }
 
+/// A gaseous material, which flows upward.
+#[derive(
+    Clone,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Hash,
+    Debug,
+    Default,
+    Component,
+    Reflect,
+    Serialize,
+    Deserialize,
+)]
+pub struct GasBlueprint(pub Gas);
+
 /// Enum to mark different material types
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Reflect, Serialize, Deserialize)]
 pub enum MaterialType {
@@ -221,67 +306,67 @@ pub enum MaterialType {
 }
 
 /// Observer for adding movement priority when a particle is given a new state of matter.
-pub fn on_solid_added(
-    trigger: Trigger<OnAdd, Solid>,
+pub fn on_solid_blueprint_added(
+    trigger: Trigger<OnAdd, SolidBlueprint>,
     mut commands: Commands,
-    particle_query: Query<&Solid, With<ParticleType>>,
+    particle_query: Query<&SolidBlueprint, With<ParticleType>>,
 ) {
     let entity = trigger.entity();
     if let Ok(solid) = particle_query.get(entity) {
         commands
             .entity(entity)
-            .insert(solid.into_movement_priority());
+            .insert(MovementPriorityBlueprint(solid.0.into_movement_priority()));
     }
 }
 
 /// Observer for adding movement priority when a particle is given a new state of matter.
-pub fn on_movable_solid_added(
-    trigger: Trigger<OnAdd, MovableSolid>,
+pub fn on_movable_solid_blueprint_added(
+    trigger: Trigger<OnAdd, MovableSolidBlueprint>,
     mut commands: Commands,
-    particle_query: Query<&MovableSolid, With<ParticleType>>,
+    particle_query: Query<&MovableSolidBlueprint, With<ParticleType>>,
 ) {
     let entity = trigger.entity();
     if let Ok(movable_solid) = particle_query.get(entity) {
         commands
             .entity(entity)
-            .insert(movable_solid.into_movement_priority());
+            .insert(MovementPriorityBlueprint(movable_solid.0.into_movement_priority()));
     }
 }
 
 /// Observer for adding movement priority when a particle is given a new state of matter.
-pub fn on_liquid_added(
-    trigger: Trigger<OnAdd, Liquid>,
+pub fn on_liquid_blueprint_added(
+    trigger: Trigger<OnAdd, LiquidBlueprint>,
     mut commands: Commands,
-    particle_query: Query<&Liquid, With<ParticleType>>,
+    particle_query: Query<&LiquidBlueprint, With<ParticleType>>,
 ) {
     let entity = trigger.entity();
     if let Ok(liquid) = particle_query.get(entity) {
         commands
             .entity(entity)
-            .insert(liquid.into_movement_priority());
+            .insert(MovementPriorityBlueprint(liquid.0.into_movement_priority()));
     }
 }
 
 /// Observer for adding movement priority when a particle is given a new state of matter.
-pub fn on_gas_added(
-    trigger: Trigger<OnAdd, Gas>,
+pub fn on_gas_blueprint_added(
+    trigger: Trigger<OnAdd, GasBlueprint>,
     mut commands: Commands,
-    particle_query: Query<&Gas, With<ParticleType>>,
+    particle_query: Query<&GasBlueprint, With<ParticleType>>,
 ) {
     let entity = trigger.entity();
     if let Ok(gas) = particle_query.get(entity) {
-        commands.entity(entity).insert(gas.into_movement_priority());
+        commands.entity(entity).insert(MovementPriorityBlueprint(gas.0.into_movement_priority()));
     }
 }
 
 /// Observer for adding movement priority when a particle is given a new state of matter.
 pub fn on_wall_added(
-    trigger: Trigger<OnAdd, Wall>,
+    trigger: Trigger<OnAdd, WallBlueprint>,
     mut commands: Commands,
-    particle_query: Query<&Wall, With<ParticleType>>,
+    particle_query: Query<&WallBlueprint, With<ParticleType>>,
 ) {
     let entity = trigger.entity();
     if let Ok(gas) = particle_query.get(entity) {
-        commands.entity(entity).insert(gas.into_movement_priority());
+        commands.entity(entity).insert(MovementPriorityBlueprint(gas.0.into_movement_priority()));
     }
 }

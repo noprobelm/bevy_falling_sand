@@ -35,7 +35,7 @@ impl Plugin for ParticleDefinitionsPlugin {
 }
 
 /// Marker for particle types that can inflict a burning status.
-#[derive(Clone, PartialEq, PartialOrd, Debug, Default, Component, Reflect)]
+#[derive(Copy, Clone, PartialEq, PartialOrd, Debug, Default, Component, Reflect)]
 #[reflect(Component)]
 pub struct Fire {
     /// The radius of the fire effect.
@@ -46,6 +46,11 @@ pub struct Fire {
     /// The particle will destroy after spreading.
     pub destroys_on_spread: bool,
 }
+
+/// The Fire blueprint.
+#[derive(Copy, Clone, PartialEq, PartialOrd, Debug, Default, Component, Reflect)]
+#[reflect(Component)]
+pub struct FireBlueprint(pub Fire);
 
 /// Stores information about a particle that can burn.
 #[derive(Clone, PartialEq, Debug, Default, Component, Reflect)]
@@ -93,6 +98,11 @@ impl Burns {
     }
 }
 
+/// The Burns blueprint.
+#[derive(Clone, PartialEq, Debug, Default, Component, Reflect)]
+#[reflect(Component)]
+pub struct BurnsBlueprint(pub Burns);
+
 /// Component for particles that have the capacity to burn.
 #[derive(Clone, Eq, PartialEq, Debug, Default, Component, Reflect)]
 pub struct Burning {
@@ -124,6 +134,10 @@ impl Burning {
         self.tick_timer.reset();
     }
 }
+
+/// The Burning blueprint
+#[derive(Clone, Eq, PartialEq, Debug, Default, Component, Reflect)]
+pub struct BurningBlueprint(pub Burning);
 
 /// Component for particles that are creating new particles as part of a reaction.
 #[derive(Clone, PartialEq, Debug, Component, Reflect)]
@@ -197,11 +211,11 @@ pub fn on_reset_fire(
     trigger: Trigger<ResetFireEvent>,
     mut commands: Commands,
     particle_query: Query<&Parent, With<Particle>>,
-    parent_query: Query<Option<&Fire>, With<ParticleType>>,
+    parent_query: Query<Option<&FireBlueprint>, With<ParticleType>>,
 ) {
     if let Ok(parent) = particle_query.get(trigger.event().entity) {
         if let Some(fire) = parent_query.get(parent.get()).unwrap() {
-            commands.entity(trigger.event().entity).insert(fire.clone());
+            commands.entity(trigger.event().entity).insert(fire.0.clone());
         } else {
             commands.entity(trigger.event().entity).remove::<Fire>();
         }
@@ -213,13 +227,13 @@ pub fn on_reset_burns(
     trigger: Trigger<ResetBurnsEvent>,
     mut commands: Commands,
     particle_query: Query<&Parent, With<Particle>>,
-    parent_query: Query<Option<&Burns>, With<ParticleType>>,
+    parent_query: Query<Option<&BurnsBlueprint>, With<ParticleType>>,
 ) {
     if let Ok(parent) = particle_query.get(trigger.event().entity) {
         if let Some(burns) = parent_query.get(parent.get()).unwrap() {
             commands
                 .entity(trigger.event().entity)
-                .insert(burns.clone());
+                .insert(burns.0.clone());
         } else {
             commands.entity(trigger.event().entity).remove::<Burns>();
         }
@@ -231,13 +245,13 @@ pub fn on_reset_burning(
     trigger: Trigger<ResetBurningEvent>,
     mut commands: Commands,
     particle_query: Query<&Parent, With<Particle>>,
-    parent_query: Query<Option<&Burning>, With<ParticleType>>,
+    parent_query: Query<Option<&BurningBlueprint>, With<ParticleType>>,
 ) {
     if let Ok(parent) = particle_query.get(trigger.event().entity) {
         if let Some(burning) = parent_query.get(parent.get()).unwrap() {
             commands
                 .entity(trigger.event().entity)
-                .insert(burning.clone());
+                .insert(burning.0.clone());
         } else {
             commands.entity(trigger.event().entity).remove::<Burning>();
         }

@@ -450,11 +450,11 @@ pub fn update_particle_list(
     new_particle_query: Query<
         (
             &ParticleType,
-            Option<&Wall>,
-            Option<&MovableSolid>,
-            Option<&Solid>,
-            Option<&Liquid>,
-            Option<&Gas>,
+            Option<&WallBlueprint>,
+            Option<&MovableSolidBlueprint>,
+            Option<&SolidBlueprint>,
+            Option<&LiquidBlueprint>,
+            Option<&GasBlueprint>,
         ),
         Added<ParticleType>,
     >,
@@ -689,7 +689,7 @@ pub struct ClearWallParticlesEvent;
 pub fn on_clear_dynamic_particles(
     _trigger: Trigger<ClearDynamicParticlesEvent>,
     mut commands: Commands,
-    dynamic_particle_types_query: Query<&ParticleType, Without<Wall>>,
+    dynamic_particle_types_query: Query<&ParticleType, Without<WallBlueprint>>,
 ) {
     dynamic_particle_types_query
         .iter()
@@ -701,7 +701,7 @@ pub fn on_clear_dynamic_particles(
 pub fn on_clear_wall_particles(
     _trigger: Trigger<ClearWallParticlesEvent>,
     mut commands: Commands,
-    dynamic_particle_types_query: Query<&ParticleType, With<Wall>>,
+    dynamic_particle_types_query: Query<&ParticleType, With<WallBlueprint>>,
 ) {
     dynamic_particle_types_query
         .iter()

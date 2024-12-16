@@ -10,8 +10,8 @@ use bfs_core::*;
 pub struct StaticParticleTypeBundle {
     /// The unique identifier for the particle.
     pub particle_type: ParticleType,
-    /// The particle type's colors.
-    pub colors: ParticleColor,
+    /// The particle type's color blueprint.
+    pub colors: ParticleColorBlueprint,
     /// The particle type's global transform.
     pub spatial: SpatialBundle,
 }
@@ -21,7 +21,7 @@ impl StaticParticleTypeBundle {
     pub fn new(particle_type: ParticleType, colors: ParticleColor) -> StaticParticleTypeBundle {
         StaticParticleTypeBundle {
             particle_type,
-            colors,
+            colors: ParticleColorBlueprint(colors),
             spatial: SpatialBundle::from_transform(Transform::from_xyz(0., 0., 0.)),
         }
     }
@@ -32,14 +32,14 @@ impl StaticParticleTypeBundle {
 pub struct DynamicParticleTypeBundle {
     /// The unique identifier for the particle.
     pub particle_type: ParticleType,
-    /// The particle type's density.
-    pub density: Density,
-    /// The particle type's velocity.
-    pub velocity: Velocity,
-    /// The particle type's movement priority.
-    pub movement_priority: MovementPriority,
-    /// The particle type's colors.
-    pub colors: ParticleColor,
+    /// The particle type's density blueprint.
+    pub density: DensityBlueprint,
+    /// The particle type's velocity blueprint.
+    pub velocity: VelocityBlueprint,
+    /// The particle type's movement priority blueprint.
+    pub movement_priority: MovementPriorityBlueprint,
+    /// The particle type's colors blueprint.
+    pub colors: ParticleColorBlueprint,
     /// The particle type's global transform.
     pub spatial: SpatialBundle,
 }
@@ -55,10 +55,10 @@ impl DynamicParticleTypeBundle {
     ) -> DynamicParticleTypeBundle {
         DynamicParticleTypeBundle {
             particle_type,
-            density,
-            velocity,
-            movement_priority,
-            colors,
+            density: DensityBlueprint(density),
+            velocity: VelocityBlueprint(velocity),
+            movement_priority: MovementPriorityBlueprint(movement_priority),
+            colors: ParticleColorBlueprint(colors),
             spatial: SpatialBundle::from_transform(Transform::from_xyz(0., 0., 0.)),
         }
     }
@@ -69,14 +69,14 @@ impl DynamicParticleTypeBundle {
 pub struct MovableSolidBundle {
     /// The unique identifier for the particle.
     pub particle_type: ParticleType,
-    /// The particle type's density.
-    pub density: Density,
-    /// The particle type's velocity.
-    pub velocity: Velocity,
-    /// The particle type's colors.
-    pub colors: ParticleColor,
-    /// The MovableSolid component
-    pub movable_solid: MovableSolid,
+    /// The particle type's density blueprint.
+    pub density: DensityBlueprint,
+    /// The particle type's velocity blueprint.
+    pub velocity: VelocityBlueprint,
+    /// The particle type's colors blueprint.
+    pub colors: ParticleColorBlueprint,
+    /// The MovableSolid blueprint
+    pub movable_solid: MovableSolidBlueprint,
 }
 
 impl MovableSolidBundle {
@@ -89,10 +89,10 @@ impl MovableSolidBundle {
     ) -> MovableSolidBundle {
         MovableSolidBundle {
             particle_type,
-            density,
-            velocity,
-            colors,
-            movable_solid: MovableSolid::new(),
+            density: DensityBlueprint(density),
+            velocity: VelocityBlueprint(velocity),
+            colors: ParticleColorBlueprint(colors),
+            movable_solid: MovableSolidBlueprint(MovableSolid::new()),
         }
     }
 }
@@ -102,14 +102,14 @@ impl MovableSolidBundle {
 pub struct SolidBundle {
     /// The unique identifier for the particle.
     pub particle_type: ParticleType,
-    /// The particle type's density.
-    pub density: Density,
-    /// The particle type's velocity.
-    pub velocity: Velocity,
-    /// The particle type's colors.
-    pub colors: ParticleColor,
-    /// The Solid component.
-    pub solid: Solid,
+    /// The particle type's density blueprint.
+    pub density: DensityBlueprint,
+    /// The particle type's velocity blueprint.
+    pub velocity: VelocityBlueprint,
+    /// The particle type's colors blueprint.
+    pub colors: ParticleColorBlueprint,
+    /// The Solid component blueprint.
+    pub solid: SolidBlueprint,
 }
 
 impl SolidBundle {
@@ -122,10 +122,10 @@ impl SolidBundle {
     ) -> SolidBundle {
         SolidBundle {
             particle_type,
-            density,
-            velocity,
-            colors,
-            solid: Solid::new(),
+            density: DensityBlueprint(density),
+            velocity: VelocityBlueprint(velocity),
+            colors: ParticleColorBlueprint(colors),
+            solid: SolidBlueprint(Solid::new()),
         }
     }
 }
@@ -135,14 +135,14 @@ impl SolidBundle {
 pub struct LiquidBundle {
     /// The unique identifier for the particle.
     pub particle_type: ParticleType,
-    /// The particle type's density.
-    pub density: Density,
-    /// The particle type's velocity.
-    pub velocity: Velocity,
-    /// The particle type's colors.
-    pub colors: ParticleColor,
-    /// The Liquid component.
-    pub liquid: Liquid,
+    /// The particle type's density blueprint.
+    pub density: DensityBlueprint,
+    /// The particle type's velocity blueprint.
+    pub velocity: VelocityBlueprint,
+    /// The particle type's colors blueprint.
+    pub colors: ParticleColorBlueprint,
+    /// The Liquid component blueprint.
+    pub liquid: LiquidBlueprint,
 }
 
 impl LiquidBundle {
@@ -156,10 +156,10 @@ impl LiquidBundle {
     ) -> LiquidBundle {
         LiquidBundle {
             particle_type,
-            density,
-            velocity,
-            colors,
-            liquid: Liquid::new(fluidity),
+            density: DensityBlueprint(density),
+            velocity: VelocityBlueprint(velocity),
+            colors: ParticleColorBlueprint(colors),
+            liquid: LiquidBlueprint(Liquid::new(fluidity)),
         }
     }
 }
@@ -169,14 +169,14 @@ impl LiquidBundle {
 pub struct GasBundle {
     /// The unique identifier for the particle.
     pub particle_type: ParticleType,
-    /// The particle type's density.
-    pub density: Density,
-    /// The particle type's velocity.
-    pub velocity: Velocity,
-    /// The particle type's colors.
-    pub colors: ParticleColor,
-    /// The Gas component.
-    pub gas: Gas,
+    /// The particle type's density blueprint.
+    pub density: DensityBlueprint,
+    /// The particle type's velocity blueprint.
+    pub velocity: VelocityBlueprint,
+    /// The particle type's colors blueprint.
+    pub colors: ParticleColorBlueprint,
+    /// The Gas component blueprint.
+    pub gas: GasBlueprint,
 }
 
 impl GasBundle {
@@ -190,10 +190,10 @@ impl GasBundle {
     ) -> GasBundle {
         GasBundle {
             particle_type,
-            density,
-            velocity,
-            colors,
-            gas: Gas::new(fluidity),
+            density: DensityBlueprint(density),
+            velocity: VelocityBlueprint(velocity),
+            colors: ParticleColorBlueprint(colors),
+            gas: GasBlueprint(Gas::new(fluidity)),
         }
     }
 }
@@ -203,10 +203,10 @@ impl GasBundle {
 pub struct WallBundle {
     /// The unique identifier for the particle.
     pub particle_type: ParticleType,
-    /// The particle type's colors.
-    pub colors: ParticleColor,
-    /// The Wall component.
-    pub wall: Wall,
+    /// The particle type's colors blueprint.
+    pub colors: ParticleColorBlueprint,
+    /// The Wall component blueprint.
+    pub wall: WallBlueprint,
     /// The particle type's global transform.
     pub spatial: SpatialBundle,
 }
@@ -216,8 +216,8 @@ impl WallBundle {
     pub fn new(particle_type: ParticleType, colors: ParticleColor) -> WallBundle {
         WallBundle {
             particle_type,
-            colors,
-            wall: Wall,
+            colors: ParticleColorBlueprint(colors),
+            wall: WallBlueprint(Wall),
             spatial: SpatialBundle::from_transform(Transform::from_xyz(0., 0., 0.)),
         }
     }

@@ -55,6 +55,24 @@ impl Plugin for ParticleDefinitionsPlugin {
 #[reflect(Component, Debug)]
 pub struct Density(pub u32);
 
+/// The density of a particle.
+#[derive(
+    Copy,
+    Clone,
+    Hash,
+    Debug,
+    Default,
+    Eq,
+    PartialEq,
+    PartialOrd,
+    Component,
+    Reflect,
+    Serialize,
+    Deserialize,
+)]
+#[reflect(Component, Debug)]
+pub struct DensityBlueprint(pub Density);
+
 /// A particle's velocity.
 #[derive(
     Copy,
@@ -103,6 +121,25 @@ impl Velocity {
     }
 }
 
+/// The Velocity blueprint.
+#[derive(
+    Copy,
+    Clone,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Hash,
+    Debug,
+    Default,
+    Component,
+    Reflect,
+    Serialize,
+    Deserialize,
+)]
+#[reflect(Component)]
+pub struct VelocityBlueprint(pub Velocity);
+
 /// Momentum component for particles. If a particle possesses this component, it will dynamically attempt to move in the
 /// same direction it moved in the previous frame.
 #[derive(
@@ -115,6 +152,12 @@ impl Momentum {
     /// Use if the particle is capable of gaining momentum, but currently has none.
     pub const ZERO: Self = Self(IVec2::splat(0));
 }
+
+#[derive(
+    Copy, Clone, Eq, PartialEq, Hash, Debug, Default, Component, Reflect, Serialize, Deserialize,
+)]
+#[reflect(Component)]
+pub struct MomentumBlueprint(pub Momentum);
 
 /// A group of neighbors representing equally prioritized candidates for particle movement.
 /// Positions are relative to the particle's position.
@@ -231,6 +274,10 @@ impl MovementPriority {
     }
 }
 
+#[derive(Clone, Eq, PartialEq, Hash, Debug, Default, Component, Reflect)]
+#[reflect(Component)]
+pub struct MovementPriorityBlueprint(pub MovementPriority);
+
 /// Triggers a particle to reset its ParticleColor information to its parent's.
 #[derive(Event)]
 pub struct ResetMomentumEvent {
@@ -264,13 +311,13 @@ pub fn on_reset_momentum(
     trigger: Trigger<ResetMomentumEvent>,
     mut commands: Commands,
     particle_query: Query<&Parent, With<Particle>>,
-    parent_query: Query<Option<&Momentum>, With<ParticleType>>,
+    parent_query: Query<Option<&MomentumBlueprint>, With<ParticleType>>,
 ) {
     if let Ok(parent) = particle_query.get(trigger.event().entity) {
         if let Some(momentum) = parent_query.get(parent.get()).unwrap() {
             commands
                 .entity(trigger.event().entity)
-                .insert(momentum.clone());
+                .insert(momentum.0);
         } else {
             commands.entity(trigger.event().entity).remove::<Momentum>();
         }
@@ -282,13 +329,13 @@ pub fn on_reset_density(
     trigger: Trigger<ResetDensityEvent>,
     mut commands: Commands,
     particle_query: Query<&Parent, With<Particle>>,
-    parent_query: Query<Option<&Density>, With<ParticleType>>,
+    parent_query: Query<Option<&DensityBlueprint>, With<ParticleType>>,
 ) {
     if let Ok(parent) = particle_query.get(trigger.event().entity) {
         if let Some(density) = parent_query.get(parent.get()).unwrap() {
             commands
                 .entity(trigger.event().entity)
-                .insert(density.clone());
+                .insert(density.0);
         } else {
             commands.entity(trigger.event().entity).remove::<Density>();
         }
@@ -300,13 +347,13 @@ pub fn on_reset_movement_priority(
     trigger: Trigger<ResetMovementPriorityEvent>,
     mut commands: Commands,
     particle_query: Query<&Parent, With<Particle>>,
-    parent_query: Query<Option<&MovementPriority>, With<ParticleType>>,
+    parent_query: Query<Option<&MovementPriorityBlueprint>, With<ParticleType>>,
 ) {
     if let Ok(parent) = particle_query.get(trigger.event().entity) {
         if let Some(movement_priority) = parent_query.get(parent.get()).unwrap() {
             commands
                 .entity(trigger.event().entity)
-                .insert(movement_priority.clone());
+                .insert(movement_priority.0.clone());
         } else {
             commands
                 .entity(trigger.event().entity)
@@ -320,13 +367,13 @@ pub fn on_reset_velocity(
     trigger: Trigger<ResetVelocityEvent>,
     mut commands: Commands,
     particle_query: Query<&Parent, With<Particle>>,
-    parent_query: Query<Option<&Velocity>, With<ParticleType>>,
+    parent_query: Query<Option<&VelocityBlueprint>, With<ParticleType>>,
 ) {
     if let Ok(parent) = particle_query.get(trigger.event().entity) {
         if let Some(velocity) = parent_query.get(parent.get()).unwrap() {
             commands
                 .entity(trigger.event().entity)
-                .insert(velocity.clone());
+                .insert(velocity.0);
         } else {
             commands.entity(trigger.event().entity).remove::<Velocity>();
         }
