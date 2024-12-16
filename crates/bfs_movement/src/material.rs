@@ -165,7 +165,7 @@ impl Material for MovableSolid {
     Serialize,
     Deserialize,
 )]
-pub struct MovableSolidBlueprint;
+pub struct MovableSolidBlueprint(pub MovableSolid);
 
 /// A liquid material which flows like water.
 #[derive(
