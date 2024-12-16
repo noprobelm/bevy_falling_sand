@@ -14,6 +14,7 @@ impl Plugin for SystemsPlugin {
         app.add_systems(Update, handle_movement.in_set(ParticleSimulationSet));
     }
 }
+
 /// Moves all qualifying particles 'v' times equal to their current velocity
 #[allow(unused_mut)]
 pub fn handle_movement(
@@ -46,16 +47,16 @@ pub fn handle_movement(
                 mut movement_priority,
             )| {
                 if let Some(chunk) = map.chunk(&coordinates.0) {
-		    let hibernating = chunk.hibernating();
+                    let hibernating = chunk.hibernating();
                     if let Some(dirty_rect) = chunk.prev_dirty_rect() {
-			if hibernating {
-			    if rng.chance(0.95) {
-				return;
-			    }
-			} else if !dirty_rect.contains(coordinates.0) && rng.chance(0.7) {
-			    return;
-			}
-		    }
+                        if hibernating {
+                            if rng.chance(0.95) {
+                                return;
+                            }
+                        } else if !dirty_rect.contains(coordinates.0) && rng.chance(0.7) {
+                            return;
+                        }
+                    }
                 }
 
                 // Used to determine if we should add the particle to set of visited particles.

@@ -442,11 +442,11 @@ pub fn update_particle_list(
     new_particle_query: Query<
         (
             &ParticleType,
-            Option<&Wall>,
-            Option<&MovableSolid>,
-            Option<&Solid>,
-            Option<&Liquid>,
-            Option<&Gas>,
+            Option<&WallBlueprint>,
+            Option<&MovableSolidBlueprint>,
+            Option<&SolidBlueprint>,
+            Option<&LiquidBlueprint>,
+            Option<&GasBlueprint>,
         ),
         Added<ParticleType>,
     >,
