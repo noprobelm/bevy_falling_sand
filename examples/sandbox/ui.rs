@@ -756,16 +756,12 @@ pub fn update_particle_editor_fields(
                     particle_density_field.blueprint = *density;
                 }
                 if let Some(velocity) = velocity {
-                    particle_max_velocity_field.blueprint.0.max = velocity.0.max;
+                    particle_max_velocity_field.blueprint = *velocity;
                 }
-                if let Some(_) = momentum {
-                    particle_momentum_field.0 = true;
-                } else {
-                    particle_momentum_field.0 = false;
+                if let Some(momentum) = momentum {
+                    particle_momentum_field.blueprint = *momentum;
                 }
-                if let Some(colors) = colors {
-                }
-
+                if let Some(colors) = colors {}
             };
         }
     }
@@ -941,7 +937,7 @@ fn render_density_field(
 ) {
     ui.horizontal(|ui| {
         ui.label("Density: ");
-        ui.add(egui::Slider::new(&mut particle_density_field.blueprint.0.0, 1..=1000).step_by(1.));
+        ui.add(egui::Slider::new(&mut particle_density_field.blueprint.0 .0, 1..=1000).step_by(1.));
     });
 }
 
@@ -951,7 +947,9 @@ fn render_max_velocity_field(
 ) {
     ui.horizontal(|ui| {
         ui.label("Max Velocity: ");
-        ui.add(egui::Slider::new(&mut particle_max_velocity_field.blueprint.0.max, 1..=5).step_by(1.));
+        ui.add(
+            egui::Slider::new(&mut particle_max_velocity_field.blueprint.0.max, 1..=5).step_by(1.),
+        );
     });
 }
 
@@ -961,7 +959,7 @@ fn render_momentum_field(
 ) {
     ui.horizontal(|ui| {
         ui.label("Momentum"); // Add the label to the left
-        ui.checkbox(&mut particle_momentum_field.0, "");
+        ui.checkbox(&mut particle_momentum_field.enable, "");
         // Use an empty string for the checkbox text
     });
 }
@@ -1703,7 +1701,7 @@ impl Default for ParticleEditorSelectedType {
 
 #[derive(Default, Resource, Clone)]
 pub struct ParticleEditorDensity {
-    blueprint: DensityBlueprint
+    blueprint: DensityBlueprint,
 }
 
 #[derive(Default, Resource, Clone)]
@@ -1712,7 +1710,10 @@ pub struct ParticleEditorMaxVelocity {
 }
 
 #[derive(Default, Resource, Clone)]
-pub struct ParticleEditorMomentum(pub bool);
+pub struct ParticleEditorMomentum {
+    enable: bool,
+    blueprint: MomentumBlueprint,
+}
 
 #[derive(Resource, Clone, Debug)]
 pub struct ParticleEditorColors(pub Vec<Color>);
