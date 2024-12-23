@@ -6,14 +6,15 @@ use bevy::{
         mouse::MouseWheel,
     },
     prelude::*,
-    utils::{Entry, HashMap},
+    utils::{Duration, Entry, HashMap},
     window::PrimaryWindow,
 };
 use bevy_egui::{EguiContext, EguiContexts};
+use bfs_internal::reactions::{BurnsBlueprint, Fire, Reacting};
+use egui::Color32;
 
-use bevy_falling_sand::core::{
-    ClearMapEvent, ClearParticleTypeChildrenEvent, ParticleType, SimulationRun,
-};
+use bevy_falling_sand::color::*;
+use bevy_falling_sand::core::*;
 use bevy_falling_sand::debug::{
     DebugDirtyRects, DebugHibernatingChunks, DebugParticleCount, TotalParticleCount,
 };
@@ -40,11 +41,14 @@ impl bevy::prelude::Plugin for UIPlugin {
             .init_resource::<ParticleList>()
             .init_resource::<ParticleTypeList>()
             .init_resource::<SelectedParticle>()
-            .init_resource::<ParticleEditorNameField>()
+            .init_resource::<ParticleEditorSelectedType>()
+            .init_resource::<ParticleEditorName>()
             .init_resource::<ParticleEditorDensity>()
             .init_resource::<ParticleEditorMomentum>()
             .init_resource::<ParticleEditorColors>()
             .init_resource::<ParticleEditorMaxVelocity>()
+            .init_resource::<ParticleEditorMovementPriority>()
+            .init_resource::<ParticleEditorBurns>()
             .init_state::<ParticleEditorCategoryState>()
             .add_systems(First, update_cursor_coordinates)
             .add_systems(OnEnter(AppState::Ui), show_cursor)
@@ -55,10 +59,8 @@ impl bevy::prelude::Plugin for UIPlugin {
                 Update,
                 render_search_bar_ui.run_if(resource_exists::<ParticleSearchBar>),
             )
-            .add_plugins(bevy_inspector_egui::DefaultInspectorConfigPlugin)
             .observe(on_clear_dynamic_particles)
-            .observe(on_clear_wall_particles)
-            .add_systems(Update, inspector_ui);
+            .observe(on_clear_wall_particles);
     }
 }
 
@@ -128,6 +130,10 @@ impl ParticleList {
     /// Adds to the ParticleList.
     pub fn push(&mut self, value: String) {
         self.particle_list.push(value);
+    }
+
+    fn iter(&self) -> impl Iterator<Item = &String> {
+        self.particle_list.iter()
     }
 }
 
@@ -430,23 +436,6 @@ pub fn render_ui(
         });
 }
 
-fn inspector_ui(world: &mut World) {
-    let Ok(egui_context) = world
-        .query_filtered::<&mut EguiContext, With<PrimaryWindow>>()
-        .get_single(world)
-    else {
-        return;
-    };
-    let mut egui_context = egui_context.clone();
-
-    egui::Window::new("UI").show(egui_context.get_mut(), |ui| {
-        egui::ScrollArea::vertical().show(ui, |ui| {
-            ui.heading("Particle Control");
-            bevy_inspector_egui::bevy_inspector::ui_for_world_entities_filtered::<With<ParticleType>>(world, ui, false);
-        });
-    });
-}
-
 pub fn update_particle_list(
     new_particle_query: Query<
         (
@@ -715,26 +704,84 @@ pub fn on_clear_wall_particles(
 }
 
 #[derive(Resource, Clone)]
-pub struct ParticleEditorNameField(pub String);
+pub struct ParticleEditorName(pub String);
 
-impl Default for ParticleEditorNameField {
+impl Default for ParticleEditorName {
     fn default() -> Self {
-        ParticleEditorNameField(String::from("Dirt Wall"))
+        ParticleEditorName(String::from("Dirt Wall"))
+    }
+}
+
+pub fn update_particle_editor_fields(
+    particle_editor_selected_type: Res<ParticleEditorSelectedType>,
+    particle_type_map: Res<ParticleTypeMap>,
+    particle_query: Query<
+        (
+            Option<&DensityBlueprint>,
+            Option<&VelocityBlueprint>,
+            Option<&MomentumBlueprint>,
+            Option<&ParticleColorBlueprint>,
+            Option<&WallBlueprint>,
+            Option<&LiquidBlueprint>,
+            Option<&SolidBlueprint>,
+            Option<&MovableSolidBlueprint>,
+            Option<&GasBlueprint>,
+        ),
+        With<ParticleType>,
+    >,
+    mut particle_name_field: ResMut<ParticleEditorName>,
+    mut particle_density_field: ResMut<ParticleEditorDensity>,
+    mut particle_max_velocity_field: ResMut<ParticleEditorMaxVelocity>,
+    mut particle_momentum_field: ResMut<ParticleEditorMomentum>,
+    mut particle_colors_field: ResMut<ParticleEditorColors>,
+    mut next_particle_category_field: ResMut<NextState<ParticleEditorCategoryState>>,
+) {
+    if let Some(entity) = particle_type_map.get(&particle_editor_selected_type.0.name) {
+        if particle_editor_selected_type.is_changed() {
+            let particle_type = if let Ok((
+                density,
+                velocity,
+                momentum,
+                colors,
+                wall,
+                liquid,
+                solid,
+                movable_solid,
+                gas,
+            )) = particle_query.get(*entity)
+            {
+                particle_name_field.0 = particle_editor_selected_type.0.name.clone();
+                if let Some(density) = density {
+                    particle_density_field.0 = density.0 .0;
+                }
+                if let Some(velocity) = velocity {
+                    particle_max_velocity_field.0 = velocity.0.max;
+                }
+                if let Some(momentum) = momentum {
+                    particle_momentum_field.0 = true;
+                } else {
+                    particle_momentum_field.0 = false;
+                }
+            };
+        }
     }
 }
 
 pub fn render_particle_editor(
     mut contexts: EguiContexts,
     particle_type_list: Res<ParticleTypeList>,
+    particle_list: Res<ParticleList>,
     mut selected_particle: ResMut<SelectedParticle>,
     mut brush_state: ResMut<NextState<BrushState>>,
-    mut particle_name_field: ResMut<ParticleEditorNameField>,
+    current_particle_category_field: Res<State<ParticleEditorCategoryState>>,
+    mut next_particle_category_field: ResMut<NextState<ParticleEditorCategoryState>>,
+    mut particle_name_field: ResMut<ParticleEditorName>,
     mut particle_density_field: ResMut<ParticleEditorDensity>,
     mut particle_max_velocity_field: ResMut<ParticleEditorMaxVelocity>,
     mut particle_momentum_field: ResMut<ParticleEditorMomentum>,
-    mut particle_editor_colors: ResMut<ParticleEditorColors>,
-    current_particle_category_field: Res<State<ParticleEditorCategoryState>>,
-    mut next_particle_category_field: ResMut<NextState<ParticleEditorCategoryState>>,
+    mut particle_colors_field: ResMut<ParticleEditorColors>,
+    mut particle_editor_movement_priority_field: ResMut<ParticleEditorMovementPriority>,
+    mut particle_editor_burns_field: ResMut<ParticleEditorBurns>,
 ) {
     egui::Window::new("Particle Editor") // Title of the window
         .resizable(true) // Allow resizing
@@ -748,7 +795,8 @@ pub fn render_particle_editor(
                     egui::vec2(available_width / 3.0, available_height),
                     egui::Layout::top_down(egui::Align::Min),
                     |ui| {
-                        const CATEGORIES: [&str; 5] = ["Walls", "Solids", "Movable Solids", "Liquids", "Gases"];
+                        const CATEGORIES: [&str; 5] =
+                            ["Walls", "Solids", "Movable Solids", "Liquids", "Gases"];
 
                         for &category in &CATEGORIES {
                             if let Some(particles) = particle_type_list.get(category) {
@@ -765,93 +813,41 @@ pub fn render_particle_editor(
                             }
                         }
 
-                        // Button to add a new particle
-                        if ui.button("New Particle").clicked() {
-                            info!("Button clicked!");
-                        }
+                        if ui.button("New Particle").clicked() {}
+                        if ui.button("Save Particle").clicked() {}
                     },
                 );
                 ui.allocate_ui_with_layout(
                     egui::vec2(available_width * 2.0 / 3.0, available_height),
                     egui::Layout::top_down(egui::Align::Min),
                     |ui| {
-                        ui.vertical(|ui| {
-                            ui.horizontal(|ui| {
-                                ui.text_edit_singleline(&mut particle_name_field.0);
-                            });
-                            ui.separator();
-                            ui.horizontal(|ui| {
-                                ui.label("State: ");
-                                egui::ComboBox::from_label("")
-                                .selected_text(current_particle_category_field.as_str())
-                                .show_ui(ui, |ui| {
-                                    if ui.selectable_value(&mut current_particle_category_field.as_str(), ParticleEditorCategoryState::Wall.as_str(), "Wall").changed() {
-                                        next_particle_category_field.set(ParticleEditorCategoryState::Wall);
-                                    }
-                                    if ui.selectable_value(&mut current_particle_category_field.as_str(), ParticleEditorCategoryState::Solid.as_str(), "Solid").changed() {
-                                        next_particle_category_field.set(ParticleEditorCategoryState::Solid);
-                                    }
-                                    if ui.selectable_value(&mut current_particle_category_field.as_str(), ParticleEditorCategoryState::MovableSolid.as_str(), "Movable Solid").changed() {
-                                        next_particle_category_field.set(ParticleEditorCategoryState::MovableSolid);
-                                    }
-                                    if ui.selectable_value(&mut current_particle_category_field.as_str(), ParticleEditorCategoryState::Liquid.as_str(), "Liquid").changed() {
-                                        next_particle_category_field.set(ParticleEditorCategoryState::Liquid);
-                                    }
-                                    if ui.selectable_value(&mut current_particle_category_field.as_str(), ParticleEditorCategoryState::Gas.as_str(), "Gas").changed() {
-                                        next_particle_category_field.set(ParticleEditorCategoryState::Gas);
-                                    }
-                                    if ui.selectable_value(&mut current_particle_category_field.as_str(), ParticleEditorCategoryState::Other.as_str(), "Other").changed() {
-                                        next_particle_category_field.set(ParticleEditorCategoryState::Other);
-                                    }
-                               });
-
-                            });
-
-                            ui.horizontal(|ui| {
-                                ui.label("Density: ");
-                                ui.add(
-                                    egui::Slider::new(&mut particle_density_field.0, 1..=1000)
-                                        .step_by(1.),
-                                );
-                            });
-
-                            ui.horizontal(|ui| {
-                                ui.label("Max Velocity: ");
-                                ui.add(
-                                    egui::Slider::new(&mut particle_max_velocity_field.0, 1..=5)
-                                        .step_by(1.),
-                                );
-                            });
-
-                            ui.horizontal(|ui| {
-                                ui.label("Momentum"); // Add the label to the left
-                                ui.checkbox(&mut particle_momentum_field.0, "");
-                                // Use an empty string for the checkbox text
-                            });
-
-                            ui.color_edit_button_rgb(&mut [255., 255., 255.]);
-                            // Display the current list of items
-                            for i in 0..particle_editor_colors.0.len() {
+                        ui.horizontal(|ui| {
+                            ui.vertical(|ui| {
                                 ui.horizontal(|ui| {
-
-                                    // Move up button
-                                    if ui.button("⬆️ Move Up").clicked() && i > 0 {
-                                        particle_editor_colors.0.swap(i, i - 1);
-                                    }
-
-                                    // Move down button
-                                    if ui.button("⬇️ Move Down").clicked()
-                                        && i < particle_editor_colors.0.len() - 1
-                                    {
-                                        particle_editor_colors.0.swap(i, i + 1);
-                                    }
-
-                                    // Optional: Remove item
-                                    if ui.button("❌ Remove").clicked() {
-                                        particle_editor_colors.0.remove(i);
-                                    }
+                                    ui.text_edit_singleline(&mut particle_name_field.0);
                                 });
-                            }
+                                render_state_field(
+                                    ui,
+                                    current_particle_category_field,
+                                    &mut next_particle_category_field,
+                                );
+                                render_density_field(ui, &mut particle_density_field);
+                                render_max_velocity_field(ui, &mut particle_max_velocity_field);
+                                render_momentum_field(ui, &mut particle_momentum_field);
+                                ui.separator();
+                                render_colors_field(ui, &mut particle_colors_field);
+                                ui.separator();
+                                render_movement_priority_field(
+                                    ui,
+                                    &mut particle_editor_movement_priority_field,
+                                );
+                                ui.separator();
+                                render_burns_field(
+                                    ui,
+                                    &mut particle_editor_burns_field,
+                                    &particle_list,
+                                );
+                            });
                         });
                     },
                 );
@@ -859,17 +855,807 @@ pub fn render_particle_editor(
         });
 }
 
+fn render_state_field(
+    ui: &mut egui::Ui,
+    current_particle_category_field: Res<State<ParticleEditorCategoryState>>,
+    next_particle_category_field: &mut ResMut<NextState<ParticleEditorCategoryState>>,
+) {
+    ui.horizontal(|ui| {
+        ui.label("State: ");
+        egui::ComboBox::from_label("")
+            .selected_text(current_particle_category_field.as_str())
+            .show_ui(ui, |ui| {
+                if ui
+                    .selectable_value(
+                        &mut current_particle_category_field.as_str(),
+                        ParticleEditorCategoryState::Wall.as_str(),
+                        "Wall",
+                    )
+                    .changed()
+                {
+                    next_particle_category_field.set(ParticleEditorCategoryState::Wall);
+                }
+                if ui
+                    .selectable_value(
+                        &mut current_particle_category_field.as_str(),
+                        ParticleEditorCategoryState::Solid.as_str(),
+                        "Solid",
+                    )
+                    .changed()
+                {
+                    next_particle_category_field.set(ParticleEditorCategoryState::Solid);
+                }
+                if ui
+                    .selectable_value(
+                        &mut current_particle_category_field.as_str(),
+                        ParticleEditorCategoryState::MovableSolid.as_str(),
+                        "Movable Solid",
+                    )
+                    .changed()
+                {
+                    next_particle_category_field.set(ParticleEditorCategoryState::MovableSolid);
+                }
+                if ui
+                    .selectable_value(
+                        &mut current_particle_category_field.as_str(),
+                        ParticleEditorCategoryState::Liquid.as_str(),
+                        "Liquid",
+                    )
+                    .changed()
+                {
+                    next_particle_category_field.set(ParticleEditorCategoryState::Liquid);
+                }
+                if ui
+                    .selectable_value(
+                        &mut current_particle_category_field.as_str(),
+                        ParticleEditorCategoryState::Gas.as_str(),
+                        "Gas",
+                    )
+                    .changed()
+                {
+                    next_particle_category_field.set(ParticleEditorCategoryState::Gas);
+                }
+                if ui
+                    .selectable_value(
+                        &mut current_particle_category_field.as_str(),
+                        ParticleEditorCategoryState::Other.as_str(),
+                        "Other",
+                    )
+                    .changed()
+                {
+                    next_particle_category_field.set(ParticleEditorCategoryState::Other);
+                }
+            });
+    });
+}
+fn render_density_field(
+    ui: &mut egui::Ui,
+    particle_density_field: &mut ResMut<ParticleEditorDensity>,
+) {
+    ui.horizontal(|ui| {
+        ui.label("Density: ");
+        ui.add(egui::Slider::new(&mut particle_density_field.0, 1..=1000).step_by(1.));
+    });
+}
+
+fn render_max_velocity_field(
+    ui: &mut egui::Ui,
+    particle_max_velocity_field: &mut ResMut<ParticleEditorMaxVelocity>,
+) {
+    ui.horizontal(|ui| {
+        ui.label("Max Velocity: ");
+        ui.add(egui::Slider::new(&mut particle_max_velocity_field.0, 1..=5).step_by(1.));
+    });
+}
+
+fn render_momentum_field(
+    ui: &mut egui::Ui,
+    particle_momentum_field: &mut ResMut<ParticleEditorMomentum>,
+) {
+    ui.horizontal(|ui| {
+        ui.label("Momentum"); // Add the label to the left
+        ui.checkbox(&mut particle_momentum_field.0, "");
+        // Use an empty string for the checkbox text
+    });
+}
+
+fn render_colors_field(
+    ui: &mut egui::Ui,
+    particle_colors_field: &mut ResMut<ParticleEditorColors>,
+) {
+    ui.horizontal(|ui| {
+        ui.label("Colors");
+        if ui.button("➕").clicked() {
+            particle_colors_field
+                .0
+                .push(Color::srgba_u8(255, 255, 255, 255))
+        };
+    });
+    let mut to_remove: Option<usize> = None;
+    let mut to_change: Option<(usize, Color)> = None;
+    for (i, color) in particle_colors_field.0.iter().enumerate() {
+        let srgba = color.to_srgba();
+        let (red, green, blue, alpha) = (
+            srgba.red * 255.,
+            srgba.green * 255.,
+            srgba.blue * 255.,
+            srgba.alpha * 255.,
+        );
+        let (mut red_str, mut green_str, mut blue_str, mut alpha_str) = (
+            red.to_string(),
+            green.to_string(),
+            blue.to_string(),
+            alpha.to_string(),
+        );
+        let mut color32 =
+            Color32::from_rgba_unmultiplied(red as u8, green as u8, blue as u8, alpha as u8);
+        ui.horizontal(|ui| {
+            ui.label("R: ");
+            let edit_red = ui.add(egui::TextEdit::singleline(&mut red_str).desired_width(25.));
+            if edit_red.changed() {
+                if let Ok(new_red) = red_str.parse::<u8>() {
+                    to_change = Some((
+                        i,
+                        Color::srgba_u8(new_red as u8, green as u8, blue as u8, alpha as u8),
+                    ))
+                } else if red_str.is_empty() {
+                    to_change = Some((i, Color::srgba_u8(0, green as u8, blue as u8, alpha as u8)))
+                }
+            };
+            ui.label("G: ");
+            let edit_green = ui.add(egui::TextEdit::singleline(&mut green_str).desired_width(25.));
+            if edit_green.changed() {
+                if let Ok(new_green) = green_str.parse::<u8>() {
+                    to_change = Some((
+                        i,
+                        Color::srgba_u8(red as u8, new_green as u8, blue as u8, alpha as u8),
+                    ))
+                } else if green_str.is_empty() {
+                    to_change = Some((i, Color::srgba_u8(red as u8, 0, blue as u8, alpha as u8)))
+                }
+            };
+            ui.label("B: ");
+            let edit_blue = ui.add(egui::TextEdit::singleline(&mut blue_str).desired_width(25.));
+            if edit_blue.changed() {
+                if let Ok(new_blue) = blue_str.parse::<u8>() {
+                    to_change = Some((
+                        i,
+                        Color::srgba_u8(red as u8, green as u8, new_blue as u8, alpha as u8),
+                    ))
+                } else if blue_str.is_empty() {
+                    to_change = Some((i, Color::srgba_u8(red as u8, green as u8, 0, alpha as u8)))
+                }
+            };
+            ui.label("A: ");
+            let edit_alpha = ui.add(egui::TextEdit::singleline(&mut alpha_str).desired_width(25.));
+            if edit_alpha.changed() {
+                if let Ok(new_alpha) = alpha_str.parse::<u8>() {
+                    to_change = Some((
+                        i,
+                        Color::srgba_u8(red as u8, green as u8, blue as u8, new_alpha as u8),
+                    ))
+                } else if alpha_str.is_empty() {
+                    to_change = Some((i, Color::srgba_u8(red as u8, green as u8, blue as u8, 0)))
+                }
+            };
+            if ui.color_edit_button_srgba(&mut color32).changed() {
+                to_change = Some((
+                    i,
+                    Color::srgba_u8(color32.r(), color32.g(), color32.b(), color32.a()),
+                ));
+            };
+            if ui.button("❌").clicked() {
+                to_remove = Some(i);
+            };
+        });
+    }
+    if let Some(to_remove) = to_remove {
+        particle_colors_field.0.remove(to_remove);
+    }
+    if let Some((to_change, color)) = to_change {
+        particle_colors_field.0[to_change] = color;
+    }
+}
+
+fn render_movement_priority_field(
+    ui: &mut egui::Ui,
+    particle_movement_priority_field: &mut ResMut<ParticleEditorMovementPriority>,
+) {
+    ui.horizontal(|ui| {
+        ui.label("Movement Priority");
+        if ui.button("➕").clicked() {
+            particle_movement_priority_field.0.push(vec![IVec2::ZERO]);
+        };
+    });
+
+    let mut to_change: Option<((usize, usize), IVec2)> = None;
+    let mut inner_to_remove: Option<(usize, usize)> = None;
+    let mut outer_to_remove: Option<usize> = None;
+    let mut outer_to_add: Option<usize> = None;
+    let mut inner_to_swap: Option<(usize, usize, usize)> = None;
+    let mut outer_to_swap: Option<(usize, usize)> = None;
+
+    for (i, neighbor_group) in particle_movement_priority_field.0.iter().enumerate() {
+        ui.horizontal(|ui| {
+            ui.label(format!("Group {}:", i + 1));
+            if ui.button("➕").clicked() {
+                outer_to_add = Some(i);
+            };
+            if ui.button("^").clicked() && i > 0 {
+                outer_to_swap = Some((i, i - 1));
+            }
+            if ui.button("v").clicked() && i < particle_movement_priority_field.0.len() - 1 {
+                outer_to_swap = Some((i, i + 1));
+            }
+            if ui.button("❌").clicked() {
+                outer_to_remove = Some(i);
+            };
+        });
+        for (j, neighbor) in neighbor_group.iter().enumerate() {
+            let mut x_str = neighbor.x.to_string();
+            let mut y_str = neighbor.y.to_string();
+            ui.horizontal(|ui| {
+                ui.label("X: ");
+                let edit_x = ui.add(egui::TextEdit::singleline(&mut x_str).desired_width(25.));
+                if edit_x.changed() {
+                    if let Ok(new_x) = x_str.parse::<i32>() {
+                        to_change = Some(((i, j), IVec2::new(new_x, neighbor.y)));
+                    } else if x_str.is_empty() {
+                        to_change = Some(((i, j), IVec2::ZERO));
+                    };
+                };
+
+                ui.label("Y: ");
+                let edit_y = ui.add(egui::TextEdit::singleline(&mut y_str).desired_width(25.));
+                if edit_y.changed() {
+                    if let Ok(new_y) = y_str.parse::<i32>() {
+                        to_change = Some(((i, j), IVec2::new(neighbor.x, new_y)));
+                    } else if y_str.is_empty() {
+                        to_change = Some(((i, j), IVec2::ZERO));
+                    };
+                };
+
+                if ui.button("^").clicked() && j > 0 {
+                    inner_to_swap = Some((i, j, j - 1));
+                }
+                if ui.button("v").clicked() && j < neighbor_group.len() - 1 {
+                    inner_to_swap = Some((i, j, j + 1));
+                }
+                if ui.button("❌").clicked() {
+                    inner_to_remove = Some((i, j));
+                };
+            });
+        }
+    }
+    if let Some((i, j)) = inner_to_remove {
+        particle_movement_priority_field
+            .0
+            .get_mut(i)
+            .unwrap()
+            .remove(j);
+    }
+    if let Some((i, j1, j2)) = inner_to_swap {
+        particle_movement_priority_field
+            .0
+            .get_mut(i)
+            .unwrap()
+            .swap(j1, j2);
+    }
+    if let Some((i, j)) = outer_to_swap {
+        particle_movement_priority_field.0.swap(i, j);
+    }
+    if let Some(i) = outer_to_add {
+        particle_movement_priority_field
+            .0
+            .get_mut(i)
+            .unwrap()
+            .push(IVec2::ZERO);
+    }
+    if let Some(i) = outer_to_remove {
+        particle_movement_priority_field.0.remove(i);
+    }
+    if let Some(((i, j), new_ivec)) = to_change {
+        particle_movement_priority_field.0.get_mut(i).unwrap()[j] = new_ivec;
+    }
+}
+
+fn render_burns_field(
+    ui: &mut egui::Ui,
+    particle_burns_field: &mut ResMut<ParticleEditorBurns>,
+    particle_list: &Res<ParticleList>,
+) {
+    ui.add(egui::Checkbox::new(
+        &mut particle_burns_field.enable,
+        "Flammable",
+    ));
+    if particle_burns_field.enable {
+        ui.horizontal(|ui| {
+            ui.label("Duration (ms): ");
+            let mut duration_str = particle_burns_field
+                .blueprint
+                .0
+                .duration
+                .as_millis()
+                .to_string();
+            let edit_duration =
+                ui.add(egui::TextEdit::singleline(&mut duration_str).desired_width(40.));
+            if edit_duration.changed() {
+                if let Ok(new_duration) = duration_str.parse::<u64>() {
+                    particle_burns_field.blueprint.0.duration = Duration::from_millis(new_duration);
+                }
+            } else if duration_str.is_empty() {
+                particle_burns_field.blueprint.0.duration = Duration::from_millis(1);
+            }
+        });
+        ui.horizontal(|ui| {
+            ui.label("Tick Rate (ms)");
+            let mut tick_rate_str = particle_burns_field
+                .blueprint
+                .0
+                .tick_rate
+                .as_millis()
+                .to_string();
+            let edit_tick_rate =
+                ui.add(egui::TextEdit::singleline(&mut tick_rate_str).desired_width(40.));
+            if edit_tick_rate.changed() {
+                if let Ok(new_tick_rate) = tick_rate_str.parse::<u64>() {
+                    particle_burns_field.blueprint.0.duration =
+                        Duration::from_millis(new_tick_rate);
+                } else if tick_rate_str.is_empty() {
+                    particle_burns_field.blueprint.0.tick_rate = Duration::from_millis(1);
+                }
+            }
+        });
+        if ui
+            .add(egui::Checkbox::new(
+                &mut particle_burns_field.color_enable,
+                "Change colors while burning",
+            ))
+            .clicked()
+        {
+            if particle_burns_field.color_enable {
+                particle_burns_field.blueprint.0.color = Some(ParticleColor::new(
+                    Color::srgba_u8(255, 255, 255, 255),
+                    vec![Color::srgba_u8(255, 255, 255, 255)],
+                ));
+            } else {
+                particle_burns_field.blueprint.0.color = None;
+            }
+        }
+
+        if particle_burns_field.color_enable {
+            ui.horizontal(|ui| {
+                ui.label("Colors");
+                if ui.button("➕").clicked() {
+                    particle_burns_field
+                        .blueprint
+                        .0
+                        .color
+                        .as_mut()
+                        .unwrap()
+                        .palette
+                        .push(Color::srgba_u8(255, 255, 255, 255))
+                };
+            });
+            let mut to_remove: Option<usize> = None;
+            let mut to_change: Option<(usize, Color)> = None;
+            for (i, color) in particle_burns_field
+                .blueprint
+                .0
+                .color
+                .clone()
+                .unwrap()
+                .palette
+                .iter()
+                .enumerate()
+            {
+                let srgba = color.to_srgba();
+                let (red, green, blue, alpha) = (
+                    srgba.red * 255.,
+                    srgba.green * 255.,
+                    srgba.blue * 255.,
+                    srgba.alpha * 255.,
+                );
+                let (mut red_str, mut green_str, mut blue_str, mut alpha_str) = (
+                    red.to_string(),
+                    green.to_string(),
+                    blue.to_string(),
+                    alpha.to_string(),
+                );
+                let mut color32 = Color32::from_rgba_unmultiplied(
+                    red as u8,
+                    green as u8,
+                    blue as u8,
+                    alpha as u8,
+                );
+                ui.horizontal(|ui| {
+                    ui.label("R: ");
+                    let edit_red =
+                        ui.add(egui::TextEdit::singleline(&mut red_str).desired_width(25.));
+                    if edit_red.changed() {
+                        if let Ok(new_red) = red_str.parse::<u8>() {
+                            to_change = Some((
+                                i,
+                                Color::srgba_u8(
+                                    new_red as u8,
+                                    green as u8,
+                                    blue as u8,
+                                    alpha as u8,
+                                ),
+                            ))
+                        } else if red_str.is_empty() {
+                            to_change =
+                                Some((i, Color::srgba_u8(0, green as u8, blue as u8, alpha as u8)))
+                        }
+                    };
+                    ui.label("G: ");
+                    let edit_green =
+                        ui.add(egui::TextEdit::singleline(&mut green_str).desired_width(25.));
+                    if edit_green.changed() {
+                        if let Ok(new_green) = green_str.parse::<u8>() {
+                            to_change = Some((
+                                i,
+                                Color::srgba_u8(
+                                    red as u8,
+                                    new_green as u8,
+                                    blue as u8,
+                                    alpha as u8,
+                                ),
+                            ))
+                        } else if green_str.is_empty() {
+                            to_change =
+                                Some((i, Color::srgba_u8(red as u8, 0, blue as u8, alpha as u8)))
+                        }
+                    };
+                    ui.label("B: ");
+                    let edit_blue =
+                        ui.add(egui::TextEdit::singleline(&mut blue_str).desired_width(25.));
+                    if edit_blue.changed() {
+                        if let Ok(new_blue) = blue_str.parse::<u8>() {
+                            to_change = Some((
+                                i,
+                                Color::srgba_u8(
+                                    red as u8,
+                                    green as u8,
+                                    new_blue as u8,
+                                    alpha as u8,
+                                ),
+                            ))
+                        } else if blue_str.is_empty() {
+                            to_change =
+                                Some((i, Color::srgba_u8(red as u8, green as u8, 0, alpha as u8)))
+                        }
+                    };
+                    ui.label("A: ");
+                    let edit_alpha =
+                        ui.add(egui::TextEdit::singleline(&mut alpha_str).desired_width(25.));
+                    if edit_alpha.changed() {
+                        if let Ok(new_alpha) = alpha_str.parse::<u8>() {
+                            to_change = Some((
+                                i,
+                                Color::srgba_u8(
+                                    red as u8,
+                                    green as u8,
+                                    blue as u8,
+                                    new_alpha as u8,
+                                ),
+                            ))
+                        } else if alpha_str.is_empty() {
+                            to_change =
+                                Some((i, Color::srgba_u8(red as u8, green as u8, blue as u8, 0)))
+                        }
+                    };
+                    if ui.color_edit_button_srgba(&mut color32).changed() {
+                        to_change = Some((
+                            i,
+                            Color::srgba_u8(color32.r(), color32.g(), color32.b(), color32.a()),
+                        ));
+                    };
+                    if ui.button("❌").clicked() {
+                        to_remove = Some(i);
+                    };
+                });
+            }
+            if let Some(to_remove) = to_remove {
+                particle_burns_field
+                    .blueprint
+                    .0
+                    .color
+                    .as_mut()
+                    .unwrap()
+                    .palette
+                    .remove(to_remove);
+            }
+            if let Some((to_change, color)) = to_change {
+                particle_burns_field
+                    .blueprint
+                    .0
+                    .color
+                    .as_mut()
+                    .unwrap()
+                    .palette[to_change] = color;
+            }
+        }
+        if ui
+            .add(egui::Checkbox::new(
+                &mut particle_burns_field.chance_destroy_enable,
+                "Chance Destroy Per Tick",
+            ))
+            .clicked()
+        {
+            if particle_burns_field.chance_destroy_enable {
+                particle_burns_field.blueprint.0.chance_destroy_per_tick = Some(0.);
+            } else {
+                particle_burns_field.blueprint.0.chance_destroy_per_tick = None;
+            }
+        };
+        if particle_burns_field.chance_destroy_enable {
+            ui.horizontal(|ui| {
+                ui.label("Chance");
+                let mut chance_destroy_str = particle_burns_field
+                    .blueprint
+                    .0
+                    .chance_destroy_per_tick
+                    .unwrap()
+                    .to_string();
+                let edit_chance_destroy =
+                    ui.add(egui::TextEdit::singleline(&mut chance_destroy_str).desired_width(40.));
+                if edit_chance_destroy.changed() {
+                    if let Ok(new_chance_destroy) = chance_destroy_str.parse::<f64>() {
+                        particle_burns_field.blueprint.0.chance_destroy_per_tick =
+                            Some(new_chance_destroy);
+                    } else if chance_destroy_str.is_empty() {
+                        particle_burns_field.blueprint.0.tick_rate = Duration::from_millis(1);
+                    }
+                }
+            });
+        }
+        if ui
+            .add(egui::Checkbox::new(
+                &mut particle_burns_field.reaction_enable,
+                "Produces new particle while burning",
+            ))
+            .clicked()
+        {
+            if particle_burns_field.reaction_enable {
+                particle_burns_field.blueprint.0.reaction =
+                    Some(Reacting::new(Particle::new("Water"), 0.1));
+            } else {
+                particle_burns_field.blueprint.0.reaction = None;
+            }
+        }
+        if particle_burns_field.reaction_enable {
+            ui.horizontal(|ui| {
+                ui.label("Particle");
+                egui::ComboBox::from_id_salt("burning_reaction")
+                    .selected_text(format!(
+                        "{}",
+                        particle_burns_field
+                            .blueprint
+                            .0
+                            .reaction
+                            .clone()
+                            .unwrap()
+                            .produces
+                            .name
+                    ))
+                    .show_ui(ui, |ui| {
+                        for particle in particle_list.iter() {
+                            if ui
+                                .selectable_value(
+                                    &mut particle_burns_field
+                                        .blueprint
+                                        .0
+                                        .reaction
+                                        .as_mut()
+                                        .unwrap()
+                                        .produces
+                                        .name,
+                                    particle.clone(),
+                                    particle.clone(),
+                                )
+                                .clicked()
+                            {}
+                        }
+                    });
+            });
+            ui.horizontal(|ui| {
+                ui.label("Chance to produce (per tick)");
+                let mut chance_produce_str = particle_burns_field
+                    .blueprint
+                    .0
+                    .reaction
+                    .as_mut()
+                    .unwrap()
+                    .chance_to_produce
+                    .to_string();
+                let edit_chance_produce =
+                    ui.add(egui::TextEdit::singleline(&mut chance_produce_str).desired_width(40.));
+                if edit_chance_produce.changed() {
+                    if let Ok(new_chance_produce) = chance_produce_str.parse::<f64>() {
+                        particle_burns_field
+                            .blueprint
+                            .0
+                            .reaction
+                            .as_mut()
+                            .unwrap()
+                            .chance_to_produce = new_chance_produce;
+                    } else if chance_produce_str.is_empty() {
+                        particle_burns_field
+                            .blueprint
+                            .0
+                            .reaction
+                            .as_mut()
+                            .unwrap()
+                            .chance_to_produce = 0.01;
+                    }
+                }
+            });
+
+            if ui
+                .add(egui::Checkbox::new(
+                    &mut particle_burns_field.spreads_enable,
+                    "Fire Spreads",
+                ))
+                .clicked()
+            {
+                if particle_burns_field.spreads_enable {
+                    particle_burns_field.blueprint.0.spreads = Some(Fire {
+                        burn_radius: 2.,
+                        chance_to_spread: 0.01,
+                        destroys_on_spread: false,
+                    });
+                } else {
+                    particle_burns_field.blueprint.0.spreads = None;
+                }
+            }
+            if particle_burns_field.spreads_enable {
+                ui.horizontal(|ui| {
+                    ui.label("Burn Radius");
+                    let mut burn_radius_str = particle_burns_field
+                        .blueprint
+                        .0
+                        .spreads
+                        .unwrap()
+                        .burn_radius
+                        .to_string();
+                    let edit_burn_radius =
+                        ui.add(egui::TextEdit::singleline(&mut burn_radius_str).desired_width(40.));
+                    if edit_burn_radius.changed() {
+                        if let Ok(new_burn_radius) = burn_radius_str.parse::<f32>() {
+                            particle_burns_field
+                                .blueprint
+                                .0
+                                .spreads
+                                .as_mut()
+                                .unwrap()
+                                .burn_radius = new_burn_radius;
+                            println!(
+                                "New burn radius: {:?} Particle burns field blueprint: {:?}",
+                                new_burn_radius,
+                                particle_burns_field
+                                    .blueprint
+                                    .0
+                                    .spreads
+                                    .as_mut()
+                                    .unwrap()
+                                    .burn_radius
+                            );
+                        } else if burn_radius_str.is_empty() {
+                            particle_burns_field
+                                .blueprint
+                                .0
+                                .spreads
+                                .as_mut()
+                                .unwrap()
+                                .burn_radius = 2.;
+                        }
+                    }
+                });
+                ui.horizontal(|ui| {
+                    ui.label("Chance to spread");
+                    let mut chance_to_spread_str = particle_burns_field
+                        .blueprint
+                        .0
+                        .spreads
+                        .as_mut()
+                        .unwrap()
+                        .chance_to_spread
+                        .to_string();
+                    let edit_chance_to_spread = ui.add(
+                        egui::TextEdit::singleline(&mut chance_to_spread_str).desired_width(40.),
+                    );
+                    if edit_chance_to_spread.changed() {
+                        if let Ok(new_chance) = chance_to_spread_str.parse::<f64>() {
+                            particle_burns_field
+                                .blueprint
+                                .0
+                                .spreads
+                                .as_mut()
+                                .unwrap()
+                                .chance_to_spread = new_chance;
+                        } else {
+                            particle_burns_field
+                                .blueprint
+                                .0
+                                .spreads
+                                .as_mut()
+                                .unwrap()
+                                .chance_to_spread = 0.01;
+                        }
+                    }
+                });
+                ui.horizontal(|ui| {
+                    if ui
+                        .add(egui::Checkbox::new(
+                            &mut particle_burns_field
+                                .blueprint
+                                .0
+                                .spreads
+                                .as_mut()
+                                .unwrap()
+                                .destroys_on_spread,
+                            "Destroys on spread",
+                        ))
+                        .clicked()
+                    {
+                        if particle_burns_field
+                            .blueprint
+                            .0
+                            .spreads
+                            .as_mut()
+                            .unwrap()
+                            .destroys_on_spread
+                        {
+                            particle_burns_field
+                                .blueprint
+                                .0
+                                .spreads
+                                .as_mut()
+                                .unwrap()
+                                .destroys_on_spread = true;
+                        } else {
+                            particle_burns_field
+                                .blueprint
+                                .0
+                                .spreads
+                                .as_mut()
+                                .unwrap()
+                                .destroys_on_spread = false;
+                        }
+                    }
+                });
+            }
+        }
+    }
+}
+
+#[derive(Resource, Clone)]
+pub struct ParticleEditorSelectedType(pub ParticleType);
+
+impl Default for ParticleEditorSelectedType {
+    fn default() -> Self {
+        ParticleEditorSelectedType(ParticleType::new("Dirt Wall"))
+    }
+}
+
 #[derive(Default, Resource, Clone)]
 pub struct ParticleEditorDensity(pub u32);
 
 #[derive(Default, Resource, Clone)]
-pub struct ParticleEditorMaxVelocity(pub u32);
+pub struct ParticleEditorMaxVelocity(pub u8);
 
 #[derive(Default, Resource, Clone)]
 pub struct ParticleEditorMomentum(pub bool);
 
-#[derive(Default, Resource, Clone, Debug)]
+#[derive(Resource, Clone, Debug)]
 pub struct ParticleEditorColors(pub Vec<Color>);
+
+impl Default for ParticleEditorColors {
+    fn default() -> Self {
+        ParticleEditorColors(vec![Color::srgba_u8(255, 255, 255, 255)])
+    }
+}
 
 #[derive(States, Reflect, Default, Debug, Clone, Eq, PartialEq, Hash)]
 pub enum ParticleEditorCategoryState {
@@ -893,4 +1679,23 @@ impl ParticleEditorCategoryState {
             ParticleEditorCategoryState::Other => "Other",
         }
     }
+}
+
+#[derive(Resource, Clone, Debug)]
+pub struct ParticleEditorMovementPriority(pub Vec<Vec<IVec2>>);
+
+impl Default for ParticleEditorMovementPriority {
+    fn default() -> Self {
+        ParticleEditorMovementPriority(vec![vec![IVec2::ZERO]])
+    }
+}
+
+#[derive(Resource, Clone, Default, Debug)]
+pub struct ParticleEditorBurns {
+    enable: bool,
+    chance_destroy_enable: bool,
+    reaction_enable: bool,
+    color_enable: bool,
+    spreads_enable: bool,
+    blueprint: BurnsBlueprint,
 }
