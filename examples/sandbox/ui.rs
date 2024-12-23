@@ -10,7 +10,7 @@ use bevy::{
     window::PrimaryWindow,
 };
 use bevy_egui::{EguiContext, EguiContexts};
-use bfs_internal::reactions::{BurnsBlueprint, Fire, Reacting};
+use bfs_internal::reactions::{BurnsBlueprint, Fire, FireBlueprint, Reacting};
 use egui::Color32;
 
 use bevy_falling_sand::color::*;
@@ -49,6 +49,7 @@ impl bevy::prelude::Plugin for UIPlugin {
             .init_resource::<ParticleEditorMaxVelocity>()
             .init_resource::<ParticleEditorMovementPriority>()
             .init_resource::<ParticleEditorBurns>()
+            .init_resource::<ParticleEditorFire>()
             .init_state::<ParticleEditorCategoryState>()
             .add_systems(First, update_cursor_coordinates)
             .add_systems(OnEnter(AppState::Ui), show_cursor)
@@ -782,6 +783,7 @@ pub fn render_particle_editor(
     mut particle_colors_field: ResMut<ParticleEditorColors>,
     mut particle_editor_movement_priority_field: ResMut<ParticleEditorMovementPriority>,
     mut particle_editor_burns_field: ResMut<ParticleEditorBurns>,
+    mut particle_editor_fire_field: ResMut<ParticleEditorFire>,
 ) {
     egui::Window::new("Particle Editor") // Title of the window
         .resizable(true) // Allow resizing
@@ -847,6 +849,8 @@ pub fn render_particle_editor(
                                     &mut particle_editor_burns_field,
                                     &particle_list,
                                 );
+                                ui.separator();
+                                render_fire_field(ui, &mut particle_editor_fire_field);
                             });
                         });
                     },
@@ -1630,6 +1634,61 @@ fn render_burns_field(
     }
 }
 
+fn render_fire_field(ui: &mut egui::Ui, particle_fire_field: &mut ResMut<ParticleEditorFire>) {
+    ui.add(egui::Checkbox::new(
+        &mut particle_fire_field.enable,
+        "Fire Spreads",
+    ));
+    if particle_fire_field.enable {
+        ui.horizontal(|ui| {
+            ui.label("Burn Radius");
+            let mut burn_radius_str = particle_fire_field.blueprint.0.burn_radius.to_string();
+            let edit_burn_radius =
+                ui.add(egui::TextEdit::singleline(&mut burn_radius_str).desired_width(40.));
+            if edit_burn_radius.changed() {
+                if let Ok(new_burn_radius) = burn_radius_str.parse::<f32>() {
+                    particle_fire_field.blueprint.0.burn_radius = new_burn_radius;
+                    println!(
+                        "New burn radius: {:?} Particle burns field blueprint: {:?}",
+                        new_burn_radius, particle_fire_field.blueprint.0.burn_radius
+                    );
+                } else if burn_radius_str.is_empty() {
+                    particle_fire_field.blueprint.0.burn_radius = 2.;
+                }
+            }
+        });
+        ui.horizontal(|ui| {
+            ui.label("Chance to spread");
+            let mut chance_to_spread_str =
+                particle_fire_field.blueprint.0.chance_to_spread.to_string();
+            let edit_chance_to_spread =
+                ui.add(egui::TextEdit::singleline(&mut chance_to_spread_str).desired_width(40.));
+            if edit_chance_to_spread.changed() {
+                if let Ok(new_chance) = chance_to_spread_str.parse::<f64>() {
+                    particle_fire_field.blueprint.0.chance_to_spread = new_chance;
+                } else {
+                    particle_fire_field.blueprint.0.chance_to_spread = 0.01;
+                }
+            }
+        });
+        ui.horizontal(|ui| {
+            if ui
+                .add(egui::Checkbox::new(
+                    &mut particle_fire_field.blueprint.0.destroys_on_spread,
+                    "Destroys on spread",
+                ))
+                .clicked()
+            {
+                if particle_fire_field.blueprint.0.destroys_on_spread {
+                    particle_fire_field.blueprint.0.destroys_on_spread = true;
+                } else {
+                    particle_fire_field.blueprint.0.destroys_on_spread = false;
+                }
+            }
+        });
+    }
+}
+
 #[derive(Resource, Clone)]
 pub struct ParticleEditorSelectedType(pub ParticleType);
 
@@ -1698,4 +1757,10 @@ pub struct ParticleEditorBurns {
     color_enable: bool,
     spreads_enable: bool,
     blueprint: BurnsBlueprint,
+}
+
+#[derive(Resource, Clone, Default, Debug)]
+pub struct ParticleEditorFire {
+    enable: bool,
+    blueprint: FireBlueprint,
 }
