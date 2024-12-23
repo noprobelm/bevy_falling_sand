@@ -972,13 +972,15 @@ fn render_colors_field(
         ui.label("Colors");
         if ui.button("➕").clicked() {
             particle_colors_field
+                .blueprint
                 .0
+                .palette
                 .push(Color::srgba_u8(255, 255, 255, 255))
         };
     });
     let mut to_remove: Option<usize> = None;
     let mut to_change: Option<(usize, Color)> = None;
-    for (i, color) in particle_colors_field.0.iter().enumerate() {
+    for (i, color) in particle_colors_field.blueprint.0.palette.iter().enumerate() {
         let srgba = color.to_srgba();
         let (red, green, blue, alpha) = (
             srgba.red * 255.,
@@ -1055,10 +1057,10 @@ fn render_colors_field(
         });
     }
     if let Some(to_remove) = to_remove {
-        particle_colors_field.0.remove(to_remove);
+        particle_colors_field.blueprint.0.palette.remove(to_remove);
     }
     if let Some((to_change, color)) = to_change {
-        particle_colors_field.0[to_change] = color;
+        particle_colors_field.blueprint.0.palette[to_change] = color;
     }
 }
 
@@ -1716,11 +1718,18 @@ pub struct ParticleEditorMomentum {
 }
 
 #[derive(Resource, Clone, Debug)]
-pub struct ParticleEditorColors(pub Vec<Color>);
+pub struct ParticleEditorColors {
+    blueprint: ParticleColorBlueprint,
+}
 
 impl Default for ParticleEditorColors {
     fn default() -> Self {
-        ParticleEditorColors(vec![Color::srgba_u8(255, 255, 255, 255)])
+        ParticleEditorColors {
+            blueprint: ParticleColorBlueprint(ParticleColor::new(
+                Color::srgba_u8(255, 255, 255, 255),
+                vec![Color::srgba_u8(255, 255, 255, 255)],
+            )),
+        }
     }
 }
 
