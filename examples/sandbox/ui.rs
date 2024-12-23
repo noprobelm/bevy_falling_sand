@@ -756,7 +756,7 @@ pub fn update_particle_editor_fields(
                     particle_density_field.blueprint = *density;
                 }
                 if let Some(velocity) = velocity {
-                    particle_max_velocity_field.0 = velocity.0.max;
+                    particle_max_velocity_field.blueprint.0.max = velocity.0.max;
                 }
                 if let Some(_) = momentum {
                     particle_momentum_field.0 = true;
@@ -941,7 +941,7 @@ fn render_density_field(
 ) {
     ui.horizontal(|ui| {
         ui.label("Density: ");
-        ui.add(egui::Slider::new(&mut particle_density_field.0, 1..=1000).step_by(1.));
+        ui.add(egui::Slider::new(&mut particle_density_field.blueprint.0.0, 1..=1000).step_by(1.));
     });
 }
 
@@ -951,7 +951,7 @@ fn render_max_velocity_field(
 ) {
     ui.horizontal(|ui| {
         ui.label("Max Velocity: ");
-        ui.add(egui::Slider::new(&mut particle_max_velocity_field.0, 1..=5).step_by(1.));
+        ui.add(egui::Slider::new(&mut particle_max_velocity_field.blueprint.0.max, 1..=5).step_by(1.));
     });
 }
 
@@ -1707,7 +1707,9 @@ pub struct ParticleEditorDensity {
 }
 
 #[derive(Default, Resource, Clone)]
-pub struct ParticleEditorMaxVelocity(pub u8);
+pub struct ParticleEditorMaxVelocity {
+    blueprint: VelocityBlueprint,
+}
 
 #[derive(Default, Resource, Clone)]
 pub struct ParticleEditorMomentum(pub bool);
