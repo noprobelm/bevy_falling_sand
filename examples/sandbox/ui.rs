@@ -737,8 +737,8 @@ pub fn update_particle_editor_fields(
     mut particle_colors_field: ResMut<ParticleEditorColors>,
     mut next_particle_category_field: ResMut<NextState<ParticleEditorCategoryState>>,
 ) {
-    if let Some(entity) = particle_type_map.get(&particle_editor_selected_type.0.name) {
-        if particle_editor_selected_type.is_changed() {
+    if particle_editor_selected_type.is_changed() {
+        if let Some(entity) = particle_type_map.get(&particle_editor_selected_type.0.name) {
             let particle_type = if let Ok((
                 density,
                 velocity,
@@ -753,16 +753,19 @@ pub fn update_particle_editor_fields(
             {
                 particle_name_field.0 = particle_editor_selected_type.0.name.clone();
                 if let Some(density) = density {
-                    particle_density_field.0 = density.0 .0;
+                    particle_density_field.blueprint = *density;
                 }
                 if let Some(velocity) = velocity {
                     particle_max_velocity_field.0 = velocity.0.max;
                 }
-                if let Some(momentum) = momentum {
+                if let Some(_) = momentum {
                     particle_momentum_field.0 = true;
                 } else {
                     particle_momentum_field.0 = false;
                 }
+                if let Some(colors) = colors {
+                }
+
             };
         }
     }
@@ -1699,7 +1702,9 @@ impl Default for ParticleEditorSelectedType {
 }
 
 #[derive(Default, Resource, Clone)]
-pub struct ParticleEditorDensity(pub u32);
+pub struct ParticleEditorDensity {
+    blueprint: DensityBlueprint
+}
 
 #[derive(Default, Resource, Clone)]
 pub struct ParticleEditorMaxVelocity(pub u8);
