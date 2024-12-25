@@ -761,7 +761,10 @@ pub fn update_particle_editor_fields(
                 if let Some(momentum) = momentum {
                     particle_momentum_field.blueprint = *momentum;
                 }
-                if let Some(colors) = colors {}
+                if let Some(colors) = colors {
+                    particle_colors_field.blueprint = colors.clone()
+                }
+                if let Some(wall) = wall {}
             };
         }
     }
@@ -829,27 +832,109 @@ pub fn render_particle_editor(
                                 });
                                 render_state_field(
                                     ui,
-                                    current_particle_category_field,
+                                    &current_particle_category_field,
                                     &mut next_particle_category_field,
                                 );
-                                render_density_field(ui, &mut particle_density_field);
-                                render_max_velocity_field(ui, &mut particle_max_velocity_field);
-                                render_momentum_field(ui, &mut particle_momentum_field);
-                                ui.separator();
-                                render_colors_field(ui, &mut particle_colors_field);
-                                ui.separator();
-                                render_movement_priority_field(
-                                    ui,
-                                    &mut particle_editor_movement_priority_field,
-                                );
-                                ui.separator();
-                                render_burns_field(
-                                    ui,
-                                    &mut particle_editor_burns_field,
-                                    &particle_list,
-                                );
-                                ui.separator();
-                                render_fire_field(ui, &mut particle_editor_fire_field);
+                                match current_particle_category_field.get() {
+                                    ParticleEditorCategoryState::Wall => {
+                                        ui.separator();
+                                        render_colors_field(ui, &mut particle_colors_field);
+                                    }
+                                    ParticleEditorCategoryState::Solid => {
+                                        ui.separator();
+                                        render_colors_field(ui, &mut particle_colors_field);
+                                        ui.separator();
+                                        render_density_field(ui, &mut particle_density_field);
+                                        render_max_velocity_field(
+                                            ui,
+                                            &mut particle_max_velocity_field,
+                                        );
+                                        render_burns_field(
+                                            ui,
+                                            &mut particle_editor_burns_field,
+                                            &particle_list,
+                                        );
+                                        ui.separator();
+                                        render_fire_field(ui, &mut particle_editor_fire_field);
+                                    }
+                                    ParticleEditorCategoryState::MovableSolid => {
+                                        ui.separator();
+                                        render_colors_field(ui, &mut particle_colors_field);
+                                        ui.separator();
+                                        render_density_field(ui, &mut particle_density_field);
+                                        render_max_velocity_field(
+                                            ui,
+                                            &mut particle_max_velocity_field,
+                                        );
+                                        render_momentum_field(ui, &mut particle_momentum_field);
+                                        render_burns_field(
+                                            ui,
+                                            &mut particle_editor_burns_field,
+                                            &particle_list,
+                                        );
+                                        ui.separator();
+                                        render_fire_field(ui, &mut particle_editor_fire_field);
+                                    }
+                                    ParticleEditorCategoryState::Liquid => {
+                                        ui.separator();
+                                        render_colors_field(ui, &mut particle_colors_field);
+                                        ui.separator();
+                                        render_density_field(ui, &mut particle_density_field);
+                                        render_max_velocity_field(
+                                            ui,
+                                            &mut particle_max_velocity_field,
+                                        );
+                                        render_momentum_field(ui, &mut particle_momentum_field);
+                                        render_burns_field(
+                                            ui,
+                                            &mut particle_editor_burns_field,
+                                            &particle_list,
+                                        );
+                                        ui.separator();
+                                        render_fire_field(ui, &mut particle_editor_fire_field);
+                                    }
+                                    ParticleEditorCategoryState::Gas => {
+                                        render_colors_field(ui, &mut particle_colors_field);
+                                        ui.separator();
+                                        render_density_field(ui, &mut particle_density_field);
+                                        render_max_velocity_field(
+                                            ui,
+                                            &mut particle_max_velocity_field,
+                                        );
+                                        render_momentum_field(ui, &mut particle_momentum_field);
+                                        render_burns_field(
+                                            ui,
+                                            &mut particle_editor_burns_field,
+                                            &particle_list,
+                                        );
+                                        ui.separator();
+                                        render_fire_field(ui, &mut particle_editor_fire_field);
+                                    }
+                                    ParticleEditorCategoryState::Other => {
+                                        ui.separator();
+                                        render_colors_field(ui, &mut particle_colors_field);
+                                        ui.separator();
+                                        render_density_field(ui, &mut particle_density_field);
+                                        render_max_velocity_field(
+                                            ui,
+                                            &mut particle_max_velocity_field,
+                                        );
+                                        render_momentum_field(ui, &mut particle_momentum_field);
+                                        ui.separator();
+                                        render_movement_priority_field(
+                                            ui,
+                                            &mut particle_editor_movement_priority_field,
+                                        );
+                                        ui.separator();
+                                        render_burns_field(
+                                            ui,
+                                            &mut particle_editor_burns_field,
+                                            &particle_list,
+                                        );
+                                        ui.separator();
+                                        render_fire_field(ui, &mut particle_editor_fire_field);
+                                    }
+                                }
                             });
                         });
                     },
@@ -860,7 +945,7 @@ pub fn render_particle_editor(
 
 fn render_state_field(
     ui: &mut egui::Ui,
-    current_particle_category_field: Res<State<ParticleEditorCategoryState>>,
+    current_particle_category_field: &Res<State<ParticleEditorCategoryState>>,
     next_particle_category_field: &mut ResMut<NextState<ParticleEditorCategoryState>>,
 ) {
     ui.horizontal(|ui| {
@@ -1703,11 +1788,13 @@ impl Default for ParticleEditorSelectedType {
 
 #[derive(Default, Resource, Clone)]
 pub struct ParticleEditorDensity {
+    enable: bool,
     blueprint: DensityBlueprint,
 }
 
 #[derive(Default, Resource, Clone)]
 pub struct ParticleEditorMaxVelocity {
+    enable: bool,
     blueprint: VelocityBlueprint,
 }
 
@@ -1719,12 +1806,14 @@ pub struct ParticleEditorMomentum {
 
 #[derive(Resource, Clone, Debug)]
 pub struct ParticleEditorColors {
+    enable: bool,
     blueprint: ParticleColorBlueprint,
 }
 
 impl Default for ParticleEditorColors {
     fn default() -> Self {
         ParticleEditorColors {
+            enable: true,
             blueprint: ParticleColorBlueprint(ParticleColor::new(
                 Color::srgba_u8(255, 255, 255, 255),
                 vec![Color::srgba_u8(255, 255, 255, 255)],
