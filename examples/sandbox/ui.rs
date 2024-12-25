@@ -50,6 +50,11 @@ impl bevy::prelude::Plugin for UIPlugin {
             .init_resource::<ParticleEditorMovementPriority>()
             .init_resource::<ParticleEditorBurns>()
             .init_resource::<ParticleEditorFire>()
+            .init_resource::<ParticleEditorWall>()
+            .init_resource::<ParticleEditorSolid>()
+            .init_resource::<ParticleEditorMovableSolid>()
+            .init_resource::<ParticleEditorLiquid>()
+            .init_resource::<ParticleEditorGas>()
             .init_state::<ParticleEditorCategoryState>()
             .add_systems(First, update_cursor_coordinates)
             .add_systems(OnEnter(AppState::Ui), show_cursor)
@@ -786,6 +791,10 @@ pub fn render_particle_editor(
     mut particle_editor_movement_priority_field: ResMut<ParticleEditorMovementPriority>,
     mut particle_editor_burns_field: ResMut<ParticleEditorBurns>,
     mut particle_editor_fire_field: ResMut<ParticleEditorFire>,
+    (mut particle_editor_liquid_field, mut particle_editor_gas_field): (
+        ResMut<ParticleEditorLiquid>,
+        ResMut<ParticleEditorGas>,
+    ),
 ) {
     egui::Window::new("Particle Editor") // Title of the window
         .resizable(true) // Allow resizing
@@ -879,6 +888,12 @@ pub fn render_particle_editor(
                                         ui.separator();
                                         render_colors_field(ui, &mut particle_colors_field);
                                         ui.separator();
+                                        render_fluidity_field(
+                                            ui,
+                                            &mut particle_editor_liquid_field,
+                                            &mut particle_editor_gas_field,
+                                            &current_particle_category_field,
+                                        );
                                         render_density_field(ui, &mut particle_density_field);
                                         render_max_velocity_field(
                                             ui,
@@ -894,8 +909,15 @@ pub fn render_particle_editor(
                                         render_fire_field(ui, &mut particle_editor_fire_field);
                                     }
                                     ParticleEditorCategoryState::Gas => {
+                                        ui.separator();
                                         render_colors_field(ui, &mut particle_colors_field);
                                         ui.separator();
+                                        render_fluidity_field(
+                                            ui,
+                                            &mut particle_editor_liquid_field,
+                                            &mut particle_editor_gas_field,
+                                            &current_particle_category_field,
+                                        );
                                         render_density_field(ui, &mut particle_density_field);
                                         render_max_velocity_field(
                                             ui,
@@ -1777,6 +1799,33 @@ fn render_fire_field(ui: &mut egui::Ui, particle_fire_field: &mut ResMut<Particl
     }
 }
 
+pub fn render_fluidity_field(
+    ui: &mut egui::Ui,
+    particle_liquid_field: &mut ResMut<ParticleEditorLiquid>,
+    particle_gas_field: &mut ResMut<ParticleEditorGas>,
+    current_particle_category_field: &Res<State<ParticleEditorCategoryState>>,
+) {
+    ui.horizontal(|ui| {
+        ui.label("Fluidity: ");
+        particle_liquid_field.blueprint.0.fluidity;
+        match current_particle_category_field.get() {
+            ParticleEditorCategoryState::Liquid => {
+                ui.add(
+                    egui::Slider::new(&mut particle_liquid_field.blueprint.0.fluidity, 1..=5)
+                        .step_by(1.),
+                );
+            }
+            ParticleEditorCategoryState::Gas => {
+                ui.add(
+                    egui::Slider::new(&mut particle_gas_field.blueprint.0.fluidity, 1..=5)
+                        .step_by(1.),
+                );
+            }
+            _ => {}
+        }
+    });
+}
+
 #[derive(Resource, Clone)]
 pub struct ParticleEditorSelectedType(pub ParticleType);
 
@@ -1869,4 +1918,34 @@ pub struct ParticleEditorBurns {
 pub struct ParticleEditorFire {
     enable: bool,
     blueprint: FireBlueprint,
+}
+
+#[derive(Resource, Clone, Default, Debug)]
+pub struct ParticleEditorWall {
+    enable: bool,
+    blueprint: WallBlueprint,
+}
+
+#[derive(Resource, Clone, Default, Debug)]
+pub struct ParticleEditorSolid {
+    enable: bool,
+    blueprint: SolidBlueprint,
+}
+
+#[derive(Resource, Clone, Default, Debug)]
+pub struct ParticleEditorMovableSolid {
+    enable: bool,
+    blueprint: MovableSolidBlueprint,
+}
+
+#[derive(Resource, Clone, Default, Debug)]
+pub struct ParticleEditorLiquid {
+    enable: bool,
+    blueprint: LiquidBlueprint,
+}
+
+#[derive(Resource, Clone, Default, Debug)]
+pub struct ParticleEditorGas {
+    enable: bool,
+    blueprint: GasBlueprint,
 }

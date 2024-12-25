@@ -184,7 +184,7 @@ pub struct MovableSolidBlueprint(pub MovableSolid);
 )]
 pub struct Liquid {
     /// How fluid the liquid should be.
-    fluidity: usize,
+    pub fluidity: usize,
 }
 
 impl Liquid {
@@ -247,7 +247,7 @@ pub struct LiquidBlueprint(pub Liquid);
 )]
 pub struct Gas {
     /// How fluid the gas should be.
-    fluidity: usize,
+    pub fluidity: usize,
 }
 
 impl Gas {
