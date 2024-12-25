@@ -96,7 +96,7 @@ impl Solid {
 
 impl Material for Solid {
     fn into_movement_priority(&self) -> MovementPriority {
-        MovementPriority::from(smallvec![smallvec![IVec2::NEG_Y],])
+        MovementPriority::from(vec![vec![IVec2::NEG_Y]])
     }
 }
 
@@ -143,9 +143,9 @@ impl MovableSolid {
 
 impl Material for MovableSolid {
     fn into_movement_priority(&self) -> MovementPriority {
-        MovementPriority::from(smallvec![
-            smallvec![IVec2::NEG_Y],
-            smallvec![IVec2::NEG_ONE, IVec2::new(1, -1)],
+        MovementPriority::from(vec![
+            vec![IVec2::NEG_Y],
+            vec![IVec2::NEG_ONE, IVec2::new(1, -1)],
         ])
     }
 }
@@ -196,16 +196,16 @@ impl Liquid {
 
 impl Material for Liquid {
     fn into_movement_priority(&self) -> MovementPriority {
-        let mut neighbors: SmallVec<[SmallVec<[IVec2; 4]>; 8]> = smallvec![
-            smallvec![IVec2::NEG_Y],
-            smallvec![IVec2::NEG_ONE, IVec2::new(1, -1)],
-            smallvec![IVec2::X, IVec2::NEG_X]
+        let mut neighbors: Vec<Vec<IVec2>> = vec![
+            vec![IVec2::NEG_Y],
+            vec![IVec2::NEG_ONE, IVec2::new(1, -1)],
+            vec![IVec2::X, IVec2::NEG_X],
         ];
 
         for i in 0..self.fluidity {
-            neighbors.push(smallvec![
+            neighbors.push(vec![
                 IVec2::X * (i + 2) as i32,
-                IVec2::NEG_X * (i + 2) as i32
+                IVec2::NEG_X * (i + 2) as i32,
             ]);
         }
 
@@ -259,13 +259,13 @@ impl Gas {
 
 impl Material for Gas {
     fn into_movement_priority(&self) -> MovementPriority {
-        let mut neighbors: SmallVec<[SmallVec<[IVec2; 4]>; 8]> =
-            smallvec![smallvec![IVec2::Y, IVec2::new(1, 1), IVec2::new(-1, 1)]];
+        let mut neighbors: Vec<Vec<IVec2>> =
+            vec![vec![IVec2::Y, IVec2::new(1, 1), IVec2::new(-1, 1)]];
 
         for i in 0..self.fluidity {
-            neighbors.push(smallvec![
+            neighbors.push(vec![
                 IVec2::X * (i + 2) as i32,
-                IVec2::NEG_X * (i + 2) as i32
+                IVec2::NEG_X * (i + 2) as i32,
             ]);
         }
 
@@ -327,9 +327,9 @@ pub fn on_movable_solid_blueprint_added(
 ) {
     let entity = trigger.entity();
     if let Ok(movable_solid) = particle_query.get(entity) {
-        commands
-            .entity(entity)
-            .insert(MovementPriorityBlueprint(movable_solid.0.into_movement_priority()));
+        commands.entity(entity).insert(MovementPriorityBlueprint(
+            movable_solid.0.into_movement_priority(),
+        ));
     }
 }
 
@@ -355,7 +355,9 @@ pub fn on_gas_blueprint_added(
 ) {
     let entity = trigger.entity();
     if let Ok(gas) = particle_query.get(entity) {
-        commands.entity(entity).insert(MovementPriorityBlueprint(gas.0.into_movement_priority()));
+        commands
+            .entity(entity)
+            .insert(MovementPriorityBlueprint(gas.0.into_movement_priority()));
     }
 }
 
@@ -367,6 +369,8 @@ pub fn on_wall_added(
 ) {
     let entity = trigger.entity();
     if let Ok(gas) = particle_query.get(entity) {
-        commands.entity(entity).insert(MovementPriorityBlueprint(gas.0.into_movement_priority()));
+        commands
+            .entity(entity)
+            .insert(MovementPriorityBlueprint(gas.0.into_movement_priority()));
     }
 }

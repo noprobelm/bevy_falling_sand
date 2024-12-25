@@ -13,12 +13,12 @@
 //! trigger the events defined in this module and communicate with higher level systems that
 //! something needs to happen with a given particle.
 
+use bevy::prelude::*;
+use bfs_core::{Particle, ParticleType};
+use serde::{Deserialize, Serialize};
+use smallvec::{smallvec, SmallVec};
 use std::iter;
 use std::slice::Iter;
-use smallvec::SmallVec;
-use serde::{Deserialize, Serialize};
-use bevy::prelude::*;
-use bfs_core::{ParticleType, Particle};
 
 use crate::rng::PhysicsRng;
 
@@ -173,6 +173,38 @@ impl NeighborGroup {
         NeighborGroup { neighbor_group }
     }
 
+    /// Returns an empty NeighborGroup.
+    pub fn empty() -> NeighborGroup {
+        NeighborGroup {
+            neighbor_group: SmallVec::new(),
+        }
+    }
+
+    /// Adds a new neighbor to the group.
+    pub fn push(&mut self, neighbor: IVec2) {
+        self.neighbor_group.push(neighbor);
+    }
+
+    /// Swaps two neighbors at the given indices in the group.
+    pub fn swap(&mut self, index1: usize, index2: usize) -> Result<(), String> {
+        if index1 < self.neighbor_group.len() && index2 < self.neighbor_group.len() {
+            self.neighbor_group.swap(index1, index2);
+            Ok(())
+        } else {
+            Err(format!(
+                "Swap indices out of bounds: index1={}, index2={}, group size={}",
+                index1,
+                index2,
+                self.neighbor_group.len()
+            ))
+        }
+    }
+
+    /// Returns the number of neighbors in the group.
+    pub fn len(&self) -> usize {
+        self.neighbor_group.len()
+    }
+
     /// An iterator over neighbors.
     pub fn iter(&self) -> impl Iterator<Item = &IVec2> {
         self.neighbor_group.iter()
@@ -238,16 +270,64 @@ impl MovementPriority {
         MovementPriority { neighbor_groups }
     }
 
-    /// Creates a new NeighborGroup instance.
-    pub fn from(movement_priority: SmallVec<[SmallVec<[IVec2; 4]>; 8]>) -> MovementPriority {
+    /// Creates a new MovementPriority instance from a Vec<Vec<IVec2>>.
+    pub fn from(movement_priority: Vec<Vec<IVec2>>) -> MovementPriority {
         MovementPriority::new(
             movement_priority
                 .into_iter()
-                .map(|neighbor_group| NeighborGroup::new(neighbor_group))
+                .map(|neighbor_group| NeighborGroup::new(SmallVec::from_vec(neighbor_group)))
                 .collect::<SmallVec<[NeighborGroup; 8]>>(),
         )
     }
 
+    /// Returns the number of outer neighbor groups in the MovementPriority.
+    pub fn len(&self) -> usize {
+        self.neighbor_groups.len()
+    }
+
+    /// Pushes a new `NeighborGroup` to the outer collection.
+    pub fn push_outer(&mut self, neighbor_group: NeighborGroup) {
+        self.neighbor_groups.push(neighbor_group);
+    }
+
+    /// Pushes a new `IVec2` to an inner group at the specified index.
+    pub fn push_inner(&mut self, group_index: usize, neighbor: IVec2) -> Result<(), String> {
+        if let Some(group) = self.neighbor_groups.get_mut(group_index) {
+            group.push(neighbor);
+            Ok(())
+        } else {
+            Err(format!("Group index {} out of bounds", group_index))
+        }
+    }
+
+    /// Swaps two `NeighborGroup`s in the outer collection.
+    pub fn swap_outer(&mut self, index1: usize, index2: usize) -> Result<(), String> {
+        if index1 < self.neighbor_groups.len() && index2 < self.neighbor_groups.len() {
+            self.neighbor_groups.swap(index1, index2);
+            Ok(())
+        } else {
+            Err("Outer indices out of bounds".to_string())
+        }
+    }
+
+    /// Swaps two `IVec2` elements in an inner group.
+    pub fn swap_inner(
+        &mut self,
+        group_index: usize,
+        index1: usize,
+        index2: usize,
+    ) -> Result<(), String> {
+        if let Some(group) = self.neighbor_groups.get_mut(group_index) {
+            if index1 < group.len() && index2 < group.len() {
+                group.swap(index1, index2);
+                Ok(())
+            } else {
+                Err("Inner indices out of bounds".to_string())
+            }
+        } else {
+            Err(format!("Group index {} out of bounds", group_index))
+        }
+    }
     /// An iterator over neighbors.
     pub fn iter(&self) -> impl Iterator<Item = &NeighborGroup> {
         self.neighbor_groups.iter()
@@ -262,6 +342,20 @@ impl MovementPriority {
         self.neighbor_groups
             .iter_mut()
             .flat_map(move |neighbor_group| neighbor_group.iter_candidates(rng, momentum))
+    }
+
+    /// Returns a mutable reference to the `NeighborGroup` at the specified index.
+    pub fn get_mut(&mut self, index: usize) -> Option<&mut NeighborGroup> {
+        self.neighbor_groups.get_mut(index)
+    }
+
+    /// Removes the `NeighborGroup` at the specified index and returns it.
+    pub fn remove(&mut self, index: usize) -> Option<NeighborGroup> {
+        if index < self.neighbor_groups.len() {
+            Some(self.neighbor_groups.remove(index))
+        } else {
+            None
+        }
     }
 }
 
@@ -282,28 +376,28 @@ pub struct MovementPriorityBlueprint(pub MovementPriority);
 #[derive(Event)]
 pub struct ResetMomentumEvent {
     /// The entity to reset data for.
-    pub entity: Entity
+    pub entity: Entity,
 }
 
 /// Triggers a particle to reset its Velocity information to its parent's.
 #[derive(Event)]
 pub struct ResetVelocityEvent {
     /// The entity to reset data for.
-    pub entity: Entity
+    pub entity: Entity,
 }
 
 /// Triggers a particle to reset its Density information to its parent's.
 #[derive(Event)]
 pub struct ResetDensityEvent {
     /// The entity to reset data for.
-    pub entity: Entity
+    pub entity: Entity,
 }
 
 /// Triggers a particle to reset its MovementPriority information to its parent's.
 #[derive(Event)]
 pub struct ResetMovementPriorityEvent {
     /// The entity to reset data for.
-    pub entity: Entity
+    pub entity: Entity,
 }
 
 /// Observer for resetting a particle's Momentum information to its parent's.
@@ -315,9 +409,7 @@ pub fn on_reset_momentum(
 ) {
     if let Ok(parent) = particle_query.get(trigger.event().entity) {
         if let Some(momentum) = parent_query.get(parent.get()).unwrap() {
-            commands
-                .entity(trigger.event().entity)
-                .insert(momentum.0);
+            commands.entity(trigger.event().entity).insert(momentum.0);
         } else {
             commands.entity(trigger.event().entity).remove::<Momentum>();
         }
@@ -333,9 +425,7 @@ pub fn on_reset_density(
 ) {
     if let Ok(parent) = particle_query.get(trigger.event().entity) {
         if let Some(density) = parent_query.get(parent.get()).unwrap() {
-            commands
-                .entity(trigger.event().entity)
-                .insert(density.0);
+            commands.entity(trigger.event().entity).insert(density.0);
         } else {
             commands.entity(trigger.event().entity).remove::<Density>();
         }
@@ -371,9 +461,7 @@ pub fn on_reset_velocity(
 ) {
     if let Ok(parent) = particle_query.get(trigger.event().entity) {
         if let Some(velocity) = parent_query.get(parent.get()).unwrap() {
-            commands
-                .entity(trigger.event().entity)
-                .insert(velocity.0);
+            commands.entity(trigger.event().entity).insert(velocity.0);
         } else {
             commands.entity(trigger.event().entity).remove::<Velocity>();
         }
