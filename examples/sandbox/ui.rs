@@ -42,7 +42,6 @@ impl bevy::prelude::Plugin for UIPlugin {
             .init_resource::<ParticleTypeList>()
             .init_resource::<SelectedParticle>()
             .init_resource::<ParticleEditorSelectedType>()
-            .init_resource::<ParticleEditorName>()
             .init_resource::<ParticleEditorDensity>()
             .init_resource::<ParticleEditorMomentum>()
             .init_resource::<ParticleEditorColors>()
@@ -709,15 +708,6 @@ pub fn on_clear_wall_particles(
         });
 }
 
-#[derive(Resource, Clone)]
-pub struct ParticleEditorName(pub String);
-
-impl Default for ParticleEditorName {
-    fn default() -> Self {
-        ParticleEditorName(String::from("Dirt Wall"))
-    }
-}
-
 pub fn update_particle_editor_fields(
     particle_editor_selected_type: Res<ParticleEditorSelectedType>,
     particle_type_map: Res<ParticleTypeMap>,
@@ -735,7 +725,7 @@ pub fn update_particle_editor_fields(
         ),
         With<ParticleType>,
     >,
-    mut particle_name_field: ResMut<ParticleEditorName>,
+    mut particle_selected_field: ResMut<ParticleEditorSelectedType>,
     mut particle_density_field: ResMut<ParticleEditorDensity>,
     mut particle_max_velocity_field: ResMut<ParticleEditorMaxVelocity>,
     mut particle_momentum_field: ResMut<ParticleEditorMomentum>,
@@ -756,7 +746,8 @@ pub fn update_particle_editor_fields(
                 gas,
             )) = particle_query.get(*entity)
             {
-                particle_name_field.0 = particle_editor_selected_type.0.name.clone();
+                particle_selected_field.0 =
+                    ParticleType::new(particle_editor_selected_type.0.name.clone().as_str());
                 if let Some(density) = density {
                     particle_density_field.blueprint = *density;
                 }
@@ -783,7 +774,7 @@ pub fn render_particle_editor(
     mut brush_state: ResMut<NextState<BrushState>>,
     current_particle_category_field: Res<State<ParticleEditorCategoryState>>,
     mut next_particle_category_field: ResMut<NextState<ParticleEditorCategoryState>>,
-    mut particle_name_field: ResMut<ParticleEditorName>,
+    mut particle_selected_field: ResMut<ParticleEditorSelectedType>,
     mut particle_density_field: ResMut<ParticleEditorDensity>,
     mut particle_max_velocity_field: ResMut<ParticleEditorMaxVelocity>,
     mut particle_momentum_field: ResMut<ParticleEditorMomentum>,
@@ -837,7 +828,7 @@ pub fn render_particle_editor(
                         ui.horizontal(|ui| {
                             ui.vertical(|ui| {
                                 ui.horizontal(|ui| {
-                                    ui.text_edit_singleline(&mut particle_name_field.0);
+                                    ui.text_edit_singleline(&mut particle_selected_field.0.name);
                                 });
                                 render_state_field(
                                     ui,
@@ -1178,7 +1169,9 @@ fn render_movement_priority_field(
     ui.horizontal(|ui| {
         ui.label("Movement Priority");
         if ui.button("➕").clicked() {
-            particle_movement_priority_field.0.push(vec![IVec2::ZERO]);
+            particle_movement_priority_field
+                .blueprint.0
+                .push_outer(NeighborGroup::empty());
         };
     });
 
@@ -1189,7 +1182,7 @@ fn render_movement_priority_field(
     let mut inner_to_swap: Option<(usize, usize, usize)> = None;
     let mut outer_to_swap: Option<(usize, usize)> = None;
 
-    for (i, neighbor_group) in particle_movement_priority_field.0.iter().enumerate() {
+    for (i, neighbor_group) in particle_movement_priority_field.blueprint.0.iter().enumerate() {
         ui.horizontal(|ui| {
             ui.label(format!("Group {}:", i + 1));
             if ui.button("➕").clicked() {
@@ -1198,14 +1191,14 @@ fn render_movement_priority_field(
             if ui.button("^").clicked() && i > 0 {
                 outer_to_swap = Some((i, i - 1));
             }
-            if ui.button("v").clicked() && i < particle_movement_priority_field.0.len() - 1 {
+            if ui.button("v").clicked() && i < particle_movement_priority_field.blueprint.0.len() - 1 {
                 outer_to_swap = Some((i, i + 1));
             }
             if ui.button("❌").clicked() {
                 outer_to_remove = Some(i);
             };
         });
-        for (j, neighbor) in neighbor_group.iter().enumerate() {
+        for (j, neighbor) in neighbor_group.neighbor_group.iter().enumerate() {
             let mut x_str = neighbor.x.to_string();
             let mut y_str = neighbor.y.to_string();
             ui.horizontal(|ui| {
@@ -1242,34 +1235,35 @@ fn render_movement_priority_field(
         }
     }
     if let Some((i, j)) = inner_to_remove {
-        particle_movement_priority_field
-            .0
-            .get_mut(i)
-            .unwrap()
-            .remove(j);
+        if let Some(group) = particle_movement_priority_field.blueprint.0.get_mut(i) {
+            group.neighbor_group.remove(j);
+        }
     }
     if let Some((i, j1, j2)) = inner_to_swap {
-        particle_movement_priority_field
-            .0
-            .get_mut(i)
-            .unwrap()
-            .swap(j1, j2);
+        if let Some(group) = particle_movement_priority_field.blueprint.0.get_mut(i) {
+            group.swap(j1, j2).unwrap_or_else(|err| eprintln!("{}", err));
+        }
     }
     if let Some((i, j)) = outer_to_swap {
-        particle_movement_priority_field.0.swap(i, j);
+        particle_movement_priority_field
+            .blueprint
+            .0.swap_outer(i, j)
+            .unwrap_or_else(|err| eprintln!("{}", err));
     }
     if let Some(i) = outer_to_add {
-        particle_movement_priority_field
-            .0
-            .get_mut(i)
-            .unwrap()
-            .push(IVec2::ZERO);
+        if let Some(group) = particle_movement_priority_field.blueprint.0.get_mut(i) {
+            group.push(IVec2::ZERO);
+        }
     }
     if let Some(i) = outer_to_remove {
-        particle_movement_priority_field.0.remove(i);
+        particle_movement_priority_field.blueprint.0.remove(i);
     }
     if let Some(((i, j), new_ivec)) = to_change {
-        particle_movement_priority_field.0.get_mut(i).unwrap()[j] = new_ivec;
+        if let Some(group) = particle_movement_priority_field.blueprint.0.get_mut(i) {
+            if let Some(neighbor) = group.neighbor_group.get_mut(j) {
+                *neighbor = new_ivec;
+            }
+        }
     }
 }
 
@@ -1826,6 +1820,161 @@ pub fn render_fluidity_field(
     });
 }
 
+pub fn particle_editor_save(
+    mut commands: Commands,
+    mut ev_particle_editor_save: EventReader<ParticleEditorSave>,
+    particle_type_map: Res<ParticleTypeMap>,
+    current_particle_category_field: Res<State<ParticleEditorCategoryState>>,
+    mut next_particle_category_field: ResMut<NextState<ParticleEditorCategoryState>>,
+    mut particle_selected_field: ResMut<ParticleEditorSelectedType>,
+    mut particle_density_field: ResMut<ParticleEditorDensity>,
+    mut particle_max_velocity_field: ResMut<ParticleEditorMaxVelocity>,
+    mut particle_momentum_field: ResMut<ParticleEditorMomentum>,
+    mut particle_colors_field: ResMut<ParticleEditorColors>,
+    mut particle_editor_movement_priority_field: ResMut<ParticleEditorMovementPriority>,
+    mut particle_editor_burns_field: ResMut<ParticleEditorBurns>,
+    mut particle_editor_fire_field: ResMut<ParticleEditorFire>,
+    mut particle_editor_wall_field: ResMut<ParticleEditorWall>,
+    mut particle_editor_solid_field: ResMut<ParticleEditorSolid>,
+    mut particle_editor_movable_solid_field: ResMut<ParticleEditorMovableSolid>,
+    mut particle_editor_liquid_field: ResMut<ParticleEditorLiquid>,
+    mut particle_editor_gas_field: ResMut<ParticleEditorGas>,
+) {
+    ev_particle_editor_save.read().for_each(|_| {
+        let entity = particle_type_map
+            .get(&particle_selected_field.0.name)
+            .cloned()
+            .unwrap_or_else(|| {
+                commands
+                    .spawn(ParticleType::new(particle_selected_field.0.name.as_str()))
+                    .id()
+            });
+        // TODO: Replace this with bundle matching so we only remove components relevant to bfs.
+        commands.entity(entity).clear();
+
+        match current_particle_category_field.get() {
+            ParticleEditorCategoryState::Wall => {
+                commands.entity(entity).insert((
+                    particle_editor_wall_field.blueprint.clone(),
+                    particle_colors_field.blueprint.clone(),
+                ));
+            }
+            ParticleEditorCategoryState::Solid => {
+                commands.entity(entity).insert((
+                    particle_editor_solid_field.blueprint.clone(),
+                    particle_colors_field.blueprint.clone(),
+                    particle_density_field.blueprint,
+                    particle_max_velocity_field.blueprint,
+                ));
+                if particle_editor_burns_field.enable {
+                    commands
+                        .entity(entity)
+                        .insert(particle_editor_burns_field.blueprint.clone());
+                }
+                if particle_editor_fire_field.enable {
+                    commands
+                        .entity(entity)
+                        .insert(particle_editor_fire_field.blueprint.clone());
+                }
+            }
+            ParticleEditorCategoryState::MovableSolid => {
+                commands.entity(entity).insert((
+                    particle_editor_movable_solid_field.blueprint.clone(),
+                    particle_colors_field.blueprint.clone(),
+                    particle_density_field.blueprint,
+                    particle_max_velocity_field.blueprint,
+                ));
+                if particle_momentum_field.enable {
+                    commands
+                        .entity(entity)
+                        .insert(particle_momentum_field.blueprint.clone());
+                }
+                if particle_editor_burns_field.enable {
+                    commands
+                        .entity(entity)
+                        .insert(particle_editor_burns_field.blueprint.clone());
+                }
+                if particle_editor_fire_field.enable {
+                    commands
+                        .entity(entity)
+                        .insert(particle_editor_fire_field.blueprint.clone());
+                }
+            }
+            ParticleEditorCategoryState::Liquid => {
+                commands.entity(entity).insert((
+                    particle_editor_liquid_field.blueprint.clone(),
+                    particle_colors_field.blueprint.clone(),
+                    particle_density_field.blueprint,
+                    particle_max_velocity_field.blueprint,
+                ));
+                if particle_momentum_field.enable {
+                    commands
+                        .entity(entity)
+                        .insert(particle_momentum_field.blueprint.clone());
+                }
+                if particle_editor_burns_field.enable {
+                    commands
+                        .entity(entity)
+                        .insert(particle_editor_burns_field.blueprint.clone());
+                }
+                if particle_editor_fire_field.enable {
+                    commands
+                        .entity(entity)
+                        .insert(particle_editor_fire_field.blueprint.clone());
+                }
+            }
+            ParticleEditorCategoryState::Gas => {
+                commands.entity(entity).insert((
+                    particle_editor_gas_field.blueprint.clone(),
+                    particle_colors_field.blueprint.clone(),
+                    particle_density_field.blueprint,
+                    particle_max_velocity_field.blueprint,
+                ));
+                if particle_momentum_field.enable {
+                    commands
+                        .entity(entity)
+                        .insert(particle_momentum_field.blueprint.clone());
+                }
+                if particle_editor_burns_field.enable {
+                    commands
+                        .entity(entity)
+                        .insert(particle_editor_burns_field.blueprint.clone());
+                }
+                if particle_editor_fire_field.enable {
+                    commands
+                        .entity(entity)
+                        .insert(particle_editor_fire_field.blueprint.clone());
+                }
+            }
+            ParticleEditorCategoryState::Other => {
+                commands.entity(entity).insert((
+                    particle_colors_field.blueprint.clone(),
+                    particle_density_field.blueprint,
+                    particle_max_velocity_field.blueprint,
+                ));
+                if particle_momentum_field.enable {
+                    commands
+                        .entity(entity)
+                        .insert(particle_momentum_field.blueprint.clone());
+                }
+                if particle_editor_burns_field.enable {
+                    commands
+                        .entity(entity)
+                        .insert(particle_editor_burns_field.blueprint.clone());
+                }
+                if particle_editor_fire_field.enable {
+                    commands
+                        .entity(entity)
+                        .insert(particle_editor_fire_field.blueprint.clone());
+                }
+            }
+        }
+    })
+}
+
+#[derive(Event, Clone, Debug)]
+pub struct ParticleEditorSave;
+
 #[derive(Resource, Clone)]
 pub struct ParticleEditorSelectedType(pub ParticleType);
 
@@ -1896,11 +2045,14 @@ impl ParticleEditorCategoryState {
 }
 
 #[derive(Resource, Clone, Debug)]
-pub struct ParticleEditorMovementPriority(pub Vec<Vec<IVec2>>);
+pub struct ParticleEditorMovementPriority{
+    enable: bool,
+    blueprint: MovementPriorityBlueprint
+}
 
 impl Default for ParticleEditorMovementPriority {
     fn default() -> Self {
-        ParticleEditorMovementPriority(vec![vec![IVec2::ZERO]])
+        ParticleEditorMovementPriority{enable: true, blueprint: MovementPriorityBlueprint(MovementPriority::empty())}
     }
 }
 
