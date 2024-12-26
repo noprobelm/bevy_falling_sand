@@ -980,7 +980,6 @@ pub fn render_particle_editor(
                                             ui,
                                             &mut particle_editor_max_velocity_field,
                                         );
-                                        render_momentum_field(ui, &mut particle_momentum_field);
                                         render_burns_field(
                                             ui,
                                             &mut particle_editor_burns_field,
@@ -1963,7 +1962,6 @@ fn particle_editor_save(
                     .spawn(ParticleType::new(particle_selected_field.0.name.as_str()))
                     .id()
             });
-        // TODO: Replace this with bundle matching so we only remove components relevant to bfs.
         commands.entity(entity).remove::<ParticleBundle>();
         match current_particle_category_field.get() {
             ParticleEditorCategoryState::Wall => {
@@ -2063,12 +2061,6 @@ fn particle_editor_save(
                         .entity(entity)
                         .insert(particle_editor_flows_color_field.blueprint);
                 }
-
-                if particle_momentum_field.enable {
-                    commands
-                        .entity(entity)
-                        .insert(particle_momentum_field.blueprint.clone());
-                }
                 if particle_editor_burns_field.enable {
                     commands
                         .entity(entity)
@@ -2146,25 +2138,6 @@ pub struct ParticleEditorMaxVelocity {
 pub struct ParticleEditorMomentum {
     enable: bool,
     blueprint: MomentumBlueprint,
-}
-
-fn setup_particle_editor_momentum(
-    mut commands: Commands,
-    momentum_query: Query<&Momentum>,
-    particle_type_map: Res<ParticleTypeMap>,
-) {
-    if let Some(entity) = particle_type_map.get(&DEFAULT_SELECTED_PARTICLE.to_string()) {
-        if let Ok(momentum) = momentum_query.get(*entity) {
-            commands.insert_resource(ParticleEditorMomentum {
-                enable: true,
-                blueprint: MomentumBlueprint::default(),
-            })
-        } else {
-            commands.insert_resource(ParticleEditorMomentum::default())
-        }
-    } else {
-        commands.insert_resource(ParticleEditorMomentum::default())
-    }
 }
 
 #[derive(Resource, Clone, Debug)]

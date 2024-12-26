@@ -18,7 +18,7 @@ pub struct ParticleBundle {
     /// The particle type's velocity blueprint.
     pub velocity: VelocityBlueprint,
     /// The particle type's momentum blueprint.
-    pub momentum: Momentum,
+    pub momentum: MomentumBlueprint,
     /// The particle type's movement priority blueprint.
     pub movement_priority: MovementPriorityBlueprint,
     /// The Wall blueprint
