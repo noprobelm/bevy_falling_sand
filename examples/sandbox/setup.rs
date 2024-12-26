@@ -55,14 +55,14 @@ pub fn setup_custom_particles(mut commands: Commands) {
                 vec![Color::Srgba(Srgba::hex("#8CDBF880").unwrap())],
             ),
         ),
-        Burns::new(
+        BurnsBlueprint(Burns::new(
             Duration::from_secs(2),
             Duration::from_millis(100),
             Some(0.01),
             Some(Reacting::new(Particle::new("Water"), 0.2)),
             None,
-            None
-        ),
+            None,
+        )),
         Name::new("Ice Wall"),
     ));
 
@@ -203,7 +203,7 @@ pub fn setup_custom_particles(mut commands: Commands) {
             ),
         ),
         MomentumBlueprint(Momentum::ZERO),
-        Burns::new(
+        BurnsBlueprint(Burns::new(
             Duration::from_secs(5),
             Duration::from_millis(100),
             Some(0.1),
@@ -223,7 +223,7 @@ pub fn setup_custom_particles(mut commands: Commands) {
                 chance_to_spread: 0.2,
                 destroys_on_spread: false,
             }),
-        ),
+        )),
         Name::new("Oil"),
     ));
 
@@ -296,14 +296,14 @@ pub fn setup_custom_particles(mut commands: Commands) {
             ),
         ),
         FlowsColorBlueprint(FlowsColor::new(0.1)),
-        Burns::new(
+        BurnsBlueprint(Burns::new(
             Duration::from_millis(200),
             Duration::from_millis(100),
             Some(1.),
             Some(Reacting::new(Particle::new("Water"), 1.)),
             None,
             None,
-        ),
+        )),
         Name::new("Steam"),
     ));
 
@@ -340,7 +340,7 @@ pub fn setup_custom_particles(mut commands: Commands) {
             ),
         ),
         FlowsColorBlueprint(FlowsColor::new(0.1)),
-        Burns::new(
+        BurnsBlueprint(Burns::new(
             Duration::from_secs(1),
             Duration::from_millis(100),
             Some(0.5),
@@ -360,7 +360,7 @@ pub fn setup_custom_particles(mut commands: Commands) {
                 chance_to_spread: 1.,
                 destroys_on_spread: true,
             }),
-        ),
+        )),
         Name::new("Flammable Gas"),
     ));
 
@@ -386,15 +386,18 @@ pub fn setup_custom_particles(mut commands: Commands) {
             chance_to_spread: 0.01,
             destroys_on_spread: false,
         },
-        Burns::new(
+        BurnsBlueprint(Burns::new(
             Duration::from_secs(1),
             Duration::from_millis(100),
             Some(0.5),
             None,
             None,
             None,
-        ),
-        Burning::new(Duration::from_secs(1), Duration::from_millis(100)),
+        )),
+        BurningBlueprint(Burning::new(
+            Duration::from_secs(1),
+            Duration::from_millis(100),
+        )),
         Name::new("FIRE"),
     ));
 
@@ -456,7 +459,7 @@ pub fn setup_custom_particles(mut commands: Commands) {
                 ],
             ),
         ),
-        Burns::new(
+        BurnsBlueprint(Burns::new(
             Duration::from_secs(1),
             Duration::from_millis(100),
             Some(0.5),
@@ -476,7 +479,7 @@ pub fn setup_custom_particles(mut commands: Commands) {
                 chance_to_spread: 1.,
                 destroys_on_spread: false,
             }),
-        ),
+        )),
         Name::new("Grass Wall"),
     ));
 
@@ -488,7 +491,7 @@ pub fn setup_custom_particles(mut commands: Commands) {
                 vec![Color::Srgba(Srgba::hex("#A1662E").unwrap())],
             ),
         ),
-        Burns::new(
+        BurnsBlueprint(Burns::new(
             Duration::from_secs(10),
             Duration::from_millis(100),
             Some(0.0),
@@ -508,7 +511,7 @@ pub fn setup_custom_particles(mut commands: Commands) {
                 chance_to_spread: 0.005,
                 destroys_on_spread: false,
             }),
-        ),
+        )),
         Name::new("Wood Wall"),
     ));
 }
