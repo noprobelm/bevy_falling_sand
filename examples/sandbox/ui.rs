@@ -1847,10 +1847,6 @@ fn render_fire_field(ui: &mut egui::Ui, particle_fire_field: &mut ResMut<Particl
             if edit_burn_radius.changed() {
                 if let Ok(new_burn_radius) = burn_radius_str.parse::<f32>() {
                     particle_fire_field.blueprint.0.burn_radius = new_burn_radius;
-                    println!(
-                        "New burn radius: {:?} Particle burns field blueprint: {:?}",
-                        new_burn_radius, particle_fire_field.blueprint.0.burn_radius
-                    );
                 } else if burn_radius_str.is_empty() {
                     particle_fire_field.blueprint.0.burn_radius = 2.;
                 }
