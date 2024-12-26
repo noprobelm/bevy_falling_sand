@@ -168,32 +168,10 @@ impl ParticleControlUI {
     pub fn render(
         &self,
         ui: &mut egui::Ui,
-        particle_type_list: &Res<ParticleTypeList>,
-        selected_brush_particle: &mut ResMut<SelectedBrushParticle>,
         brush_state: &mut ResMut<NextState<BrushState>>,
         commands: &mut Commands,
     ) {
         ui.vertical(|ui| {
-            // Define the fixed order of categories
-            let categories = ["Walls", "Solids", "Movable Solids", "Liquids", "Gases"];
-
-            // Iterate through categories in a deterministic order
-            for &category in &categories {
-                if let Some(particles) = particle_type_list.get(category) {
-                    egui::CollapsingHeader::new(category) // Use the category as the header title
-                        .default_open(false)
-                        .show(ui, |ui| {
-                            particles.iter().for_each(|particle_name| {
-                                // Create a button for each particle name
-                                if ui.button(particle_name).clicked() {
-                                    selected_brush_particle.0 = particle_name.clone();
-                                    brush_state.set(BrushState::Spawn);
-                                }
-                            });
-                        });
-                }
-            }
-
             // Existing UI elements for Remove and Despawn All Particles
             ui.horizontal_wrapped(|ui| {
                 if ui.button("Remove Tool").clicked() {
@@ -400,10 +378,6 @@ pub fn render_ui(
         Option<Res<DebugParticleCount>>,
         Res<TotalParticleCount>,
     ),
-    (mut selected_brush_particle, particle_type_list): (
-        ResMut<SelectedBrushParticle>,
-        Res<ParticleTypeList>,
-    ),
     (mut scene_selection_dialog, mut scene_path, mut ev_save_scene, mut ev_load_scene): (
         ResMut<SceneSelectionDialog>,
         ResMut<ParticleSceneFilePath>,
@@ -436,8 +410,6 @@ pub fn render_ui(
             );
             ParticleControlUI.render(
                 ui,
-                &particle_type_list,
-                &mut selected_brush_particle,
                 &mut brush_state,
                 &mut commands,
             );
@@ -650,10 +622,6 @@ pub fn render_search_bar_ui(
         .collapsible(false)
         .resizable(false)
         .show(ctx, |ui| {
-            // ui.add(
-            //     egui::TextEdit::singleline(&mut particle_search_bar.input)
-            //         .background_color(Color32::from_rgb(255., 255., 255.)),
-            // );
             ui.text_edit_singleline(&mut particle_search_bar.input);
 
             let mut new_selected_index = particle_search_bar.selected_index;
