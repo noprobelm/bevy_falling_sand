@@ -10,7 +10,7 @@ use bevy::{
     window::PrimaryWindow,
 };
 use bevy_egui::{EguiContext, EguiContexts};
-use bfs_internal::reactions::{BurnsBlueprint, Fire, FireBlueprint, Reacting};
+use bfs_internal::{reactions::{BurnsBlueprint, Fire, FireBlueprint, Reacting}, ParticleBundle};
 use egui::Color32;
 
 use bevy_falling_sand::color::*;
@@ -42,6 +42,7 @@ impl bevy::prelude::Plugin for UIPlugin {
             .init_resource::<ParticleTypeList>()
             .init_resource::<SelectedParticle>()
             .init_resource::<ParticleEditorSelectedType>()
+            .init_resource::<ParticleEditorName>()
             .init_resource::<ParticleEditorDensity>()
             .init_resource::<ParticleEditorMomentum>()
             .init_resource::<ParticleEditorColors>()
@@ -55,11 +56,15 @@ impl bevy::prelude::Plugin for UIPlugin {
             .init_resource::<ParticleEditorLiquid>()
             .init_resource::<ParticleEditorGas>()
             .init_state::<ParticleEditorCategoryState>()
+            .add_event::<ParticleEditorSave>()
+            .add_event::<ParticleEditorUpdate>()
             .add_systems(First, update_cursor_coordinates)
             .add_systems(OnEnter(AppState::Ui), show_cursor)
             .add_systems(OnEnter(AppState::Canvas), hide_cursor)
             .add_systems(Update, ev_mouse_wheel)
             .add_systems(Update, handle_search_bar_input)
+            .add_systems(Update, particle_editor_save)
+            .add_systems(Update, update_particle_editor_fields)
             .add_systems(
                 Update,
                 render_search_bar_ui.run_if(resource_exists::<ParticleSearchBar>),
@@ -701,15 +706,14 @@ pub fn on_clear_wall_particles(
     dynamic_particle_types_query
         .iter()
         .for_each(|particle_type| {
-            if particle_type.name == "Invisible Wall" {
-                info!("true");
-            }
             commands.trigger(ClearParticleTypeChildrenEvent(particle_type.name.clone()))
         });
 }
 
 pub fn update_particle_editor_fields(
-    particle_editor_selected_type: Res<ParticleEditorSelectedType>,
+    mut ev_particle_editor_update: EventReader<ParticleEditorUpdate>,
+    mut particle_editor_selected_type: ResMut<ParticleEditorSelectedType>,
+    mut particle_editor_name: ResMut<ParticleEditorName>,
     particle_type_map: Res<ParticleTypeMap>,
     particle_query: Query<
         (
@@ -717,6 +721,8 @@ pub fn update_particle_editor_fields(
             Option<&VelocityBlueprint>,
             Option<&MomentumBlueprint>,
             Option<&ParticleColorBlueprint>,
+            Option<&BurnsBlueprint>,
+            Option<&FireBlueprint>,
             Option<&WallBlueprint>,
             Option<&LiquidBlueprint>,
             Option<&SolidBlueprint>,
@@ -725,20 +731,23 @@ pub fn update_particle_editor_fields(
         ),
         With<ParticleType>,
     >,
-    mut particle_selected_field: ResMut<ParticleEditorSelectedType>,
     mut particle_density_field: ResMut<ParticleEditorDensity>,
     mut particle_max_velocity_field: ResMut<ParticleEditorMaxVelocity>,
     mut particle_momentum_field: ResMut<ParticleEditorMomentum>,
     mut particle_colors_field: ResMut<ParticleEditorColors>,
+    mut particle_editor_burns_field: ResMut<ParticleEditorBurns>,
+    mut particle_editor_fire_field: ResMut<ParticleEditorFire>,
     mut next_particle_category_field: ResMut<NextState<ParticleEditorCategoryState>>,
 ) {
-    if particle_editor_selected_type.is_changed() {
+    ev_particle_editor_update.read().for_each(|_| {
         if let Some(entity) = particle_type_map.get(&particle_editor_selected_type.0.name) {
-            let particle_type = if let Ok((
+            if let Ok((
                 density,
                 velocity,
                 momentum,
                 colors,
+                burns,
+                fire,
                 wall,
                 liquid,
                 solid,
@@ -746,7 +755,8 @@ pub fn update_particle_editor_fields(
                 gas,
             )) = particle_query.get(*entity)
             {
-                particle_selected_field.0 =
+                particle_editor_name.0 = particle_editor_selected_type.0.name.clone();
+                particle_editor_selected_type.0 =
                     ParticleType::new(particle_editor_selected_type.0.name.clone().as_str());
                 if let Some(density) = density {
                     particle_density_field.blueprint = *density;
@@ -760,18 +770,40 @@ pub fn update_particle_editor_fields(
                 if let Some(colors) = colors {
                     particle_colors_field.blueprint = colors.clone()
                 }
-                if let Some(wall) = wall {}
+                if let Some(burns) = burns {
+                    particle_editor_burns_field.blueprint = burns.clone();
+                }
+                if let Some(fire) = fire {
+                    particle_editor_fire_field.blueprint = fire.clone();
+                }
+                if let Some(_) = wall {
+                    next_particle_category_field.set(ParticleEditorCategoryState::Wall)
+                }
+                if let Some(_) = solid {
+                    next_particle_category_field.set(ParticleEditorCategoryState::Solid)
+                }
+                if let Some(_) = movable_solid {
+                    next_particle_category_field.set(ParticleEditorCategoryState::MovableSolid)
+                }
+                if let Some(_) = liquid {
+                    next_particle_category_field.set(ParticleEditorCategoryState::Liquid)
+                }
+                if let Some(_) = gas {
+                    next_particle_category_field.set(ParticleEditorCategoryState::Gas)
+                }
             };
         }
-    }
+    });
 }
 
 pub fn render_particle_editor(
-    mut contexts: EguiContexts,
+    (mut ev_particle_editor_save, mut ev_particle_editor_update, mut contexts): (
+        EventWriter<ParticleEditorSave>,
+        EventWriter<ParticleEditorUpdate>,
+        EguiContexts,
+    ),
     particle_type_list: Res<ParticleTypeList>,
     particle_list: Res<ParticleList>,
-    mut selected_particle: ResMut<SelectedParticle>,
-    mut brush_state: ResMut<NextState<BrushState>>,
     current_particle_category_field: Res<State<ParticleEditorCategoryState>>,
     mut next_particle_category_field: ResMut<NextState<ParticleEditorCategoryState>>,
     mut particle_selected_field: ResMut<ParticleEditorSelectedType>,
@@ -809,8 +841,10 @@ pub fn render_particle_editor(
                                     .show(ui, |ui| {
                                         for particle_name in particles {
                                             if ui.button(particle_name).clicked() {
-                                                selected_particle.0 = particle_name.clone();
-                                                brush_state.set(BrushState::Spawn);
+                                                particle_selected_field.0 =
+                                                    ParticleType::new(particle_name.as_str());
+                                                ev_particle_editor_update
+                                                    .send(ParticleEditorUpdate);
                                             }
                                         }
                                     });
@@ -818,7 +852,9 @@ pub fn render_particle_editor(
                         }
 
                         if ui.button("New Particle").clicked() {}
-                        if ui.button("Save Particle").clicked() {}
+                        if ui.button("Save Particle").clicked() {
+                            ev_particle_editor_save.send(ParticleEditorSave);
+                        }
                     },
                 );
                 ui.allocate_ui_with_layout(
@@ -1170,7 +1206,8 @@ fn render_movement_priority_field(
         ui.label("Movement Priority");
         if ui.button("➕").clicked() {
             particle_movement_priority_field
-                .blueprint.0
+                .blueprint
+                .0
                 .push_outer(NeighborGroup::empty());
         };
     });
@@ -1182,7 +1219,12 @@ fn render_movement_priority_field(
     let mut inner_to_swap: Option<(usize, usize, usize)> = None;
     let mut outer_to_swap: Option<(usize, usize)> = None;
 
-    for (i, neighbor_group) in particle_movement_priority_field.blueprint.0.iter().enumerate() {
+    for (i, neighbor_group) in particle_movement_priority_field
+        .blueprint
+        .0
+        .iter()
+        .enumerate()
+    {
         ui.horizontal(|ui| {
             ui.label(format!("Group {}:", i + 1));
             if ui.button("➕").clicked() {
@@ -1191,7 +1233,9 @@ fn render_movement_priority_field(
             if ui.button("^").clicked() && i > 0 {
                 outer_to_swap = Some((i, i - 1));
             }
-            if ui.button("v").clicked() && i < particle_movement_priority_field.blueprint.0.len() - 1 {
+            if ui.button("v").clicked()
+                && i < particle_movement_priority_field.blueprint.0.len() - 1
+            {
                 outer_to_swap = Some((i, i + 1));
             }
             if ui.button("❌").clicked() {
@@ -1241,13 +1285,16 @@ fn render_movement_priority_field(
     }
     if let Some((i, j1, j2)) = inner_to_swap {
         if let Some(group) = particle_movement_priority_field.blueprint.0.get_mut(i) {
-            group.swap(j1, j2).unwrap_or_else(|err| eprintln!("{}", err));
+            group
+                .swap(j1, j2)
+                .unwrap_or_else(|err| eprintln!("{}", err));
         }
     }
     if let Some((i, j)) = outer_to_swap {
         particle_movement_priority_field
             .blueprint
-            .0.swap_outer(i, j)
+            .0
+            .swap_outer(i, j)
             .unwrap_or_else(|err| eprintln!("{}", err));
     }
     if let Some(i) = outer_to_add {
@@ -1821,24 +1868,22 @@ pub fn render_fluidity_field(
 }
 
 pub fn particle_editor_save(
-    mut commands: Commands,
-    mut ev_particle_editor_save: EventReader<ParticleEditorSave>,
+    (mut commands, mut ev_particle_editor_save): (Commands, EventReader<ParticleEditorSave>),
     particle_type_map: Res<ParticleTypeMap>,
     current_particle_category_field: Res<State<ParticleEditorCategoryState>>,
-    mut next_particle_category_field: ResMut<NextState<ParticleEditorCategoryState>>,
-    mut particle_selected_field: ResMut<ParticleEditorSelectedType>,
-    mut particle_density_field: ResMut<ParticleEditorDensity>,
-    mut particle_max_velocity_field: ResMut<ParticleEditorMaxVelocity>,
-    mut particle_momentum_field: ResMut<ParticleEditorMomentum>,
-    mut particle_colors_field: ResMut<ParticleEditorColors>,
-    mut particle_editor_movement_priority_field: ResMut<ParticleEditorMovementPriority>,
-    mut particle_editor_burns_field: ResMut<ParticleEditorBurns>,
-    mut particle_editor_fire_field: ResMut<ParticleEditorFire>,
-    mut particle_editor_wall_field: ResMut<ParticleEditorWall>,
-    mut particle_editor_solid_field: ResMut<ParticleEditorSolid>,
-    mut particle_editor_movable_solid_field: ResMut<ParticleEditorMovableSolid>,
-    mut particle_editor_liquid_field: ResMut<ParticleEditorLiquid>,
-    mut particle_editor_gas_field: ResMut<ParticleEditorGas>,
+    particle_selected_field: Res<ParticleEditorSelectedType>,
+    particle_density_field: Res<ParticleEditorDensity>,
+    particle_max_velocity_field: Res<ParticleEditorMaxVelocity>,
+    particle_momentum_field: Res<ParticleEditorMomentum>,
+    particle_colors_field: Res<ParticleEditorColors>,
+    particle_editor_movement_priority_field: Res<ParticleEditorMovementPriority>,
+    particle_editor_burns_field: Res<ParticleEditorBurns>,
+    particle_editor_fire_field: Res<ParticleEditorFire>,
+    particle_editor_wall_field: Res<ParticleEditorWall>,
+    particle_editor_solid_field: Res<ParticleEditorSolid>,
+    particle_editor_movable_solid_field: Res<ParticleEditorMovableSolid>,
+    particle_editor_liquid_field: Res<ParticleEditorLiquid>,
+    particle_editor_gas_field: Res<ParticleEditorGas>,
 ) {
     ev_particle_editor_save.read().for_each(|_| {
         let entity = particle_type_map
@@ -1850,8 +1895,7 @@ pub fn particle_editor_save(
                     .id()
             });
         // TODO: Replace this with bundle matching so we only remove components relevant to bfs.
-        commands.entity(entity).clear();
-
+        commands.entity(entity).remove::<ParticleBundle>();
         match current_particle_category_field.get() {
             ParticleEditorCategoryState::Wall => {
                 commands.entity(entity).insert((
@@ -1951,6 +1995,7 @@ pub fn particle_editor_save(
                     particle_colors_field.blueprint.clone(),
                     particle_density_field.blueprint,
                     particle_max_velocity_field.blueprint,
+                    particle_editor_movement_priority_field.blueprint.clone(),
                 ));
                 if particle_momentum_field.enable {
                     commands
@@ -1969,14 +2014,21 @@ pub fn particle_editor_save(
                 }
             }
         }
+        commands.entity(entity).log_components();
     })
 }
+
+#[derive(Event, Clone, Debug)]
+pub struct ParticleEditorUpdate;
 
 #[derive(Event, Clone, Debug)]
 pub struct ParticleEditorSave;
 
 #[derive(Resource, Clone)]
 pub struct ParticleEditorSelectedType(pub ParticleType);
+
+#[derive(Resource, Default, Clone)]
+pub struct ParticleEditorName(pub String);
 
 impl Default for ParticleEditorSelectedType {
     fn default() -> Self {
@@ -2045,14 +2097,17 @@ impl ParticleEditorCategoryState {
 }
 
 #[derive(Resource, Clone, Debug)]
-pub struct ParticleEditorMovementPriority{
+pub struct ParticleEditorMovementPriority {
     enable: bool,
-    blueprint: MovementPriorityBlueprint
+    blueprint: MovementPriorityBlueprint,
 }
 
 impl Default for ParticleEditorMovementPriority {
     fn default() -> Self {
-        ParticleEditorMovementPriority{enable: true, blueprint: MovementPriorityBlueprint(MovementPriority::empty())}
+        ParticleEditorMovementPriority {
+            enable: true,
+            blueprint: MovementPriorityBlueprint(MovementPriority::empty()),
+        }
     }
 }
 

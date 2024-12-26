@@ -1,9 +1,37 @@
 //! Convenience bundles for common particle configurations.
 use bevy::prelude::*;
-use serde::{Deserialize, Serialize};
-use bfs_movement::*;
 use bfs_color::*;
 use bfs_core::*;
+use bfs_movement::*;
+use serde::{Deserialize, Serialize};
+
+/// Bundle with all possible particle components (excluding ParticleType). This struct is intended
+/// for stripping an existing ParticleType of its components.
+#[derive(Bundle)]
+pub struct ParticleBundle {
+    /// The particle type's color blueprint.
+    pub colors: ParticleColorBlueprint,
+    /// The particle type's FlowsColor blueprint.
+    pub flows: FlowsColorBlueprint,
+    /// The particle type's density blueprint.
+    pub density: DensityBlueprint,
+    /// The particle type's velocity blueprint.
+    pub velocity: VelocityBlueprint,
+    /// The particle type's momentum blueprint.
+    pub momentum: Momentum,
+    /// The particle type's movement priority blueprint.
+    pub movement_priority: MovementPriorityBlueprint,
+    /// The Wall blueprint
+    pub wall: WallBlueprint,
+    /// The Solid blueprint
+    pub solid: SolidBlueprint,
+    /// The MovableSolid blueprint
+    pub movable_solid: MovableSolidBlueprint,
+    /// The Liquid blueprint
+    pub liquid: LiquidBlueprint,
+    /// The Gas blueprint
+    pub gas: GasBlueprint
+}
 
 /// Convenience bundle for adding new static particle types.
 #[derive(Bundle)]
