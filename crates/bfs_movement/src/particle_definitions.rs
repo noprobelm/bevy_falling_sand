@@ -16,7 +16,7 @@
 use bevy::prelude::*;
 use bfs_core::{Particle, ParticleType};
 use serde::{Deserialize, Serialize};
-use smallvec::{smallvec, SmallVec};
+use smallvec::SmallVec;
 use std::iter;
 use std::slice::Iter;
 
@@ -319,8 +319,7 @@ impl MovementPriority {
     ) -> Result<(), String> {
         if let Some(group) = self.neighbor_groups.get_mut(group_index) {
             if index1 < group.len() && index2 < group.len() {
-                group.swap(index1, index2);
-                Ok(())
+                return group.swap(index1, index2)
             } else {
                 Err("Inner indices out of bounds".to_string())
             }

@@ -2,7 +2,6 @@
 use bevy::prelude::*;
 use bfs_core::ParticleType;
 use serde::{Deserialize, Serialize};
-use smallvec::{smallvec, SmallVec};
 
 use super::{MovementPriority, MovementPriorityBlueprint};
 
