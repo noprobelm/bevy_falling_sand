@@ -7,7 +7,7 @@ use bevy::{
 use bevy_egui::EguiContexts;
 use bevy_falling_sand::core::{ChunkMap, Particle, ParticleSimulationSet, RemoveParticleEvent};
 
-use super::{update_cursor_coordinates, AppState, CursorCoords, SelectedParticle};
+use super::{update_cursor_coordinates, AppState, CursorCoords, SelectedBrushParticle};
 
 /// Brush plugin.
 pub(super) struct BrushPlugin;
@@ -132,7 +132,7 @@ impl BrushType {
         commands: &mut Commands,
         coords: Res<CursorCoords>,
         brush_size: f32,
-        selected_particle: Particle,
+        selected_brush_particle: Particle,
     ) {
         let coords = coords.clone();
         let radius = brush_size;
@@ -140,7 +140,7 @@ impl BrushType {
 
         match self {
             BrushType::Line => {
-                let particle = selected_particle.clone();
+                let particle = selected_brush_particle.clone();
                 let min_x = -(brush_size as i32) / 2;
                 let max_x = (brush_size / 2.0) as i32;
 
@@ -156,7 +156,7 @@ impl BrushType {
                 }));
             }
             BrushType::Circle => {
-                let particle = selected_particle.clone();
+                let particle = selected_brush_particle.clone();
 
                 if (coords.previous - coords.previous_previous).length() < 1.0 {
                     spawn_circle(commands, particle.clone(), coords.previous, radius);
@@ -249,13 +249,13 @@ fn sample_hovered(
     cursor_coords: Res<CursorCoords>,
     chunk_map: Res<ChunkMap>,
     particle_query: Query<&Particle>,
-    mut selected_particle: ResMut<SelectedParticle>,
+    mut selected_brush_particle: ResMut<SelectedBrushParticle>,
     mut brush_state: ResMut<NextState<BrushState>>,
 ) {
     if mouse_buttons.just_pressed(MouseButton::Middle) {
         if let Some(entity) = chunk_map.entity(&cursor_coords.current.as_ivec2()) {
             let particle = particle_query.get(*entity).unwrap();
-            selected_particle.0 = particle.name.clone();
+            selected_brush_particle.0 = particle.name.clone();
             brush_state.set(BrushState::Spawn);
         }
     }
@@ -306,7 +306,7 @@ fn points_within_capsule(capsule: &Capsule2d, start: Vec2, end: Vec2) -> Vec<IVe
 pub fn spawn_particles(
     mut commands: Commands,
     cursor_coords: Res<CursorCoords>,
-    selected: Res<SelectedParticle>,
+    selected: Res<SelectedBrushParticle>,
     brush_type: Res<State<BrushType>>,
     brush_query: Query<&Brush>,
 ) {

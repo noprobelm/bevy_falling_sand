@@ -9,7 +9,7 @@ use bevy::{
     utils::{Duration, Entry, HashMap},
     window::PrimaryWindow,
 };
-use bevy_egui::{EguiContext, EguiContexts};
+use bevy_egui::EguiContexts;
 use bfs_internal::{
     reactions::{BurnsBlueprint, Fire, FireBlueprint, Reacting},
     ParticleBundle,
@@ -43,7 +43,7 @@ impl bevy::prelude::Plugin for UIPlugin {
             .init_resource::<CursorCoords>()
             .init_resource::<ParticleList>()
             .init_resource::<ParticleTypeList>()
-            .init_resource::<SelectedParticle>()
+            .init_resource::<SelectedBrushParticle>()
             .init_resource::<ParticleEditorSelectedType>()
             .init_resource::<ParticleEditorName>()
             .init_resource::<ParticleEditorDensity>()
@@ -152,11 +152,11 @@ impl ParticleList {
 
 /// The currently selected particle for spawning.
 #[derive(Resource)]
-pub struct SelectedParticle(pub String);
+pub struct SelectedBrushParticle(pub String);
 
-impl Default for SelectedParticle {
-    fn default() -> SelectedParticle {
-        SelectedParticle("Dirt Wall".to_string())
+impl Default for SelectedBrushParticle {
+    fn default() -> SelectedBrushParticle {
+        SelectedBrushParticle("Dirt Wall".to_string())
     }
 }
 
@@ -169,7 +169,7 @@ impl ParticleControlUI {
         &self,
         ui: &mut egui::Ui,
         particle_type_list: &Res<ParticleTypeList>,
-        selected_particle: &mut ResMut<SelectedParticle>,
+        selected_brush_particle: &mut ResMut<SelectedBrushParticle>,
         brush_state: &mut ResMut<NextState<BrushState>>,
         commands: &mut Commands,
     ) {
@@ -186,7 +186,7 @@ impl ParticleControlUI {
                             particles.iter().for_each(|particle_name| {
                                 // Create a button for each particle name
                                 if ui.button(particle_name).clicked() {
-                                    selected_particle.0 = particle_name.clone();
+                                    selected_brush_particle.0 = particle_name.clone();
                                     brush_state.set(BrushState::Spawn);
                                 }
                             });
@@ -400,7 +400,7 @@ pub fn render_ui(
         Option<Res<DebugParticleCount>>,
         Res<TotalParticleCount>,
     ),
-    (mut selected_particle, particle_type_list): (ResMut<SelectedParticle>, Res<ParticleTypeList>),
+    (mut selected_brush_particle, particle_type_list): (ResMut<SelectedBrushParticle>, Res<ParticleTypeList>),
     (mut scene_selection_dialog, mut scene_path, mut ev_save_scene, mut ev_load_scene): (
         ResMut<SceneSelectionDialog>,
         ResMut<ParticleSceneFilePath>,
@@ -434,7 +434,7 @@ pub fn render_ui(
             ParticleControlUI.render(
                 ui,
                 &particle_type_list,
-                &mut selected_particle,
+                &mut selected_brush_particle,
                 &mut brush_state,
                 &mut commands,
             );
@@ -636,7 +636,7 @@ pub fn render_search_bar_ui(
     mut contexts: EguiContexts,
     mut particle_search_bar: ResMut<ParticleSearchBar>,
     mut commands: Commands,
-    mut selected_particle: ResMut<SelectedParticle>,
+    mut selected_particle: ResMut<SelectedBrushParticle>,
     mut brush_state: ResMut<NextState<BrushState>>,
     keys: Res<ButtonInput<KeyCode>>,
 ) {
@@ -809,12 +809,12 @@ pub fn render_particle_editor(
     particle_list: Res<ParticleList>,
     current_particle_category_field: Res<State<ParticleEditorCategoryState>>,
     mut next_particle_category_field: ResMut<NextState<ParticleEditorCategoryState>>,
-    mut selected_particle: ResMut<SelectedParticle>,
-    mut particle_selected_field: ResMut<ParticleEditorSelectedType>,
+    mut selected_brush_particle: ResMut<SelectedBrushParticle>,
+    mut particle_editor_selected_field: ResMut<ParticleEditorSelectedType>,
     mut particle_density_field: ResMut<ParticleEditorDensity>,
-    mut particle_max_velocity_field: ResMut<ParticleEditorMaxVelocity>,
+    mut particle_editor_max_velocity_field: ResMut<ParticleEditorMaxVelocity>,
     mut particle_momentum_field: ResMut<ParticleEditorMomentum>,
-    mut particle_colors_field: ResMut<ParticleEditorColors>,
+    mut particle_editor_colors_field: ResMut<ParticleEditorColors>,
     mut particle_editor_movement_priority_field: ResMut<ParticleEditorMovementPriority>,
     mut particle_editor_burns_field: ResMut<ParticleEditorBurns>,
     mut particle_editor_fire_field: ResMut<ParticleEditorFire>,
@@ -845,8 +845,8 @@ pub fn render_particle_editor(
                                     .show(ui, |ui| {
                                         for particle_name in particles {
                                             if ui.button(particle_name).clicked() {
-                                                selected_particle.0 = particle_name.clone();
-                                                particle_selected_field.0 =
+                                                selected_brush_particle.0 = particle_name.clone();
+                                                particle_editor_selected_field.0 =
                                                     ParticleType::new(particle_name.as_str());
                                                 ev_particle_editor_update
                                                     .send(ParticleEditorUpdate);
@@ -869,7 +869,7 @@ pub fn render_particle_editor(
                         ui.horizontal(|ui| {
                             ui.vertical(|ui| {
                                 ui.horizontal(|ui| {
-                                    ui.text_edit_singleline(&mut particle_selected_field.0.name);
+                                    ui.text_edit_singleline(&mut particle_editor_selected_field.0.name);
                                 });
                                 render_state_field(
                                     ui,
@@ -879,16 +879,16 @@ pub fn render_particle_editor(
                                 match current_particle_category_field.get() {
                                     ParticleEditorCategoryState::Wall => {
                                         ui.separator();
-                                        render_colors_field(ui, &mut particle_colors_field);
+                                        render_colors_field(ui, &mut particle_editor_colors_field);
                                     }
                                     ParticleEditorCategoryState::Solid => {
                                         ui.separator();
-                                        render_colors_field(ui, &mut particle_colors_field);
+                                        render_colors_field(ui, &mut particle_editor_colors_field);
                                         ui.separator();
                                         render_density_field(ui, &mut particle_density_field);
                                         render_max_velocity_field(
                                             ui,
-                                            &mut particle_max_velocity_field,
+                                            &mut particle_editor_max_velocity_field,
                                         );
                                         render_burns_field(
                                             ui,
@@ -900,12 +900,12 @@ pub fn render_particle_editor(
                                     }
                                     ParticleEditorCategoryState::MovableSolid => {
                                         ui.separator();
-                                        render_colors_field(ui, &mut particle_colors_field);
+                                        render_colors_field(ui, &mut particle_editor_colors_field);
                                         ui.separator();
                                         render_density_field(ui, &mut particle_density_field);
                                         render_max_velocity_field(
                                             ui,
-                                            &mut particle_max_velocity_field,
+                                            &mut particle_editor_max_velocity_field,
                                         );
                                         render_momentum_field(ui, &mut particle_momentum_field);
                                         render_burns_field(
@@ -918,7 +918,7 @@ pub fn render_particle_editor(
                                     }
                                     ParticleEditorCategoryState::Liquid => {
                                         ui.separator();
-                                        render_colors_field(ui, &mut particle_colors_field);
+                                        render_colors_field(ui, &mut particle_editor_colors_field);
                                         ui.separator();
                                         render_fluidity_field(
                                             ui,
@@ -929,7 +929,7 @@ pub fn render_particle_editor(
                                         render_density_field(ui, &mut particle_density_field);
                                         render_max_velocity_field(
                                             ui,
-                                            &mut particle_max_velocity_field,
+                                            &mut particle_editor_max_velocity_field,
                                         );
                                         render_momentum_field(ui, &mut particle_momentum_field);
                                         render_burns_field(
@@ -942,7 +942,7 @@ pub fn render_particle_editor(
                                     }
                                     ParticleEditorCategoryState::Gas => {
                                         ui.separator();
-                                        render_colors_field(ui, &mut particle_colors_field);
+                                        render_colors_field(ui, &mut particle_editor_colors_field);
                                         ui.separator();
                                         render_fluidity_field(
                                             ui,
@@ -953,7 +953,7 @@ pub fn render_particle_editor(
                                         render_density_field(ui, &mut particle_density_field);
                                         render_max_velocity_field(
                                             ui,
-                                            &mut particle_max_velocity_field,
+                                            &mut particle_editor_max_velocity_field,
                                         );
                                         render_momentum_field(ui, &mut particle_momentum_field);
                                         render_burns_field(
@@ -966,12 +966,12 @@ pub fn render_particle_editor(
                                     }
                                     ParticleEditorCategoryState::Other => {
                                         ui.separator();
-                                        render_colors_field(ui, &mut particle_colors_field);
+                                        render_colors_field(ui, &mut particle_editor_colors_field);
                                         ui.separator();
                                         render_density_field(ui, &mut particle_density_field);
                                         render_max_velocity_field(
                                             ui,
-                                            &mut particle_max_velocity_field,
+                                            &mut particle_editor_max_velocity_field,
                                         );
                                         render_momentum_field(ui, &mut particle_momentum_field);
                                         ui.separator();
@@ -2039,9 +2039,9 @@ fn particle_editor_save(
         }
         if let Ok(children) = particle_type_query.get(entity) {
             if let Some(children) = children {
-                children.iter().for_each(|child| {
-                    commands.trigger(ResetParticleEvent{entity: *child})
-                });
+                children
+                    .iter()
+                    .for_each(|child| commands.trigger(ResetParticleEvent { entity: *child }));
             }
         }
     })
@@ -2067,13 +2067,11 @@ impl Default for ParticleEditorSelectedType {
 
 #[derive(Default, Resource, Clone)]
 pub struct ParticleEditorDensity {
-    enable: bool,
     blueprint: DensityBlueprint,
 }
 
 #[derive(Default, Resource, Clone)]
 pub struct ParticleEditorMaxVelocity {
-    enable: bool,
     blueprint: VelocityBlueprint,
 }
 
@@ -2085,14 +2083,12 @@ pub struct ParticleEditorMomentum {
 
 #[derive(Resource, Clone, Debug)]
 pub struct ParticleEditorColors {
-    enable: bool,
     blueprint: ParticleColorBlueprint,
 }
 
 impl Default for ParticleEditorColors {
     fn default() -> Self {
         ParticleEditorColors {
-            enable: true,
             blueprint: ParticleColorBlueprint(ParticleColor::new(
                 Color::srgba_u8(255, 255, 255, 255),
                 vec![Color::srgba_u8(255, 255, 255, 255)],
@@ -2127,14 +2123,12 @@ impl ParticleEditorCategoryState {
 
 #[derive(Resource, Clone, Debug)]
 pub struct ParticleEditorMovementPriority {
-    enable: bool,
     blueprint: MovementPriorityBlueprint,
 }
 
 impl Default for ParticleEditorMovementPriority {
     fn default() -> Self {
         ParticleEditorMovementPriority {
-            enable: true,
             blueprint: MovementPriorityBlueprint(MovementPriority::empty()),
         }
     }
@@ -2158,30 +2152,25 @@ pub struct ParticleEditorFire {
 
 #[derive(Resource, Clone, Default, Debug)]
 pub struct ParticleEditorWall {
-    enable: bool,
     blueprint: WallBlueprint,
 }
 
 #[derive(Resource, Clone, Default, Debug)]
 pub struct ParticleEditorSolid {
-    enable: bool,
     blueprint: SolidBlueprint,
 }
 
 #[derive(Resource, Clone, Default, Debug)]
 pub struct ParticleEditorMovableSolid {
-    enable: bool,
     blueprint: MovableSolidBlueprint,
 }
 
 #[derive(Resource, Clone, Default, Debug)]
 pub struct ParticleEditorLiquid {
-    enable: bool,
     blueprint: LiquidBlueprint,
 }
 
 #[derive(Resource, Clone, Default, Debug)]
 pub struct ParticleEditorGas {
-    enable: bool,
     blueprint: GasBlueprint,
 }
