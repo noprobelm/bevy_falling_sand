@@ -10,7 +10,10 @@ use bevy::{
     window::PrimaryWindow,
 };
 use bevy_egui::{EguiContext, EguiContexts};
-use bfs_internal::{reactions::{BurnsBlueprint, Fire, FireBlueprint, Reacting}, ParticleBundle};
+use bfs_internal::{
+    reactions::{BurnsBlueprint, Fire, FireBlueprint, Reacting},
+    ParticleBundle,
+};
 use egui::Color32;
 
 use bevy_falling_sand::color::*;
@@ -806,6 +809,7 @@ pub fn render_particle_editor(
     particle_list: Res<ParticleList>,
     current_particle_category_field: Res<State<ParticleEditorCategoryState>>,
     mut next_particle_category_field: ResMut<NextState<ParticleEditorCategoryState>>,
+    mut selected_particle: ResMut<SelectedParticle>,
     mut particle_selected_field: ResMut<ParticleEditorSelectedType>,
     mut particle_density_field: ResMut<ParticleEditorDensity>,
     mut particle_max_velocity_field: ResMut<ParticleEditorMaxVelocity>,
@@ -841,6 +845,7 @@ pub fn render_particle_editor(
                                     .show(ui, |ui| {
                                         for particle_name in particles {
                                             if ui.button(particle_name).clicked() {
+                                                selected_particle.0 = particle_name.clone();
                                                 particle_selected_field.0 =
                                                     ParticleType::new(particle_name.as_str());
                                                 ev_particle_editor_update
@@ -1867,23 +1872,41 @@ pub fn render_fluidity_field(
     });
 }
 
-pub fn particle_editor_save(
+fn particle_editor_save(
     (mut commands, mut ev_particle_editor_save): (Commands, EventReader<ParticleEditorSave>),
     particle_type_map: Res<ParticleTypeMap>,
-    current_particle_category_field: Res<State<ParticleEditorCategoryState>>,
-    particle_selected_field: Res<ParticleEditorSelectedType>,
-    particle_density_field: Res<ParticleEditorDensity>,
-    particle_max_velocity_field: Res<ParticleEditorMaxVelocity>,
-    particle_momentum_field: Res<ParticleEditorMomentum>,
-    particle_colors_field: Res<ParticleEditorColors>,
-    particle_editor_movement_priority_field: Res<ParticleEditorMovementPriority>,
-    particle_editor_burns_field: Res<ParticleEditorBurns>,
-    particle_editor_fire_field: Res<ParticleEditorFire>,
-    particle_editor_wall_field: Res<ParticleEditorWall>,
-    particle_editor_solid_field: Res<ParticleEditorSolid>,
-    particle_editor_movable_solid_field: Res<ParticleEditorMovableSolid>,
-    particle_editor_liquid_field: Res<ParticleEditorLiquid>,
-    particle_editor_gas_field: Res<ParticleEditorGas>,
+    particle_type_query: Query<Option<&Children>, With<ParticleType>>,
+    (
+        current_particle_category_field,
+        particle_selected_field,
+        particle_density_field,
+        particle_max_velocity_field,
+        particle_momentum_field,
+        particle_colors_field,
+        particle_editor_movement_priority_field,
+        particle_editor_burns_field,
+        particle_editor_fire_field,
+        particle_editor_wall_field,
+        particle_editor_solid_field,
+        particle_editor_movable_solid_field,
+        particle_editor_liquid_field,
+        particle_editor_gas_field,
+    ): (
+        Res<State<ParticleEditorCategoryState>>,
+        Res<ParticleEditorSelectedType>,
+        Res<ParticleEditorDensity>,
+        Res<ParticleEditorMaxVelocity>,
+        Res<ParticleEditorMomentum>,
+        Res<ParticleEditorColors>,
+        Res<ParticleEditorMovementPriority>,
+        Res<ParticleEditorBurns>,
+        Res<ParticleEditorFire>,
+        Res<ParticleEditorWall>,
+        Res<ParticleEditorSolid>,
+        Res<ParticleEditorMovableSolid>,
+        Res<ParticleEditorLiquid>,
+        Res<ParticleEditorGas>,
+    ),
 ) {
     ev_particle_editor_save.read().for_each(|_| {
         let entity = particle_type_map
@@ -2014,7 +2037,13 @@ pub fn particle_editor_save(
                 }
             }
         }
-        commands.entity(entity).log_components();
+        if let Ok(children) = particle_type_query.get(entity) {
+            if let Some(children) = children {
+                children.iter().for_each(|child| {
+                    commands.trigger(ResetParticleEvent{entity: *child})
+                });
+            }
+        }
     })
 }
 
