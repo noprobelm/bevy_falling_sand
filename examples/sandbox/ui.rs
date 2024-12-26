@@ -9,12 +9,11 @@ use bevy::{
     utils::{Duration, Entry, HashMap},
     window::PrimaryWindow,
 };
-use bevy_egui::EguiContexts;
+use bevy_egui::{egui, egui::Color32, EguiContexts};
 use bfs_internal::{
     reactions::{BurnsBlueprint, Fire, FireBlueprint, Reacting},
     ParticleBundle,
 };
-use egui::Color32;
 
 use bevy_falling_sand::color::*;
 use bevy_falling_sand::core::*;
@@ -651,6 +650,10 @@ pub fn render_search_bar_ui(
         .collapsible(false)
         .resizable(false)
         .show(ctx, |ui| {
+            // ui.add(
+            //     egui::TextEdit::singleline(&mut particle_search_bar.input)
+            //         .background_color(Color32::from_rgb(255., 255., 255.)),
+            // );
             ui.text_edit_singleline(&mut particle_search_bar.input);
 
             let mut new_selected_index = particle_search_bar.selected_index;

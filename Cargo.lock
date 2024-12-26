@@ -643,7 +643,6 @@ dependencies = [
  "bevy-inspector-egui",
  "bevy_egui",
  "bfs_internal",
- "egui",
 ]
 
 [[package]]
