@@ -381,11 +381,11 @@ pub fn setup_custom_particles(mut commands: Commands) {
             ),
         ),
         FlowsColorBlueprint(FlowsColor::new(0.1)),
-        Fire {
+        FireBlueprint(Fire {
             burn_radius: 1.5,
             chance_to_spread: 0.01,
             destroys_on_spread: false,
-        },
+        }),
         BurnsBlueprint(Burns::new(
             Duration::from_secs(1),
             Duration::from_millis(100),

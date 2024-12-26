@@ -28,6 +28,8 @@ use super::*;
 /// UI plugin
 pub(super) struct UIPlugin;
 
+const DEFAULT_SELECTED_PARTICLE: &str = "Dirt Wall";
+
 impl bevy::prelude::Plugin for UIPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
         app.init_state::<AppState>()
@@ -156,7 +158,7 @@ pub struct SelectedBrushParticle(pub String);
 
 impl Default for SelectedBrushParticle {
     fn default() -> SelectedBrushParticle {
-        SelectedBrushParticle("Dirt Wall".to_string())
+        SelectedBrushParticle(DEFAULT_SELECTED_PARTICLE.to_string())
     }
 }
 
@@ -408,11 +410,7 @@ pub fn render_ui(
                 &current_brush_type.get(),
                 &mut next_brush_type,
             );
-            ParticleControlUI.render(
-                ui,
-                &mut brush_state,
-                &mut commands,
-            );
+            ParticleControlUI.render(ui, &mut brush_state, &mut commands);
             DebugUI.render(
                 ui,
                 &debug_hibernating_chunks,
@@ -529,6 +527,7 @@ pub struct ParticleSearchBar {
     pub filtered_results: Vec<String>,
     pub selected_index: Option<usize>,
 }
+
 pub fn handle_search_bar_input(
     keys: Res<ButtonInput<KeyCode>>,
     mut char_input_events: EventReader<KeyboardInput>,
@@ -631,20 +630,23 @@ pub fn render_search_bar_ui(
                 let is_selected = Some(i) == particle_search_bar.selected_index;
 
                 if ui.selectable_label(is_selected, particle).clicked() {
-                    if selected_particle.0 == *particle {
-                        should_close = true;
-                    } else {
-                        new_selected_index = Some(i);
-                        selected_particle.0 = particle.clone();
-                        brush_state.set(BrushState::Spawn);
-                    }
-                }
-
-                if new_selected_index.is_some() && keys.just_pressed(KeyCode::Enter) {
-                    should_close = true;
-                    selected_particle.0 = particle.clone();
                     new_selected_index = Some(i);
-                    brush_state.set(BrushState::Spawn);
+                }
+            }
+
+            if keys.just_pressed(KeyCode::Enter) {
+                if let Some(selected_index) = particle_search_bar.selected_index {
+                    if let Some(selected_particle_name) =
+                        particle_search_bar.filtered_results.get(selected_index)
+                    {
+                        if selected_particle.0 == *selected_particle_name {
+                            should_close = true;
+                        } else {
+                            selected_particle.0 = selected_particle_name.clone();
+                            brush_state.set(BrushState::Spawn);
+                            should_close = true;
+                        }
+                    }
                 }
             }
 
@@ -742,16 +744,37 @@ pub fn update_particle_editor_fields(
                 if let Some(velocity) = velocity {
                     particle_max_velocity_field.blueprint = *velocity;
                 }
-                if let Some(momentum) = momentum {
-                    particle_momentum_field.blueprint = *momentum;
+                if let Some(_) = momentum {
+                    particle_momentum_field.enable = true;
                 }
                 if let Some(colors) = colors {
                     particle_colors_field.blueprint = colors.clone()
                 }
                 if let Some(burns) = burns {
+                    particle_editor_burns_field.enable = true;
+                    particle_editor_burns_field.chance_destroy_enable = burns
+                        .0
+                        .chance_destroy_per_tick
+                        .map(|_| true)
+                        .unwrap_or(false);
+                    particle_editor_burns_field.reaction_enable =
+                        burns.0.reaction.as_ref().map(|_| true).unwrap_or(false);
+                    particle_editor_burns_field.color_enable =
+                        burns.0.color.as_ref().map(|_| true).unwrap_or(false);
+                    particle_editor_burns_field.spreads_enable =
+                        burns.0.spreads.as_ref().map(|_| true).unwrap_or(false);
                     particle_editor_burns_field.blueprint = burns.clone();
+                } else {
+                    (
+                        particle_editor_burns_field.enable,
+                        particle_editor_burns_field.chance_destroy_enable,
+                        particle_editor_burns_field.reaction_enable,
+                        particle_editor_burns_field.color_enable,
+                        particle_editor_burns_field.spreads_enable,
+                    ) = (false, false, false, false, false);
                 }
                 if let Some(fire) = fire {
+                    particle_editor_fire_field.enable = true;
                     particle_editor_fire_field.blueprint = fire.clone();
                 }
                 if let Some(_) = wall {
@@ -870,6 +893,14 @@ pub fn render_particle_editor(
                                     ParticleEditorCategoryState::Wall => {
                                         ui.separator();
                                         render_colors_field(ui, &mut particle_editor_colors_field);
+                                        ui.separator();
+                                        render_burns_field(
+                                            ui,
+                                            &mut particle_editor_burns_field,
+                                            &particle_list,
+                                        );
+                                        ui.separator();
+                                        render_fire_field(ui, &mut particle_editor_fire_field);
                                     }
                                     ParticleEditorCategoryState::Solid => {
                                         ui.separator();
@@ -1940,6 +1971,16 @@ fn particle_editor_save(
                     particle_editor_wall_field.blueprint.clone(),
                     particle_colors_field.blueprint.clone(),
                 ));
+                if particle_editor_burns_field.enable {
+                    commands
+                        .entity(entity)
+                        .insert(particle_editor_burns_field.blueprint.clone());
+                }
+                if particle_editor_fire_field.enable {
+                    commands
+                        .entity(entity)
+                        .insert(particle_editor_fire_field.blueprint.clone());
+                }
             }
             ParticleEditorCategoryState::Solid => {
                 commands.entity(entity).insert((
@@ -2087,7 +2128,7 @@ pub struct ParticleEditorName(pub String);
 
 impl Default for ParticleEditorSelectedType {
     fn default() -> Self {
-        ParticleEditorSelectedType(ParticleType::new("Dirt Wall"))
+        ParticleEditorSelectedType(ParticleType::new(DEFAULT_SELECTED_PARTICLE))
     }
 }
 
@@ -2105,6 +2146,25 @@ pub struct ParticleEditorMaxVelocity {
 pub struct ParticleEditorMomentum {
     enable: bool,
     blueprint: MomentumBlueprint,
+}
+
+fn setup_particle_editor_momentum(
+    mut commands: Commands,
+    momentum_query: Query<&Momentum>,
+    particle_type_map: Res<ParticleTypeMap>,
+) {
+    if let Some(entity) = particle_type_map.get(&DEFAULT_SELECTED_PARTICLE.to_string()) {
+        if let Ok(momentum) = momentum_query.get(*entity) {
+            commands.insert_resource(ParticleEditorMomentum {
+                enable: true,
+                blueprint: MomentumBlueprint::default(),
+            })
+        } else {
+            commands.insert_resource(ParticleEditorMomentum::default())
+        }
+    } else {
+        commands.insert_resource(ParticleEditorMomentum::default())
+    }
 }
 
 #[derive(Resource, Clone, Debug)]
