@@ -49,6 +49,7 @@ impl bevy::prelude::Plugin for UIPlugin {
             .init_resource::<ParticleEditorDensity>()
             .init_resource::<ParticleEditorMomentum>()
             .init_resource::<ParticleEditorColors>()
+            .init_resource::<ParticleEditorFlowsColor>()
             .init_resource::<ParticleEditorMaxVelocity>()
             .init_resource::<ParticleEditorMovementPriority>()
             .init_resource::<ParticleEditorBurns>()
@@ -400,7 +401,10 @@ pub fn render_ui(
         Option<Res<DebugParticleCount>>,
         Res<TotalParticleCount>,
     ),
-    (mut selected_brush_particle, particle_type_list): (ResMut<SelectedBrushParticle>, Res<ParticleTypeList>),
+    (mut selected_brush_particle, particle_type_list): (
+        ResMut<SelectedBrushParticle>,
+        Res<ParticleTypeList>,
+    ),
     (mut scene_selection_dialog, mut scene_path, mut ev_save_scene, mut ev_load_scene): (
         ResMut<SceneSelectionDialog>,
         ResMut<ParticleSceneFilePath>,
@@ -810,17 +814,30 @@ pub fn render_particle_editor(
     current_particle_category_field: Res<State<ParticleEditorCategoryState>>,
     mut next_particle_category_field: ResMut<NextState<ParticleEditorCategoryState>>,
     mut selected_brush_particle: ResMut<SelectedBrushParticle>,
-    mut particle_editor_selected_field: ResMut<ParticleEditorSelectedType>,
-    mut particle_density_field: ResMut<ParticleEditorDensity>,
-    mut particle_editor_max_velocity_field: ResMut<ParticleEditorMaxVelocity>,
-    mut particle_momentum_field: ResMut<ParticleEditorMomentum>,
-    mut particle_editor_colors_field: ResMut<ParticleEditorColors>,
-    mut particle_editor_movement_priority_field: ResMut<ParticleEditorMovementPriority>,
-    mut particle_editor_burns_field: ResMut<ParticleEditorBurns>,
-    mut particle_editor_fire_field: ResMut<ParticleEditorFire>,
-    (mut particle_editor_liquid_field, mut particle_editor_gas_field): (
+    (
+        mut particle_editor_liquid_field,
+        mut particle_editor_gas_field,
+        mut particle_editor_fire_field,
+        mut particle_editor_burns_field,
+        mut particle_editor_movement_priority_field,
+        mut particle_editor_colors_field,
+        mut particle_editor_flows_color_field,
+        mut particle_momentum_field,
+        mut particle_editor_max_velocity_field,
+        mut particle_density_field,
+        mut particle_editor_selected_field,
+    ): (
         ResMut<ParticleEditorLiquid>,
         ResMut<ParticleEditorGas>,
+        ResMut<ParticleEditorFire>,
+        ResMut<ParticleEditorBurns>,
+        ResMut<ParticleEditorMovementPriority>,
+        ResMut<ParticleEditorColors>,
+        ResMut<ParticleEditorFlowsColor>,
+        ResMut<ParticleEditorMomentum>,
+        ResMut<ParticleEditorMaxVelocity>,
+        ResMut<ParticleEditorDensity>,
+        ResMut<ParticleEditorSelectedType>,
     ),
 ) {
     egui::Window::new("Particle Editor") // Title of the window
@@ -869,7 +886,9 @@ pub fn render_particle_editor(
                         ui.horizontal(|ui| {
                             ui.vertical(|ui| {
                                 ui.horizontal(|ui| {
-                                    ui.text_edit_singleline(&mut particle_editor_selected_field.0.name);
+                                    ui.text_edit_singleline(
+                                        &mut particle_editor_selected_field.0.name,
+                                    );
                                 });
                                 render_state_field(
                                     ui,
@@ -925,6 +944,10 @@ pub fn render_particle_editor(
                                             &mut particle_editor_liquid_field,
                                             &mut particle_editor_gas_field,
                                             &current_particle_category_field,
+                                        );
+                                        render_flows_color_field(
+                                            ui,
+                                            &mut particle_editor_flows_color_field,
                                         );
                                         render_density_field(ui, &mut particle_density_field);
                                         render_max_velocity_field(
@@ -1200,6 +1223,25 @@ fn render_colors_field(
     }
     if let Some((to_change, color)) = to_change {
         particle_colors_field.blueprint.0.palette[to_change] = color;
+    }
+}
+
+fn render_flows_color_field(
+    ui: &mut egui::Ui,
+    particle_flows_color_field: &mut ResMut<ParticleEditorFlowsColor>,
+) {
+    ui.add(egui::Checkbox::new(
+        &mut particle_flows_color_field.enable,
+        "Flows Color",
+    ));
+    if particle_flows_color_field.enable {
+        ui.horizontal(|ui| {
+            ui.label("Rate: ");
+            ui.add(egui::Slider::new(
+                &mut particle_flows_color_field.blueprint.0.rate,
+                0.0..=1.0,
+            ));
+        });
     }
 }
 
@@ -1883,6 +1925,7 @@ fn particle_editor_save(
         particle_max_velocity_field,
         particle_momentum_field,
         particle_colors_field,
+        particle_editor_flows_color_field,
         particle_editor_movement_priority_field,
         particle_editor_burns_field,
         particle_editor_fire_field,
@@ -1898,6 +1941,7 @@ fn particle_editor_save(
         Res<ParticleEditorMaxVelocity>,
         Res<ParticleEditorMomentum>,
         Res<ParticleEditorColors>,
+        Res<ParticleEditorFlowsColor>,
         Res<ParticleEditorMovementPriority>,
         Res<ParticleEditorBurns>,
         Res<ParticleEditorFire>,
@@ -1974,6 +2018,11 @@ fn particle_editor_save(
                     particle_density_field.blueprint,
                     particle_max_velocity_field.blueprint,
                 ));
+                if particle_editor_flows_color_field.enable {
+                    commands
+                        .entity(entity)
+                        .insert(particle_editor_flows_color_field.blueprint);
+                }
                 if particle_momentum_field.enable {
                     commands
                         .entity(entity)
@@ -1997,6 +2046,12 @@ fn particle_editor_save(
                     particle_density_field.blueprint,
                     particle_max_velocity_field.blueprint,
                 ));
+                if particle_editor_flows_color_field.enable {
+                    commands
+                        .entity(entity)
+                        .insert(particle_editor_flows_color_field.blueprint);
+                }
+
                 if particle_momentum_field.enable {
                     commands
                         .entity(entity)
@@ -2093,6 +2148,21 @@ impl Default for ParticleEditorColors {
                 Color::srgba_u8(255, 255, 255, 255),
                 vec![Color::srgba_u8(255, 255, 255, 255)],
             )),
+        }
+    }
+}
+
+#[derive(Resource, Clone, Debug)]
+pub struct ParticleEditorFlowsColor {
+    enable: bool,
+    blueprint: FlowsColorBlueprint,
+}
+
+impl Default for ParticleEditorFlowsColor {
+    fn default() -> Self {
+        ParticleEditorFlowsColor {
+            enable: true,
+            blueprint: FlowsColorBlueprint(FlowsColor::new(0.1)),
         }
     }
 }
