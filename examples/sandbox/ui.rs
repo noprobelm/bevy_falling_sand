@@ -11,7 +11,7 @@ use bevy::{
 };
 use bevy_egui::{egui, egui::Color32, EguiContexts};
 use bfs_internal::{
-    reactions::{BurnsBlueprint, Fire, FireBlueprint, Reacting},
+    reactions::{BurnsBlueprint, Fire, Reacting},
     ParticleBundle,
 };
 
@@ -54,7 +54,6 @@ impl bevy::prelude::Plugin for UIPlugin {
             .init_resource::<ParticleEditorMaxVelocity>()
             .init_resource::<ParticleEditorMovementPriority>()
             .init_resource::<ParticleEditorBurns>()
-            .init_resource::<ParticleEditorFire>()
             .init_resource::<ParticleEditorWall>()
             .init_resource::<ParticleEditorSolid>()
             .init_resource::<ParticleEditorMovableSolid>()
@@ -702,7 +701,6 @@ pub fn update_particle_editor_fields(
             Option<&MomentumBlueprint>,
             Option<&ParticleColorBlueprint>,
             Option<&BurnsBlueprint>,
-            Option<&FireBlueprint>,
             Option<&WallBlueprint>,
             Option<&LiquidBlueprint>,
             Option<&SolidBlueprint>,
@@ -716,7 +714,6 @@ pub fn update_particle_editor_fields(
     mut particle_momentum_field: ResMut<ParticleEditorMomentum>,
     mut particle_colors_field: ResMut<ParticleEditorColors>,
     mut particle_editor_burns_field: ResMut<ParticleEditorBurns>,
-    mut particle_editor_fire_field: ResMut<ParticleEditorFire>,
     mut next_particle_category_field: ResMut<NextState<ParticleEditorCategoryState>>,
 ) {
     ev_particle_editor_update.read().for_each(|_| {
@@ -727,7 +724,6 @@ pub fn update_particle_editor_fields(
                 momentum,
                 colors,
                 burns,
-                fire,
                 wall,
                 liquid,
                 solid,
@@ -773,10 +769,6 @@ pub fn update_particle_editor_fields(
                         particle_editor_burns_field.spreads_enable,
                     ) = (false, false, false, false, false);
                 }
-                if let Some(fire) = fire {
-                    particle_editor_fire_field.enable = true;
-                    particle_editor_fire_field.blueprint = fire.clone();
-                }
                 if let Some(_) = wall {
                     next_particle_category_field.set(ParticleEditorCategoryState::Wall)
                 }
@@ -811,7 +803,6 @@ pub fn render_particle_editor(
     (
         mut particle_editor_liquid_field,
         mut particle_editor_gas_field,
-        mut particle_editor_fire_field,
         mut particle_editor_burns_field,
         mut particle_editor_movement_priority_field,
         mut particle_editor_colors_field,
@@ -823,7 +814,6 @@ pub fn render_particle_editor(
     ): (
         ResMut<ParticleEditorLiquid>,
         ResMut<ParticleEditorGas>,
-        ResMut<ParticleEditorFire>,
         ResMut<ParticleEditorBurns>,
         ResMut<ParticleEditorMovementPriority>,
         ResMut<ParticleEditorColors>,
@@ -900,7 +890,6 @@ pub fn render_particle_editor(
                                             &particle_list,
                                         );
                                         ui.separator();
-                                        render_fire_field(ui, &mut particle_editor_fire_field);
                                     }
                                     ParticleEditorCategoryState::Solid => {
                                         ui.separator();
@@ -917,7 +906,6 @@ pub fn render_particle_editor(
                                             &particle_list,
                                         );
                                         ui.separator();
-                                        render_fire_field(ui, &mut particle_editor_fire_field);
                                     }
                                     ParticleEditorCategoryState::MovableSolid => {
                                         ui.separator();
@@ -935,7 +923,6 @@ pub fn render_particle_editor(
                                             &particle_list,
                                         );
                                         ui.separator();
-                                        render_fire_field(ui, &mut particle_editor_fire_field);
                                     }
                                     ParticleEditorCategoryState::Liquid => {
                                         ui.separator();
@@ -963,7 +950,6 @@ pub fn render_particle_editor(
                                             &particle_list,
                                         );
                                         ui.separator();
-                                        render_fire_field(ui, &mut particle_editor_fire_field);
                                     }
                                     ParticleEditorCategoryState::Gas => {
                                         ui.separator();
@@ -986,7 +972,6 @@ pub fn render_particle_editor(
                                             &particle_list,
                                         );
                                         ui.separator();
-                                        render_fire_field(ui, &mut particle_editor_fire_field);
                                     }
                                     ParticleEditorCategoryState::Other => {
                                         ui.separator();
@@ -1010,7 +995,6 @@ pub fn render_particle_editor(
                                             &particle_list,
                                         );
                                         ui.separator();
-                                        render_fire_field(ui, &mut particle_editor_fire_field);
                                     }
                                 }
                             });
@@ -1283,9 +1267,7 @@ fn render_movement_priority_field(
     }
     if let Some((i, j1, j2)) = inner_to_swap {
         if let Some(group) = particle_movement_priority_field.blueprint.0.get_mut(i) {
-            group
-                .swap(j1, j2)
-                .unwrap_or_else(|err| error!("{}", err));
+            group.swap(j1, j2).unwrap_or_else(|err| error!("{}", err));
         }
     }
     if let Some((i, j)) = outer_to_swap {
@@ -1544,176 +1526,78 @@ fn render_burns_field(
                     });
             });
             ui.horizontal(|ui| {
-                ui.label("Tick Rate (ms): ");
-                let edit_tick_rate = ui.add(
-                    egui::TextEdit::singleline(&mut particle_burns_field.tick_rate_str)
-                        .desired_width(40.),
-                );
-                if edit_tick_rate.lost_focus() {
-                    if let Ok(new_duration) = particle_burns_field.tick_rate_str.parse::<u64>() {
-                        particle_burns_field.blueprint.0.tick_rate =
-                            Duration::from_millis(new_duration);
-                        particle_burns_field.tick_rate_str = particle_burns_field
-                            .blueprint
-                            .0
-                            .duration
-                            .as_millis()
-                            .to_string();
-                    } else {
-                        particle_burns_field.blueprint.0.tick_rate = Duration::from_millis(0);
-                        particle_burns_field.tick_rate_str = particle_burns_field
-                            .blueprint
-                            .0
-                            .duration
-                            .as_millis()
-                            .to_string();
-                    }
-                }
+                ui.label("Chance to produce (per tick)");
+                ui.add(egui::Slider::new(
+                    &mut particle_burns_field
+                        .blueprint
+                        .0
+                        .reaction
+                        .as_mut()
+                        .unwrap()
+                        .chance_to_produce,
+                    0.0..=1.0,
+                ));
             });
-
-            if ui
-                .add(egui::Checkbox::new(
-                    &mut particle_burns_field.spreads_enable,
-                    "Fire Spreads",
-                ))
-                .clicked()
-            {
-                if particle_burns_field.spreads_enable {
-                    particle_burns_field.blueprint.0.spreads = Some(Fire {
-                        burn_radius: 2.,
-                        chance_to_spread: 0.01,
-                        destroys_on_spread: false,
-                    });
-                } else {
-                    particle_burns_field.blueprint.0.spreads = None;
-                }
-            }
+        }
+        if ui
+            .add(egui::Checkbox::new(
+                &mut particle_burns_field.spreads_enable,
+                "Fire Spreads",
+            ))
+            .clicked()
+        {
             if particle_burns_field.spreads_enable {
-                ui.horizontal(|ui| {
-                    ui.label("Burn Radius");
-                    ui.add(egui::Slider::new(
-                        &mut particle_burns_field
-                            .blueprint
-                            .0
-                            .spreads
-                            .as_mut()
-                            .unwrap()
-                            .burn_radius,
-                        1.0..=100.0,
-                    ));
+                particle_burns_field.blueprint.0.spreads = Some(Fire {
+                    burn_radius: 2.,
+                    chance_to_spread: 0.01,
+                    destroys_on_spread: false,
                 });
-                ui.horizontal(|ui| {
-                    ui.label("Chance to spread");
-                    ui.add(egui::Slider::new(
-                        &mut particle_burns_field
-                            .blueprint
-                            .0
-                            .spreads
-                            .as_mut()
-                            .unwrap()
-                            .chance_to_spread,
-                        0.0..=1.0,
-                    ));
-                });
-                ui.horizontal(|ui| {
-                    if ui
-                        .add(egui::Checkbox::new(
-                            &mut particle_burns_field
-                                .blueprint
-                                .0
-                                .spreads
-                                .as_mut()
-                                .unwrap()
-                                .destroys_on_spread,
-                            "Destroys on spread",
-                        ))
-                        .clicked()
-                    {
-                        if particle_burns_field
-                            .blueprint
-                            .0
-                            .spreads
-                            .as_mut()
-                            .unwrap()
-                            .destroys_on_spread
-                        {
-                            particle_burns_field
-                                .blueprint
-                                .0
-                                .spreads
-                                .as_mut()
-                                .unwrap()
-                                .destroys_on_spread = true;
-                        } else {
-                            particle_burns_field
-                                .blueprint
-                                .0
-                                .spreads
-                                .as_mut()
-                                .unwrap()
-                                .destroys_on_spread = false;
-                        }
-                    }
-                });
+            } else {
+                particle_burns_field.blueprint.0.spreads = None;
             }
         }
-    }
-}
-
-fn render_fire_field(ui: &mut egui::Ui, particle_fire_field: &mut ResMut<ParticleEditorFire>) {
-    ui.add(egui::Checkbox::new(
-        &mut particle_fire_field.enable,
-        "Fire Spreads",
-    ));
-    if particle_fire_field.enable {
-        ui.horizontal(|ui| {
-            ui.label("Burn Radius");
-            let edit_burn_radius = ui.add(
-                egui::TextEdit::singleline(&mut particle_fire_field.burn_radius_str)
-                    .desired_width(40.),
-            );
-            if edit_burn_radius.lost_focus() {
-                if let Ok(new_duration) = particle_fire_field.burn_radius_str.parse::<f32>() {
-                    particle_fire_field.blueprint.0.burn_radius = new_duration;
-                    particle_fire_field.burn_radius_str =
-                        particle_fire_field.blueprint.0.burn_radius.to_string();
-                } else {
-                    particle_fire_field.blueprint.0.burn_radius = 2.0;
-                    particle_fire_field.burn_radius_str =
-                        particle_fire_field.blueprint.0.burn_radius.to_string();
-                }
-            }
-        });
-
-        ui.horizontal(|ui| {
-            ui.label("Chance to spread");
-            let mut chance_to_spread_str =
-                particle_fire_field.blueprint.0.chance_to_spread.to_string();
-            let edit_chance_to_spread =
-                ui.add(egui::TextEdit::singleline(&mut chance_to_spread_str).desired_width(40.));
-            if edit_chance_to_spread.changed() {
-                if let Ok(new_chance) = chance_to_spread_str.parse::<f64>() {
-                    particle_fire_field.blueprint.0.chance_to_spread = new_chance;
-                } else {
-                    particle_fire_field.blueprint.0.chance_to_spread = 0.01;
-                }
-            }
-        });
-        ui.horizontal(|ui| {
-            if ui
-                .add(egui::Checkbox::new(
-                    &mut particle_fire_field.blueprint.0.destroys_on_spread,
-                    "Destroys on spread",
-                ))
-                .clicked()
-            {
-                if particle_fire_field.blueprint.0.destroys_on_spread {
-                    particle_fire_field.blueprint.0.destroys_on_spread = true;
-                } else {
-                    particle_fire_field.blueprint.0.destroys_on_spread = false;
-                }
-            }
-        });
+        if particle_burns_field.spreads_enable {
+            ui.horizontal(|ui| {
+                ui.label("Burn Radius");
+                ui.add(egui::Slider::new(
+                    &mut particle_burns_field
+                        .blueprint
+                        .0
+                        .spreads
+                        .as_mut()
+                        .unwrap()
+                        .burn_radius,
+                    1.0..=100.0,
+                ));
+            });
+            ui.horizontal(|ui| {
+                ui.label("Chance to spread");
+                ui.add(egui::Slider::new(
+                    &mut particle_burns_field
+                        .blueprint
+                        .0
+                        .spreads
+                        .as_mut()
+                        .unwrap()
+                        .chance_to_spread,
+                    0.0..=1.0,
+                ));
+            });
+            ui.add(egui::Checkbox::new(
+                &mut particle_burns_field
+                    .blueprint
+                    .0
+                    .spreads
+                    .as_mut()
+                    .unwrap()
+                    .destroys_on_spread,
+                "Destroys on spread",
+            ));
+            ui.add(egui::Checkbox::new(
+                &mut particle_burns_field.spawns_on_fire,
+                "Spawns on fire",
+            ));
+        }
     }
 }
 
@@ -1758,7 +1642,6 @@ fn particle_editor_save(
         particle_editor_flows_color_field,
         particle_editor_movement_priority_field,
         particle_editor_burns_field,
-        particle_editor_fire_field,
         particle_editor_wall_field,
         particle_editor_solid_field,
         particle_editor_movable_solid_field,
@@ -1774,7 +1657,6 @@ fn particle_editor_save(
         Res<ParticleEditorFlowsColor>,
         Res<ParticleEditorMovementPriority>,
         Res<ParticleEditorBurns>,
-        Res<ParticleEditorFire>,
         Res<ParticleEditorWall>,
         Res<ParticleEditorSolid>,
         Res<ParticleEditorMovableSolid>,
@@ -1802,11 +1684,11 @@ fn particle_editor_save(
                     commands
                         .entity(entity)
                         .insert(particle_editor_burns_field.blueprint.clone());
-                }
-                if particle_editor_fire_field.enable {
-                    commands
-                        .entity(entity)
-                        .insert(particle_editor_fire_field.blueprint.clone());
+                    if particle_editor_burns_field.spawns_on_fire {
+                        commands
+                            .entity(entity)
+                            .insert(particle_editor_burns_field.blueprint.0.to_burning());
+                    }
                 }
             }
             ParticleEditorCategoryState::Solid => {
@@ -1820,11 +1702,11 @@ fn particle_editor_save(
                     commands
                         .entity(entity)
                         .insert(particle_editor_burns_field.blueprint.clone());
-                }
-                if particle_editor_fire_field.enable {
-                    commands
-                        .entity(entity)
-                        .insert(particle_editor_fire_field.blueprint.clone());
+                    if particle_editor_burns_field.spawns_on_fire {
+                        commands
+                            .entity(entity)
+                            .insert(particle_editor_burns_field.blueprint.0.to_burning());
+                    }
                 }
             }
             ParticleEditorCategoryState::MovableSolid => {
@@ -1843,11 +1725,11 @@ fn particle_editor_save(
                     commands
                         .entity(entity)
                         .insert(particle_editor_burns_field.blueprint.clone());
-                }
-                if particle_editor_fire_field.enable {
-                    commands
-                        .entity(entity)
-                        .insert(particle_editor_fire_field.blueprint.clone());
+                    if particle_editor_burns_field.spawns_on_fire {
+                        commands
+                            .entity(entity)
+                            .insert(particle_editor_burns_field.blueprint.0.to_burning());
+                    }
                 }
             }
             ParticleEditorCategoryState::Liquid => {
@@ -1871,11 +1753,11 @@ fn particle_editor_save(
                     commands
                         .entity(entity)
                         .insert(particle_editor_burns_field.blueprint.clone());
-                }
-                if particle_editor_fire_field.enable {
-                    commands
-                        .entity(entity)
-                        .insert(particle_editor_fire_field.blueprint.clone());
+                    if particle_editor_burns_field.spawns_on_fire {
+                        commands
+                            .entity(entity)
+                            .insert(particle_editor_burns_field.blueprint.0.to_burning());
+                    }
                 }
             }
             ParticleEditorCategoryState::Gas => {
@@ -1894,11 +1776,11 @@ fn particle_editor_save(
                     commands
                         .entity(entity)
                         .insert(particle_editor_burns_field.blueprint.clone());
-                }
-                if particle_editor_fire_field.enable {
-                    commands
-                        .entity(entity)
-                        .insert(particle_editor_fire_field.blueprint.clone());
+                    if particle_editor_burns_field.spawns_on_fire {
+                        commands
+                            .entity(entity)
+                            .insert(particle_editor_burns_field.blueprint.0.to_burning());
+                    }
                 }
             }
             ParticleEditorCategoryState::Other => {
@@ -1917,11 +1799,11 @@ fn particle_editor_save(
                     commands
                         .entity(entity)
                         .insert(particle_editor_burns_field.blueprint.clone());
-                }
-                if particle_editor_fire_field.enable {
-                    commands
-                        .entity(entity)
-                        .insert(particle_editor_fire_field.blueprint.clone());
+                    if particle_editor_burns_field.spawns_on_fire {
+                        commands
+                            .entity(entity)
+                            .insert(particle_editor_burns_field.blueprint.0.to_burning());
+                    }
                 }
             }
         }
@@ -2046,6 +1928,7 @@ pub struct ParticleEditorBurns {
     reaction_enable: bool,
     color_enable: bool,
     spreads_enable: bool,
+    spawns_on_fire: bool,
     blueprint: BurnsBlueprint,
 }
 
@@ -2061,16 +1944,10 @@ impl Default for ParticleEditorBurns {
             reaction_enable: false,
             color_enable: false,
             spreads_enable: false,
+            spawns_on_fire: false,
             blueprint: BurnsBlueprint::default(),
         }
     }
-}
-
-#[derive(Resource, Clone, Default, Debug)]
-pub struct ParticleEditorFire {
-    enable: bool,
-    burn_radius_str: String,
-    blueprint: FireBlueprint,
 }
 
 #[derive(Resource, Clone, Default, Debug)]

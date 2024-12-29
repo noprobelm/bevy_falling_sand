@@ -3,6 +3,7 @@ use bevy::prelude::*;
 use bfs_color::*;
 use bfs_core::*;
 use bfs_movement::*;
+use bfs_reactions::{BurningBlueprint, BurnsBlueprint};
 use serde::{Deserialize, Serialize};
 
 /// Bundle with all possible particle components (excluding ParticleType). This struct is intended
@@ -21,6 +22,10 @@ pub struct ParticleBundle {
     pub momentum: MomentumBlueprint,
     /// The particle type's movement priority blueprint.
     pub movement_priority: MovementPriorityBlueprint,
+    /// The particle type's burns blueprint
+    pub burns: BurnsBlueprint,
+    /// The particle type's burning blueprint
+    pub burning: BurningBlueprint,
     /// The Wall blueprint
     pub wall: WallBlueprint,
     /// The Solid blueprint
