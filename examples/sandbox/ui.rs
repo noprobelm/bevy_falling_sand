@@ -314,13 +314,13 @@ pub fn update_cursor_coordinates(
 /// Hides the cursor.
 pub fn hide_cursor(mut primary_window: Query<&mut Window, With<PrimaryWindow>>) {
     let window = &mut primary_window.single_mut();
-    window.cursor.visible = false;
+    window.cursor_options.visible = false;
 }
 
 /// Shows the cursor.
 pub fn show_cursor(mut primary_window: Query<&mut Window, With<PrimaryWindow>>) {
     let window = &mut primary_window.single_mut();
-    window.cursor.visible = true;
+    window.cursor_options.visible = true;
 }
 
 /// Updates the app state depending on whether we're focused on the GUI or the canvas.
