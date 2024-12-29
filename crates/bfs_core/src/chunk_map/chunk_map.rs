@@ -23,9 +23,9 @@ impl Plugin for ChunkMapPlugin {
         .add_event::<ClearMapEvent>()
         .add_event::<ClearParticleTypeChildrenEvent>()
         .init_resource::<ChunkMap>()
-        .observe(on_remove_particle)
-        .observe(on_clear_chunk_map)
-        .observe(on_clear_particle_type_children);
+        .add_observer(on_remove_particle)
+        .add_observer(on_clear_chunk_map)
+        .add_observer(on_clear_particle_type_children);
     }
 }
 

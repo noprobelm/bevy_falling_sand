@@ -17,6 +17,6 @@ impl Plugin for ParticlePlugin {
             .register_type::<Coordinates>()
             .register_type::<Particle>()
             .add_event::<ResetParticleEvent>()
-            .observe(on_reset_particle);
+            .add_observer(on_reset_particle);
     }
 }

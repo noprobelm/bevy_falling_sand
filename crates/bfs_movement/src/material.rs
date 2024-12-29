@@ -9,11 +9,11 @@ pub struct MaterialPlugin;
 
 impl Plugin for MaterialPlugin {
     fn build(&self, app: &mut App) {
-        app.observe(on_solid_blueprint_added)
-            .observe(on_movable_solid_blueprint_added)
-            .observe(on_liquid_blueprint_added)
-            .observe(on_wall_added)
-            .observe(on_gas_blueprint_added);
+        app.add_observer(on_solid_blueprint_added)
+            .add_observer(on_movable_solid_blueprint_added)
+            .add_observer(on_liquid_blueprint_added)
+            .add_observer(on_wall_added)
+            .add_observer(on_gas_blueprint_added);
     }
 }
 

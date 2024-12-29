@@ -26,7 +26,7 @@ impl Plugin for ParticleDefinitionsPlugin {
             .register_type::<Particle>()
             .add_event::<ResetParticleEvent>()
             .add_event::<RemoveParticleEvent>()
-            .observe(on_reset_particle);
+            .add_observer(on_reset_particle);
     }
 }
 

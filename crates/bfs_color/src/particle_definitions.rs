@@ -31,9 +31,9 @@ impl Plugin for ParticleDefinitionsPlugin {
         app.add_event::<ResetParticleColorEvent>()
             .add_event::<ResetRandomizesColorEvent>()
             .add_event::<ResetFlowsColorEvent>();
-        app.observe(on_reset_particle_color)
-            .observe(on_reset_flows_color)
-            .observe(on_reset_randomizes_color);
+        app.add_observer(on_reset_particle_color)
+            .add_observer(on_reset_flows_color)
+            .add_observer(on_reset_randomizes_color);
     }
 }
 

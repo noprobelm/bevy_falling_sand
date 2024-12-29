@@ -30,10 +30,10 @@ impl Plugin for ParticleDefinitionsPlugin {
             .register_type::<Velocity>()
             .register_type::<Momentum>()
             .register_type::<MovementPriority>()
-            .observe(on_reset_density)
-            .observe(on_reset_velocity)
-            .observe(on_reset_momentum)
-            .observe(on_reset_movement_priority);
+            .add_observer(on_reset_density)
+            .add_observer(on_reset_velocity)
+            .add_observer(on_reset_momentum)
+            .add_observer(on_reset_movement_priority);
     }
 }
 

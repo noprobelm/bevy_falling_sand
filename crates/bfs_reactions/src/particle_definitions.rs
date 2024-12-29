@@ -28,9 +28,9 @@ impl Plugin for ParticleDefinitionsPlugin {
             .register_type::<Burns>()
             .register_type::<Burning>()
             .register_type::<Reacting>();
-        app.observe(on_reset_fire)
-            .observe(on_reset_burns)
-            .observe(on_reset_burning);
+        app.add_observer(on_reset_fire)
+            .add_observer(on_reset_burns)
+            .add_observer(on_reset_burning);
     }
 }
 
