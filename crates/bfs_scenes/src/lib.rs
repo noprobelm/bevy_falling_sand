@@ -17,11 +17,11 @@ impl Plugin for FallingSandScenesPlugin {
 	app.add_plugins(EventsPlugin);
         app.add_systems(
             Update,
-            save_scene_system.run_if(on_event::<crate::events::SaveSceneEvent>()),
+            save_scene_system.run_if(on_event::<crate::events::SaveSceneEvent>),
         )
         .add_systems(
             Update,
-            load_scene_system.run_if(on_event::<crate::events::LoadSceneEvent>()),
+            load_scene_system.run_if(on_event::<crate::events::LoadSceneEvent>),
         );
     }
 }
