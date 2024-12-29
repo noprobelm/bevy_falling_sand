@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 bfs_core = { path = "../bfs_core" }
-bevy = "0.14.2"
-bevy_turborand = "0.9.0"
+bevy = "0.15.0"
+bevy_turborand = "0.10.0"
 serde = "1.0.210"
 smallvec = "1.13.2"

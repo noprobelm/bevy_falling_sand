@@ -14,11 +14,11 @@ categories = ["game-engines", "game-development"]
 
 [dependencies]
 bfs_internal = { path = "crates/bfs_internal" }
-bevy = { version = "0.14.0", features = ["wayland"] }
+bevy = { version = "0.15", features = ["wayland"] }
 
 [dev-dependencies]
-bevy-inspector-egui = "0.27.0"
-bevy_egui = "0.30"
+bevy-inspector-egui = "0.28"
+bevy_egui = "0.31"
 
 [profile.release]
 lto = true

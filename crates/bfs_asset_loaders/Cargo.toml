@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-bevy = "0.14.2"
+bevy = "0.15"
 serde = "1.0.210"
 thiserror = "1.0.64"
 bfs_core = { path = "../bfs_core" }
