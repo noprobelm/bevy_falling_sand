@@ -57,7 +57,6 @@ pub fn color_dirty_rects(map: Res<ChunkMap>, mut chunk_gizmos: Gizmos<DebugGizmo
         if let Some(dirty_rect) = chunk.prev_dirty_rect() {
             chunk_gizmos.rect_2d(
                 dirty_rect.center().as_vec2(),
-                0.,
                 dirty_rect.size().as_vec2() + Vec2::splat(1.),
                 Color::srgba(1., 1., 1., 1.),
             )
@@ -72,7 +71,6 @@ pub fn color_hibernating_chunks(map: Res<ChunkMap>, mut chunk_gizmos: Gizmos<Deb
         if chunk.hibernating() == true {
             chunk_gizmos.rect_2d(
                 rect.center(),
-                0.,
                 rect.size() + Vec2::splat(1.),
                 Color::srgba(0.67, 0.21, 0.24, 1.),
             );
@@ -84,7 +82,6 @@ pub fn color_hibernating_chunks(map: Res<ChunkMap>, mut chunk_gizmos: Gizmos<Deb
         if chunk.hibernating() == false {
             chunk_gizmos.rect_2d(
                 rect.center(),
-                0.,
                 rect.size() + Vec2::splat(1.),
                 Color::srgba(0.52, 0.80, 0.51, 1.0),
             );
