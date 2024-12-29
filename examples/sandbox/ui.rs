@@ -1151,63 +1151,13 @@ fn render_colors_field(
             srgba.blue * 255.,
             srgba.alpha * 255.,
         );
-        let (mut red_str, mut green_str, mut blue_str, mut alpha_str) = (
-            red.to_string(),
-            green.to_string(),
-            blue.to_string(),
-            alpha.to_string(),
-        );
         let mut color32 =
             Color32::from_rgba_unmultiplied(red as u8, green as u8, blue as u8, alpha as u8);
         ui.horizontal(|ui| {
-            ui.label("R: ");
-            let edit_red = ui.add(egui::TextEdit::singleline(&mut red_str).desired_width(25.));
-            if edit_red.changed() {
-                if let Ok(new_red) = red_str.parse::<u8>() {
-                    to_change = Some((
-                        i,
-                        Color::srgba_u8(new_red as u8, green as u8, blue as u8, alpha as u8),
-                    ))
-                } else if red_str.is_empty() {
-                    to_change = Some((i, Color::srgba_u8(0, green as u8, blue as u8, alpha as u8)))
-                }
-            };
-            ui.label("G: ");
-            let edit_green = ui.add(egui::TextEdit::singleline(&mut green_str).desired_width(25.));
-            if edit_green.changed() {
-                if let Ok(new_green) = green_str.parse::<u8>() {
-                    to_change = Some((
-                        i,
-                        Color::srgba_u8(red as u8, new_green as u8, blue as u8, alpha as u8),
-                    ))
-                } else if green_str.is_empty() {
-                    to_change = Some((i, Color::srgba_u8(red as u8, 0, blue as u8, alpha as u8)))
-                }
-            };
-            ui.label("B: ");
-            let edit_blue = ui.add(egui::TextEdit::singleline(&mut blue_str).desired_width(25.));
-            if edit_blue.changed() {
-                if let Ok(new_blue) = blue_str.parse::<u8>() {
-                    to_change = Some((
-                        i,
-                        Color::srgba_u8(red as u8, green as u8, new_blue as u8, alpha as u8),
-                    ))
-                } else if blue_str.is_empty() {
-                    to_change = Some((i, Color::srgba_u8(red as u8, green as u8, 0, alpha as u8)))
-                }
-            };
-            ui.label("A: ");
-            let edit_alpha = ui.add(egui::TextEdit::singleline(&mut alpha_str).desired_width(25.));
-            if edit_alpha.changed() {
-                if let Ok(new_alpha) = alpha_str.parse::<u8>() {
-                    to_change = Some((
-                        i,
-                        Color::srgba_u8(red as u8, green as u8, blue as u8, new_alpha as u8),
-                    ))
-                } else if alpha_str.is_empty() {
-                    to_change = Some((i, Color::srgba_u8(red as u8, green as u8, blue as u8, 0)))
-                }
-            };
+            ui.label(format!("R: {}", red));
+            ui.label(format!("G: {}", green));
+            ui.label(format!("B: {}", blue));
+            ui.label(format!("A: {}", alpha));
             if ui.color_edit_button_srgba(&mut color32).changed() {
                 to_change = Some((
                     i,
@@ -1335,7 +1285,7 @@ fn render_movement_priority_field(
         if let Some(group) = particle_movement_priority_field.blueprint.0.get_mut(i) {
             group
                 .swap(j1, j2)
-                .unwrap_or_else(|err| eprintln!("{}", err));
+                .unwrap_or_else(|err| error!("{}", err));
         }
     }
     if let Some((i, j)) = outer_to_swap {
@@ -1343,7 +1293,7 @@ fn render_movement_priority_field(
             .blueprint
             .0
             .swap_outer(i, j)
-            .unwrap_or_else(|err| eprintln!("{}", err));
+            .unwrap_or_else(|err| error!("{}", err));
     }
     if let Some(i) = outer_to_add {
         if let Some(group) = particle_movement_priority_field.blueprint.0.get_mut(i) {
@@ -1374,38 +1324,55 @@ fn render_burns_field(
     if particle_burns_field.enable {
         ui.horizontal(|ui| {
             ui.label("Duration (ms): ");
-            let mut duration_str = particle_burns_field
-                .blueprint
-                .0
-                .duration
-                .as_millis()
-                .to_string();
-            let edit_duration =
-                ui.add(egui::TextEdit::singleline(&mut duration_str).desired_width(40.));
-            if edit_duration.changed() {
-                if let Ok(new_duration) = duration_str.parse::<u64>() {
+            let edit_duration = ui.add(
+                egui::TextEdit::singleline(&mut particle_burns_field.duration_str)
+                    .desired_width(40.),
+            );
+            if edit_duration.lost_focus() {
+                if let Ok(new_duration) = particle_burns_field.duration_str.parse::<u64>() {
                     particle_burns_field.blueprint.0.duration = Duration::from_millis(new_duration);
+                    particle_burns_field.duration_str = particle_burns_field
+                        .blueprint
+                        .0
+                        .duration
+                        .as_millis()
+                        .to_string();
+                } else {
+                    particle_burns_field.blueprint.0.duration = Duration::from_millis(0);
+                    particle_burns_field.duration_str = particle_burns_field
+                        .blueprint
+                        .0
+                        .duration
+                        .as_millis()
+                        .to_string();
                 }
-            } else if duration_str.is_empty() {
-                particle_burns_field.blueprint.0.duration = Duration::from_millis(1);
             }
         });
+
         ui.horizontal(|ui| {
-            ui.label("Tick Rate (ms)");
-            let mut tick_rate_str = particle_burns_field
-                .blueprint
-                .0
-                .tick_rate
-                .as_millis()
-                .to_string();
-            let edit_tick_rate =
-                ui.add(egui::TextEdit::singleline(&mut tick_rate_str).desired_width(40.));
-            if edit_tick_rate.changed() {
-                if let Ok(new_tick_rate) = tick_rate_str.parse::<u64>() {
-                    particle_burns_field.blueprint.0.duration =
-                        Duration::from_millis(new_tick_rate);
-                } else if tick_rate_str.is_empty() {
-                    particle_burns_field.blueprint.0.tick_rate = Duration::from_millis(1);
+            ui.label("Tick Rate (ms): ");
+            let edit_duration = ui.add(
+                egui::TextEdit::singleline(&mut particle_burns_field.tick_rate_str)
+                    .desired_width(40.),
+            );
+            if edit_duration.lost_focus() {
+                if let Ok(new_duration) = particle_burns_field.tick_rate_str.parse::<u64>() {
+                    particle_burns_field.blueprint.0.tick_rate =
+                        Duration::from_millis(new_duration);
+                    particle_burns_field.tick_rate_str = particle_burns_field
+                        .blueprint
+                        .0
+                        .duration
+                        .as_millis()
+                        .to_string();
+                } else {
+                    particle_burns_field.blueprint.0.tick_rate = Duration::from_millis(0);
+                    particle_burns_field.tick_rate_str = particle_burns_field
+                        .blueprint
+                        .0
+                        .duration
+                        .as_millis()
+                        .to_string();
                 }
             }
         });
@@ -1459,12 +1426,6 @@ fn render_burns_field(
                     srgba.blue * 255.,
                     srgba.alpha * 255.,
                 );
-                let (mut red_str, mut green_str, mut blue_str, mut alpha_str) = (
-                    red.to_string(),
-                    green.to_string(),
-                    blue.to_string(),
-                    alpha.to_string(),
-                );
                 let mut color32 = Color32::from_rgba_unmultiplied(
                     red as u8,
                     green as u8,
@@ -1472,82 +1433,10 @@ fn render_burns_field(
                     alpha as u8,
                 );
                 ui.horizontal(|ui| {
-                    ui.label("R: ");
-                    let edit_red =
-                        ui.add(egui::TextEdit::singleline(&mut red_str).desired_width(25.));
-                    if edit_red.changed() {
-                        if let Ok(new_red) = red_str.parse::<u8>() {
-                            to_change = Some((
-                                i,
-                                Color::srgba_u8(
-                                    new_red as u8,
-                                    green as u8,
-                                    blue as u8,
-                                    alpha as u8,
-                                ),
-                            ))
-                        } else if red_str.is_empty() {
-                            to_change =
-                                Some((i, Color::srgba_u8(0, green as u8, blue as u8, alpha as u8)))
-                        }
-                    };
-                    ui.label("G: ");
-                    let edit_green =
-                        ui.add(egui::TextEdit::singleline(&mut green_str).desired_width(25.));
-                    if edit_green.changed() {
-                        if let Ok(new_green) = green_str.parse::<u8>() {
-                            to_change = Some((
-                                i,
-                                Color::srgba_u8(
-                                    red as u8,
-                                    new_green as u8,
-                                    blue as u8,
-                                    alpha as u8,
-                                ),
-                            ))
-                        } else if green_str.is_empty() {
-                            to_change =
-                                Some((i, Color::srgba_u8(red as u8, 0, blue as u8, alpha as u8)))
-                        }
-                    };
-                    ui.label("B: ");
-                    let edit_blue =
-                        ui.add(egui::TextEdit::singleline(&mut blue_str).desired_width(25.));
-                    if edit_blue.changed() {
-                        if let Ok(new_blue) = blue_str.parse::<u8>() {
-                            to_change = Some((
-                                i,
-                                Color::srgba_u8(
-                                    red as u8,
-                                    green as u8,
-                                    new_blue as u8,
-                                    alpha as u8,
-                                ),
-                            ))
-                        } else if blue_str.is_empty() {
-                            to_change =
-                                Some((i, Color::srgba_u8(red as u8, green as u8, 0, alpha as u8)))
-                        }
-                    };
-                    ui.label("A: ");
-                    let edit_alpha =
-                        ui.add(egui::TextEdit::singleline(&mut alpha_str).desired_width(25.));
-                    if edit_alpha.changed() {
-                        if let Ok(new_alpha) = alpha_str.parse::<u8>() {
-                            to_change = Some((
-                                i,
-                                Color::srgba_u8(
-                                    red as u8,
-                                    green as u8,
-                                    blue as u8,
-                                    new_alpha as u8,
-                                ),
-                            ))
-                        } else if alpha_str.is_empty() {
-                            to_change =
-                                Some((i, Color::srgba_u8(red as u8, green as u8, blue as u8, 0)))
-                        }
-                    };
+                    ui.label(format!("R: {}", red));
+                    ui.label(format!("G: {}", green));
+                    ui.label(format!("B: {}", blue));
+                    ui.label(format!("A: {}", alpha));
                     if ui.color_edit_button_srgba(&mut color32).changed() {
                         to_change = Some((
                             i,
@@ -1595,22 +1484,14 @@ fn render_burns_field(
         if particle_burns_field.chance_destroy_enable {
             ui.horizontal(|ui| {
                 ui.label("Chance");
-                let mut chance_destroy_str = particle_burns_field
-                    .blueprint
-                    .0
-                    .chance_destroy_per_tick
-                    .unwrap()
-                    .to_string();
-                let edit_chance_destroy =
-                    ui.add(egui::TextEdit::singleline(&mut chance_destroy_str).desired_width(40.));
-                if edit_chance_destroy.changed() {
-                    if let Ok(new_chance_destroy) = chance_destroy_str.parse::<f64>() {
-                        particle_burns_field.blueprint.0.chance_destroy_per_tick =
-                            Some(new_chance_destroy);
-                    } else if chance_destroy_str.is_empty() {
-                        particle_burns_field.blueprint.0.tick_rate = Duration::from_millis(1);
-                    }
-                }
+                ui.add(egui::Slider::new(
+                    &mut particle_burns_field
+                        .blueprint
+                        .0
+                        .chance_destroy_per_tick
+                        .unwrap(),
+                    0.0..=1.0,
+                ));
             });
         }
         if ui
@@ -1663,34 +1544,29 @@ fn render_burns_field(
                     });
             });
             ui.horizontal(|ui| {
-                ui.label("Chance to produce (per tick)");
-                let mut chance_produce_str = particle_burns_field
-                    .blueprint
-                    .0
-                    .reaction
-                    .as_mut()
-                    .unwrap()
-                    .chance_to_produce
-                    .to_string();
-                let edit_chance_produce =
-                    ui.add(egui::TextEdit::singleline(&mut chance_produce_str).desired_width(40.));
-                if edit_chance_produce.changed() {
-                    if let Ok(new_chance_produce) = chance_produce_str.parse::<f64>() {
-                        particle_burns_field
+                ui.label("Tick Rate (ms): ");
+                let edit_tick_rate = ui.add(
+                    egui::TextEdit::singleline(&mut particle_burns_field.tick_rate_str)
+                        .desired_width(40.),
+                );
+                if edit_tick_rate.lost_focus() {
+                    if let Ok(new_duration) = particle_burns_field.tick_rate_str.parse::<u64>() {
+                        particle_burns_field.blueprint.0.tick_rate =
+                            Duration::from_millis(new_duration);
+                        particle_burns_field.tick_rate_str = particle_burns_field
                             .blueprint
                             .0
-                            .reaction
-                            .as_mut()
-                            .unwrap()
-                            .chance_to_produce = new_chance_produce;
-                    } else if chance_produce_str.is_empty() {
-                        particle_burns_field
+                            .duration
+                            .as_millis()
+                            .to_string();
+                    } else {
+                        particle_burns_field.blueprint.0.tick_rate = Duration::from_millis(0);
+                        particle_burns_field.tick_rate_str = particle_burns_field
                             .blueprint
                             .0
-                            .reaction
-                            .as_mut()
-                            .unwrap()
-                            .chance_to_produce = 0.01;
+                            .duration
+                            .as_millis()
+                            .to_string();
                     }
                 }
             });
@@ -1715,78 +1591,29 @@ fn render_burns_field(
             if particle_burns_field.spreads_enable {
                 ui.horizontal(|ui| {
                     ui.label("Burn Radius");
-                    let mut burn_radius_str = particle_burns_field
-                        .blueprint
-                        .0
-                        .spreads
-                        .unwrap()
-                        .burn_radius
-                        .to_string();
-                    let edit_burn_radius =
-                        ui.add(egui::TextEdit::singleline(&mut burn_radius_str).desired_width(40.));
-                    if edit_burn_radius.changed() {
-                        if let Ok(new_burn_radius) = burn_radius_str.parse::<f32>() {
-                            particle_burns_field
-                                .blueprint
-                                .0
-                                .spreads
-                                .as_mut()
-                                .unwrap()
-                                .burn_radius = new_burn_radius;
-                            println!(
-                                "New burn radius: {:?} Particle burns field blueprint: {:?}",
-                                new_burn_radius,
-                                particle_burns_field
-                                    .blueprint
-                                    .0
-                                    .spreads
-                                    .as_mut()
-                                    .unwrap()
-                                    .burn_radius
-                            );
-                        } else if burn_radius_str.is_empty() {
-                            particle_burns_field
-                                .blueprint
-                                .0
-                                .spreads
-                                .as_mut()
-                                .unwrap()
-                                .burn_radius = 2.;
-                        }
-                    }
+                    ui.add(egui::Slider::new(
+                        &mut particle_burns_field
+                            .blueprint
+                            .0
+                            .spreads
+                            .as_mut()
+                            .unwrap()
+                            .burn_radius,
+                        1.0..=100.0,
+                    ));
                 });
                 ui.horizontal(|ui| {
                     ui.label("Chance to spread");
-                    let mut chance_to_spread_str = particle_burns_field
-                        .blueprint
-                        .0
-                        .spreads
-                        .as_mut()
-                        .unwrap()
-                        .chance_to_spread
-                        .to_string();
-                    let edit_chance_to_spread = ui.add(
-                        egui::TextEdit::singleline(&mut chance_to_spread_str).desired_width(40.),
-                    );
-                    if edit_chance_to_spread.changed() {
-                        if let Ok(new_chance) = chance_to_spread_str.parse::<f64>() {
-                            particle_burns_field
-                                .blueprint
-                                .0
-                                .spreads
-                                .as_mut()
-                                .unwrap()
-                                .chance_to_spread = new_chance;
-                        } else {
-                            particle_burns_field
-                                .blueprint
-                                .0
-                                .spreads
-                                .as_mut()
-                                .unwrap()
-                                .chance_to_spread = 0.01;
-                        }
-                    }
+                    ui.add(egui::Slider::new(
+                        &mut particle_burns_field
+                            .blueprint
+                            .0
+                            .spreads
+                            .as_mut()
+                            .unwrap()
+                            .chance_to_spread,
+                        0.0..=1.0,
+                    ));
                 });
                 ui.horizontal(|ui| {
                     if ui
@@ -1841,17 +1668,23 @@ fn render_fire_field(ui: &mut egui::Ui, particle_fire_field: &mut ResMut<Particl
     if particle_fire_field.enable {
         ui.horizontal(|ui| {
             ui.label("Burn Radius");
-            let mut burn_radius_str = particle_fire_field.blueprint.0.burn_radius.to_string();
-            let edit_burn_radius =
-                ui.add(egui::TextEdit::singleline(&mut burn_radius_str).desired_width(40.));
-            if edit_burn_radius.changed() {
-                if let Ok(new_burn_radius) = burn_radius_str.parse::<f32>() {
-                    particle_fire_field.blueprint.0.burn_radius = new_burn_radius;
-                } else if burn_radius_str.is_empty() {
-                    particle_fire_field.blueprint.0.burn_radius = 2.;
+            let edit_burn_radius = ui.add(
+                egui::TextEdit::singleline(&mut particle_fire_field.burn_radius_str)
+                    .desired_width(40.),
+            );
+            if edit_burn_radius.lost_focus() {
+                if let Ok(new_duration) = particle_fire_field.burn_radius_str.parse::<f32>() {
+                    particle_fire_field.blueprint.0.burn_radius = new_duration;
+                    particle_fire_field.burn_radius_str =
+                        particle_fire_field.blueprint.0.burn_radius.to_string();
+                } else {
+                    particle_fire_field.blueprint.0.burn_radius = 2.0;
+                    particle_fire_field.burn_radius_str =
+                        particle_fire_field.blueprint.0.burn_radius.to_string();
                 }
             }
         });
+
         ui.horizontal(|ui| {
             ui.label("Chance to spread");
             let mut chance_to_spread_str =
@@ -2204,8 +2037,10 @@ impl Default for ParticleEditorMovementPriority {
     }
 }
 
-#[derive(Resource, Clone, Default, Debug)]
+#[derive(Resource, Clone, Debug)]
 pub struct ParticleEditorBurns {
+    duration_str: String,
+    tick_rate_str: String,
     enable: bool,
     chance_destroy_enable: bool,
     reaction_enable: bool,
@@ -2214,9 +2049,27 @@ pub struct ParticleEditorBurns {
     blueprint: BurnsBlueprint,
 }
 
+impl Default for ParticleEditorBurns {
+    fn default() -> Self {
+        let duration_str = Duration::default().as_millis().to_string();
+        let tick_rate_str = duration_str.clone();
+        ParticleEditorBurns {
+            duration_str,
+            tick_rate_str,
+            enable: false,
+            chance_destroy_enable: false,
+            reaction_enable: false,
+            color_enable: false,
+            spreads_enable: false,
+            blueprint: BurnsBlueprint::default(),
+        }
+    }
+}
+
 #[derive(Resource, Clone, Default, Debug)]
 pub struct ParticleEditorFire {
     enable: bool,
+    burn_radius_str: String,
     blueprint: FireBlueprint,
 }
 
