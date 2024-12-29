@@ -21,10 +21,7 @@ pub fn handle_new_particle_types(
         .for_each(|(entity, particle_type)| {
             commands
                 .entity(entity)
-                .insert(SpatialBundle::from_transform(Transform::from_xyz(
-                    0., 0., 0.,
-                )));
+                .insert((Transform::default(), Visibility::default()));
             type_map.insert(particle_type.name.clone(), entity);
         });
 }
-

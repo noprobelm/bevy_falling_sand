@@ -50,12 +50,8 @@ pub fn handle_new_particles(
             if let Ok(parent_entity) = parent_query.get(*parent_entity) {
                 commands.entity(parent_entity).add_child(entity);
                 commands.entity(entity).insert((
-                    SpriteBundle {
-                        sprite: Sprite {
-                            color: Color::srgba(0., 0., 0., 0.),
-                            ..default()
-                        },
-                        transform: *transform,
+                    Sprite {
+                        color: Color::srgba(0., 0., 0., 0.),
                         ..default()
                     },
                     Coordinates(coordinates),
@@ -94,10 +90,10 @@ pub fn mutate_particle_type(
             Changed<MovementPriority>,
             Changed<RandomizesColor>,
             Changed<FlowsColor>,
-	    Changed<Momentum>,
-	    Changed<Fire>,
-	    Changed<Burns>,
-	    Changed<Burning>
+            Changed<Momentum>,
+            Changed<Fire>,
+            Changed<Burns>,
+            Changed<Burning>,
         )>,
     >,
 ) {

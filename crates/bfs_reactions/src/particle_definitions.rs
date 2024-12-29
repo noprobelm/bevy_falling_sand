@@ -168,11 +168,7 @@ impl Reacting {
         if self.chance(rng) {
             commands.spawn((
                 self.produces.clone(),
-                SpatialBundle::from_transform(Transform::from_xyz(
-                    coordinates.0.x as f32,
-                    coordinates.0.y as f32 + 1.,
-                    0.,
-                )),
+                Transform::from_xyz(coordinates.0.x as f32, coordinates.0.y as f32 + 1., 0.),
             ));
         }
     }
@@ -205,7 +201,6 @@ pub struct ResetFireEvent {
     pub entity: Entity,
 }
 
-
 /// Observer for resetting a particle's Fire information to its parent's.
 pub fn on_reset_fire(
     trigger: Trigger<ResetFireEvent>,
@@ -215,7 +210,9 @@ pub fn on_reset_fire(
 ) {
     if let Ok(parent) = particle_query.get(trigger.event().entity) {
         if let Some(fire) = parent_query.get(parent.get()).unwrap() {
-            commands.entity(trigger.event().entity).insert(fire.0.clone());
+            commands
+                .entity(trigger.event().entity)
+                .insert(fire.0.clone());
         } else {
             commands.entity(trigger.event().entity).remove::<Fire>();
         }

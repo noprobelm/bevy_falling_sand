@@ -1,7 +1,7 @@
 //! This crate the capability to load particle types as assets from external sources.
 
 use bevy::{
-    asset::{io::Reader, AssetLoader, AsyncReadExt, LoadContext},
+    asset::{io::Reader, AssetLoader, LoadContext},
     prelude::*,
     reflect::TypePath,
     utils::Duration,
@@ -9,17 +9,17 @@ use bevy::{
 use serde::Deserialize;
 use thiserror::Error;
 
-use bfs_core::*;
-use bfs_reactions::*;
-use bfs_movement::*;
 use bfs_color::*;
+use bfs_core::*;
+use bfs_movement::*;
+use bfs_reactions::*;
 
 pub struct FallingSandAssetLoadersPlugin;
 
 impl bevy::prelude::Plugin for FallingSandAssetLoadersPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
-	app.init_asset::<ParticleTypesAsset>()
-        .init_asset_loader::<ParticleTypesAssetLoader>() ;
+        app.init_asset::<ParticleTypesAsset>()
+            .init_asset_loader::<ParticleTypesAssetLoader>();
     }
 }
 
@@ -49,7 +49,7 @@ impl ParticleTypesAsset {
                 ParticleType {
                     name: particle_name.clone(),
                 },
-                SpatialBundle::from_transform(Transform::from_xyz(0., 0., 0.)),
+                Transform::default(),
             ));
 
             let particle_data = map

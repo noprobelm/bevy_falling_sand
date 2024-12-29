@@ -73,8 +73,8 @@ impl bevy::prelude::Plugin for UIPlugin {
                 Update,
                 render_search_bar_ui.run_if(resource_exists::<ParticleSearchBar>),
             )
-            .observe(on_clear_dynamic_particles)
-            .observe(on_clear_wall_particles);
+            .add_observer(on_clear_dynamic_particles)
+            .add_observer(on_clear_wall_particles);
     }
 }
 

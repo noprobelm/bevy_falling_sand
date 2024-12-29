@@ -14,7 +14,7 @@ pub struct FallingSandScenesPlugin;
 
 impl Plugin for FallingSandScenesPlugin {
     fn build(&self, app: &mut App) {
-	app.add_plugins(EventsPlugin);
+        app.add_plugins(EventsPlugin);
         app.add_systems(
             Update,
             save_scene_system.run_if(on_event::<crate::events::SaveSceneEvent>),
@@ -79,10 +79,7 @@ pub fn load_scene_system(mut commands: Commands, mut ev_load_scene: EventReader<
                 0.,
             );
 
-            commands.spawn((
-                particle_data.particle_type.clone(),
-                SpatialBundle::from_transform(transform),
-            ));
+            commands.spawn((particle_data.particle_type.clone(), transform));
         }
     }
 }

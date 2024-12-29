@@ -35,7 +35,7 @@ pub struct ParticleBundle {
     /// The Liquid blueprint
     pub liquid: LiquidBlueprint,
     /// The Gas blueprint
-    pub gas: GasBlueprint
+    pub gas: GasBlueprint,
 }
 
 /// Convenience bundle for adding new static particle types.
@@ -46,7 +46,9 @@ pub struct StaticParticleTypeBundle {
     /// The particle type's color blueprint.
     pub colors: ParticleColorBlueprint,
     /// The particle type's global transform.
-    pub spatial: SpatialBundle,
+    pub transform: Transform,
+    /// The particle type's global visibility.
+    pub visibility: Visibility,
 }
 
 impl StaticParticleTypeBundle {
@@ -55,7 +57,8 @@ impl StaticParticleTypeBundle {
         StaticParticleTypeBundle {
             particle_type,
             colors: ParticleColorBlueprint(colors),
-            spatial: SpatialBundle::from_transform(Transform::from_xyz(0., 0., 0.)),
+            transform: Transform::default(),
+            visibility: Visibility::default(),
         }
     }
 }
@@ -74,7 +77,9 @@ pub struct DynamicParticleTypeBundle {
     /// The particle type's colors blueprint.
     pub colors: ParticleColorBlueprint,
     /// The particle type's global transform.
-    pub spatial: SpatialBundle,
+    pub transform: Transform,
+    /// The particle type's global visibility.
+    pub visibility: Visibility,
 }
 
 impl DynamicParticleTypeBundle {
@@ -92,7 +97,8 @@ impl DynamicParticleTypeBundle {
             velocity: VelocityBlueprint(velocity),
             movement_priority: MovementPriorityBlueprint(movement_priority),
             colors: ParticleColorBlueprint(colors),
-            spatial: SpatialBundle::from_transform(Transform::from_xyz(0., 0., 0.)),
+            transform: Transform::default(),
+            visibility: Visibility::default(),
         }
     }
 }
@@ -241,7 +247,9 @@ pub struct WallBundle {
     /// The Wall component blueprint.
     pub wall: WallBlueprint,
     /// The particle type's global transform.
-    pub spatial: SpatialBundle,
+    pub transform: Transform,
+    /// The particle type's visibility
+    pub visibility: Visibility,
 }
 
 impl WallBundle {
@@ -251,7 +259,8 @@ impl WallBundle {
             particle_type,
             colors: ParticleColorBlueprint(colors),
             wall: WallBlueprint(Wall),
-            spatial: SpatialBundle::from_transform(Transform::from_xyz(0., 0., 0.)),
+            transform: Transform::default(),
+            visibility: Visibility::default(),
         }
     }
 }
