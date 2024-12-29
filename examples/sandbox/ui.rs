@@ -304,8 +304,8 @@ pub fn update_cursor_coordinates(
 
     if let Some(world_position) = window
         .cursor_position()
-        .and_then(|cursor| camera.viewport_to_world(camera_transform, cursor))
-        .map(|ray| ray.origin.truncate())
+        .and_then(|cursor| Some(camera.viewport_to_world(camera_transform, cursor)))
+        .map(|ray| ray.unwrap().origin.truncate())
     {
         coords.update(world_position);
     }
