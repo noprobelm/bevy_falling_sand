@@ -1,9 +1,5 @@
 //! This module demonstrates how to spawn/despawn particles from the world using a brush tool.
-use bevy::{
-    input::common_conditions::input_pressed,
-    prelude::*,
-    utils::HashSet,
-};
+use bevy::{input::common_conditions::input_pressed, prelude::*, utils::HashSet};
 use bevy_egui::EguiContexts;
 use bevy_falling_sand::core::{ChunkMap, Particle, ParticleSimulationSet, RemoveParticleEvent};
 
@@ -147,11 +143,7 @@ impl BrushType {
                 commands.spawn_batch((min_x * 3..=max_x * 3).map(move |x| {
                     (
                         particle.clone(),
-                        SpatialBundle::from_transform(Transform::from_xyz(
-                            coords.current.x + x as f32,
-                            coords.current.y,
-                            0.0,
-                        )),
+                        Transform::from_xyz(coords.current.x + x as f32, coords.current.y, 0.0),
                     )
                 }));
             }
@@ -161,13 +153,27 @@ impl BrushType {
                 if (coords.previous - coords.previous_previous).length() < 1.0 {
                     spawn_circle(commands, particle.clone(), coords.previous, radius);
                 } else {
-                    spawn_capsule(commands, particle.clone(), coords.previous, coords.previous_previous, radius, half_length);
+                    spawn_capsule(
+                        commands,
+                        particle.clone(),
+                        coords.previous,
+                        coords.previous_previous,
+                        radius,
+                        half_length,
+                    );
                 }
 
                 if (coords.current - coords.previous).length() < 1.0 {
                     spawn_circle(commands, particle, coords.current, radius);
                 } else {
-                    spawn_capsule(commands, particle, coords.previous, coords.current, radius, half_length);
+                    spawn_capsule(
+                        commands,
+                        particle,
+                        coords.previous,
+                        coords.current,
+                        radius,
+                        half_length,
+                    );
                 }
             }
         }
@@ -366,11 +372,7 @@ fn spawn_circle(commands: &mut Commands, particle: Particle, center: Vec2, radiu
     commands.spawn_batch(points.into_iter().map(move |point| {
         (
             particle.clone(),
-            SpatialBundle::from_transform(Transform::from_xyz(
-                point.x as f32,
-                point.y as f32,
-                0.0,
-            )),
+            Transform::from_xyz(point.x as f32, point.y as f32, 0.0),
         )
     }));
 }
@@ -393,11 +395,7 @@ fn spawn_capsule(
     commands.spawn_batch(points.into_iter().map(move |point| {
         (
             particle.clone(),
-            SpatialBundle::from_transform(Transform::from_xyz(
-                point.x as f32,
-                point.y as f32,
-                0.0,
-            )),
+            Transform::from_xyz(point.x as f32, point.y as f32, 0.0),
         )
     }));
 }
