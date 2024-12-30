@@ -6,8 +6,6 @@ mod systems;
 pub use particle_definitions::*;
 use systems::*;
 
-/// Plugin for basic particle components and events, including the minimal components necessary for adding a particle
-/// to the simulation.
 pub struct ParticlePlugin;
 
 impl Plugin for ParticlePlugin {

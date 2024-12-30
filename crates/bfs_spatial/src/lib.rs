@@ -1,4 +1,3 @@
-//! Holds the KDTree resource.
 use bevy::prelude::{App, Plugin};
 use bevy_spatial::{kdtree::KDTree2, AutomaticUpdate, SpatialStructure};
 use bfs_core::Particle;
@@ -16,5 +15,4 @@ impl Plugin for FallingSandSpatialPlugin {
     }
 }
 
-/// A 2-d KDTree for performing spatial queries on particles
 pub type ParticleTree = KDTree2<Particle>;

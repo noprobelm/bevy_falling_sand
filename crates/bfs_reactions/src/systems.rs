@@ -1,5 +1,3 @@
-//! Systems for reacting particles.
-
 use super::ReactionRng;
 use bevy::prelude::*;
 use bevy_spatial::SpatialAccess;
@@ -31,7 +29,6 @@ impl Plugin for BurningPlugin {
     }
 }
 
-/// Burns particles within a radius of entities that posses the `Fire` component.
 pub fn handle_fire(
     mut commands: Commands,
     mut fire_query: Query<(&Fire, &Coordinates, &mut ReactionRng)>,
@@ -72,7 +69,6 @@ pub fn handle_fire(
         });
 }
 
-/// Handles all burning particles for the frame.
 pub fn handle_burning(
     mut commands: Commands,
     mut burning_query: Query<(

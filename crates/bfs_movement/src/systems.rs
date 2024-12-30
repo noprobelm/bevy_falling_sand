@@ -1,5 +1,3 @@
-//! Systems for moving particles.
-
 use crate::PhysicsRng;
 use crate::*;
 use std::mem;
@@ -15,7 +13,6 @@ impl Plugin for SystemsPlugin {
     }
 }
 
-/// Moves all qualifying particles 'v' times equal to their current velocity
 #[allow(unused_mut)]
 pub fn handle_movement(
     mut particle_query: Query<(

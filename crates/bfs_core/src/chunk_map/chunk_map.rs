@@ -1,4 +1,3 @@
-//! Resources providing mapping functionality to particle positions and types.
 use ahash::{HashMap, HashMapExt};
 use bevy::prelude::*;
 use rayon::iter::IntoParallelRefIterator;
@@ -9,7 +8,6 @@ use crate::{
     RemoveParticleEvent, SimulationRun,
 };
 
-/// Plugin for mapping particles to coordinate space.
 pub struct ChunkMapPlugin;
 
 impl Plugin for ChunkMapPlugin {
@@ -29,15 +27,12 @@ impl Plugin for ChunkMapPlugin {
     }
 }
 
-/// Chunk map for segmenting collections of entities into coordinate-based chunks.
 #[derive(Resource, Debug, Clone)]
 pub struct ChunkMap {
-    /// The entity chunk maps
     pub chunks: Vec<Chunk>,
 }
 
 impl Default for ChunkMap {
-    /// Gets a default ChunkMap
     fn default() -> ChunkMap {
         let chunks: Vec<Chunk> = (0..32_i32.pow(2))
             .map(|i| {
@@ -54,7 +49,6 @@ impl Default for ChunkMap {
 }
 
 impl ChunkMap {
-    /// Gets the index of the corresponding chunk
     fn chunk_index(&self, coord: &IVec2) -> usize {
         const OFFSET: i32 = 512;
         const GRID_WIDTH: usize = 32;
@@ -65,13 +59,11 @@ impl ChunkMap {
         row * GRID_WIDTH + col
     }
 
-    /// Gets an immutable reference to a chunk
     pub fn chunk(&self, coord: &IVec2) -> Option<&Chunk> {
         let index = self.chunk_index(coord);
         self.chunks.get(index)
     }
 
-    /// Gets a mutable reference to a chunk
     fn chunk_mut(&mut self, coord: &IVec2) -> Option<&mut Chunk> {
         let index = self.chunk_index(coord);
         self.chunks.get_mut(index)
@@ -79,46 +71,28 @@ impl ChunkMap {
 }
 
 impl ChunkMap {
-    /// Clear all existing key, value pairs from all chunks.
-    /// > **⚠️ Warning:**
-    /// > Calling this method will cause major breakage to the simulation if entities are not despawned before another
-    /// system attempts to access them.
     pub fn clear(&mut self) {
         for map in &mut self.chunks {
             map.clear();
         }
     }
 
-    /// Remove a particle from the map.
-    /// > **⚠️ Warning:**
-    /// > Calling this method will cause major breakage to the simulation if the target entity is not despawned before
-    /// another system attempts to access it.
     pub fn remove(&mut self, coords: &IVec2) -> Option<Entity> {
         self.chunk_mut(&coords).unwrap().remove(coords)
     }
 }
 
 impl ChunkMap {
-    /// Immutable iterator over all chunks.
     pub fn iter_chunks(&self) -> impl Iterator<Item = &Chunk> {
         self.chunks.iter()
     }
 
-    /// Immutable iterator over all chunks.
     pub fn iter_chunks_mut(&mut self) -> impl Iterator<Item = &mut Chunk> {
         self.chunks.iter_mut()
     }
 }
 
 impl ChunkMap {
-    /// Checks each chunk for activity in the current frame. This method is meant to be called after all
-    /// movement logic has occurred for this frame.
-    ///
-    /// If a chunk was active and is currently hibernating, wake it up and remove the Hibernating marker
-    /// component from its entity.
-    ///
-    /// If a chunk was not activated and is currently awake, put it to sleep and add the Hibernating
-    /// component to its entity.
     pub fn reset_chunks(&mut self) {
         for chunk in &mut self.chunks {
             chunk.prev_dirty_rect = chunk.dirty_rect;
@@ -138,7 +112,6 @@ impl ChunkMap {
         }
     }
 
-    /// Checks if a coordinate lies on the border of a neighboring chunk and activates it if true.
     fn activate_neighbor_chunks(&mut self, coord: &IVec2, chunk_idx: usize) {
         let chunk = &self.chunks[chunk_idx];
         let neighbors = [
@@ -157,24 +130,16 @@ impl ChunkMap {
 }
 
 impl ChunkMap {
-    /// Inserts a new particle at a given coordinate if it is not already occupied. Calls to this method will
-    /// wake up the subject chunk.
     pub fn insert_no_overwrite(&mut self, coords: IVec2, entity: Entity) -> &mut Entity {
         let chunk = self.chunk_mut(&coords).unwrap();
         chunk.insert_no_overwrite(coords, entity)
     }
 
-    /// Inserts a new particle at a given coordinate irrespective of its occupied state. Calls to this method will
-    /// wake up the subject chunk.
     pub fn insert_overwrite(&mut self, coords: IVec2, entity: Entity) -> Option<Entity> {
         let chunk = self.chunk_mut(&coords).unwrap();
         chunk.insert_overwrite(coords, entity)
     }
 
-    /// Swaps two entities in the ChunkMap. This method is the preferred interface when carrying out component-based
-    /// interactions between entities due to the facilities this provides for waking up neighboring chunks.
-    /// 'insert_overwrite' and 'insert_no_overwrite' will wake up the subject chunk, but they will NOT wake up
-    /// neighboring chunks.
     pub fn swap(&mut self, first: IVec2, second: IVec2) {
         let first_chunk_idx = self.chunk_index(&first);
         let second_chunk_idx = self.chunk_index(&second);
@@ -204,23 +169,19 @@ impl ChunkMap {
         self.activate_neighbor_chunks(&second, second_chunk_idx);
     }
 
-    /// Get an immutable reference to an entity, if it exists.
     pub fn entity(&self, coords: &IVec2) -> Option<&Entity> {
         self.chunk(&coords).unwrap().get(coords)
     }
 
-    /// Iterator through a flattened map of all the particles in the ChunkMap
     #[allow(unused)]
     pub fn iter(&self) -> impl Iterator<Item = (&IVec2, &Entity)> {
         self.chunks.iter().flat_map(|chunk| chunk.iter())
     }
 
-    /// Parallel iterator through a flattened map of all the particles in the ChunkMap
     pub fn par_iter(&self) -> impl IntoParallelIterator<Item = (&IVec2, &Entity)> {
         self.chunks.par_iter().flat_map(|chunk| chunk.par_iter())
     }
 
-    /// Should we process the entity this frame
     pub fn should_process_this_frame(&self, coords: &IVec2) -> bool {
         if let Some(chunk) = self.chunk(coords) {
             if chunk.hibernating() == true {
@@ -233,25 +194,17 @@ impl ChunkMap {
     }
 }
 
-/// A chunk which stores location information for entities.
 #[derive(Debug, Clone)]
 pub struct Chunk {
-    /// The chunk containing the particle data
     chunk: HashMap<IVec2, Entity>,
-    /// The region of the chunk
     region: IRect,
-    /// A dirty rect for all particles that have moved in the current frame
     dirty_rect: Option<IRect>,
-    /// A dirty rect for all particles that moved in the previous frame
     prev_dirty_rect: Option<IRect>,
-    /// Flag indicating whether the chunk should be processed in the next frame
     should_process_next_frame: bool,
-    /// Flag indicating whether the chunk should be processed this frame
     hibernating: bool,
 }
 
 impl Chunk {
-    /// Creates a new Chunk instance
     pub fn new(upper_left: IVec2, lower_right: IVec2) -> Chunk {
         Chunk {
             chunk: HashMap::with_capacity(1024),
@@ -265,73 +218,55 @@ impl Chunk {
 }
 
 impl Chunk {
-    /// The minimum (upper left) point of the chunk's area
     pub fn min(&self) -> &IVec2 {
         &self.region.min
     }
 
-    /// The maximum (lower right) point of the chunk's area
     pub fn max(&self) -> &IVec2 {
         &self.region.max
     }
 }
 
 impl Chunk {
-    /// The chunk should be processed in the current frame
     pub fn hibernating(&self) -> bool {
         self.hibernating
     }
 
-    /// The chunk should be processed in the next frame
     pub fn should_process_next_frame(&self) -> bool {
         self.should_process_next_frame
     }
 }
 
 impl Chunk {
-    /// Get an immutable reference to the corresponding entity, if it exists.
     pub fn get(&self, coords: &IVec2) -> Option<&Entity> {
         self.chunk.get(coords)
     }
 }
 
 impl Chunk {
-    /// Iterate through all key, value instances of the entity map
     pub fn iter(&self) -> impl Iterator<Item = (&IVec2, &Entity)> {
         self.chunk.iter()
     }
 
-    /// Iterate through all entities in the chunk
     pub fn entities(&self) -> impl Iterator<Item = &Entity> {
         self.chunk.values()
     }
 
-    /// Parallel iter through all the key, value instances of the entity map
     pub fn par_iter(&self) -> impl IntoParallelIterator<Item = (&IVec2, &Entity)> {
         self.chunk.par_iter()
     }
 }
 
 impl Chunk {
-    /// Clear all existing entities from the map
-    /// > **⚠️ Warning:**
-    /// > Calling this method will cause major breakage to the simulation if entities are not
-    /// simultaneously cleared within the same system from which this method was called.
     pub fn clear(&mut self) {
         self.chunk.clear();
     }
 
-    /// Remove a entity from the map
-    /// > **⚠️ Warning:**
-    /// > Calling this method will cause major breakage to the simulation if entities are not
-    /// simultaneously cleared within the same system from which this method was called.
     pub fn remove(&mut self, coords: &IVec2) -> Option<Entity> {
         self.should_process_next_frame = true;
         self.chunk.remove(coords)
     }
 
-    /// Inserts a new entity at a given coordinate if it is not already occupied. Calls to this method will
-    /// wake up the subject chunk.
     pub fn insert_no_overwrite(&mut self, coords: IVec2, entity: Entity) -> &mut Entity {
         // Extend the dirty rect to include the newly added particle
         self.should_process_next_frame = true;
@@ -344,8 +279,6 @@ impl Chunk {
         self.chunk.entry(coords).or_insert(entity)
     }
 
-    /// Inserts a new entity at a given coordinate irrespective of its occupied state. Calls to this method will
-    /// wake up the subject chunk.
     pub fn insert_overwrite(&mut self, coords: IVec2, entity: Entity) -> Option<Entity> {
         self.should_process_next_frame = true;
         // Extend the dirty rect to include the newly added particle
@@ -360,36 +293,29 @@ impl Chunk {
 }
 
 impl Chunk {
-    /// Gets the dirty rect from the chunk
     pub fn dirty_rect(&self) -> Option<IRect> {
         self.dirty_rect
     }
 
-    /// Gets the previous dirty rect from the chunk
     pub fn prev_dirty_rect(&self) -> Option<IRect> {
         self.prev_dirty_rect
     }
 
-    /// Is the chunk empty
     pub fn empty(&self) -> bool {
         self.chunk.len() == 0
     }
 }
 
-/// Resets all chunks in preparation for the next frame
 pub fn reset_chunks(mut map: ResMut<ChunkMap>) {
     map.reset_chunks();
 }
 
-/// Remove all particles from the simulation.
 #[derive(Event)]
 pub struct ClearMapEvent;
 
-/// Remove all child particles of a specified type from the simulation.
 #[derive(Event)]
 pub struct ClearParticleTypeChildrenEvent(pub String);
 
-/// RemoveParticle event is triggered.
 pub fn on_remove_particle(
     trigger: Trigger<RemoveParticleEvent>,
     mut commands: Commands,
@@ -404,7 +330,6 @@ pub fn on_remove_particle(
     }
 }
 
-/// Observer for clearing all particles from the world as soon as a ClearMapEvent is triggered.
 pub fn on_clear_chunk_map(
     _trigger: Trigger<ClearMapEvent>,
     mut commands: Commands,
@@ -418,7 +343,6 @@ pub fn on_clear_chunk_map(
     map.clear();
 }
 
-/// Observer for clearing dynamic particles
 pub fn on_clear_particle_type_children(
     trigger: Trigger<ClearParticleTypeChildrenEvent>,
     mut commands: Commands,

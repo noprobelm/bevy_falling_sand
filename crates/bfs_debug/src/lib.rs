@@ -3,7 +3,6 @@ use bevy::prelude::*;
 use bfs_core::{ChunkMap, Particle};
 use bfs_movement::Wall;
 
-/// Plugin for Bevy Falling Sand debugging functionality.
 pub struct FallingSandDebugPlugin;
 
 impl Plugin for FallingSandDebugPlugin {
@@ -27,31 +26,24 @@ impl Plugin for FallingSandDebugPlugin {
     }
 }
 
-/// Debug gizmos.
 #[derive(Default, Reflect, GizmoConfigGroup)]
 pub struct DebugGizmos;
 
-/// Indicates whether we should be counting the number of particles in the simulation
 #[derive(Default, Resource)]
 pub struct DebugParticleCount;
 
-/// Indicates whether built-in chunk map debugging should be enabled.
 #[derive(Default, Resource)]
 pub struct DebugHibernatingChunks;
 
-/// Indicates whether built-in dirty rect debugging should be enabled.
 #[derive(Default, Resource)]
 pub struct DebugDirtyRects;
 
-/// The total number of dynamic particles in the simulation.
 #[derive(Default, Resource)]
 pub struct DynamicParticleCount(pub u64);
 
-/// The total number of particles in the simulation.
 #[derive(Default, Resource)]
 pub struct TotalParticleCount(pub u64);
 
-/// Provides gizmos rendering for visualizing hibernating/awake chunks
 pub fn color_dirty_rects(map: Res<ChunkMap>, mut chunk_gizmos: Gizmos<DebugGizmos>) {
     map.iter_chunks().for_each(|chunk| {
         if let Some(dirty_rect) = chunk.prev_dirty_rect() {
@@ -64,7 +56,6 @@ pub fn color_dirty_rects(map: Res<ChunkMap>, mut chunk_gizmos: Gizmos<DebugGizmo
     });
 }
 
-/// Provides gizmos rendering for visualizing hibernating/awake chunks
 pub fn color_hibernating_chunks(map: Res<ChunkMap>, mut chunk_gizmos: Gizmos<DebugGizmos>) {
     map.iter_chunks().for_each(|chunk| {
         let rect = Rect::from_corners(chunk.min().as_vec2(), chunk.max().as_vec2());
@@ -89,7 +80,6 @@ pub fn color_hibernating_chunks(map: Res<ChunkMap>, mut chunk_gizmos: Gizmos<Deb
     });
 }
 
-/// Counts the total number of dynamic particles in the simulation.
 pub fn count_dynamic_particles(
     mut dynamic_particle_count: ResMut<DynamicParticleCount>,
     particle_query: Query<&Particle, Without<Wall>>,
@@ -97,7 +87,6 @@ pub fn count_dynamic_particles(
     dynamic_particle_count.0 = particle_query.iter().fold(0, |acc, _| acc + 1);
 }
 
-/// Counts the total number of particles in the simulation.
 pub fn count_total_particles(
     mut total_particle_count: ResMut<TotalParticleCount>,
     particle_query: Query<&Particle>,

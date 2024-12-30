@@ -9,7 +9,6 @@ use std::io::Write;
 
 pub use events::*;
 
-/// Core plugin for Bevy Falling Sand.
 pub struct FallingSandScenesPlugin;
 
 impl Plugin for FallingSandScenesPlugin {
@@ -26,25 +25,17 @@ impl Plugin for FallingSandScenesPlugin {
     }
 }
 
-/// Systems for loading and saving particle scenes.
-
-/// Particle data for loading scenes.
 #[derive(Serialize, Deserialize)]
 pub struct ParticleData {
-    /// The particle type to load.
     pub particle_type: Particle,
-    /// The coordinates of the particle.
     pub coordinates: Coordinates,
 }
 
-/// A collection of particles that make up a scene.
 #[derive(Serialize, Deserialize)]
 pub struct ParticleScene {
-    /// The particles to load.
     pub particles: Vec<ParticleData>,
 }
 
-/// Saves a scene to the PathBuf specified by [`SaveSceneEvent`](crate::SaveSceneEvent)
 pub fn save_scene_system(
     particle_query: Query<(&Particle, &Coordinates)>,
     mut ev_save_scene: EventReader<SaveSceneEvent>,
@@ -66,7 +57,6 @@ pub fn save_scene_system(
     }
 }
 
-/// Loads a scene from the PathBuf specified by [`LoadSceneEvent`](crate::LoadSceneEvent)
 pub fn load_scene_system(mut commands: Commands, mut ev_load_scene: EventReader<LoadSceneEvent>) {
     for ev in ev_load_scene.read() {
         let file = File::open(ev.0.clone()).expect("Failed to open RON file");

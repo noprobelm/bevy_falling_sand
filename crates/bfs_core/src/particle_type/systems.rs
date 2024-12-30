@@ -1,8 +1,5 @@
-//! Systems for moving particles.
-
 use crate::*;
 
-/// Plugin for systems that interact with particle types.
 pub struct ParticleTypeSystemsPlugin;
 
 impl Plugin for ParticleTypeSystemsPlugin {
@@ -10,7 +7,6 @@ impl Plugin for ParticleTypeSystemsPlugin {
         app.add_systems(Update, handle_new_particle_types);
     }
 }
-/// Map all particles to their respective parent when added/changed within the simulation.
 pub fn handle_new_particle_types(
     mut commands: Commands,
     particle_type_query: Query<(Entity, &ParticleType), Changed<ParticleType>>,

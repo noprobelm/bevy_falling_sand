@@ -1,4 +1,3 @@
-//! Systems for interacting with particles.
 use bevy::prelude::*;
 
 use crate::{Particle, MutateParticleEvent, ParticleSimulationSet};
@@ -11,7 +10,6 @@ impl Plugin for ParticleSystemsPlugin {
     }
 }
 
-/// Event reader for particle type updates
 pub fn ev_mutate_particle(
     mut ev_change_particle: EventReader<MutateParticleEvent>,
     mut particle_query: Query<&mut Particle>,

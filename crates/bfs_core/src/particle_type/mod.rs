@@ -6,7 +6,6 @@ mod systems;
 pub use particle_type::*;
 use systems::*;
 
-/// Plugin for particle type definitions.
 pub struct ParticleTypePlugin;
 
 impl Plugin for ParticleTypePlugin {

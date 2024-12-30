@@ -1,4 +1,3 @@
-//! Convenience module for inserting common types of movement priorities.
 use bevy::prelude::*;
 use bfs_core::ParticleType;
 use serde::{Deserialize, Serialize};
@@ -17,16 +16,13 @@ impl Plugin for MaterialPlugin {
     }
 }
 
-/// A trait for defining a material type. Materials can be translated into commonly used movement priorities.
 pub trait Material {
     #[allow(dead_code)]
-    /// Builds a new movement priority.
     fn into_movement_priority(&self) -> MovementPriority {
         MovementPriority::empty()
     }
 }
 
-/// A wall, which has no movement.
 #[derive(
     Clone,
     Eq,
@@ -43,7 +39,6 @@ pub trait Material {
 )]
 pub struct Wall;
 
-/// A wall blueprint.
 #[derive(
     Clone,
     Eq,
@@ -61,7 +56,6 @@ pub struct Wall;
 pub struct WallBlueprint(pub Wall);
 
 impl Wall {
-    /// Creates a new Wall.
     pub fn new() -> Wall {
         Wall
     }
@@ -69,7 +63,6 @@ impl Wall {
 
 impl Material for Wall {}
 
-/// A solid material, which can only move downward.
 #[derive(
     Clone,
     Eq,
@@ -87,7 +80,6 @@ impl Material for Wall {}
 pub struct Solid;
 
 impl Solid {
-    /// Creates a new Solid.
     pub fn new() -> Solid {
         Solid
     }
@@ -99,7 +91,6 @@ impl Material for Solid {
     }
 }
 
-/// A solid blueprint
 #[derive(
     Clone,
     Eq,
@@ -116,7 +107,6 @@ impl Material for Solid {
 )]
 pub struct SolidBlueprint(pub Solid);
 
-/// A movable solid material, like sand.
 #[derive(
     Clone,
     Eq,
@@ -134,7 +124,6 @@ pub struct SolidBlueprint(pub Solid);
 pub struct MovableSolid;
 
 impl MovableSolid {
-    /// Creates a new MovableSolid.
     pub fn new() -> MovableSolid {
         MovableSolid
     }
@@ -149,7 +138,6 @@ impl Material for MovableSolid {
     }
 }
 
-/// A movable solid material, like sand.
 #[derive(
     Clone,
     Eq,
@@ -166,7 +154,6 @@ impl Material for MovableSolid {
 )]
 pub struct MovableSolidBlueprint(pub MovableSolid);
 
-/// A liquid material which flows like water.
 #[derive(
     Clone,
     Eq,
@@ -182,12 +169,10 @@ pub struct MovableSolidBlueprint(pub MovableSolid);
     Deserialize,
 )]
 pub struct Liquid {
-    /// How fluid the liquid should be.
     pub fluidity: usize,
 }
 
 impl Liquid {
-    /// Creates a new Liquid.
     pub fn new(fluidity: usize) -> Liquid {
         Liquid { fluidity }
     }
@@ -212,7 +197,6 @@ impl Material for Liquid {
     }
 }
 
-/// A liquid blueprint.
 #[derive(
     Clone,
     Eq,
@@ -229,7 +213,6 @@ impl Material for Liquid {
 )]
 pub struct LiquidBlueprint(pub Liquid);
 
-/// A gaseous material, which flows upward.
 #[derive(
     Clone,
     Eq,
@@ -245,12 +228,10 @@ pub struct LiquidBlueprint(pub Liquid);
     Deserialize,
 )]
 pub struct Gas {
-    /// How fluid the gas should be.
     pub fluidity: usize,
 }
 
 impl Gas {
-    /// Creates a new Gas.
     pub fn new(fluidity: usize) -> Gas {
         Gas { fluidity }
     }
@@ -272,7 +253,6 @@ impl Material for Gas {
     }
 }
 
-/// A gaseous material, which flows upward.
 #[derive(
     Clone,
     Eq,
@@ -289,22 +269,15 @@ impl Material for Gas {
 )]
 pub struct GasBlueprint(pub Gas);
 
-/// Enum to mark different material types
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Reflect, Serialize, Deserialize)]
 pub enum MaterialType {
-    /// Marker for solid materials.
     Solid,
-    /// Marker for movable solid materials.
     MovableSolid,
-    /// Marker for liquid materials.
     Liquid,
-    /// Marker for gaseous materials.
     Gas,
-    /// Marker for custom materials.
     Custom,
 }
 
-/// Observer for adding movement priority when a particle is given a new state of matter.
 pub fn on_solid_blueprint_added(
     trigger: Trigger<OnAdd, SolidBlueprint>,
     mut commands: Commands,
@@ -318,7 +291,6 @@ pub fn on_solid_blueprint_added(
     }
 }
 
-/// Observer for adding movement priority when a particle is given a new state of matter.
 pub fn on_movable_solid_blueprint_added(
     trigger: Trigger<OnAdd, MovableSolidBlueprint>,
     mut commands: Commands,
@@ -332,7 +304,6 @@ pub fn on_movable_solid_blueprint_added(
     }
 }
 
-/// Observer for adding movement priority when a particle is given a new state of matter.
 pub fn on_liquid_blueprint_added(
     trigger: Trigger<OnAdd, LiquidBlueprint>,
     mut commands: Commands,
@@ -346,7 +317,6 @@ pub fn on_liquid_blueprint_added(
     }
 }
 
-/// Observer for adding movement priority when a particle is given a new state of matter.
 pub fn on_gas_blueprint_added(
     trigger: Trigger<OnAdd, GasBlueprint>,
     mut commands: Commands,
@@ -360,7 +330,6 @@ pub fn on_gas_blueprint_added(
     }
 }
 
-/// Observer for adding movement priority when a particle is given a new state of matter.
 pub fn on_wall_added(
     trigger: Trigger<OnAdd, WallBlueprint>,
     mut commands: Commands,

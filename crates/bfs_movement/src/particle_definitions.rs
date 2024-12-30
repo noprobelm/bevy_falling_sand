@@ -1,18 +1,3 @@
-//! Defines additional components for particle types to be used as blueprint data when spawning or
-//! resetting particles.
-//!
-//! This module is a standard template that can be followed when extending particle types. Its
-//! structure is as follows:
-//!   - Defines new components which will be associated with particle types as blueprint information
-//!     for child particles.
-//!   - Adds events for each new component which manage resetting information for child particles
-//!   - Adds observers for each event to specify granular logic through which a particle should have
-//!     its information reset. This usually involves referencing the parent `ParticleType`.
-//!
-//! When a particle should have its information reset (e.g., when spawning or resetting), we can
-//! trigger the events defined in this module and communicate with higher level systems that
-//! something needs to happen with a given particle.
-
 use bevy::prelude::*;
 use bfs_core::{Particle, ParticleType};
 use serde::{Deserialize, Serialize};
@@ -37,7 +22,6 @@ impl Plugin for ParticleDefinitionsPlugin {
     }
 }
 
-/// The density of a particle.
 #[derive(
     Copy,
     Clone,
@@ -55,7 +39,6 @@ impl Plugin for ParticleDefinitionsPlugin {
 #[reflect(Component, Debug)]
 pub struct Density(pub u32);
 
-/// The density of a particle.
 #[derive(
     Copy,
     Clone,
@@ -73,7 +56,6 @@ pub struct Density(pub u32);
 #[reflect(Component, Debug)]
 pub struct DensityBlueprint(pub Density);
 
-/// A particle's velocity.
 #[derive(
     Copy,
     Clone,
@@ -91,29 +73,21 @@ pub struct DensityBlueprint(pub Density);
 )]
 #[reflect(Component)]
 pub struct Velocity {
-    /// The current velocity of the particle.
     pub val: u8,
-    /// The maximum velocity of the particle.
     pub max: u8,
 }
 
 impl Velocity {
-    /// Creates a new velocity component.
-    #[inline(always)]
     pub fn new(val: u8, max: u8) -> Self {
         Velocity { val, max }
     }
 
-    /// Increment the velocity by 1
-    #[inline(always)]
     pub fn increment(&mut self) {
         if self.val < self.max {
             self.val += 1;
         }
     }
 
-    /// Decrement the velocity by 1
-    #[inline(always)]
     pub fn decrement(&mut self) {
         if self.val > 1 {
             self.val -= 1;
@@ -121,7 +95,6 @@ impl Velocity {
     }
 }
 
-/// The Velocity blueprint.
 #[derive(
     Copy,
     Clone,
@@ -140,8 +113,6 @@ impl Velocity {
 #[reflect(Component)]
 pub struct VelocityBlueprint(pub Velocity);
 
-/// Momentum component for particles. If a particle possesses this component, it will dynamically attempt to move in the
-/// same direction it moved in the previous frame.
 #[derive(
     Copy, Clone, Eq, PartialEq, Hash, Debug, Default, Component, Reflect, Serialize, Deserialize,
 )]
@@ -149,7 +120,6 @@ pub struct VelocityBlueprint(pub Velocity);
 pub struct Momentum(pub IVec2);
 
 impl Momentum {
-    /// Use if the particle is capable of gaining momentum, but currently has none.
     pub const ZERO: Self = Self(IVec2::splat(0));
 }
 
@@ -159,33 +129,26 @@ impl Momentum {
 #[reflect(Component)]
 pub struct MomentumBlueprint(pub Momentum);
 
-/// A group of neighbors representing equally prioritized candidates for particle movement.
-/// Positions are relative to the particle's position.
 #[derive(Clone, Eq, PartialEq, Hash, Debug, Default, Component, Reflect)]
 pub struct NeighborGroup {
-    /// The neighbor candidates.
     pub neighbor_group: SmallVec<[IVec2; 4]>,
 }
 
 impl NeighborGroup {
-    /// Creates a new NeighborGroup instance.
     pub fn new(neighbor_group: SmallVec<[IVec2; 4]>) -> NeighborGroup {
         NeighborGroup { neighbor_group }
     }
 
-    /// Returns an empty NeighborGroup.
     pub fn empty() -> NeighborGroup {
         NeighborGroup {
             neighbor_group: SmallVec::new(),
         }
     }
 
-    /// Adds a new neighbor to the group.
     pub fn push(&mut self, neighbor: IVec2) {
         self.neighbor_group.push(neighbor);
     }
 
-    /// Swaps two neighbors at the given indices in the group.
     pub fn swap(&mut self, index1: usize, index2: usize) -> Result<(), String> {
         if index1 < self.neighbor_group.len() && index2 < self.neighbor_group.len() {
             self.neighbor_group.swap(index1, index2);
@@ -200,22 +163,18 @@ impl NeighborGroup {
         }
     }
 
-    /// Returns the number of neighbors in the group.
     pub fn len(&self) -> usize {
         self.neighbor_group.len()
     }
 
-    /// An iterator over neighbors.
     pub fn iter(&self) -> impl Iterator<Item = &IVec2> {
         self.neighbor_group.iter()
     }
 
-    /// A mutable iterator over neighbors.
     pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut IVec2> {
         self.neighbor_group.iter_mut()
     }
 
-    /// An iterator over random neighbors.
     pub fn iter_candidates<'a>(
         &'a mut self,
         rng: &mut PhysicsRng,
@@ -231,17 +190,13 @@ impl NeighborGroup {
             }
         }
 
-        // Shuffle the neighbors and return the iterator over all neighbors
         rng.shuffle(&mut self.neighbor_group);
         NeighborGroupIter::All(self.neighbor_group.iter())
     }
 }
 
-/// An iterator over neighbor groups
 pub enum NeighborGroupIter<'a> {
-    /// A single neighbor should be prioritized above all others.
     Single(iter::Once<&'a IVec2>),
-    /// All neighbors should be iterated.
     All(Iter<'a, IVec2>),
 }
 
@@ -256,21 +211,17 @@ impl<'a> Iterator for NeighborGroupIter<'a> {
     }
 }
 
-/// A collection of neighbor groups ordered by descending priority.
 #[derive(Clone, Eq, PartialEq, Hash, Debug, Default, Component, Reflect)]
 #[reflect(Component)]
 pub struct MovementPriority {
-    /// The neighbor ps.
     pub neighbor_groups: SmallVec<[NeighborGroup; 8]>,
 }
 
 impl MovementPriority {
-    /// Creates a new NeighborGroup instance.
     pub fn new(neighbor_groups: SmallVec<[NeighborGroup; 8]>) -> MovementPriority {
         MovementPriority { neighbor_groups }
     }
 
-    /// Creates a new MovementPriority instance from a Vec<Vec<IVec2>>.
     pub fn from(movement_priority: Vec<Vec<IVec2>>) -> MovementPriority {
         MovementPriority::new(
             movement_priority
@@ -280,17 +231,14 @@ impl MovementPriority {
         )
     }
 
-    /// Returns the number of outer neighbor groups in the MovementPriority.
     pub fn len(&self) -> usize {
         self.neighbor_groups.len()
     }
 
-    /// Pushes a new `NeighborGroup` to the outer collection.
     pub fn push_outer(&mut self, neighbor_group: NeighborGroup) {
         self.neighbor_groups.push(neighbor_group);
     }
 
-    /// Pushes a new `IVec2` to an inner group at the specified index.
     pub fn push_inner(&mut self, group_index: usize, neighbor: IVec2) -> Result<(), String> {
         if let Some(group) = self.neighbor_groups.get_mut(group_index) {
             group.push(neighbor);
@@ -300,7 +248,6 @@ impl MovementPriority {
         }
     }
 
-    /// Swaps two `NeighborGroup`s in the outer collection.
     pub fn swap_outer(&mut self, index1: usize, index2: usize) -> Result<(), String> {
         if index1 < self.neighbor_groups.len() && index2 < self.neighbor_groups.len() {
             self.neighbor_groups.swap(index1, index2);
@@ -310,7 +257,6 @@ impl MovementPriority {
         }
     }
 
-    /// Swaps two `IVec2` elements in an inner group.
     pub fn swap_inner(
         &mut self,
         group_index: usize,
@@ -327,12 +273,11 @@ impl MovementPriority {
             Err(format!("Group index {} out of bounds", group_index))
         }
     }
-    /// An iterator over neighbors.
+
     pub fn iter(&self) -> impl Iterator<Item = &NeighborGroup> {
         self.neighbor_groups.iter()
     }
 
-    /// Iterates over movement candidates for a particle.
     pub fn iter_candidates<'a>(
         &'a mut self,
         rng: &'a mut PhysicsRng,
@@ -343,12 +288,10 @@ impl MovementPriority {
             .flat_map(move |neighbor_group| neighbor_group.iter_candidates(rng, momentum))
     }
 
-    /// Returns a mutable reference to the `NeighborGroup` at the specified index.
     pub fn get_mut(&mut self, index: usize) -> Option<&mut NeighborGroup> {
         self.neighbor_groups.get_mut(index)
     }
 
-    /// Removes the `NeighborGroup` at the specified index and returns it.
     pub fn remove(&mut self, index: usize) -> Option<NeighborGroup> {
         if index < self.neighbor_groups.len() {
             Some(self.neighbor_groups.remove(index))
@@ -359,7 +302,6 @@ impl MovementPriority {
 }
 
 impl MovementPriority {
-    /// Returns an empty MovementPriority
     pub const fn empty() -> MovementPriority {
         MovementPriority {
             neighbor_groups: SmallVec::new_const(),
@@ -371,35 +313,26 @@ impl MovementPriority {
 #[reflect(Component)]
 pub struct MovementPriorityBlueprint(pub MovementPriority);
 
-/// Triggers a particle to reset its ParticleColor information to its parent's.
 #[derive(Event)]
 pub struct ResetMomentumEvent {
-    /// The entity to reset data for.
     pub entity: Entity,
 }
 
-/// Triggers a particle to reset its Velocity information to its parent's.
 #[derive(Event)]
 pub struct ResetVelocityEvent {
-    /// The entity to reset data for.
     pub entity: Entity,
 }
 
-/// Triggers a particle to reset its Density information to its parent's.
 #[derive(Event)]
 pub struct ResetDensityEvent {
-    /// The entity to reset data for.
     pub entity: Entity,
 }
 
-/// Triggers a particle to reset its MovementPriority information to its parent's.
 #[derive(Event)]
 pub struct ResetMovementPriorityEvent {
-    /// The entity to reset data for.
     pub entity: Entity,
 }
 
-/// Observer for resetting a particle's Momentum information to its parent's.
 pub fn on_reset_momentum(
     trigger: Trigger<ResetMomentumEvent>,
     mut commands: Commands,
@@ -415,7 +348,6 @@ pub fn on_reset_momentum(
     }
 }
 
-/// Observer for resetting a particle's Density information to its parent's.
 pub fn on_reset_density(
     trigger: Trigger<ResetDensityEvent>,
     mut commands: Commands,
@@ -431,7 +363,6 @@ pub fn on_reset_density(
     }
 }
 
-/// Observer for resetting a particle's MovementPriority information to its parent's.
 pub fn on_reset_movement_priority(
     trigger: Trigger<ResetMovementPriorityEvent>,
     mut commands: Commands,
@@ -451,7 +382,6 @@ pub fn on_reset_movement_priority(
     }
 }
 
-/// Observer for resetting a particle's Velocity information to its parent's.
 pub fn on_reset_velocity(
     trigger: Trigger<ResetVelocityEvent>,
     mut commands: Commands,

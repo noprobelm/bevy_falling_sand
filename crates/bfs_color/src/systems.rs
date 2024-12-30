@@ -1,4 +1,3 @@
-//! Systems for coloring particles.
 use bevy::prelude::*;
 use bfs_core::{Particle, ParticleSimulationSet};
 
@@ -20,7 +19,6 @@ impl Plugin for SystemsPlugin {
     }
 }
 
-/// Colors newly added or changed particles
 pub fn color_particles(
     mut particle_query: Query<(&mut Sprite, &ParticleColor), Changed<ParticleColor>>,
 ) {
@@ -29,7 +27,6 @@ pub fn color_particles(
     });
 }
 
-/// Changes the color of particles with the ChangesColor component
 pub fn color_flowing_particles(
     mut particles_query: Query<(&mut ParticleColor, &mut ColorRng, &FlowsColor), With<Particle>>,
 ) {
@@ -42,7 +39,6 @@ pub fn color_flowing_particles(
         })
 }
 
-/// Randomizes the color of particles with the ChangesColor component
 pub fn color_randomizing_particles(
     mut particles_query: Query<
         (&mut ParticleColor, &mut ColorRng, &RandomizesColor),

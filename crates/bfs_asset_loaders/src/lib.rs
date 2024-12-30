@@ -1,5 +1,3 @@
-//! This crate the capability to load particle types as assets from external sources.
-
 use bevy::{
     asset::{io::Reader, AssetLoader, LoadContext},
     prelude::*,
@@ -23,15 +21,12 @@ impl bevy::prelude::Plugin for FallingSandAssetLoadersPlugin {
     }
 }
 
-/// Collection of particle types loaded from an asset.
 #[derive(Asset, TypePath, Debug, Deserialize)]
 pub struct ParticleTypesAsset {
-    /// The particle types.
     pub particle_types: ron::Map,
 }
 
 impl ParticleTypesAsset {
-    /// Loads particle types from the asset into the simulation.
     pub fn load_particle_types(
         &self,
         commands: &mut Commands,
@@ -75,7 +70,6 @@ impl ParticleTypesAsset {
     }
 }
 impl ParticleTypesAsset {
-    /// Handles deserialization of a components for a given entity.
     fn handle_component(
         &self,
         commands: &mut Commands,
@@ -416,18 +410,14 @@ impl ParticleTypesAsset {
     }
 }
 
-/// Asset loader for particle types.
 #[derive(Default)]
 pub struct ParticleTypesAssetLoader;
 
-/// Possible errors that can be produced by [`ParticleTypesAssetLoader`]
 #[non_exhaustive]
 #[derive(Debug, Error)]
 pub enum ParticleTypesAssetLoaderError {
-    /// An [IO](std::io) Error
     #[error("Could not load asset: {0}")]
     Io(#[from] std::io::Error),
-    /// A [RON](ron) Error
     #[error("Could not parse RON: {0}")]
     RonSpannedError(#[from] ron::error::SpannedError),
 }

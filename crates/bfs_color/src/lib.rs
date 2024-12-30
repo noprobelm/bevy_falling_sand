@@ -1,4 +1,3 @@
-//! This crate provides coloring for particles in the simulation.
 mod particle_definitions;
 mod rng;
 mod systems;

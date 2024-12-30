@@ -1,5 +1,4 @@
 //! Symbolic crate for sourcing the FallingSandPlugin
-#![forbid(missing_docs)]
 #![warn(
     clippy::nursery,
     clippy::pedantic,
