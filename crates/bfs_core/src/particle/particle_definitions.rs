@@ -1,6 +1,8 @@
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
+use crate::ParticleType;
+
 pub struct ParticleDefinitionsPlugin;
 
 impl Plugin for ParticleDefinitionsPlugin {

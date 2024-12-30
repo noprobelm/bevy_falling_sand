@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy::utils::Duration;
 use bfs_color::*;
-use bfs_core::{Coordinates, Particle, ParticleType};
+use bfs_core::{Coordinates, Particle, ParticleRegistrationEvent, ParticleType};
 
 use crate::ReactionRng;
 
@@ -9,13 +9,11 @@ pub struct ParticleDefinitionsPlugin;
 
 impl Plugin for ParticleDefinitionsPlugin {
     fn build(&self, app: &mut App) {
+        app.add_systems(Update, handle_particle_registration);
         app.register_type::<Fire>()
             .register_type::<Burns>()
             .register_type::<Burning>()
             .register_type::<Reacting>();
-        app.add_observer(on_reset_fire)
-            .add_observer(on_reset_burns)
-            .add_observer(on_reset_burning);
     }
 }
 
@@ -134,68 +132,61 @@ impl Reacting {
     }
 }
 
-#[derive(Event)]
-pub struct ResetBurningEvent {
-    pub entity: Entity,
-}
-
-#[derive(Event)]
-pub struct ResetBurnsEvent {
-    pub entity: Entity,
-}
-
-#[derive(Event)]
-pub struct ResetFireEvent {
-    pub entity: Entity,
-}
-
-pub fn on_reset_fire(
-    trigger: Trigger<ResetFireEvent>,
-    mut commands: Commands,
-    particle_query: Query<&Parent, With<Particle>>,
-    parent_query: Query<Option<&FireBlueprint>, With<ParticleType>>,
+fn handle_particle_components(
+    commands: &mut Commands,
+    parent_query: &Query<
+        (
+            Option<&FireBlueprint>,
+            Option<&BurnsBlueprint>,
+            Option<&BurningBlueprint>,
+        ),
+        With<ParticleType>,
+    >,
+    particle_query: &Query<&Parent, With<Particle>>,
+    entities: &Vec<Entity>,
 ) {
-    if let Ok(parent) = particle_query.get(trigger.event().entity) {
-        if let Some(fire) = parent_query.get(parent.get()).unwrap() {
-            commands
-                .entity(trigger.event().entity)
-                .insert(fire.0.clone());
-        } else {
-            commands.entity(trigger.event().entity).remove::<Fire>();
+    entities.iter().for_each(|entity| {
+        if let Ok(parent) = particle_query.get(*entity) {
+            if let Ok((fire, burns, burning)) = parent_query.get(parent.get()) {
+                if let Some(fire) = fire {
+                    commands.entity(*entity).insert(fire.0.clone());
+                } else {
+                    commands.entity(*entity).remove::<Fire>();
+                }
+                if let Some(burns) = burns {
+                    commands.entity(*entity).insert(burns.0.clone());
+                } else {
+                    commands.entity(*entity).remove::<Burns>();
+                }
+                if let Some(burning) = burning {
+                    commands.entity(*entity).insert(burning.0.clone());
+                } else {
+                    commands.entity(*entity).remove::<Burning>();
+                }
+            }
         }
-    }
+    });
 }
 
-pub fn on_reset_burns(
-    trigger: Trigger<ResetBurnsEvent>,
+fn handle_particle_registration(
     mut commands: Commands,
+    parent_query: Query<
+        (
+            Option<&FireBlueprint>,
+            Option<&BurnsBlueprint>,
+            Option<&BurningBlueprint>,
+        ),
+        With<ParticleType>,
+    >,
     particle_query: Query<&Parent, With<Particle>>,
-    parent_query: Query<Option<&BurnsBlueprint>, With<ParticleType>>,
+    mut ev_particle_registered: EventReader<ParticleRegistrationEvent>,
 ) {
-    if let Ok(parent) = particle_query.get(trigger.event().entity) {
-        if let Some(burns) = parent_query.get(parent.get()).unwrap() {
-            commands
-                .entity(trigger.event().entity)
-                .insert(burns.0.clone());
-        } else {
-            commands.entity(trigger.event().entity).remove::<Burns>();
-        }
-    }
-}
-
-pub fn on_reset_burning(
-    trigger: Trigger<ResetBurningEvent>,
-    mut commands: Commands,
-    particle_query: Query<&Parent, With<Particle>>,
-    parent_query: Query<Option<&BurningBlueprint>, With<ParticleType>>,
-) {
-    if let Ok(parent) = particle_query.get(trigger.event().entity) {
-        if let Some(burning) = parent_query.get(parent.get()).unwrap() {
-            commands
-                .entity(trigger.event().entity)
-                .insert(burning.0.clone());
-        } else {
-            commands.entity(trigger.event().entity).remove::<Burning>();
-        }
-    }
+    ev_particle_registered.read().for_each(|ev| {
+        handle_particle_components(
+            &mut commands,
+            &parent_query,
+            &particle_query,
+            &ev.entities,
+        );
+    });
 }

@@ -44,9 +44,6 @@ pub fn handle_new_particles(
                     Coordinates(coordinates),
                     ReactionRng::default(),
                 ));
-                commands.trigger(ResetFireEvent { entity });
-                commands.trigger(ResetBurnsEvent { entity });
-                commands.trigger(ResetBurningEvent { entity });
             }
         } else {
             panic!(
