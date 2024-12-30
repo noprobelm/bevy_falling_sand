@@ -102,7 +102,7 @@ pub struct ResetParticleColorEvent {
 #[reflect(Component)]
 pub struct FlowsColorBlueprint(pub FlowsColor);
 
-fn handle_components(
+fn handle_particle_components(
     commands: &mut Commands,
     rng: &mut ResMut<GlobalRng>,
     parent_query: &Query<
@@ -161,7 +161,7 @@ fn handle_particle_registration(
     mut ev_reset_particle_color: EventReader<ResetParticleColorEvent>,
 ) {
     ev_particle_registered.read().for_each(|ev| {
-        handle_components(
+        handle_particle_components(
             &mut commands,
             &mut rng,
             &parent_query,
@@ -170,7 +170,7 @@ fn handle_particle_registration(
         );
     });
     ev_reset_particle_color.read().for_each(|ev| {
-        handle_components(
+        handle_particle_components(
             &mut commands,
             &mut rng,
             &parent_query,

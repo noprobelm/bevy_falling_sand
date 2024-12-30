@@ -49,7 +49,6 @@ pub fn handle_new_particles(
                     ColorRng::default(),
                     ReactionRng::default(),
                 ));
-                commands.trigger(ResetMomentumEvent { entity });
                 commands.trigger(ResetFireEvent { entity });
                 commands.trigger(ResetBurnsEvent { entity });
                 commands.trigger(ResetBurningEvent { entity });
