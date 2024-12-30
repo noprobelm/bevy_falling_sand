@@ -122,6 +122,13 @@ fn handle_particle_components(
             if let Ok((particle_color, flows_color, randomizes_color)) =
                 parent_query.get(parent.get())
             {
+                commands.entity(*entity).insert((
+                    Sprite {
+                        color: Color::srgba(0., 0., 0., 0.),
+                        ..default()
+                    },
+                    ColorRng::default(),
+                ));
                 if let Some(particle_color) = particle_color {
                     let rng = rng.get_mut();
                     commands

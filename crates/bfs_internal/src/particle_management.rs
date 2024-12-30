@@ -41,12 +41,7 @@ pub fn handle_new_particles(
                 entities.push(entity);
                 commands.entity(parent_entity).add_child(entity);
                 commands.entity(entity).insert((
-                    Sprite {
-                        color: Color::srgba(0., 0., 0., 0.),
-                        ..default()
-                    },
                     Coordinates(coordinates),
-                    ColorRng::default(),
                     ReactionRng::default(),
                 ));
                 commands.trigger(ResetFireEvent { entity });
