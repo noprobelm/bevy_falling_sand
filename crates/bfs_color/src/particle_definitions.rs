@@ -3,22 +3,18 @@ use bevy_turborand::{DelegatedRng, GlobalRng, TurboRand};
 use serde::{Deserialize, Serialize};
 
 use super::ColorRng;
-use bfs_core::{Particle, ParticleType};
+use bfs_core::{Particle, ParticleRegistrationEvent, ParticleType};
 
 pub struct ParticleDefinitionsPlugin;
 
 impl Plugin for ParticleDefinitionsPlugin {
     fn build(&self, app: &mut App) {
+        app.add_systems(Update, handle_particle_registration);
+        app.add_event::<ResetParticleColorEvent>();
         app.register_type::<ColorRng>()
             .register_type::<ParticleColor>()
             .register_type::<FlowsColor>()
             .register_type::<RandomizesColor>();
-        app.add_event::<ResetParticleColorEvent>()
-            .add_event::<ResetRandomizesColorEvent>()
-            .add_event::<ResetFlowsColorEvent>();
-        app.add_observer(on_reset_particle_color)
-            .add_observer(on_reset_flows_color)
-            .add_observer(on_reset_randomizes_color);
     }
 }
 
@@ -95,80 +91,91 @@ impl FlowsColor {
     }
 }
 
+#[derive(
+    Clone, Hash, Debug, Default, Eq, PartialEq, PartialOrd, Event, Reflect, Serialize, Deserialize,
+)]
+pub struct ResetParticleColorEvent {
+    pub entities: Vec<Entity>,
+}
+
 #[derive(Copy, Clone, PartialEq, Debug, Component, Reflect, Serialize, Deserialize)]
 #[reflect(Component)]
 pub struct FlowsColorBlueprint(pub FlowsColor);
 
-#[derive(Event)]
-pub struct ResetParticleColorEvent {
-    pub entity: Entity,
+fn handle_components(
+    commands: &mut Commands,
+    rng: &mut ResMut<GlobalRng>,
+    parent_query: &Query<
+        (
+            Option<&ParticleColorBlueprint>,
+            Option<&FlowsColorBlueprint>,
+            Option<&RandomizesColorBlueprint>,
+        ),
+        With<ParticleType>,
+    >,
+    particle_query: &Query<&Parent, With<Particle>>,
+    entities: &Vec<Entity>,
+) {
+    entities.iter().for_each(|entity| {
+        if let Ok(parent) = particle_query.get(*entity) {
+            commands.entity(*entity).insert(ColorRng::default());
+            if let Ok((particle_color, flows_color, randomizes_color)) =
+                parent_query.get(parent.get())
+            {
+                if let Some(particle_color) = particle_color {
+                    let rng = rng.get_mut();
+                    commands
+                        .entity(*entity)
+                        .insert(particle_color.0.new_with_random(rng));
+                } else {
+                    commands.entity(*entity).remove::<ParticleColor>();
+                }
+                if let Some(flows_color) = flows_color {
+                    commands.entity(*entity).insert(flows_color.0.clone());
+                } else {
+                    commands.entity(*entity).remove::<FlowsColor>();
+                }
+                if let Some(randomizes_color) = randomizes_color {
+                    commands.entity(*entity).insert(randomizes_color.0.clone());
+                } else {
+                    commands.entity(*entity).remove::<RandomizesColor>();
+                }
+            }
+        }
+    });
 }
 
-#[derive(Event)]
-pub struct ResetRandomizesColorEvent {
-    pub entity: Entity,
-}
-
-#[derive(Event)]
-pub struct ResetFlowsColorEvent {
-    pub entity: Entity,
-}
-
-pub fn on_reset_particle_color(
-    trigger: Trigger<ResetParticleColorEvent>,
+fn handle_particle_registration(
     mut commands: Commands,
-    particle_query: Query<&Parent, With<Particle>>,
-    parent_query: Query<Option<&ParticleColorBlueprint>, With<ParticleType>>,
     mut rng: ResMut<GlobalRng>,
-) {
-    if let Ok(parent) = particle_query.get(trigger.event().entity) {
-        let rng = rng.get_mut();
-        if let Some(particle_color) = parent_query.get(parent.get()).unwrap() {
-            commands
-                .entity(trigger.event().entity)
-                .insert(particle_color.0.new_with_random(rng));
-        } else {
-            commands
-                .entity(trigger.event().entity)
-                .remove::<ParticleColor>();
-        }
-    }
-}
-
-pub fn on_reset_randomizes_color(
-    trigger: Trigger<ResetRandomizesColorEvent>,
-    mut commands: Commands,
+    parent_query: Query<
+        (
+            Option<&ParticleColorBlueprint>,
+            Option<&FlowsColorBlueprint>,
+            Option<&RandomizesColorBlueprint>,
+        ),
+        With<ParticleType>,
+    >,
     particle_query: Query<&Parent, With<Particle>>,
-    parent_query: Query<Option<&RandomizesColorBlueprint>, With<ParticleType>>,
+    mut ev_particle_registered: EventReader<ParticleRegistrationEvent>,
+    mut ev_reset_particle_color: EventReader<ResetParticleColorEvent>,
 ) {
-    if let Ok(parent) = particle_query.get(trigger.event().entity) {
-        if let Some(color) = parent_query.get(parent.get()).unwrap() {
-            commands
-                .entity(trigger.event().entity)
-                .insert(color.0);
-        } else {
-            commands
-                .entity(trigger.event().entity)
-                .remove::<RandomizesColor>();
-        }
-    }
-}
-
-pub fn on_reset_flows_color(
-    trigger: Trigger<ResetFlowsColorEvent>,
-    mut commands: Commands,
-    particle_query: Query<&Parent, With<Particle>>,
-    parent_query: Query<Option<&FlowsColorBlueprint>, With<ParticleType>>,
-) {
-    if let Ok(parent) = particle_query.get(trigger.event().entity) {
-        if let Some(color) = parent_query.get(parent.get()).unwrap() {
-            commands
-                .entity(trigger.event().entity)
-                .insert(color.0);
-        } else {
-            commands
-                .entity(trigger.event().entity)
-                .remove::<FlowsColor>();
-        }
-    }
+    ev_particle_registered.read().for_each(|ev| {
+        handle_components(
+            &mut commands,
+            &mut rng,
+            &parent_query,
+            &particle_query,
+            &ev.entities,
+        );
+    });
+    ev_reset_particle_color.read().for_each(|ev| {
+        handle_components(
+            &mut commands,
+            &mut rng,
+            &parent_query,
+            &particle_query,
+            &ev.entities,
+        );
+    });
 }

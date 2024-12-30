@@ -21,7 +21,9 @@ pub fn handle_new_particles(
     particle_query: Query<(&Particle, &Transform, Entity), Changed<Particle>>,
     mut map: ResMut<ChunkMap>,
     type_map: Res<ParticleTypeMap>,
+    mut ev_particle_registered: EventWriter<ParticleRegistrationEvent>,
 ) {
+    let mut entities: Vec<Entity> = vec![];
     for (particle_type, transform, entity) in particle_query.iter() {
         let coordinates = IVec2::new(
             transform.translation.x as i32,
@@ -33,8 +35,10 @@ pub fn handle_new_particles(
             commands.entity(entity).despawn();
             continue;
         }
+
         if let Some(parent_entity) = type_map.get(&particle_type.name) {
             if let Ok(parent_entity) = parent_query.get(*parent_entity) {
+                entities.push(entity);
                 commands.entity(parent_entity).add_child(entity);
                 commands.entity(entity).insert((
                     Sprite {
@@ -42,16 +46,9 @@ pub fn handle_new_particles(
                         ..default()
                     },
                     Coordinates(coordinates),
-                    PhysicsRng::default(),
                     ColorRng::default(),
                     ReactionRng::default(),
                 ));
-                commands.trigger(ResetDensityEvent { entity });
-                commands.trigger(ResetMovementPriorityEvent { entity });
-                commands.trigger(ResetVelocityEvent { entity });
-                commands.trigger(ResetParticleColorEvent { entity });
-                commands.trigger(ResetRandomizesColorEvent { entity });
-                commands.trigger(ResetFlowsColorEvent { entity });
                 commands.trigger(ResetMomentumEvent { entity });
                 commands.trigger(ResetFireEvent { entity });
                 commands.trigger(ResetBurnsEvent { entity });
@@ -64,6 +61,7 @@ pub fn handle_new_particles(
             );
         }
     }
+    ev_particle_registered.send(ParticleRegistrationEvent { entities });
 }
 
 pub fn mutate_particle_type(

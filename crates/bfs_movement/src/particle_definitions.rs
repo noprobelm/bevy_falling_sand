@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bfs_core::{Particle, ParticleType};
+use bfs_core::{Particle, ParticleRegistrationEvent, ParticleType};
 use serde::{Deserialize, Serialize};
 use smallvec::SmallVec;
 use std::iter;
@@ -11,14 +11,11 @@ pub struct ParticleDefinitionsPlugin;
 
 impl Plugin for ParticleDefinitionsPlugin {
     fn build(&self, app: &mut App) {
-        app.register_type::<Density>()
+        app.add_systems(Update, handle_particle_registration)
+            .register_type::<Density>()
             .register_type::<Velocity>()
             .register_type::<Momentum>()
-            .register_type::<MovementPriority>()
-            .add_observer(on_reset_density)
-            .add_observer(on_reset_velocity)
-            .add_observer(on_reset_momentum)
-            .add_observer(on_reset_movement_priority);
+            .register_type::<MovementPriority>();
     }
 }
 
@@ -265,7 +262,7 @@ impl MovementPriority {
     ) -> Result<(), String> {
         if let Some(group) = self.neighbor_groups.get_mut(group_index) {
             if index1 < group.len() && index2 < group.len() {
-                return group.swap(index1, index2)
+                return group.swap(index1, index2);
             } else {
                 Err("Inner indices out of bounds".to_string())
             }
@@ -395,4 +392,51 @@ pub fn on_reset_velocity(
             commands.entity(trigger.event().entity).remove::<Velocity>();
         }
     }
+}
+
+fn handle_particle_registration(
+    mut commands: Commands,
+    parent_query: Query<
+        (
+            Option<&DensityBlueprint>,
+            Option<&VelocityBlueprint>,
+            Option<&MovementPriorityBlueprint>,
+            Option<&MomentumBlueprint>,
+        ),
+        With<ParticleType>,
+    >,
+    mut ev_particle_registered: EventReader<ParticleRegistrationEvent>,
+    particle_query: Query<&Parent, With<Particle>>,
+) {
+    ev_particle_registered.read().for_each(|ev| {
+        ev.entities.iter().for_each(|entity| {
+            if let Ok(parent) = particle_query.get(*entity) {
+                commands.entity(*entity).insert(PhysicsRng::default());
+                if let Ok((density, velocity, movement_priority, momentum)) =
+                    parent_query.get(parent.get())
+                {
+                    if let Some(density) = density {
+                        commands.entity(*entity).insert(density.0);
+                    } else {
+                        commands.entity(*entity).remove::<Density>();
+                    }
+                    if let Some(velocity) = velocity {
+                        commands.entity(*entity).insert(velocity.0.clone());
+                    } else {
+                        commands.entity(*entity).remove::<Velocity>();
+                    }
+                    if let Some(movement_priority) = movement_priority {
+                        commands.entity(*entity).insert(movement_priority.0.clone());
+                    } else {
+                        commands.entity(*entity).remove::<MovementPriority>();
+                    }
+                    if let Some(momentum) = momentum {
+                        commands.entity(*entity).insert(momentum.0.clone());
+                    } else {
+                        commands.entity(*entity).remove::<Momentum>();
+                    }
+                }
+            }
+        });
+    });
 }

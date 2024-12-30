@@ -80,7 +80,9 @@ pub fn handle_burning(
         &Coordinates,
     )>,
     time: Res<Time>,
+    mut ev_reset_particle_color: EventWriter<ResetParticleColorEvent>,
 ) {
+    let mut entities: Vec<Entity> = vec![];
     burning_query.iter_mut().for_each(
         |(entity, particle, mut burns, mut burning, mut rng, coordinates)| {
             if burning.timer.tick(time.delta()).finished() {
@@ -91,10 +93,7 @@ pub fn handle_burning(
                     })
                 } else {
                     commands.entity(entity).remove::<Burning>();
-                    commands.trigger(ResetParticleColorEvent { entity });
-                    commands.trigger(ResetRandomizesColorEvent { entity });
-                    commands.trigger(ResetFlowsColorEvent { entity });
-
+                    entities.push(entity);
                     particle.into_inner();
                 }
                 return;
@@ -114,4 +113,5 @@ pub fn handle_burning(
             }
         },
     );
+    ev_reset_particle_color.send(ResetParticleColorEvent { entities });
 }
