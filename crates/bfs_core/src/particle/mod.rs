@@ -10,11 +10,6 @@ pub struct ParticlePlugin;
 
 impl Plugin for ParticlePlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(ParticleSystemsPlugin)
-            .add_event::<MutateParticleEvent>()
-            .register_type::<Coordinates>()
-            .register_type::<Particle>()
-            .add_event::<ResetParticleEvent>()
-            .add_observer(on_reset_particle);
+        app.add_plugins((ParticleSystemsPlugin, ParticleDefinitionsPlugin));
     }
 }

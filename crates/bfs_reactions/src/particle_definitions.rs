@@ -148,6 +148,7 @@ fn handle_particle_components(
     entities.iter().for_each(|entity| {
         if let Ok(parent) = particle_query.get(*entity) {
             if let Ok((fire, burns, burning)) = parent_query.get(parent.get()) {
+                commands.entity(*entity).insert(ReactionRng::default());
                 if let Some(fire) = fire {
                     commands.entity(*entity).insert(fire.0.clone());
                 } else {
@@ -182,11 +183,6 @@ fn handle_particle_registration(
     mut ev_particle_registered: EventReader<ParticleRegistrationEvent>,
 ) {
     ev_particle_registered.read().for_each(|ev| {
-        handle_particle_components(
-            &mut commands,
-            &parent_query,
-            &particle_query,
-            &ev.entities,
-        );
+        handle_particle_components(&mut commands, &parent_query, &particle_query, &ev.entities);
     });
 }

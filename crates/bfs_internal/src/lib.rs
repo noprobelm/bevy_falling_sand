@@ -7,9 +7,8 @@
 #![allow(clippy::default_trait_access, clippy::module_name_repetitions)]
 
 pub mod bundles;
-pub mod particle_management;
 
-use bevy::prelude::{App, Plugin, Update};
+use bevy::prelude::{App, Plugin};
 use bevy_turborand::prelude::*;
 
 pub use bfs_asset_loaders as asset_loaders;
@@ -22,7 +21,6 @@ pub use bfs_scenes as scenes;
 pub use bfs_spatial as spatial;
 
 pub use bundles::*;
-pub use particle_management::*;
 
 pub struct FallingSandPlugin;
 
@@ -30,7 +28,6 @@ impl Plugin for FallingSandPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
             RngPlugin::default(),
-            ParticleManagementPlugin,
             core::FallingSandCorePlugin,
             movement::FallingSandMovementPlugin,
             color::FallingSandColorPlugin,
@@ -40,6 +37,5 @@ impl Plugin for FallingSandPlugin {
             asset_loaders::FallingSandAssetLoadersPlugin,
             scenes::FallingSandScenesPlugin,
         ));
-        app.add_systems(Update, handle_new_particles);
     }
 }
