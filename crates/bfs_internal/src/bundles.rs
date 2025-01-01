@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Bundle)]
 pub struct ParticleBundle {
     /// The particle type's color blueprint.
-    pub colors: ParticleColorBlueprint,
+    pub colors: ColorProfileBlueprint,
     /// The particle type's FlowsColor blueprint.
     pub flows: FlowsColorBlueprint,
     /// The particle type's density blueprint.
@@ -44,7 +44,7 @@ pub struct StaticParticleTypeBundle {
     /// The unique identifier for the particle.
     pub particle_type: ParticleType,
     /// The particle type's color blueprint.
-    pub colors: ParticleColorBlueprint,
+    pub colors: ColorProfileBlueprint,
     /// The particle type's global transform.
     pub transform: Transform,
     /// The particle type's global visibility.
@@ -53,10 +53,10 @@ pub struct StaticParticleTypeBundle {
 
 impl StaticParticleTypeBundle {
     /// Creates a new StaticParticleTypeBundle
-    pub fn new(particle_type: ParticleType, colors: ParticleColor) -> StaticParticleTypeBundle {
+    pub fn new(particle_type: ParticleType, colors: ColorProfile) -> StaticParticleTypeBundle {
         StaticParticleTypeBundle {
             particle_type,
-            colors: ParticleColorBlueprint(colors),
+            colors: ColorProfileBlueprint(colors),
             transform: Transform::default(),
             visibility: Visibility::default(),
         }
@@ -75,7 +75,7 @@ pub struct DynamicParticleTypeBundle {
     /// The particle type's movement priority blueprint.
     pub movement_priority: MovementPriorityBlueprint,
     /// The particle type's colors blueprint.
-    pub colors: ParticleColorBlueprint,
+    pub colors: ColorProfileBlueprint,
     /// The particle type's global transform.
     pub transform: Transform,
     /// The particle type's global visibility.
@@ -89,14 +89,14 @@ impl DynamicParticleTypeBundle {
         density: Density,
         velocity: Velocity,
         movement_priority: MovementPriority,
-        colors: ParticleColor,
+        colors: ColorProfile,
     ) -> DynamicParticleTypeBundle {
         DynamicParticleTypeBundle {
             particle_type,
             density: DensityBlueprint(density),
             velocity: VelocityBlueprint(velocity),
             movement_priority: MovementPriorityBlueprint(movement_priority),
-            colors: ParticleColorBlueprint(colors),
+            colors: ColorProfileBlueprint(colors),
             transform: Transform::default(),
             visibility: Visibility::default(),
         }
@@ -113,7 +113,7 @@ pub struct MovableSolidBundle {
     /// The particle type's velocity blueprint.
     pub velocity: VelocityBlueprint,
     /// The particle type's colors blueprint.
-    pub colors: ParticleColorBlueprint,
+    pub colors: ColorProfileBlueprint,
     /// The MovableSolid blueprint
     pub movable_solid: MovableSolidBlueprint,
 }
@@ -124,13 +124,13 @@ impl MovableSolidBundle {
         particle_type: ParticleType,
         density: Density,
         velocity: Velocity,
-        colors: ParticleColor,
+        colors: ColorProfile,
     ) -> MovableSolidBundle {
         MovableSolidBundle {
             particle_type,
             density: DensityBlueprint(density),
             velocity: VelocityBlueprint(velocity),
-            colors: ParticleColorBlueprint(colors),
+            colors: ColorProfileBlueprint(colors),
             movable_solid: MovableSolidBlueprint(MovableSolid::new()),
         }
     }
@@ -146,7 +146,7 @@ pub struct SolidBundle {
     /// The particle type's velocity blueprint.
     pub velocity: VelocityBlueprint,
     /// The particle type's colors blueprint.
-    pub colors: ParticleColorBlueprint,
+    pub colors: ColorProfileBlueprint,
     /// The Solid component blueprint.
     pub solid: SolidBlueprint,
 }
@@ -157,13 +157,13 @@ impl SolidBundle {
         particle_type: ParticleType,
         density: Density,
         velocity: Velocity,
-        colors: ParticleColor,
+        colors: ColorProfile,
     ) -> SolidBundle {
         SolidBundle {
             particle_type,
             density: DensityBlueprint(density),
             velocity: VelocityBlueprint(velocity),
-            colors: ParticleColorBlueprint(colors),
+            colors: ColorProfileBlueprint(colors),
             solid: SolidBlueprint(Solid::new()),
         }
     }
@@ -179,7 +179,7 @@ pub struct LiquidBundle {
     /// The particle type's velocity blueprint.
     pub velocity: VelocityBlueprint,
     /// The particle type's colors blueprint.
-    pub colors: ParticleColorBlueprint,
+    pub colors: ColorProfileBlueprint,
     /// The Liquid component blueprint.
     pub liquid: LiquidBlueprint,
 }
@@ -191,13 +191,13 @@ impl LiquidBundle {
         density: Density,
         velocity: Velocity,
         fluidity: usize,
-        colors: ParticleColor,
+        colors: ColorProfile,
     ) -> LiquidBundle {
         LiquidBundle {
             particle_type,
             density: DensityBlueprint(density),
             velocity: VelocityBlueprint(velocity),
-            colors: ParticleColorBlueprint(colors),
+            colors: ColorProfileBlueprint(colors),
             liquid: LiquidBlueprint(Liquid::new(fluidity)),
         }
     }
@@ -213,7 +213,7 @@ pub struct GasBundle {
     /// The particle type's velocity blueprint.
     pub velocity: VelocityBlueprint,
     /// The particle type's colors blueprint.
-    pub colors: ParticleColorBlueprint,
+    pub colors: ColorProfileBlueprint,
     /// The Gas component blueprint.
     pub gas: GasBlueprint,
 }
@@ -225,13 +225,13 @@ impl GasBundle {
         density: Density,
         velocity: Velocity,
         fluidity: usize,
-        colors: ParticleColor,
+        colors: ColorProfile,
     ) -> GasBundle {
         GasBundle {
             particle_type,
             density: DensityBlueprint(density),
             velocity: VelocityBlueprint(velocity),
-            colors: ParticleColorBlueprint(colors),
+            colors: ColorProfileBlueprint(colors),
             gas: GasBlueprint(Gas::new(fluidity)),
         }
     }
@@ -243,7 +243,7 @@ pub struct WallBundle {
     /// The unique identifier for the particle.
     pub particle_type: ParticleType,
     /// The particle type's colors blueprint.
-    pub colors: ParticleColorBlueprint,
+    pub colors: ColorProfileBlueprint,
     /// The Wall component blueprint.
     pub wall: WallBlueprint,
     /// The particle type's global transform.
@@ -254,10 +254,10 @@ pub struct WallBundle {
 
 impl WallBundle {
     /// Creates a new StaticParticleTypeBundle
-    pub fn new(particle_type: ParticleType, colors: ParticleColor) -> WallBundle {
+    pub fn new(particle_type: ParticleType, colors: ColorProfile) -> WallBundle {
         WallBundle {
             particle_type,
-            colors: ParticleColorBlueprint(colors),
+            colors: ColorProfileBlueprint(colors),
             wall: WallBlueprint(Wall),
             transform: Transform::default(),
             visibility: Visibility::default(),
