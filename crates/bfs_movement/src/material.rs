@@ -275,15 +275,6 @@ impl Material for Gas {
 )]
 pub struct GasBlueprint(pub Gas);
 
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Reflect, Serialize, Deserialize)]
-pub enum MaterialType {
-    Solid,
-    MovableSolid,
-    Liquid,
-    Gas,
-    Custom,
-}
-
 pub fn on_solid_blueprint_added(
     trigger: Trigger<OnAdd, SolidBlueprint>,
     mut commands: Commands,
