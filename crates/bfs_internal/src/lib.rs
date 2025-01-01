@@ -11,7 +11,6 @@ pub mod bundles;
 use bevy::prelude::{App, Plugin};
 use bevy_turborand::prelude::*;
 
-pub use bfs_asset_loaders as asset_loaders;
 pub use bfs_color as color;
 pub use bfs_core as core;
 pub use bfs_debug as debug;
@@ -34,7 +33,6 @@ impl Plugin for FallingSandPlugin {
             debug::FallingSandDebugPlugin,
             spatial::FallingSandSpatialPlugin,
             reactions::FallingSandReactionsPlugin,
-            asset_loaders::FallingSandAssetLoadersPlugin,
             scenes::FallingSandScenesPlugin,
         ));
     }
