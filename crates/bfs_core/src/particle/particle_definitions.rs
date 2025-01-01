@@ -31,10 +31,6 @@ impl Particle {
     }
 }
 
-#[derive(Component, Clone, Debug, PartialEq, Reflect, Serialize, Deserialize)]
-#[reflect(Component)]
-pub struct ParticleBlueprint(pub Particle);
-
 #[derive(
     Copy, Clone, Eq, PartialEq, Hash, Debug, Default, Component, Reflect, Serialize, Deserialize,
 )]

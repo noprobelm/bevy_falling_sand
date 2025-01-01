@@ -2,6 +2,7 @@ mod particle;
 mod chunk_map;
 mod particle_type;
 mod common;
+pub mod blueprint;
 
 use bevy::prelude::*;
 
@@ -9,6 +10,7 @@ pub use particle::*;
 pub use chunk_map::*;
 pub use common::*;
 pub use particle_type::*;
+pub use blueprint::*;
 
 pub struct FallingSandCorePlugin;
 
