@@ -1,8 +1,8 @@
+pub mod blueprint;
 mod particle;
 mod chunk_map;
 mod particle_type;
 mod common;
-pub mod blueprint;
 
 use bevy::prelude::*;
 

@@ -4,6 +4,7 @@ pub trait ParticleBlueprint: Component {
     type Data: Component;
 
     fn data(&self) -> &Self::Data;
+    fn data_mut(&mut self) -> &mut Self::Data;
 }
 
 #[macro_export]
@@ -14,6 +15,10 @@ macro_rules! impl_particle_blueprint {
 
             fn data(&self) -> &Self::Data {
                 &self.0
+            }
+
+            fn data_mut(&mut self) -> &mut Self::Data {
+                &mut self.0
             }
         }
     };
