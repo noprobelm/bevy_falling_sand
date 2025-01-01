@@ -27,6 +27,14 @@ pub struct ColorProfile {
 }
 
 impl ColorProfile {
+    pub fn new(palette: Vec<Color>) -> ColorProfile {
+        ColorProfile {
+            index: 0,
+            color: palette[0],
+            palette,
+        }
+    }
+
     pub fn new_with_selected(selected: Color, palette: Vec<Color>) -> ColorProfile {
         ColorProfile {
             index: 0,
@@ -44,7 +52,7 @@ impl ColorProfile {
         }
     }
 
-    pub fn randomize(&mut self, rng: &mut ColorRng) {
+    pub fn set_random(&mut self, rng: &mut ColorRng) {
         self.index = rng.index(0..self.palette.len());
         self.color = *self.palette.get(self.index).unwrap();
     }
