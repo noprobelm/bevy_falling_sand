@@ -27,7 +27,7 @@ pub struct ColorProfile {
 }
 
 impl ColorProfile {
-    pub fn new(selected: Color, palette: Vec<Color>) -> ColorProfile {
+    pub fn new_with_selected(selected: Color, palette: Vec<Color>) -> ColorProfile {
         ColorProfile {
             index: 0,
             color: selected,
