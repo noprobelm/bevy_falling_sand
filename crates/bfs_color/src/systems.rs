@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bfs_core::{Particle, ParticleSimulationSet};
 
-use super::{FlowsColor, ParticleColor, ColorRng};
+use super::{FlowsColor, ColorProfile, ColorRng};
 
 pub struct SystemsPlugin;
 
@@ -19,7 +19,7 @@ impl Plugin for SystemsPlugin {
 }
 
 pub fn color_particles(
-    mut particle_query: Query<(&mut Sprite, &ParticleColor), Changed<ParticleColor>>,
+    mut particle_query: Query<(&mut Sprite, &ColorProfile), Changed<ColorProfile>>,
 ) {
     particle_query.iter_mut().for_each(|(mut sprite, color)| {
         sprite.color = color.selected;
@@ -27,7 +27,7 @@ pub fn color_particles(
 }
 
 pub fn color_flowing_particles(
-    mut particles_query: Query<(&mut ParticleColor, &mut ColorRng, &FlowsColor), With<Particle>>,
+    mut particles_query: Query<(&mut ColorProfile, &mut ColorRng, &FlowsColor), With<Particle>>,
 ) {
     particles_query
         .iter_mut()

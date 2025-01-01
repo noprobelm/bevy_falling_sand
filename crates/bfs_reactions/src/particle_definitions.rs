@@ -36,7 +36,7 @@ pub struct Burns {
     pub tick_rate: Duration,
     pub chance_destroy_per_tick: Option<f64>,
     pub reaction: Option<Reacting>,
-    pub color: Option<ParticleColor>,
+    pub color: Option<ColorProfile>,
     pub spreads: Option<Fire>,
 }
 
@@ -47,7 +47,7 @@ impl Burns {
         tick_rate: Duration,
         chance_destroy_per_tick: Option<f64>,
         reaction: Option<Reacting>,
-        color: Option<ParticleColor>,
+        color: Option<ColorProfile>,
         spreads: Option<Fire>,
     ) -> Burns {
         Burns {

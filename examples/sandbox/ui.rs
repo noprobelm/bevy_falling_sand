@@ -1366,7 +1366,7 @@ fn render_burns_field(
             .clicked()
         {
             if particle_burns_field.color_enable {
-                particle_burns_field.blueprint.0.color = Some(ParticleColor::new(
+                particle_burns_field.blueprint.0.color = Some(ColorProfile::new(
                     Color::srgba_u8(255, 255, 255, 255),
                     vec![Color::srgba_u8(255, 255, 255, 255)],
                 ));
@@ -1859,7 +1859,7 @@ pub struct ParticleEditorColors {
 impl Default for ParticleEditorColors {
     fn default() -> Self {
         ParticleEditorColors {
-            blueprint: ParticleColorBlueprint(ParticleColor::new(
+            blueprint: ParticleColorBlueprint(ColorProfile::new(
                 Color::srgba_u8(255, 255, 255, 255),
                 vec![Color::srgba_u8(255, 255, 255, 255)],
             )),

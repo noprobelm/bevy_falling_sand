@@ -12,7 +12,7 @@ impl Plugin for ParticleDefinitionsPlugin {
         app.add_systems(Update, handle_particle_registration);
         app.add_event::<ResetParticleColorEvent>();
         app.register_type::<ColorRng>()
-            .register_type::<ParticleColor>()
+            .register_type::<ColorProfile>()
             .register_type::<FlowsColor>()
             .register_type::<RandomizesColor>();
     }
@@ -20,48 +20,48 @@ impl Plugin for ParticleDefinitionsPlugin {
 
 #[derive(Clone, PartialEq, Debug, Default, Component, Reflect, Serialize, Deserialize)]
 #[reflect(Component)]
-pub struct ParticleColor {
-    color_index: usize,
+pub struct ColorProfile {
+    index: usize,
     pub selected: Color,
     pub palette: Vec<Color>,
 }
 
-impl ParticleColor {
-    pub fn new(selected: Color, palette: Vec<Color>) -> ParticleColor {
-        ParticleColor {
-            color_index: 0,
+impl ColorProfile {
+    pub fn new(selected: Color, palette: Vec<Color>) -> ColorProfile {
+        ColorProfile {
+            index: 0,
             selected,
             palette,
         }
     }
 
-    pub fn new_with_random<R: TurboRand>(&self, rng: &mut R) -> ParticleColor {
+    pub fn new_with_random<R: TurboRand>(&self, rng: &mut R) -> ColorProfile {
         let color_index = rng.index(0..self.palette.len());
-        ParticleColor {
-            color_index,
+        ColorProfile {
+            index: color_index,
             selected: *self.palette.get(color_index).unwrap(),
             palette: self.palette.clone(),
         }
     }
 
     pub fn randomize(&mut self, rng: &mut ColorRng) {
-        self.color_index = rng.index(0..self.palette.len());
-        self.selected = *self.palette.get(self.color_index).unwrap();
+        self.index = rng.index(0..self.palette.len());
+        self.selected = *self.palette.get(self.index).unwrap();
     }
 
     pub fn set_next(&mut self) {
-        if self.palette.len() - 1 == self.color_index {
-            self.color_index = 0;
+        if self.palette.len() - 1 == self.index {
+            self.index = 0;
         } else {
-            self.color_index += 1;
+            self.index += 1;
         }
-        self.selected = *self.palette.get(self.color_index).unwrap();
+        self.selected = *self.palette.get(self.index).unwrap();
     }
 }
 
 #[derive(Clone, PartialEq, Debug, Default, Component, Reflect, Serialize, Deserialize)]
 #[reflect(Component)]
-pub struct ParticleColorBlueprint(pub ParticleColor);
+pub struct ParticleColorBlueprint(pub ColorProfile);
 
 #[derive(Copy, Clone, PartialEq, Debug, Component, Reflect, Serialize, Deserialize)]
 #[reflect(Component)]
@@ -135,7 +135,7 @@ fn handle_particle_components(
                         .entity(*entity)
                         .insert(particle_color.0.new_with_random(rng));
                 } else {
-                    commands.entity(*entity).remove::<ParticleColor>();
+                    commands.entity(*entity).remove::<ColorProfile>();
                 }
                 if let Some(flows_color) = flows_color {
                     commands.entity(*entity).insert(flows_color.0.clone());

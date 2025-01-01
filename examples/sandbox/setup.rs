@@ -32,7 +32,7 @@ pub fn setup_particles(mut commands: Commands) {
             ParticleType::new("Rock"),
             Density(1250),
             Velocity::new(1, 3),
-            ParticleColor::new(
+            ColorProfile::new(
                 Color::Srgba(Srgba::hex("#6B738C").unwrap()),
                 vec![
                     Color::Srgba(Srgba::hex("#6B738C").unwrap()),
@@ -47,7 +47,7 @@ pub fn setup_particles(mut commands: Commands) {
     commands.spawn((
         WallBundle::new(
             ParticleType::new("Ice Wall"),
-            ParticleColor::new(
+            ColorProfile::new(
                 Color::Srgba(Srgba::hex("#8CDBF880").unwrap()),
                 vec![Color::Srgba(Srgba::hex("#8CDBF880").unwrap())],
             ),
@@ -68,7 +68,7 @@ pub fn setup_particles(mut commands: Commands) {
             ParticleType::new("My Custom Particle"),
             Density(1250),
             Velocity::new(1, 3),
-            ParticleColor::new(
+            ColorProfile::new(
                 Color::srgba(0.22, 0.11, 0.16, 1.0),
                 vec![
                     Color::srgba(0.22, 0.11, 0.16, 1.0),
@@ -87,7 +87,7 @@ pub fn setup_particles(mut commands: Commands) {
     commands.spawn((
         WallBundle::new(
             ParticleType::new("My Custom Wall Particle"),
-            ParticleColor::new(
+            ColorProfile::new(
                 Color::srgba(0.22, 0.11, 0.16, 1.0),
                 vec![
                     Color::srgba(0.22, 0.11, 0.16, 1.0),
@@ -107,7 +107,7 @@ pub fn setup_particles(mut commands: Commands) {
             Density(750),
             Velocity::new(1, 3),
             5,
-            ParticleColor::new(
+            ColorProfile::new(
                 Color::Srgba(Srgba::hex("#0B80AB80").unwrap()),
                 vec![Color::Srgba(Srgba::hex("#0B80AB80").unwrap())],
             ),
@@ -122,7 +122,7 @@ pub fn setup_particles(mut commands: Commands) {
             Density(850),
             Velocity::new(1, 2),
             1,
-            ParticleColor::new(
+            ColorProfile::new(
                 Color::Srgba(Srgba::hex("#94B5C7FF").unwrap()),
                 vec![
                     Color::Srgba(Srgba::hex("#94B5C7FF").unwrap()),
@@ -145,7 +145,7 @@ pub fn setup_particles(mut commands: Commands) {
             Density(850),
             Velocity::new(1, 2),
             1,
-            ParticleColor::new(
+            ColorProfile::new(
                 Color::Srgba(Srgba::hex("#8FA73980").unwrap()),
                 vec![
                     Color::Srgba(Srgba::hex("#82983480").unwrap()),
@@ -164,7 +164,7 @@ pub fn setup_particles(mut commands: Commands) {
             Density(850),
             Velocity::new(1, 3),
             5,
-            ParticleColor::new(
+            ColorProfile::new(
                 Color::Srgba(Srgba::hex("#D6997080").unwrap()),
                 vec![Color::Srgba(Srgba::hex("#D6997080").unwrap())],
             ),
@@ -179,7 +179,7 @@ pub fn setup_particles(mut commands: Commands) {
             Density(800),
             Velocity::new(1, 3),
             5,
-            ParticleColor::new(
+            ColorProfile::new(
                 Color::Srgba(Srgba::hex("#780606").unwrap()),
                 vec![Color::Srgba(Srgba::hex("#780606").unwrap())],
             ),
@@ -194,7 +194,7 @@ pub fn setup_particles(mut commands: Commands) {
             Density(730),
             Velocity::new(1, 3),
             3,
-            ParticleColor::new(
+            ColorProfile::new(
                 Color::Srgba(Srgba::hex("#2B1229").unwrap()),
                 vec![Color::Srgba(Srgba::hex("#2B1229").unwrap())],
             ),
@@ -205,7 +205,7 @@ pub fn setup_particles(mut commands: Commands) {
             Duration::from_millis(100),
             Some(0.1),
             Some(Reacting::new(Particle::new("Smoke"), 0.035)),
-            Some(ParticleColor::new(
+            Some(ColorProfile::new(
                 Color::Srgba(Srgba::hex("#FF0000").unwrap()),
                 vec![
                     Color::Srgba(Srgba::hex("#FF5900").unwrap()),
@@ -229,7 +229,7 @@ pub fn setup_particles(mut commands: Commands) {
             ParticleType::new("Sand"),
             Density(1250),
             Velocity::new(1, 3),
-            ParticleColor::new(
+            ColorProfile::new(
                 Color::Srgba(Srgba::hex("#F2E06B").unwrap()),
                 vec![
                     Color::Srgba(Srgba::hex("#FFEB8A").unwrap()),
@@ -247,7 +247,7 @@ pub fn setup_particles(mut commands: Commands) {
             ParticleType::new("Dirt"),
             Density(1250),
             Velocity::new(1, 3),
-            ParticleColor::new(
+            ColorProfile::new(
                 Color::Srgba(Srgba::hex("#916B4C").unwrap()),
                 vec![
                     Color::Srgba(Srgba::hex("#916B4C").unwrap()),
@@ -265,7 +265,7 @@ pub fn setup_particles(mut commands: Commands) {
             ParticleType::new("Snow"),
             Density(1250),
             Velocity::new(1, 3),
-            ParticleColor::new(
+            ColorProfile::new(
                 Color::Srgba(Srgba::hex("#EAFDF8").unwrap()),
                 vec![
                     Color::Srgba(Srgba::hex("#EAFDF8").unwrap()),
@@ -284,7 +284,7 @@ pub fn setup_particles(mut commands: Commands) {
             Density(250),
             Velocity::new(1, 1),
             3,
-            ParticleColor::new(
+            ColorProfile::new(
                 Color::Srgba(Srgba::hex("#C7D6E0").unwrap()),
                 vec![
                     Color::Srgba(Srgba::hex("#EEF2F4").unwrap()),
@@ -310,7 +310,7 @@ pub fn setup_particles(mut commands: Commands) {
             Density(275),
             Velocity::new(1, 1),
             1,
-            ParticleColor::new(
+            ColorProfile::new(
                 Color::Srgba(Srgba::hex("#706966").unwrap()),
                 vec![
                     Color::Srgba(Srgba::hex("#706966").unwrap()),
@@ -328,7 +328,7 @@ pub fn setup_particles(mut commands: Commands) {
             Density(200),
             Velocity::new(1, 1),
             1,
-            ParticleColor::new(
+            ColorProfile::new(
                 Color::Srgba(Srgba::hex("#40621880").unwrap()),
                 vec![
                     Color::Srgba(Srgba::hex("#40621880").unwrap()),
@@ -342,7 +342,7 @@ pub fn setup_particles(mut commands: Commands) {
             Duration::from_millis(100),
             Some(0.5),
             None,
-            Some(ParticleColor::new(
+            Some(ColorProfile::new(
                 Color::Srgba(Srgba::hex("#FF0000").unwrap()),
                 vec![
                     Color::Srgba(Srgba::hex("#FF5900").unwrap()),
@@ -367,7 +367,7 @@ pub fn setup_particles(mut commands: Commands) {
             Density(450),
             Velocity::new(1, 3),
             1,
-            ParticleColor::new(
+            ColorProfile::new(
                 Color::Srgba(Srgba::hex("#FF5900FF").unwrap()),
                 vec![
                     Color::Srgba(Srgba::hex("#FF5900FF").unwrap()),
@@ -401,7 +401,7 @@ pub fn setup_particles(mut commands: Commands) {
     commands.spawn((
         WallBundle::new(
             ParticleType::new("Dirt Wall"),
-            ParticleColor::new(
+            ColorProfile::new(
                 Color::Srgba(Srgba::hex("#916B4C").unwrap()),
                 vec![
                     Color::Srgba(Srgba::hex("#916B4C").unwrap()),
@@ -415,7 +415,7 @@ pub fn setup_particles(mut commands: Commands) {
     commands.spawn((
         WallBundle::new(
             ParticleType::new("Rock Wall"),
-            ParticleColor::new(
+            ColorProfile::new(
                 Color::Srgba(Srgba::hex("#3B3333").unwrap()),
                 vec![
                     Color::Srgba(Srgba::hex("#3B3333").unwrap()),
@@ -431,7 +431,7 @@ pub fn setup_particles(mut commands: Commands) {
     commands.spawn((
         WallBundle::new(
             ParticleType::new("Dense Rock Wall"),
-            ParticleColor::new(
+            ColorProfile::new(
                 Color::Srgba(Srgba::hex("#6B738C").unwrap()),
                 vec![
                     Color::Srgba(Srgba::hex("#6B738C").unwrap()),
@@ -446,7 +446,7 @@ pub fn setup_particles(mut commands: Commands) {
     commands.spawn((
         WallBundle::new(
             ParticleType::new("Grass Wall"),
-            ParticleColor::new(
+            ColorProfile::new(
                 Color::Srgba(Srgba::hex("#5C8730").unwrap()),
                 vec![
                     Color::Srgba(Srgba::hex("#5C8730").unwrap()),
@@ -461,7 +461,7 @@ pub fn setup_particles(mut commands: Commands) {
             Duration::from_millis(100),
             Some(0.5),
             Some(Reacting::new(Particle::new("FIRE"), 1.)),
-            Some(ParticleColor::new(
+            Some(ColorProfile::new(
                 Color::Srgba(Srgba::hex("#FF0000").unwrap()),
                 vec![
                     Color::Srgba(Srgba::hex("#FF5900").unwrap()),
@@ -483,7 +483,7 @@ pub fn setup_particles(mut commands: Commands) {
     commands.spawn((
         WallBundle::new(
             ParticleType::new("Wood Wall"),
-            ParticleColor::new(
+            ColorProfile::new(
                 Color::Srgba(Srgba::hex("#A1662E").unwrap()),
                 vec![Color::Srgba(Srgba::hex("#A1662E").unwrap())],
             ),
@@ -493,7 +493,7 @@ pub fn setup_particles(mut commands: Commands) {
             Duration::from_millis(100),
             Some(0.0),
             Some(Reacting::new(Particle::new("Smoke"), 0.035)),
-            Some(ParticleColor::new(
+            Some(ColorProfile::new(
                 Color::Srgba(Srgba::hex("#FF0000").unwrap()),
                 vec![
                     Color::Srgba(Srgba::hex("#FF5900").unwrap()),

@@ -53,7 +53,7 @@ pub struct StaticParticleTypeBundle {
 
 impl StaticParticleTypeBundle {
     /// Creates a new StaticParticleTypeBundle
-    pub fn new(particle_type: ParticleType, colors: ParticleColor) -> StaticParticleTypeBundle {
+    pub fn new(particle_type: ParticleType, colors: ColorProfile) -> StaticParticleTypeBundle {
         StaticParticleTypeBundle {
             particle_type,
             colors: ParticleColorBlueprint(colors),
@@ -89,7 +89,7 @@ impl DynamicParticleTypeBundle {
         density: Density,
         velocity: Velocity,
         movement_priority: MovementPriority,
-        colors: ParticleColor,
+        colors: ColorProfile,
     ) -> DynamicParticleTypeBundle {
         DynamicParticleTypeBundle {
             particle_type,
@@ -124,7 +124,7 @@ impl MovableSolidBundle {
         particle_type: ParticleType,
         density: Density,
         velocity: Velocity,
-        colors: ParticleColor,
+        colors: ColorProfile,
     ) -> MovableSolidBundle {
         MovableSolidBundle {
             particle_type,
@@ -157,7 +157,7 @@ impl SolidBundle {
         particle_type: ParticleType,
         density: Density,
         velocity: Velocity,
-        colors: ParticleColor,
+        colors: ColorProfile,
     ) -> SolidBundle {
         SolidBundle {
             particle_type,
@@ -191,7 +191,7 @@ impl LiquidBundle {
         density: Density,
         velocity: Velocity,
         fluidity: usize,
-        colors: ParticleColor,
+        colors: ColorProfile,
     ) -> LiquidBundle {
         LiquidBundle {
             particle_type,
@@ -225,7 +225,7 @@ impl GasBundle {
         density: Density,
         velocity: Velocity,
         fluidity: usize,
-        colors: ParticleColor,
+        colors: ColorProfile,
     ) -> GasBundle {
         GasBundle {
             particle_type,
@@ -254,7 +254,7 @@ pub struct WallBundle {
 
 impl WallBundle {
     /// Creates a new StaticParticleTypeBundle
-    pub fn new(particle_type: ParticleType, colors: ParticleColor) -> WallBundle {
+    pub fn new(particle_type: ParticleType, colors: ColorProfile) -> WallBundle {
         WallBundle {
             particle_type,
             colors: ParticleColorBlueprint(colors),
