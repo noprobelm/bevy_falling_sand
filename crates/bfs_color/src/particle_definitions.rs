@@ -18,7 +18,7 @@ impl Plugin for ParticleDefinitionsPlugin {
     }
 }
 
-#[derive(Clone, PartialEq, Debug, Default, Component, Reflect, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Debug, Component, Reflect, Serialize, Deserialize)]
 #[reflect(Component)]
 pub struct ColorProfile {
     index: usize,
@@ -35,10 +35,10 @@ impl ColorProfile {
         }
     }
 
-    pub fn new_with_selected(selected: Color, palette: Vec<Color>) -> ColorProfile {
+    pub fn new_with_selected(selected: usize, palette: Vec<Color>) -> ColorProfile {
         ColorProfile {
-            index: 0,
-            color: selected,
+            index: selected,
+            color: palette[selected],
             palette,
         }
     }
@@ -67,9 +67,15 @@ impl ColorProfile {
     }
 }
 
+impl Default for ColorProfile {
+    fn default() -> Self {
+        ColorProfile::new(vec![Color::srgba(255., 255., 255., 255.)])
+    }
+}
+
 #[derive(Clone, PartialEq, Debug, Default, Component, Reflect, Serialize, Deserialize)]
 #[reflect(Component)]
-pub struct ParticleColorBlueprint(pub ColorProfile);
+pub struct ColorProfileBlueprint(pub ColorProfile);
 
 #[derive(Copy, Clone, PartialEq, Debug, Component, Reflect, Serialize, Deserialize)]
 #[reflect(Component)]
@@ -115,7 +121,7 @@ fn handle_particle_components(
     rng: &mut ResMut<GlobalRng>,
     parent_query: &Query<
         (
-            Option<&ParticleColorBlueprint>,
+            Option<&ColorProfileBlueprint>,
             Option<&FlowsColorBlueprint>,
             Option<&RandomizesColorBlueprint>,
         ),
@@ -165,7 +171,7 @@ fn handle_particle_registration(
     mut rng: ResMut<GlobalRng>,
     parent_query: Query<
         (
-            Option<&ParticleColorBlueprint>,
+            Option<&ColorProfileBlueprint>,
             Option<&FlowsColorBlueprint>,
             Option<&RandomizesColorBlueprint>,
         ),

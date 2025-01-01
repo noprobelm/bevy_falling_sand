@@ -699,7 +699,7 @@ pub fn update_particle_editor_fields(
             Option<&DensityBlueprint>,
             Option<&VelocityBlueprint>,
             Option<&MomentumBlueprint>,
-            Option<&ParticleColorBlueprint>,
+            Option<&ColorProfileBlueprint>,
             Option<&BurnsBlueprint>,
             Option<&WallBlueprint>,
             Option<&LiquidBlueprint>,
@@ -1366,10 +1366,7 @@ fn render_burns_field(
             .clicked()
         {
             if particle_burns_field.color_enable {
-                particle_burns_field.blueprint.0.color = Some(ColorProfile::new_with_selected(
-                    Color::srgba_u8(255, 255, 255, 255),
-                    vec![Color::srgba_u8(255, 255, 255, 255)],
-                ));
+                particle_burns_field.blueprint.0.color = Some(ColorProfile::default())
             } else {
                 particle_burns_field.blueprint.0.color = None;
             }
@@ -1853,16 +1850,13 @@ pub struct ParticleEditorMomentum {
 
 #[derive(Resource, Clone, Debug)]
 pub struct ParticleEditorColors {
-    blueprint: ParticleColorBlueprint,
+    blueprint: ColorProfileBlueprint,
 }
 
 impl Default for ParticleEditorColors {
     fn default() -> Self {
         ParticleEditorColors {
-            blueprint: ParticleColorBlueprint(ColorProfile::new_with_selected(
-                Color::srgba_u8(255, 255, 255, 255),
-                vec![Color::srgba_u8(255, 255, 255, 255)],
-            )),
+            blueprint: ColorProfileBlueprint(ColorProfile::default()),
         }
     }
 }
