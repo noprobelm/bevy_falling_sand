@@ -3,7 +3,7 @@ use bfs_core::{Particle, ParticleSimulationSet};
 
 use super::{ChangesColor, ColorProfile, ColorRng};
 
-pub struct SystemsPlugin;
+pub(super) struct SystemsPlugin;
 
 impl Plugin for SystemsPlugin {
     fn build(&self, app: &mut App) {

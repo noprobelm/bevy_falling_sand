@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use super::{MovementPriority, MovementPriorityBlueprint};
 
-pub struct MaterialPlugin;
+pub(super) struct MaterialPlugin;
 
 impl Plugin for MaterialPlugin {
     fn build(&self, app: &mut App) {

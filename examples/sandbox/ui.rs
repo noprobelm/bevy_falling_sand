@@ -10,18 +10,7 @@ use bevy::{
     window::PrimaryWindow,
 };
 use bevy_egui::{egui, egui::Color32, EguiContexts};
-use bfs_internal::{
-    reactions::{BurnsBlueprint, Fire, Reacting},
-    ParticleBundle,
-};
-
-use bevy_falling_sand::color::*;
-use bevy_falling_sand::core::*;
-use bevy_falling_sand::debug::{
-    DebugDirtyRects, DebugHibernatingChunks, DebugParticleCount, TotalParticleCount,
-};
-use bevy_falling_sand::movement::*;
-use bevy_falling_sand::scenes::{LoadSceneEvent, SaveSceneEvent};
+use bevy_falling_sand::prelude::*;
 
 use super::*;
 

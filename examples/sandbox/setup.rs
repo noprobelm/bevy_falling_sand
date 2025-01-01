@@ -9,11 +9,7 @@
 //!   - `DynamicParticleTypeBundle`: For particles that have movement behavior
 use bevy::prelude::*;
 use bevy::utils::Duration;
-use bevy_falling_sand::bundles::*;
-use bevy_falling_sand::color::*;
-use bevy_falling_sand::core::*;
-use bevy_falling_sand::movement::*;
-use bevy_falling_sand::reactions::*;
+use bevy_falling_sand::prelude::*;
 
 pub(super) struct ParticleSetupPlugin;
 

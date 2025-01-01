@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use bevy::prelude::*;
-use bevy_falling_sand::scenes::{LoadSceneEvent, SaveSceneEvent};
+use bevy_falling_sand::prelude::{SaveSceneEvent, LoadSceneEvent};
 use bevy_egui::egui;
 
 /// Scene plugin

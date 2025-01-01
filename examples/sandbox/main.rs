@@ -13,7 +13,7 @@ use ui::*;
 
 use bevy::{prelude::*, window::WindowMode};
 use bevy_egui::EguiPlugin;
-use bevy_falling_sand::FallingSandPlugin;
+use bevy_falling_sand::prelude::FallingSandPlugin;
 
 fn main() {
     let mut app = App::new();
