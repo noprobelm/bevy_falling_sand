@@ -15,7 +15,6 @@ use bevy_falling_sand::core::*;
 use bevy_falling_sand::movement::*;
 use bevy_falling_sand::reactions::*;
 
-/// Particle Management Plugin
 pub(super) struct ParticleSetupPlugin;
 
 impl bevy::prelude::Plugin for ParticleSetupPlugin {
