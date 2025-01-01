@@ -1,7 +1,7 @@
 //! This module demonstrates how to spawn/despawn particles from the world using a brush tool.
 use bevy::{input::common_conditions::input_pressed, prelude::*, utils::HashSet};
 use bevy_egui::EguiContexts;
-use bevy_falling_sand::core::{ChunkMap, Particle, ParticleSimulationSet, RemoveParticleEvent};
+use bevy_falling_sand::prelude::{ChunkMap, Particle, ParticleSimulationSet, RemoveParticleEvent};
 
 use super::{update_cursor_coordinates, AppState, CursorCoords, SelectedBrushParticle};
 

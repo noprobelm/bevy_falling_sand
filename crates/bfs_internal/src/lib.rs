@@ -7,6 +7,7 @@
 #![allow(clippy::default_trait_access, clippy::module_name_repetitions)]
 
 pub mod bundles;
+pub mod prelude;
 
 use bevy::prelude::{App, Plugin};
 use bevy_turborand::prelude::*;

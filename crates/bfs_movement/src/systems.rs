@@ -5,7 +5,7 @@ use std::mem;
 use bevy::utils::HashSet;
 use bfs_core::{ChunkMap, Coordinates, Particle, ParticleSimulationSet};
 
-pub struct SystemsPlugin;
+pub(super) struct SystemsPlugin;
 
 impl Plugin for SystemsPlugin {
     fn build(&self, app: &mut App) {

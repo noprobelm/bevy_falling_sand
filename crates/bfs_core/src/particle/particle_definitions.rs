@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{ChunkMap, ParticleRegistrationEvent, ParticleSimulationSet, ParticleType, ParticleTypeMap};
 
-pub struct ParticleDefinitionsPlugin;
+pub(super) struct ParticleDefinitionsPlugin;
 
 impl Plugin for ParticleDefinitionsPlugin {
     fn build(&self, app: &mut App) {

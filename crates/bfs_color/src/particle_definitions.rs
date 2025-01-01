@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use super::ColorRng;
 use bfs_core::{ParticleBlueprint, impl_particle_blueprint, Particle, ParticleRegistrationEvent, ParticleType};
 
-pub struct ParticleDefinitionsPlugin;
+pub(super) struct ParticleDefinitionsPlugin;
 
 impl Plugin for ParticleDefinitionsPlugin {
     fn build(&self, app: &mut App) {

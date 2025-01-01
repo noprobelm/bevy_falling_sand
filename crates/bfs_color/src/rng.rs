@@ -23,5 +23,3 @@ impl ColorRng {
         self.0.index(bound)
     }
 }
-
-

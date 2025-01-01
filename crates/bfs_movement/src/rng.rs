@@ -24,4 +24,3 @@ impl PhysicsRng {
         self.0.index(bound)
     }
 }
-

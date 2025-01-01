@@ -7,7 +7,7 @@ use std::slice::Iter;
 
 use crate::rng::PhysicsRng;
 
-pub struct ParticleDefinitionsPlugin;
+pub(super) struct ParticleDefinitionsPlugin;
 
 impl Plugin for ParticleDefinitionsPlugin {
     fn build(&self, app: &mut App) {
