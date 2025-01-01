@@ -129,7 +129,7 @@ pub fn setup_particles(mut commands: Commands) {
             ),
         ),
         MomentumBlueprint(Momentum::ZERO),
-        FlowsColorBlueprint(FlowsColor::new(0.1)),
+        ChangesColorBlueprint(ChangesColor::new(0.1)),
         Name::new("Sparkly Slime"),
     ));
 
@@ -147,7 +147,7 @@ pub fn setup_particles(mut commands: Commands) {
             ),
         ),
         MomentumBlueprint(Momentum::ZERO),
-        FlowsColorBlueprint(FlowsColor::new(0.1)),
+        ChangesColorBlueprint(ChangesColor::new(0.1)),
         Name::new("Slime"),
     ));
 
@@ -277,7 +277,7 @@ pub fn setup_particles(mut commands: Commands) {
                 ],
             ),
         ),
-        FlowsColorBlueprint(FlowsColor::new(0.1)),
+        ChangesColorBlueprint(ChangesColor::new(0.1)),
         BurnsBlueprint(Burns::new(
             Duration::from_millis(200),
             Duration::from_millis(100),
@@ -302,7 +302,7 @@ pub fn setup_particles(mut commands: Commands) {
                 ],
             ),
         ),
-        FlowsColorBlueprint(FlowsColor::new(0.1)),
+        ChangesColorBlueprint(ChangesColor::new(0.1)),
         Name::new("Smoke"),
     ));
 
@@ -319,7 +319,7 @@ pub fn setup_particles(mut commands: Commands) {
                 ],
             ),
         ),
-        FlowsColorBlueprint(FlowsColor::new(0.1)),
+        ChangesColorBlueprint(ChangesColor::new(0.1)),
         BurnsBlueprint(Burns::new(
             Duration::from_secs(1),
             Duration::from_millis(100),
@@ -358,7 +358,7 @@ pub fn setup_particles(mut commands: Commands) {
                 ],
             ),
         ),
-        FlowsColorBlueprint(FlowsColor::new(0.1)),
+        ChangesColorBlueprint(ChangesColor::new(0.1)),
         FireBlueprint(Fire {
             burn_radius: 1.5,
             chance_to_spread: 0.01,

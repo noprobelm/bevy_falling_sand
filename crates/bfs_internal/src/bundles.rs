@@ -13,7 +13,7 @@ pub struct ParticleBundle {
     /// The particle type's color blueprint.
     pub colors: ColorProfileBlueprint,
     /// The particle type's FlowsColor blueprint.
-    pub flows: FlowsColorBlueprint,
+    pub flows: ChangesColorBlueprint,
     /// The particle type's density blueprint.
     pub density: DensityBlueprint,
     /// The particle type's velocity blueprint.

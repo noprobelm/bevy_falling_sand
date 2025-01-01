@@ -13,8 +13,7 @@ impl Plugin for ParticleDefinitionsPlugin {
         app.add_event::<ResetParticleColorEvent>();
         app.register_type::<ColorRng>()
             .register_type::<ColorProfile>()
-            .register_type::<FlowsColor>()
-            .register_type::<RandomizesColor>();
+            .register_type::<ChangesColor>();
     }
 }
 
@@ -79,29 +78,13 @@ pub struct ColorProfileBlueprint(pub ColorProfile);
 
 #[derive(Copy, Clone, PartialEq, Debug, Component, Reflect, Serialize, Deserialize)]
 #[reflect(Component)]
-pub struct RandomizesColor {
+pub struct ChangesColor {
     pub rate: f64,
 }
 
-#[derive(Copy, Clone, PartialEq, Debug, Component, Reflect, Serialize, Deserialize)]
-#[reflect(Component)]
-pub struct RandomizesColorBlueprint(pub RandomizesColor);
-
-impl RandomizesColor {
-    pub fn new(chance: f64) -> RandomizesColor {
-        RandomizesColor { rate: chance }
-    }
-}
-
-#[derive(Copy, Clone, PartialEq, Debug, Component, Reflect, Serialize, Deserialize)]
-#[reflect(Component)]
-pub struct FlowsColor {
-    pub rate: f64,
-}
-
-impl FlowsColor {
-    pub fn new(chance: f64) -> FlowsColor {
-        FlowsColor { rate: chance }
+impl ChangesColor {
+    pub fn new(chance: f64) -> ChangesColor {
+        ChangesColor { rate: chance }
     }
 }
 
@@ -114,7 +97,7 @@ pub struct ResetParticleColorEvent {
 
 #[derive(Copy, Clone, PartialEq, Debug, Component, Reflect, Serialize, Deserialize)]
 #[reflect(Component)]
-pub struct FlowsColorBlueprint(pub FlowsColor);
+pub struct ChangesColorBlueprint(pub ChangesColor);
 
 fn handle_particle_components(
     commands: &mut Commands,
@@ -122,8 +105,7 @@ fn handle_particle_components(
     parent_query: &Query<
         (
             Option<&ColorProfileBlueprint>,
-            Option<&FlowsColorBlueprint>,
-            Option<&RandomizesColorBlueprint>,
+            Option<&ChangesColorBlueprint>,
         ),
         With<ParticleType>,
     >,
@@ -133,7 +115,7 @@ fn handle_particle_components(
     entities.iter().for_each(|entity| {
         if let Ok(parent) = particle_query.get(*entity) {
             commands.entity(*entity).insert(ColorRng::default());
-            if let Ok((particle_color, flows_color, randomizes_color)) =
+            if let Ok((particle_color, flows_color)) =
                 parent_query.get(parent.get())
             {
                 commands.entity(*entity).insert((
@@ -154,12 +136,7 @@ fn handle_particle_components(
                 if let Some(flows_color) = flows_color {
                     commands.entity(*entity).insert(flows_color.0.clone());
                 } else {
-                    commands.entity(*entity).remove::<FlowsColor>();
-                }
-                if let Some(randomizes_color) = randomizes_color {
-                    commands.entity(*entity).insert(randomizes_color.0.clone());
-                } else {
-                    commands.entity(*entity).remove::<RandomizesColor>();
+                    commands.entity(*entity).remove::<ChangesColor>();
                 }
             }
         }
@@ -172,8 +149,7 @@ fn handle_particle_registration(
     parent_query: Query<
         (
             Option<&ColorProfileBlueprint>,
-            Option<&FlowsColorBlueprint>,
-            Option<&RandomizesColorBlueprint>,
+            Option<&ChangesColorBlueprint>,
         ),
         With<ParticleType>,
     >,

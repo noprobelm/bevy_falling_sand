@@ -50,7 +50,7 @@ pub fn handle_fire(
                         commands.entity(entity).insert(burns.to_burning());
                         if let Some(colors) = &burns.color {
                             commands.entity(entity).insert(colors.clone());
-                            commands.entity(entity).insert(FlowsColor::new(0.75));
+                            commands.entity(entity).insert(ChangesColor::new(0.75));
                         }
                         if let Some(fire) = &burns.spreads {
                             commands.entity(entity).insert(fire.clone());
