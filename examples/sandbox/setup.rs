@@ -20,7 +20,6 @@ pub(super) struct ParticleSetupPlugin;
 
 impl bevy::prelude::Plugin for ParticleSetupPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
-        // Particle management systems
         app.add_systems(Startup, setup_particles);
     }
 }
@@ -76,7 +75,6 @@ pub fn setup_particles(mut commands: Commands) {
                 ],
             ),
         ),
-        // If momentum effects are desired, insert the marker component.
         MomentumBlueprint(Momentum::ZERO),
         Name::new("My Custom Particle"),
     ));
