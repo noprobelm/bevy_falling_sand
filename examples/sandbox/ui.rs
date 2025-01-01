@@ -1864,14 +1864,14 @@ impl Default for ParticleEditorColors {
 #[derive(Resource, Clone, Debug)]
 pub struct ParticleEditorFlowsColor {
     enable: bool,
-    blueprint: FlowsColorBlueprint,
+    blueprint: ChangesColorBlueprint,
 }
 
 impl Default for ParticleEditorFlowsColor {
     fn default() -> Self {
         ParticleEditorFlowsColor {
             enable: true,
-            blueprint: FlowsColorBlueprint(FlowsColor::new(0.1)),
+            blueprint: ChangesColorBlueprint(ChangesColor::new(0.1)),
         }
     }
 }

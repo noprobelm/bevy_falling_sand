@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bfs_core::{Particle, ParticleSimulationSet};
 
-use super::{FlowsColor, ColorProfile, ColorRng};
+use super::{ChangesColor, ColorProfile, ColorRng};
 
 pub struct SystemsPlugin;
 
@@ -27,7 +27,7 @@ pub fn color_particles(
 }
 
 pub fn color_flowing_particles(
-    mut particles_query: Query<(&mut ColorProfile, &mut ColorRng, &FlowsColor), With<Particle>>,
+    mut particles_query: Query<(&mut ColorProfile, &mut ColorRng, &ChangesColor), With<Particle>>,
 ) {
     particles_query
         .iter_mut()

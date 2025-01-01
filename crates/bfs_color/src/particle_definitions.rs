@@ -13,7 +13,7 @@ impl Plugin for ParticleDefinitionsPlugin {
         app.add_event::<ResetParticleColorEvent>();
         app.register_type::<ColorRng>()
             .register_type::<ColorProfile>()
-            .register_type::<FlowsColor>()
+            .register_type::<ChangesColor>()
             .register_type::<RandomizesColor>();
     }
 }
@@ -95,13 +95,13 @@ impl RandomizesColor {
 
 #[derive(Copy, Clone, PartialEq, Debug, Component, Reflect, Serialize, Deserialize)]
 #[reflect(Component)]
-pub struct FlowsColor {
+pub struct ChangesColor {
     pub rate: f64,
 }
 
-impl FlowsColor {
-    pub fn new(chance: f64) -> FlowsColor {
-        FlowsColor { rate: chance }
+impl ChangesColor {
+    pub fn new(chance: f64) -> ChangesColor {
+        ChangesColor { rate: chance }
     }
 }
 
@@ -114,7 +114,7 @@ pub struct ResetParticleColorEvent {
 
 #[derive(Copy, Clone, PartialEq, Debug, Component, Reflect, Serialize, Deserialize)]
 #[reflect(Component)]
-pub struct FlowsColorBlueprint(pub FlowsColor);
+pub struct ChangesColorBlueprint(pub ChangesColor);
 
 fn handle_particle_components(
     commands: &mut Commands,
@@ -122,7 +122,7 @@ fn handle_particle_components(
     parent_query: &Query<
         (
             Option<&ColorProfileBlueprint>,
-            Option<&FlowsColorBlueprint>,
+            Option<&ChangesColorBlueprint>,
             Option<&RandomizesColorBlueprint>,
         ),
         With<ParticleType>,
@@ -154,7 +154,7 @@ fn handle_particle_components(
                 if let Some(flows_color) = flows_color {
                     commands.entity(*entity).insert(flows_color.0.clone());
                 } else {
-                    commands.entity(*entity).remove::<FlowsColor>();
+                    commands.entity(*entity).remove::<ChangesColor>();
                 }
                 if let Some(randomizes_color) = randomizes_color {
                     commands.entity(*entity).insert(randomizes_color.0.clone());
@@ -172,7 +172,7 @@ fn handle_particle_registration(
     parent_query: Query<
         (
             Option<&ColorProfileBlueprint>,
-            Option<&FlowsColorBlueprint>,
+            Option<&ChangesColorBlueprint>,
             Option<&RandomizesColorBlueprint>,
         ),
         With<ParticleType>,
