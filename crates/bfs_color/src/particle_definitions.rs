@@ -22,7 +22,7 @@ impl Plugin for ParticleDefinitionsPlugin {
 #[reflect(Component)]
 pub struct ColorProfile {
     index: usize,
-    pub selected: Color,
+    pub color: Color,
     pub palette: Vec<Color>,
 }
 
@@ -30,7 +30,7 @@ impl ColorProfile {
     pub fn new(selected: Color, palette: Vec<Color>) -> ColorProfile {
         ColorProfile {
             index: 0,
-            selected,
+            color: selected,
             palette,
         }
     }
@@ -39,14 +39,14 @@ impl ColorProfile {
         let color_index = rng.index(0..self.palette.len());
         ColorProfile {
             index: color_index,
-            selected: *self.palette.get(color_index).unwrap(),
+            color: *self.palette.get(color_index).unwrap(),
             palette: self.palette.clone(),
         }
     }
 
     pub fn randomize(&mut self, rng: &mut ColorRng) {
         self.index = rng.index(0..self.palette.len());
-        self.selected = *self.palette.get(self.index).unwrap();
+        self.color = *self.palette.get(self.index).unwrap();
     }
 
     pub fn set_next(&mut self) {
@@ -55,7 +55,7 @@ impl ColorProfile {
         } else {
             self.index += 1;
         }
-        self.selected = *self.palette.get(self.index).unwrap();
+        self.color = *self.palette.get(self.index).unwrap();
     }
 }
 

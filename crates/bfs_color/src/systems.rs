@@ -22,7 +22,7 @@ pub fn color_particles(
     mut particle_query: Query<(&mut Sprite, &ColorProfile), Changed<ColorProfile>>,
 ) {
     particle_query.iter_mut().for_each(|(mut sprite, color)| {
-        sprite.color = color.selected;
+        sprite.color = color.color;
     });
 }
 
