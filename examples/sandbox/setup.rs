@@ -9,7 +9,6 @@
 //!   - `DynamicParticleTypeBundle`: For particles that have movement behavior
 use bevy::prelude::*;
 use bevy::utils::Duration;
-use bevy_falling_sand::asset_loaders::*;
 use bevy_falling_sand::bundles::*;
 use bevy_falling_sand::color::*;
 use bevy_falling_sand::core::*;
@@ -22,14 +21,12 @@ pub(super) struct ParticleSetupPlugin;
 impl bevy::prelude::Plugin for ParticleSetupPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
         // Particle management systems
-        app.add_event::<ParticleTypesAssetLoaded>()
-            .add_systems(Startup, setup_custom_particles);
-        app.add_systems(Update, load_particle_types);
+        app.add_systems(Startup, setup_particles);
     }
 }
 
 /// Demonstrates how to set up a custom particle with code.
-pub fn setup_custom_particles(mut commands: Commands) {
+pub fn setup_particles(mut commands: Commands) {
     commands.spawn((
         SolidBundle::new(
             ParticleType::new("Rock"),
@@ -514,31 +511,4 @@ pub fn setup_custom_particles(mut commands: Commands) {
         )),
         Name::new("Wood Wall"),
     ));
-}
-
-// Alternatively, load particles from an .ron file. This feature is not really stable yet.
-#[derive(Event)]
-struct ParticleTypesAssetLoaded {
-    handle: Handle<ParticleTypesAsset>,
-}
-
-#[allow(dead_code)]
-fn load_assets(
-    mut ev_asset: EventWriter<ParticleTypesAssetLoaded>,
-    asset_server: Res<AssetServer>,
-) {
-    let handle: Handle<ParticleTypesAsset> = asset_server.load("particles/particles.ron");
-    ev_asset.send(ParticleTypesAssetLoaded { handle });
-}
-
-fn load_particle_types(
-    mut commands: Commands,
-    mut type_map: ResMut<ParticleTypeMap>,
-    mut ev_asset: EventReader<ParticleTypesAssetLoaded>,
-    particle_types_asset: Res<Assets<ParticleTypesAsset>>,
-) {
-    for ev in ev_asset.read() {
-        let asset = particle_types_asset.get(&ev.handle).unwrap();
-        asset.load_particle_types(&mut commands, &mut type_map);
-    }
 }

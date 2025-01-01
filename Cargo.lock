@@ -1383,20 +1383,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bfs_asset_loaders"
-version = "0.1.0"
-dependencies = [
- "bevy",
- "bfs_color",
- "bfs_core",
- "bfs_movement",
- "bfs_reactions",
- "ron",
- "serde",
- "thiserror",
-]
-
-[[package]]
 name = "bfs_color"
 version = "0.1.0"
 dependencies = [
@@ -1432,7 +1418,6 @@ version = "0.1.0"
 dependencies = [
  "bevy",
  "bevy_turborand",
- "bfs_asset_loaders",
  "bfs_color",
  "bfs_core",
  "bfs_debug",
