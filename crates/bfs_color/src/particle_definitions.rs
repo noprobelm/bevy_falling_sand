@@ -13,8 +13,7 @@ impl Plugin for ParticleDefinitionsPlugin {
         app.add_event::<ResetParticleColorEvent>();
         app.register_type::<ColorRng>()
             .register_type::<ColorProfile>()
-            .register_type::<ChangesColor>()
-            .register_type::<RandomizesColor>();
+            .register_type::<ChangesColor>();
     }
 }
 
@@ -79,22 +78,6 @@ pub struct ColorProfileBlueprint(pub ColorProfile);
 
 #[derive(Copy, Clone, PartialEq, Debug, Component, Reflect, Serialize, Deserialize)]
 #[reflect(Component)]
-pub struct RandomizesColor {
-    pub rate: f64,
-}
-
-#[derive(Copy, Clone, PartialEq, Debug, Component, Reflect, Serialize, Deserialize)]
-#[reflect(Component)]
-pub struct RandomizesColorBlueprint(pub RandomizesColor);
-
-impl RandomizesColor {
-    pub fn new(chance: f64) -> RandomizesColor {
-        RandomizesColor { rate: chance }
-    }
-}
-
-#[derive(Copy, Clone, PartialEq, Debug, Component, Reflect, Serialize, Deserialize)]
-#[reflect(Component)]
 pub struct ChangesColor {
     pub rate: f64,
 }
@@ -123,7 +106,6 @@ fn handle_particle_components(
         (
             Option<&ColorProfileBlueprint>,
             Option<&ChangesColorBlueprint>,
-            Option<&RandomizesColorBlueprint>,
         ),
         With<ParticleType>,
     >,
@@ -133,7 +115,7 @@ fn handle_particle_components(
     entities.iter().for_each(|entity| {
         if let Ok(parent) = particle_query.get(*entity) {
             commands.entity(*entity).insert(ColorRng::default());
-            if let Ok((particle_color, flows_color, randomizes_color)) =
+            if let Ok((particle_color, flows_color)) =
                 parent_query.get(parent.get())
             {
                 commands.entity(*entity).insert((
@@ -156,11 +138,6 @@ fn handle_particle_components(
                 } else {
                     commands.entity(*entity).remove::<ChangesColor>();
                 }
-                if let Some(randomizes_color) = randomizes_color {
-                    commands.entity(*entity).insert(randomizes_color.0.clone());
-                } else {
-                    commands.entity(*entity).remove::<RandomizesColor>();
-                }
             }
         }
     });
@@ -173,7 +150,6 @@ fn handle_particle_registration(
         (
             Option<&ColorProfileBlueprint>,
             Option<&ChangesColorBlueprint>,
-            Option<&RandomizesColorBlueprint>,
         ),
         With<ParticleType>,
     >,
