@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bfs_core::ParticleType;
+use bfs_core::{ParticleBlueprint, impl_particle_blueprint, ParticleType};
 use serde::{Deserialize, Serialize};
 
 use super::{MovementPriority, MovementPriorityBlueprint};
@@ -15,6 +15,12 @@ impl Plugin for MaterialPlugin {
             .add_observer(on_gas_blueprint_added);
     }
 }
+
+impl_particle_blueprint!(WallBlueprint, Wall);
+impl_particle_blueprint!(SolidBlueprint, Solid);
+impl_particle_blueprint!(MovableSolidBlueprint, MovableSolid);
+impl_particle_blueprint!(LiquidBlueprint, Liquid);
+impl_particle_blueprint!(GasBlueprint, Gas);
 
 pub trait Material {
     #[allow(dead_code)]
@@ -268,15 +274,6 @@ impl Material for Gas {
     Deserialize,
 )]
 pub struct GasBlueprint(pub Gas);
-
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Reflect, Serialize, Deserialize)]
-pub enum MaterialType {
-    Solid,
-    MovableSolid,
-    Liquid,
-    Gas,
-    Custom,
-}
 
 pub fn on_solid_blueprint_added(
     trigger: Trigger<OnAdd, SolidBlueprint>,
