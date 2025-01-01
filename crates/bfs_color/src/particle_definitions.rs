@@ -35,10 +35,10 @@ impl ColorProfile {
         }
     }
 
-    pub fn new_with_selected(selected: usize, palette: Vec<Color>) -> ColorProfile {
+    pub fn new_with_selected(index: usize, palette: Vec<Color>) -> ColorProfile {
         ColorProfile {
-            index: selected,
-            color: palette[selected],
+            index,
+            color: palette[index],
             palette,
         }
     }
