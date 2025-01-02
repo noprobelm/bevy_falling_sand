@@ -21,14 +21,6 @@ const DEFAULT_SELECTED_PARTICLE: &str = "Dirt Wall";
 impl bevy::prelude::Plugin for UIPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
         app.init_state::<AppState>()
-            .add_systems(Update, render_ui)
-            .add_systems(Update, render_particle_editor)
-            .add_systems(Update, update_particle_list)
-            .add_systems(Update, update_app_state.after(render_ui))
-            .add_systems(
-                Update,
-                toggle_simulation.run_if(input_just_pressed(KeyCode::Space)),
-            )
             .init_resource::<CursorCoords>()
             .init_resource::<ParticleList>()
             .init_resource::<ParticleTypeList>()
@@ -51,16 +43,23 @@ impl bevy::prelude::Plugin for UIPlugin {
             .add_event::<ParticleEditorSave>()
             .add_event::<ParticleEditorUpdate>()
             .add_systems(First, update_cursor_coordinates)
-            .add_systems(OnEnter(AppState::Ui), show_cursor)
-            .add_systems(OnEnter(AppState::Canvas), hide_cursor)
-            .add_systems(Update, ev_mouse_wheel)
-            .add_systems(Update, handle_search_bar_input)
-            .add_systems(Update, particle_editor_save)
-            .add_systems(Update, update_particle_editor_fields)
             .add_systems(
                 Update,
-                render_search_bar_ui.run_if(resource_exists::<ParticleSearchBar>),
+                (
+                    render_side_panel,
+                    render_particle_editor,
+                    render_search_bar_ui.run_if(resource_exists::<ParticleSearchBar>),
+                    update_particle_list,
+                    update_app_state.after(render_side_panel),
+                    toggle_simulation.run_if(input_just_pressed(KeyCode::Space)),
+                    ev_mouse_wheel,
+                    handle_search_bar_input,
+                    particle_editor_save,
+                    update_particle_editor_fields,
+                ),
             )
+            .add_systems(OnEnter(AppState::Ui), show_cursor)
+            .add_systems(OnEnter(AppState::Canvas), hide_cursor)
             .add_observer(on_clear_dynamic_particles)
             .add_observer(on_clear_wall_particles);
     }
@@ -319,7 +318,7 @@ pub fn update_app_state(
     }
 }
 
-pub fn render_ui(
+pub fn render_side_panel(
     mut commands: Commands,
     mut contexts: EguiContexts,
     (
@@ -1043,7 +1042,10 @@ fn render_density_field(
 ) {
     ui.horizontal(|ui| {
         ui.label("Density: ");
-        ui.add(egui::Slider::new(&mut particle_density_field.blueprint.data_mut().0, 1..=1000).step_by(1.));
+        ui.add(
+            egui::Slider::new(&mut particle_density_field.blueprint.data_mut().0, 1..=1000)
+                .step_by(1.),
+        );
     });
 }
 
@@ -1054,7 +1056,11 @@ fn render_max_velocity_field(
     ui.horizontal(|ui| {
         ui.label("Max Velocity: ");
         ui.add(
-            egui::Slider::new(&mut particle_max_velocity_field.blueprint.data_mut().max, 1..=5).step_by(1.),
+            egui::Slider::new(
+                &mut particle_max_velocity_field.blueprint.data_mut().max,
+                1..=5,
+            )
+            .step_by(1.),
         );
     });
 }
@@ -1086,7 +1092,13 @@ fn render_colors_field(
     });
     let mut to_remove: Option<usize> = None;
     let mut to_change: Option<(usize, Color)> = None;
-    for (i, color) in particle_colors_field.blueprint.data().palette.iter().enumerate() {
+    for (i, color) in particle_colors_field
+        .blueprint
+        .data()
+        .palette
+        .iter()
+        .enumerate()
+    {
         let srgba = color.to_srgba();
         let (red, green, blue, alpha) = (
             srgba.red * 255.,
@@ -1113,7 +1125,11 @@ fn render_colors_field(
         });
     }
     if let Some(to_remove) = to_remove {
-        particle_colors_field.blueprint.data_mut().palette.remove(to_remove);
+        particle_colors_field
+            .blueprint
+            .data_mut()
+            .palette
+            .remove(to_remove);
     }
     if let Some((to_change, color)) = to_change {
         particle_colors_field.blueprint.data_mut().palette[to_change] = color;
@@ -1220,12 +1236,20 @@ fn render_movement_priority_field(
         }
     }
     if let Some((i, j)) = inner_to_remove {
-        if let Some(group) = particle_movement_priority_field.blueprint.data_mut().get_mut(i) {
+        if let Some(group) = particle_movement_priority_field
+            .blueprint
+            .data_mut()
+            .get_mut(i)
+        {
             group.neighbor_group.remove(j);
         }
     }
     if let Some((i, j1, j2)) = inner_to_swap {
-        if let Some(group) = particle_movement_priority_field.blueprint.data_mut().get_mut(i) {
+        if let Some(group) = particle_movement_priority_field
+            .blueprint
+            .data_mut()
+            .get_mut(i)
+        {
             group.swap(j1, j2).unwrap_or_else(|err| error!("{}", err));
         }
     }
@@ -1237,15 +1261,26 @@ fn render_movement_priority_field(
             .unwrap_or_else(|err| error!("{}", err));
     }
     if let Some(i) = outer_to_add {
-        if let Some(group) = particle_movement_priority_field.blueprint.data_mut().get_mut(i) {
+        if let Some(group) = particle_movement_priority_field
+            .blueprint
+            .data_mut()
+            .get_mut(i)
+        {
             group.push(IVec2::ZERO);
         }
     }
     if let Some(i) = outer_to_remove {
-        particle_movement_priority_field.blueprint.data_mut().remove(i);
+        particle_movement_priority_field
+            .blueprint
+            .data_mut()
+            .remove(i);
     }
     if let Some(((i, j), new_ivec)) = to_change {
-        if let Some(group) = particle_movement_priority_field.blueprint.data_mut().get_mut(i) {
+        if let Some(group) = particle_movement_priority_field
+            .blueprint
+            .data_mut()
+            .get_mut(i)
+        {
             if let Some(neighbor) = group.neighbor_group.get_mut(j) {
                 *neighbor = new_ivec;
             }
@@ -1271,7 +1306,8 @@ fn render_burns_field(
             );
             if edit_duration.lost_focus() {
                 if let Ok(new_duration) = particle_burns_field.duration_str.parse::<u64>() {
-                    particle_burns_field.blueprint.data_mut().duration = Duration::from_millis(new_duration);
+                    particle_burns_field.blueprint.data_mut().duration =
+                        Duration::from_millis(new_duration);
                     particle_burns_field.duration_str = particle_burns_field
                         .blueprint
                         .0
@@ -1414,9 +1450,15 @@ fn render_burns_field(
             .clicked()
         {
             if particle_burns_field.chance_destroy_enable {
-                particle_burns_field.blueprint.data_mut().chance_destroy_per_tick = Some(0.);
+                particle_burns_field
+                    .blueprint
+                    .data_mut()
+                    .chance_destroy_per_tick = Some(0.);
             } else {
-                particle_burns_field.blueprint.data_mut().chance_destroy_per_tick = None;
+                particle_burns_field
+                    .blueprint
+                    .data_mut()
+                    .chance_destroy_per_tick = None;
             }
         };
         if particle_burns_field.chance_destroy_enable {
@@ -1569,8 +1611,11 @@ pub fn render_fluidity_field(
         match current_particle_category_field.get() {
             ParticleEditorCategoryState::Liquid => {
                 ui.add(
-                    egui::Slider::new(&mut particle_liquid_field.blueprint.data_mut().fluidity, 1..=5)
-                        .step_by(1.),
+                    egui::Slider::new(
+                        &mut particle_liquid_field.blueprint.data_mut().fluidity,
+                        1..=5,
+                    )
+                    .step_by(1.),
                 );
             }
             ParticleEditorCategoryState::Gas => {
