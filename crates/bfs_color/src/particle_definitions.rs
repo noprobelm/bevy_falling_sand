@@ -3,17 +3,19 @@ use bevy_turborand::{DelegatedRng, GlobalRng, TurboRand};
 use serde::{Deserialize, Serialize};
 
 use super::ColorRng;
-use bfs_core::{ParticleBlueprint, impl_particle_blueprint, Particle, ParticleRegistrationEvent, ParticleType};
+use bfs_core::{
+    impl_particle_blueprint, Particle, ParticleBlueprint, ParticleRegistrationEvent, ParticleType,
+};
 
 pub(super) struct ParticleDefinitionsPlugin;
 
 impl Plugin for ParticleDefinitionsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, handle_particle_registration);
-        app.add_event::<ResetParticleColorEvent>();
         app.register_type::<ColorRng>()
             .register_type::<ColorProfile>()
-            .register_type::<ChangesColor>();
+            .register_type::<ChangesColor>()
+            .add_event::<ResetParticleColorEvent>()
+            .add_systems(Update, handle_particle_registration);
     }
 }
 
@@ -118,9 +120,7 @@ fn handle_particle_components(
     entities.iter().for_each(|entity| {
         if let Ok(parent) = particle_query.get(*entity) {
             commands.entity(*entity).insert(ColorRng::default());
-            if let Ok((particle_color, flows_color)) =
-                parent_query.get(parent.get())
-            {
+            if let Ok((particle_color, flows_color)) = parent_query.get(parent.get()) {
                 commands.entity(*entity).insert((
                     Sprite {
                         color: Color::srgba(0., 0., 0., 0.),
