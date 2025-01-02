@@ -1,26 +1,17 @@
-pub mod blueprint;
-mod particle;
 mod chunk_map;
-mod particle_type;
 mod common;
+mod particle;
 
 use bevy::prelude::*;
 
-pub use particle::*;
 pub use chunk_map::*;
 pub use common::*;
-pub use particle_type::*;
-pub use blueprint::*;
+pub use particle::*;
 
 pub struct FallingSandCorePlugin;
 
 impl Plugin for FallingSandCorePlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((
-            ParticlePlugin,
-            ParticleTypePlugin,
-            ChunkMapPlugin,
-            CommonUtilitiesPlugin,
-        ));
+        app.add_plugins((ParticlePlugin, ChunkMapPlugin, CommonPlugin));
     }
 }

@@ -1,14 +1,13 @@
 use bevy::prelude::*;
 
-pub struct CommonUtilitiesPlugin;
+pub struct CommonPlugin;
 
-impl Plugin for CommonUtilitiesPlugin {
+impl Plugin for CommonPlugin {
     fn build(&self, app: &mut App) {
         app.configure_sets(
             Update,
             ParticleSimulationSet.run_if(resource_exists::<SimulationRun>),
         );
-        app.add_event::<ParticleRegistrationEvent>();
         app.init_resource::<SimulationRun>();
     }
 }
@@ -21,8 +20,3 @@ pub struct ParticleSimulationSet;
 
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ParticleDebugSet;
-
-#[derive(Clone, Event, Hash, Debug, Eq, PartialEq, PartialOrd)]
-pub struct ParticleRegistrationEvent {
-    pub entities: Vec<Entity>
-}
