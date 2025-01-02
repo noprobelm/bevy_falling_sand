@@ -12,18 +12,18 @@ pub struct ChunkMapPlugin;
 
 impl Plugin for ChunkMapPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            Update,
-            reset_chunks
-                .after(ParticleSimulationSet)
-                .run_if(resource_exists::<SimulationRun>),
-        )
-        .add_event::<ClearMapEvent>()
-        .add_event::<ClearParticleTypeChildrenEvent>()
-        .init_resource::<ChunkMap>()
-        .add_observer(on_remove_particle)
-        .add_observer(on_clear_chunk_map)
-        .add_observer(on_clear_particle_type_children);
+        app.init_resource::<ChunkMap>()
+            .add_event::<ClearMapEvent>()
+            .add_event::<ClearParticleTypeChildrenEvent>()
+            .add_systems(
+                Update,
+                reset_chunks
+                    .after(ParticleSimulationSet)
+                    .run_if(resource_exists::<SimulationRun>),
+            )
+            .add_observer(on_remove_particle)
+            .add_observer(on_clear_chunk_map)
+            .add_observer(on_clear_particle_type_children);
     }
 }
 
