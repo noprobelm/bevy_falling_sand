@@ -1,5 +1,7 @@
 use bevy::prelude::*;
-use bfs_core::{ParticleBlueprint, impl_particle_blueprint, Particle, ParticleRegistrationEvent, ParticleType};
+use bfs_core::{
+    impl_particle_blueprint, Particle, ParticleBlueprint, ParticleRegistrationEvent, ParticleType,
+};
 use serde::{Deserialize, Serialize};
 use smallvec::SmallVec;
 use std::iter;
@@ -11,11 +13,11 @@ pub(super) struct ParticleDefinitionsPlugin;
 
 impl Plugin for ParticleDefinitionsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, handle_particle_registration)
-            .register_type::<Density>()
+        app.register_type::<Density>()
             .register_type::<Velocity>()
             .register_type::<Momentum>()
-            .register_type::<MovementPriority>();
+            .register_type::<MovementPriority>()
+            .add_systems(Update, handle_particle_registration);
     }
 }
 
@@ -314,7 +316,6 @@ impl MovementPriority {
 #[derive(Clone, Eq, PartialEq, Hash, Debug, Default, Component, Reflect)]
 #[reflect(Component)]
 pub struct MovementPriorityBlueprint(pub MovementPriority);
-
 
 fn handle_particle_registration(
     mut commands: Commands,
