@@ -14,7 +14,6 @@ use bevy_falling_sand::prelude::*;
 
 use super::*;
 
-/// UI plugin
 pub(super) struct UIPlugin;
 
 const DEFAULT_SELECTED_PARTICLE: &str = "Dirt Wall";
@@ -67,18 +66,13 @@ impl bevy::prelude::Plugin for UIPlugin {
     }
 }
 
-/// When in Canvas mode, the brush renders and the cursor disappears.
-/// When in Ui mode, canvas control mechanisms (zoom/pan camera) and the brush are disabled. Cursor is enabled.
 #[derive(States, Reflect, Default, Debug, Clone, Eq, PartialEq, Hash)]
 pub enum AppState {
     #[default]
-    /// Canvas mode.
     Canvas,
-    /// Ui mode.
     Ui,
 }
 
-/// Resource for tracking cursor coordinates.
 #[derive(Default, Resource, Clone, Debug)]
 pub struct CursorCoords {
     pub current: Vec2,
@@ -94,20 +88,16 @@ impl CursorCoords {
     }
 }
 
-/// A list of particle types organized by material type.
 #[derive(Resource, Default)]
 pub struct ParticleTypeList {
     map: HashMap<String, Vec<String>>,
 }
 
 impl ParticleTypeList {
-    /// Get a particle type from the list
     pub fn get(&self, name: &str) -> Option<&Vec<String>> {
         self.map.get(name)
     }
 
-    /// Insert a list of particles into the map for a given material. If the material already exists, modify the
-    /// existing list. Lists are sorted after each call to this method.
     pub fn insert_or_modify(&mut self, material: String, particles: Vec<String>) {
         match self.map.entry(material) {
             Entry::Occupied(mut entry) => {
@@ -123,14 +113,12 @@ impl ParticleTypeList {
     }
 }
 
-/// Provides an ordered list of particles for the UI.
 #[derive(Resource, Default)]
 pub struct ParticleList {
     pub particle_list: Vec<String>,
 }
 
 impl ParticleList {
-    /// Adds to the ParticleList.
     pub fn push(&mut self, value: String) {
         self.particle_list.push(value);
     }
@@ -140,7 +128,6 @@ impl ParticleList {
     }
 }
 
-/// The currently selected particle for spawning.
 #[derive(Resource)]
 pub struct SelectedBrushParticle(pub String);
 
@@ -150,11 +137,9 @@ impl Default for SelectedBrushParticle {
     }
 }
 
-/// UI for particle control mechanics.
 pub struct ParticleControlUI;
 
 impl ParticleControlUI {
-    /// Renders the particle control UI
     pub fn render(
         &self,
         ui: &mut egui::Ui,
@@ -186,11 +171,9 @@ impl ParticleControlUI {
     }
 }
 
-/// UI for brush control mechanics.
 pub struct BrushControlUI;
 
 impl BrushControlUI {
-    /// Renders the brush control UI
     pub fn render(
         &self,
         ui: &mut egui::Ui,
@@ -225,11 +208,9 @@ impl BrushControlUI {
     }
 }
 
-/// UI for showing `bevy_falling_sand` debug capability.
 pub struct DebugUI;
 
 impl DebugUI {
-    /// Render the debug UI
     pub fn render(
         &self,
         ui: &mut egui::Ui,
@@ -281,7 +262,6 @@ impl DebugUI {
     }
 }
 
-/// Updates the cursor coordinates each frame.
 pub fn update_cursor_coordinates(
     mut coords: ResMut<CursorCoords>,
     q_window: Query<&Window, With<PrimaryWindow>>,
@@ -300,19 +280,16 @@ pub fn update_cursor_coordinates(
     }
 }
 
-/// Hides the cursor.
 pub fn hide_cursor(mut primary_window: Query<&mut Window, With<PrimaryWindow>>) {
     let window = &mut primary_window.single_mut();
     window.cursor_options.visible = false;
 }
 
-/// Shows the cursor.
 pub fn show_cursor(mut primary_window: Query<&mut Window, With<PrimaryWindow>>) {
     let window = &mut primary_window.single_mut();
     window.cursor_options.visible = true;
 }
 
-/// Updates the app state depending on whether we're focused on the GUI or the canvas.
 pub fn update_app_state(
     mut contexts: EguiContexts,
     app_state: Res<State<AppState>>,
@@ -342,8 +319,6 @@ pub fn update_app_state(
     }
 }
 
-/// Bring it all together in the UI.
-/// This system basically pulls types from all modules in this example and assembles them into a side panel.
 pub fn render_ui(
     mut commands: Commands,
     mut contexts: EguiContexts,
@@ -457,7 +432,6 @@ pub fn update_particle_list(
     );
 }
 
-/// Stops or starts the simulation when scheduled.
 pub fn toggle_simulation(
     mut commands: Commands,
     simulation_pause: Option<Res<SimulationRun>>,
@@ -475,7 +449,6 @@ pub fn toggle_simulation(
     }
 }
 
-/// Listens for scroll events and performs the corresponding action
 pub fn ev_mouse_wheel(
     mut ev_scroll: EventReader<MouseWheel>,
     app_state: Res<State<AppState>>,
@@ -508,7 +481,6 @@ pub fn ev_mouse_wheel(
     }
 }
 
-/// Resource to manage the state of the particle search bar.
 #[derive(Resource, Default)]
 pub struct ParticleSearchBar {
     pub input: String,
@@ -646,11 +618,9 @@ pub fn render_search_bar_ui(
     }
 }
 
-/// Remove all particles from the simulation.
 #[derive(Event)]
 pub struct ClearDynamicParticlesEvent;
 
-/// Remove all particles from the simulation.
 #[derive(Event)]
 pub struct ClearWallParticlesEvent;
 

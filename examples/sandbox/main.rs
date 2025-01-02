@@ -1,4 +1,3 @@
-//! A complete example on how to build an interactive particle sandbox with bevy_falling_sand
 mod brush;
 mod camera;
 mod scenes;
