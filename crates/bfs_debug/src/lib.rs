@@ -7,21 +7,17 @@ pub struct FallingSandDebugPlugin;
 
 impl Plugin for FallingSandDebugPlugin {
     fn build(&self, app: &mut App) {
-        app.init_gizmo_group::<DebugGizmos>()
-            .init_resource::<DynamicParticleCount>()
+        app.init_resource::<DynamicParticleCount>()
             .init_resource::<TotalParticleCount>()
+            .init_gizmo_group::<DebugGizmos>()
             .add_systems(
                 Update,
-                color_hibernating_chunks.run_if(resource_exists::<DebugHibernatingChunks>),
-            )
-            .add_systems(
-                Update,
-                color_dirty_rects.run_if(resource_exists::<DebugDirtyRects>),
-            )
-            .add_systems(
-                Update,
-                (count_dynamic_particles, count_total_particles)
-                    .run_if(resource_exists::<DebugParticleCount>),
+                (
+                    color_hibernating_chunks.run_if(resource_exists::<DebugHibernatingChunks>),
+                    color_dirty_rects.run_if(resource_exists::<DebugDirtyRects>),
+                    (count_dynamic_particles, count_total_particles)
+                        .run_if(resource_exists::<DebugParticleCount>),
+                ),
             );
     }
 }
