@@ -10,30 +10,31 @@ pub(super) struct BrushPlugin;
 
 impl bevy::prelude::Plugin for BrushPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
-        app.init_resource::<MaxBrushSize>();
-        app.init_state::<BrushState>().init_state::<BrushType>();
-        app.init_gizmo_group::<BrushGizmos>();
-        app.add_event::<BrushResizeEvent>();
-        app.add_systems(Startup, setup_brush).add_systems(
-            Update,
-            (update_brush, resize_brush_event_listener, sample_hovered),
-        );
+        app.init_resource::<MaxBrushSize>()
+            .init_state::<BrushState>()
+            .init_state::<BrushType>()
+            .init_gizmo_group::<BrushGizmos>()
+            .add_event::<BrushResizeEvent>()
+            .add_systems(Startup, setup_brush)
+            .add_systems(
+                Update,
+                (update_brush, resize_brush_event_listener, sample_hovered),
+            );
         app.add_systems(
             Update,
-            spawn_particles
-                .run_if(input_pressed(MouseButton::Left))
-                .run_if(in_state(BrushState::Spawn))
-                .run_if(in_state(AppState::Canvas))
-                .after(update_cursor_coordinates),
-        );
-        app.add_systems(
-            Update,
-            despawn_particles
-                .run_if(input_pressed(MouseButton::Left))
-                .run_if(in_state(BrushState::Despawn))
-                .run_if(in_state(AppState::Canvas))
-                .before(ParticleSimulationSet)
-                .after(update_cursor_coordinates),
+            (
+                spawn_particles
+                    .run_if(input_pressed(MouseButton::Left))
+                    .run_if(in_state(BrushState::Spawn))
+                    .run_if(in_state(AppState::Canvas))
+                    .after(update_cursor_coordinates),
+                despawn_particles
+                    .run_if(input_pressed(MouseButton::Left))
+                    .run_if(in_state(BrushState::Despawn))
+                    .run_if(in_state(AppState::Canvas))
+                    .before(ParticleSimulationSet)
+                    .after(update_cursor_coordinates),
+            ),
         );
     }
 }
