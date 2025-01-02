@@ -4,11 +4,10 @@ pub struct CommonPlugin;
 
 impl Plugin for CommonPlugin {
     fn build(&self, app: &mut App) {
-        app.configure_sets(
+        app.init_resource::<SimulationRun>().configure_sets(
             Update,
             ParticleSimulationSet.run_if(resource_exists::<SimulationRun>),
         );
-        app.init_resource::<SimulationRun>();
     }
 }
 

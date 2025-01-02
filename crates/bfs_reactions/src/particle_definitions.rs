@@ -1,7 +1,10 @@
 use bevy::prelude::*;
 use bevy::utils::Duration;
 use bfs_color::*;
-use bfs_core::{ParticleBlueprint, impl_particle_blueprint, Coordinates, Particle, ParticleRegistrationEvent, ParticleType};
+use bfs_core::{
+    impl_particle_blueprint, Coordinates, Particle, ParticleBlueprint, ParticleRegistrationEvent,
+    ParticleType,
+};
 
 use crate::ReactionRng;
 
@@ -9,11 +12,11 @@ pub struct ParticleDefinitionsPlugin;
 
 impl Plugin for ParticleDefinitionsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, handle_particle_registration);
         app.register_type::<Fire>()
             .register_type::<Burns>()
             .register_type::<Burning>()
-            .register_type::<Reacting>();
+            .register_type::<Reacting>()
+            .add_systems(Update, handle_particle_registration);
     }
 }
 

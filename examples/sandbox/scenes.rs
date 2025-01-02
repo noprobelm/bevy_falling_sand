@@ -4,7 +4,6 @@ use bevy::prelude::*;
 use bevy_falling_sand::prelude::{SaveSceneEvent, LoadSceneEvent};
 use bevy_egui::egui;
 
-/// Scene plugin
 pub(super) struct ScenesPlugin;
 
 impl bevy::prelude::Plugin for ScenesPlugin {
@@ -14,7 +13,6 @@ impl bevy::prelude::Plugin for ScenesPlugin {
     }
 }
 
-/// Manages scene selection dialog boxes.
 #[derive(Resource, Default)]
 pub struct SceneSelectionDialog {
     pub show_save_dialog: bool,
@@ -35,11 +33,9 @@ impl Default for ParticleSceneFilePath {
     }
 }
 
-/// UI for saving/loading particle scenes.
 pub struct SceneManagementUI;
 
 impl SceneManagementUI {
-    /// Renders the scene management UI
     pub fn render(
         &self,
         ui: &mut egui::Ui,

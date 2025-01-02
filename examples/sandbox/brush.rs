@@ -1,58 +1,53 @@
-//! This module demonstrates how to spawn/despawn particles from the world using a brush tool.
 use bevy::{input::common_conditions::input_pressed, prelude::*, utils::HashSet};
 use bevy_egui::EguiContexts;
 use bevy_falling_sand::prelude::{ChunkMap, Particle, ParticleSimulationSet, RemoveParticleEvent};
 
 use super::{update_cursor_coordinates, AppState, CursorCoords, SelectedBrushParticle};
 
-/// Brush plugin.
 pub(super) struct BrushPlugin;
 
 impl bevy::prelude::Plugin for BrushPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
-        app.init_resource::<MaxBrushSize>();
-        app.init_state::<BrushState>().init_state::<BrushType>();
-        app.init_gizmo_group::<BrushGizmos>();
-        app.add_event::<BrushResizeEvent>();
-        app.add_systems(Startup, setup_brush).add_systems(
-            Update,
-            (update_brush, resize_brush_event_listener, sample_hovered),
-        );
+        app.init_resource::<MaxBrushSize>()
+            .init_state::<BrushState>()
+            .init_state::<BrushType>()
+            .init_gizmo_group::<BrushGizmos>()
+            .add_event::<BrushResizeEvent>()
+            .add_systems(Startup, setup_brush)
+            .add_systems(
+                Update,
+                (update_brush, resize_brush_event_listener, sample_hovered),
+            );
         app.add_systems(
             Update,
-            spawn_particles
-                .run_if(input_pressed(MouseButton::Left))
-                .run_if(in_state(BrushState::Spawn))
-                .run_if(in_state(AppState::Canvas))
-                .after(update_cursor_coordinates),
-        );
-        app.add_systems(
-            Update,
-            despawn_particles
-                .run_if(input_pressed(MouseButton::Left))
-                .run_if(in_state(BrushState::Despawn))
-                .run_if(in_state(AppState::Canvas))
-                .before(ParticleSimulationSet)
-                .after(update_cursor_coordinates),
+            (
+                spawn_particles
+                    .run_if(input_pressed(MouseButton::Left))
+                    .run_if(in_state(BrushState::Spawn))
+                    .run_if(in_state(AppState::Canvas))
+                    .after(update_cursor_coordinates),
+                despawn_particles
+                    .run_if(input_pressed(MouseButton::Left))
+                    .run_if(in_state(BrushState::Despawn))
+                    .run_if(in_state(AppState::Canvas))
+                    .before(ParticleSimulationSet)
+                    .after(update_cursor_coordinates),
+            ),
         );
     }
 }
 
-/// Gizmos for rendering the brush shape to the canvas.
 #[derive(Default, Reflect, GizmoConfigGroup)]
 pub struct BrushGizmos;
 
 #[derive(Component)]
 #[allow(dead_code)]
 pub struct Brush {
-    /// The brush size.
     pub size: usize,
-    /// The brush color.
     pub color: Color,
 }
 
 impl Brush {
-    /// Create a new Brush
     pub fn new(size: usize, color: Color) -> Self {
         Brush { size, color }
     }
@@ -66,17 +61,13 @@ impl Default for Brush {
     }
 }
 
-/// State for spawning or despawning particle with the brush.
 #[derive(States, Reflect, Default, Debug, Clone, Eq, PartialEq, Hash)]
 pub enum BrushState {
     #[default]
-    /// The spawn state.
     Spawn,
-    /// The despawn state.
     Despawn,
 }
 
-/// The maximum possible brush size.
 #[derive(Reflect, Resource)]
 pub struct MaxBrushSize(pub usize);
 
@@ -86,11 +77,9 @@ impl Default for MaxBrushSize {
     }
 }
 
-/// Resizes the brush when triggered.
 #[derive(Event)]
 pub struct BrushResizeEvent(pub usize);
 
-/// State for each brush type and its functionality.
 #[derive(Default, Clone, Hash, Eq, PartialEq, Debug, States)]
 pub enum BrushType {
     Line,
@@ -99,7 +88,6 @@ pub enum BrushType {
 }
 
 impl BrushType {
-    /// Updates the brush position on the canvas.
     pub fn update_brush(
         &self,
         coords: Vec2,
@@ -118,11 +106,6 @@ impl BrushType {
         }
     }
 
-    /// Spawns the selected particle into the world.
-    ///
-    /// To add a particle to the simualtion, simply spawn a new entity with a `Particle` component whose `name` field
-    /// can be mapped to a String in the `ParticleTypeMap` resource. Be sure to include a SpatialBundle for
-    /// the particle's position.
     pub fn spawn_particles(
         &self,
         commands: &mut Commands,
@@ -179,15 +162,6 @@ impl BrushType {
         }
     }
 
-    /// Removes particles under the brush from the world.
-    ///
-    /// To remove a particle from the simulation, send a `RemoveParticleEvent` This will guarantee that the particle
-    /// will:
-    ///   1. Be removed from the underlying ChunkMap.
-    ///   2. Be removed as a child from the particle type parent entity.
-    ///
-    /// You can choose to keep the particle in the world by passing `despawn: false` to the event, though this will
-    /// leave dangling entities unless you are managing them elsewhere within your application.
     pub fn remove_particles(&self, commands: &mut Commands, coords: IVec2, brush_size: f32) {
         let min_x = -(brush_size as i32) / 2;
         let max_x = (brush_size / 2.) as i32;
@@ -225,7 +199,6 @@ impl BrushType {
     }
 }
 
-/// Sets up the brush.
 pub fn setup_brush(
     mut commands: Commands,
     mut brush_gizmos: Gizmos<BrushGizmos>,
@@ -238,7 +211,6 @@ pub fn setup_brush(
     brush_type.update_brush(cursor_coords.current, brush_size as f32, &mut brush_gizmos);
 }
 
-/// Updates the brush position and size each frame.
 pub fn update_brush(
     brush_query: Query<&Brush>,
     cursor_coords: Res<CursorCoords>,
@@ -249,7 +221,6 @@ pub fn update_brush(
     brush_type.update_brush(cursor_coords.current, brush.size as f32, &mut brush_gizmos);
 }
 
-/// Set the brush particle type to whatever the cursor is hovered on.
 fn sample_hovered(
     mouse_buttons: Res<ButtonInput<MouseButton>>,
     cursor_coords: Res<CursorCoords>,
@@ -267,7 +238,6 @@ fn sample_hovered(
     }
 }
 
-/// Resizes the brush when a resize event is published.
 pub fn resize_brush_event_listener(
     mut ev_brush_resize: EventReader<BrushResizeEvent>,
     mut brush_query: Query<&mut Brush>,
@@ -278,7 +248,6 @@ pub fn resize_brush_event_listener(
     }
 }
 
-/// Function to get all points within a 2D capsule defined by two endpoints and a radius.
 fn points_within_capsule(capsule: &Capsule2d, start: Vec2, end: Vec2) -> Vec<IVec2> {
     let mut points_inside = Vec::new();
 
@@ -308,7 +277,6 @@ fn points_within_capsule(capsule: &Capsule2d, start: Vec2, end: Vec2) -> Vec<IVe
     points_inside
 }
 
-/// Spawns particles using current brush position and size information.
 pub fn spawn_particles(
     mut commands: Commands,
     cursor_coords: Res<CursorCoords>,
@@ -328,7 +296,6 @@ pub fn spawn_particles(
     );
 }
 
-/// Despawns particles using current brush position and size information.
 pub fn despawn_particles(
     mut commands: Commands,
     cursor_coords: Res<CursorCoords>,
@@ -351,7 +318,6 @@ pub fn despawn_particles(
     )
 }
 
-/// Helper function to spawn particles in a circular pattern.
 fn spawn_circle(commands: &mut Commands, particle: Particle, center: Vec2, radius: f32) {
     let mut points: HashSet<IVec2> = HashSet::default();
 
@@ -377,7 +343,6 @@ fn spawn_circle(commands: &mut Commands, particle: Particle, center: Vec2, radiu
     }));
 }
 
-/// Helper function to spawn particles within a capsule shape.
 fn spawn_capsule(
     commands: &mut Commands,
     particle: Particle,

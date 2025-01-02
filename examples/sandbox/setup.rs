@@ -1,12 +1,3 @@
-//! Shows how to set up custom particle types for your world.
-//!
-//! `bevy_falling_sand` does not provide a default set of particles. See `examples/assets/particles/particles.ron` for
-//! an example of how to create new particle types using RON.
-//!
-//! Alternatively (and for full access to particle behavior), spawn these bundles into the world to create a new
-//! particle type:
-//!   - `WallBundle`: For particles that have no movement behavior (i.e., walls)
-//!   - `DynamicParticleTypeBundle`: For particles that have movement behavior
 use bevy::prelude::*;
 use bevy::utils::Duration;
 use bevy_falling_sand::prelude::*;
@@ -19,7 +10,6 @@ impl bevy::prelude::Plugin for ParticleSetupPlugin {
     }
 }
 
-/// Demonstrates how to set up a custom particle with code.
 pub fn setup_particles(mut commands: Commands) {
     commands.spawn((
         SolidBundle::new(
