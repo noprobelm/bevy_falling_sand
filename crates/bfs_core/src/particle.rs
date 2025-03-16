@@ -26,8 +26,6 @@ impl Plugin for ParticlePlugin {
     }
 }
 
-use bevy::prelude::Component;
-
 pub trait ParticleBlueprint: Component {
     type Data: Component;
 
