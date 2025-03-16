@@ -184,7 +184,7 @@ impl ChunkMap {
 
     pub fn should_process_this_frame(&self, coords: &IVec2) -> bool {
         if let Some(chunk) = self.chunk(coords) {
-            if chunk.hibernating() == true {
+            if chunk.hibernating() {
                 return false;
             } else if let Some(dirty_rect) = chunk.prev_dirty_rect() {
                 return dirty_rect.contains(*coords);
