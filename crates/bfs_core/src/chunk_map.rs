@@ -194,7 +194,7 @@ impl ChunkMap {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone, Eq, PartialEq, Debug, Default, Component)]
 pub struct Chunk {
     chunk: HashMap<IVec2, Entity>,
     region: IRect,
