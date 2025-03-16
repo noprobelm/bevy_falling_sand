@@ -170,7 +170,7 @@ impl ChunkMap {
     }
 
     pub fn entity(&self, coords: &IVec2) -> Option<&Entity> {
-        self.chunk(&coords).unwrap().get(coords)
+        self.chunk(coords).unwrap().get(coords)
     }
 
     #[allow(unused)]
