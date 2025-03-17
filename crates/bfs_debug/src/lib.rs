@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use bfs_core::{ChunkMap, Particle};
+use bfs_core::{Chunk, ChunkMap, Particle};
 use bfs_movement::Wall;
 
 pub struct FallingSandDebugPlugin;
@@ -40,8 +40,13 @@ pub struct DynamicParticleCount(pub u64);
 #[derive(Default, Resource)]
 pub struct TotalParticleCount(pub u64);
 
-pub fn color_dirty_rects(map: Res<ChunkMap>, mut chunk_gizmos: Gizmos<DebugGizmos>) {
-    map.iter_chunks().for_each(|chunk| {
+pub fn color_dirty_rects(
+    map: Res<ChunkMap>,
+    mut chunk_gizmos: Gizmos<DebugGizmos>,
+    chunk_query: Query<&Chunk>,
+) {
+    map.iter_chunks().for_each(|entity| {
+        let chunk = chunk_query.get(*entity).unwrap();
         if let Some(dirty_rect) = chunk.prev_dirty_rect() {
             chunk_gizmos.rect_2d(
                 dirty_rect.center().as_vec2(),
@@ -52,8 +57,13 @@ pub fn color_dirty_rects(map: Res<ChunkMap>, mut chunk_gizmos: Gizmos<DebugGizmo
     });
 }
 
-pub fn color_hibernating_chunks(map: Res<ChunkMap>, mut chunk_gizmos: Gizmos<DebugGizmos>) {
-    map.iter_chunks().for_each(|chunk| {
+pub fn color_hibernating_chunks(
+    map: Res<ChunkMap>,
+    mut chunk_gizmos: Gizmos<DebugGizmos>,
+    chunk_query: Query<&Chunk>,
+) {
+    map.iter_chunks().for_each(|entity| {
+        let chunk = chunk_query.get(*entity).unwrap();
         let rect = Rect::from_corners(chunk.min().as_vec2(), chunk.max().as_vec2());
         if chunk.hibernating() == true {
             chunk_gizmos.rect_2d(
@@ -64,7 +74,8 @@ pub fn color_hibernating_chunks(map: Res<ChunkMap>, mut chunk_gizmos: Gizmos<Deb
         }
     });
 
-    map.iter_chunks().for_each(|chunk| {
+    map.iter_chunks().for_each(|entity| {
+        let chunk = chunk_query.get(*entity).unwrap();
         let rect = Rect::from_corners(chunk.min().as_vec2(), chunk.max().as_vec2());
         if chunk.hibernating() == false {
             chunk_gizmos.rect_2d(
