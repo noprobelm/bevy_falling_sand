@@ -76,7 +76,7 @@ pub fn handle_movement(
                             continue;
                         }
 
-                        match map.entity(&neighbor_coordinates, &mut chunk_query.as_query_lens()) {
+                        match map.entity(&neighbor_coordinates, &mut chunk_query) {
                             Some(neighbor_entity) => {
                                 if let Ok((
                                     _,
@@ -97,7 +97,7 @@ pub fn handle_movement(
                                         map.swap(
                                             neighbor_coordinates.0,
                                             coordinates.0,
-                                            &mut chunk_query.as_query_lens(),
+                                            &mut chunk_query,
                                         );
 
                                         swap_particle_positions(
@@ -127,11 +127,7 @@ pub fn handle_movement(
                             }
                             // We've encountered a free slot for the target particle to move to
                             None => {
-                                map.swap(
-                                    coordinates.0,
-                                    neighbor_coordinates,
-                                    &mut chunk_query.as_query_lens(),
-                                );
+                                map.swap(coordinates.0, neighbor_coordinates, &mut chunk_query);
                                 coordinates.0 = neighbor_coordinates;
 
                                 transform.translation.x = neighbor_coordinates.x as f32;

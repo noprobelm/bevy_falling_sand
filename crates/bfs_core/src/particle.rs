@@ -174,7 +174,10 @@ pub fn handle_new_particles(
             transform.translation.y as i32,
         );
 
-        let new = map.insert_no_overwrite(coordinates, entity, &mut chunk_query.as_query_lens());
+        let new = chunk_query
+            .get_mut(*map.chunk(&coordinates).unwrap())
+            .unwrap()
+            .insert_no_overwrite(coordinates, entity);
         if new != entity {
             commands.entity(entity).despawn();
             continue;

@@ -232,10 +232,8 @@ fn sample_hovered(
     mut brush_state: ResMut<NextState<BrushState>>,
 ) {
     if mouse_buttons.just_pressed(MouseButton::Middle) {
-        if let Some(entity) = chunk_map.entity(
-            &cursor_coords.current.as_ivec2(),
-            &mut chunk_query.as_query_lens(),
-        ) {
+        if let Some(entity) = chunk_map.entity(&cursor_coords.current.as_ivec2(), &mut chunk_query)
+        {
             let particle = particle_query.get(entity).unwrap();
             selected_brush_particle.0 = particle.name.clone();
             brush_state.set(BrushState::Spawn);
