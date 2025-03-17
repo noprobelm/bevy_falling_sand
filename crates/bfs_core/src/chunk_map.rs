@@ -1,7 +1,5 @@
 use ahash::{HashMap, HashMapExt};
 use bevy::prelude::*;
-use rayon::iter::IntoParallelRefIterator;
-use rayon::prelude::*;
 
 use crate::{
     Coordinates, Particle, ParticleSimulationSet, ParticleType, ParticleTypeMap,
@@ -12,9 +10,9 @@ pub struct ChunkMapPlugin;
 
 impl Plugin for ChunkMapPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<ChunkMap>()
-            .add_event::<ClearMapEvent>()
+        app.add_event::<ClearMapEvent>()
             .add_event::<ClearParticleTypeChildrenEvent>()
+            .add_systems(Startup, setup)
             .add_systems(
                 Update,
                 reset_chunks
@@ -29,23 +27,7 @@ impl Plugin for ChunkMapPlugin {
 
 #[derive(Resource, Debug, Clone)]
 pub struct ChunkMap {
-    pub chunks: Vec<Chunk>,
-}
-
-impl Default for ChunkMap {
-    fn default() -> ChunkMap {
-        let chunks: Vec<Chunk> = (0..32_i32.pow(2))
-            .map(|i| {
-                let x = (i % 32) * 32 - 512;
-                let y = 512 - (i / 32) * 32;
-                let upper_left = IVec2::new(x, y - 31);
-                let lower_right = IVec2::new(x + 31, y);
-                Chunk::new(upper_left, lower_right)
-            })
-            .collect();
-
-        ChunkMap { chunks }
-    }
+    pub chunks: Vec<Entity>,
 }
 
 impl ChunkMap {
@@ -59,61 +41,35 @@ impl ChunkMap {
         row * GRID_WIDTH + col
     }
 
-    pub fn chunk(&self, coord: &IVec2) -> Option<&Chunk> {
+    pub fn chunk(&self, coord: &IVec2) -> Option<&Entity> {
         let index = self.chunk_index(coord);
         self.chunks.get(index)
     }
-
-    fn chunk_mut(&mut self, coord: &IVec2) -> Option<&mut Chunk> {
-        let index = self.chunk_index(coord);
-        self.chunks.get_mut(index)
-    }
 }
 
 impl ChunkMap {
-    pub fn clear(&mut self) {
-        for map in &mut self.chunks {
-            map.clear();
-        }
-    }
-
-    pub fn remove(&mut self, coords: &IVec2) -> Option<Entity> {
-        self.chunk_mut(&coords).unwrap().remove(coords)
-    }
-}
-
-impl ChunkMap {
-    pub fn iter_chunks(&self) -> impl Iterator<Item = &Chunk> {
+    pub fn iter_chunks(&self) -> impl Iterator<Item = &Entity> {
         self.chunks.iter()
     }
 
-    pub fn iter_chunks_mut(&mut self) -> impl Iterator<Item = &mut Chunk> {
-        self.chunks.iter_mut()
-    }
-}
-
-impl ChunkMap {
-    pub fn reset_chunks(&mut self) {
-        for chunk in &mut self.chunks {
-            chunk.prev_dirty_rect = chunk.dirty_rect;
-            chunk.dirty_rect = None;
-
-            match (chunk.should_process_next_frame, chunk.hibernating) {
-                (true, true) => {
-                    chunk.hibernating = false;
-                }
-                (false, false) => {
-                    chunk.hibernating = true;
-                }
-                _ => {}
-            }
-
-            chunk.should_process_next_frame = false;
-        }
+    pub fn remove(
+        &mut self,
+        coords: &IVec2,
+        chunk_query: &mut Query<&mut Chunk>,
+    ) -> Option<Entity> {
+        chunk_query
+            .get_mut(*self.chunk(coords).unwrap())
+            .unwrap()
+            .remove(coords)
     }
 
-    fn activate_neighbor_chunks(&mut self, coord: &IVec2, chunk_idx: usize) {
-        let chunk = &self.chunks[chunk_idx];
+    fn activate_neighbor_chunks(
+        &mut self,
+        coord: &IVec2,
+        chunk_idx: usize,
+        chunk_query: &mut Query<&mut Chunk>,
+    ) {
+        let chunk = chunk_query.get_mut(self.chunks[chunk_idx]).unwrap();
         let neighbors = [
             (coord.x == chunk.min().x, chunk_idx - 1),  // Left neighbor
             (coord.x == chunk.max().x, chunk_idx + 1),  // Right neighbor
@@ -123,30 +79,21 @@ impl ChunkMap {
 
         for (condition, neighbor_idx) in neighbors.iter() {
             if *condition {
-                self.chunks[*neighbor_idx].should_process_next_frame = true;
+                chunk_query
+                    .get_mut(self.chunks[*neighbor_idx])
+                    .unwrap()
+                    .should_process_next_frame = true;
             }
         }
     }
-}
 
-impl ChunkMap {
-    pub fn insert_no_overwrite(&mut self, coords: IVec2, entity: Entity) -> &mut Entity {
-        let chunk = self.chunk_mut(&coords).unwrap();
-        chunk.insert_no_overwrite(coords, entity)
-    }
-
-    pub fn insert_overwrite(&mut self, coords: IVec2, entity: Entity) -> Option<Entity> {
-        let chunk = self.chunk_mut(&coords).unwrap();
-        chunk.insert_overwrite(coords, entity)
-    }
-
-    pub fn swap(&mut self, first: IVec2, second: IVec2) {
+    pub fn swap(&mut self, first: IVec2, second: IVec2, chunk_query: &mut Query<&mut Chunk>) {
         let first_chunk_idx = self.chunk_index(&first);
         let second_chunk_idx = self.chunk_index(&second);
 
         // Short-circuit if both positions are in the same chunk to save ourselves a hashmap lookup.
         if first_chunk_idx == second_chunk_idx {
-            let chunk = &mut self.chunks[first_chunk_idx];
+            let mut chunk = chunk_query.get_mut(*self.chunk(&first).unwrap()).unwrap();
 
             let entity_first = chunk.remove(&first).unwrap();
             if let Some(entity_second) = chunk.remove(&second) {
@@ -156,45 +103,46 @@ impl ChunkMap {
                 chunk.insert_overwrite(second, entity_first);
             }
         } else {
-            let entity_first = self.chunks[first_chunk_idx].remove(&first).unwrap();
-            if let Some(entity_second) = self.chunks[second_chunk_idx].remove(&second) {
-                self.chunks[first_chunk_idx].insert_overwrite(first, entity_second);
-                self.chunks[second_chunk_idx].insert_overwrite(second, entity_first);
+            let entity_first = chunk_query
+                .get_mut(*self.chunk(&first).unwrap())
+                .unwrap()
+                .remove(&first)
+                .unwrap();
+            if let Some(entity_second) = chunk_query
+                .get_mut(*self.chunk(&second).unwrap())
+                .unwrap()
+                .remove(&second)
+            {
+                chunk_query
+                    .get_mut(*self.chunk(&first).unwrap())
+                    .unwrap()
+                    .insert_overwrite(first, entity_second);
+                chunk_query
+                    .get_mut(*self.chunk(&second).unwrap())
+                    .unwrap()
+                    .insert_overwrite(second, entity_first);
             } else {
-                self.chunks[second_chunk_idx].insert_overwrite(second, entity_first);
+                chunk_query
+                    .get_mut(*self.chunk(&second).unwrap())
+                    .unwrap()
+                    .insert_overwrite(second, entity_first);
             }
         }
 
-        self.activate_neighbor_chunks(&first, first_chunk_idx);
-        self.activate_neighbor_chunks(&second, second_chunk_idx);
+        self.activate_neighbor_chunks(&first, first_chunk_idx, chunk_query);
+        self.activate_neighbor_chunks(&second, second_chunk_idx, chunk_query);
     }
 
-    pub fn entity(&self, coords: &IVec2) -> Option<&Entity> {
-        self.chunk(&coords).unwrap().get(coords)
-    }
-
-    #[allow(unused)]
-    pub fn iter(&self) -> impl Iterator<Item = (&IVec2, &Entity)> {
-        self.chunks.iter().flat_map(|chunk| chunk.iter())
-    }
-
-    pub fn par_iter(&self) -> impl IntoParallelIterator<Item = (&IVec2, &Entity)> {
-        self.chunks.par_iter().flat_map(|chunk| chunk.par_iter())
-    }
-
-    pub fn should_process_this_frame(&self, coords: &IVec2) -> bool {
-        if let Some(chunk) = self.chunk(coords) {
-            if chunk.hibernating() == true {
-                return false;
-            } else if let Some(dirty_rect) = chunk.prev_dirty_rect() {
-                return dirty_rect.contains(*coords);
-            }
-        }
-        false
+    pub fn entity(&self, coords: &IVec2, chunk_query: &mut Query<&mut Chunk>) -> Option<Entity> {
+        chunk_query
+            .get(*self.chunk(coords).unwrap())
+            .unwrap()
+            .get(coords)
+            .copied()
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone, Eq, PartialEq, Debug, Default, Component)]
 pub struct Chunk {
     chunk: HashMap<IVec2, Entity>,
     region: IRect,
@@ -251,10 +199,6 @@ impl Chunk {
     pub fn entities(&self) -> impl Iterator<Item = &Entity> {
         self.chunk.values()
     }
-
-    pub fn par_iter(&self) -> impl IntoParallelIterator<Item = (&IVec2, &Entity)> {
-        self.chunk.par_iter()
-    }
 }
 
 impl Chunk {
@@ -267,7 +211,7 @@ impl Chunk {
         self.chunk.remove(coords)
     }
 
-    pub fn insert_no_overwrite(&mut self, coords: IVec2, entity: Entity) -> &mut Entity {
+    pub fn insert_no_overwrite(&mut self, coords: IVec2, entity: Entity) -> Entity {
         // Extend the dirty rect to include the newly added particle
         self.should_process_next_frame = true;
         if let Some(dirty_rect) = self.dirty_rect {
@@ -276,7 +220,7 @@ impl Chunk {
             self.dirty_rect = Some(IRect::from_center_size(coords, IVec2::ONE));
         }
 
-        self.chunk.entry(coords).or_insert(entity)
+        *self.chunk.entry(coords).or_insert(entity)
     }
 
     pub fn insert_overwrite(&mut self, coords: IVec2, entity: Entity) -> Option<Entity> {
@@ -302,12 +246,43 @@ impl Chunk {
     }
 
     pub fn empty(&self) -> bool {
-        self.chunk.len() == 0
+        self.chunk.is_empty()
     }
 }
 
-pub fn reset_chunks(mut map: ResMut<ChunkMap>) {
-    map.reset_chunks();
+fn setup(mut commands: Commands) {
+    let mut map = ChunkMap { chunks: vec![] };
+
+    for i in 0..32_i32.pow(2) {
+        let x = (i % 32) * 32 - 512;
+        let y = 512 - (i / 32) * 32;
+        let upper_left = IVec2::new(x, y - 31);
+        let lower_right = IVec2::new(x + 31, y);
+        let chunk = Chunk::new(upper_left, lower_right);
+        let id = commands.spawn(chunk).id();
+
+        map.chunks.push(id);
+    }
+    commands.insert_resource(map);
+}
+
+fn reset_chunks(mut chunk_query: Query<&mut Chunk>) {
+    chunk_query.iter_mut().for_each(|mut chunk| {
+        chunk.prev_dirty_rect = chunk.dirty_rect;
+        chunk.dirty_rect = None;
+
+        match (chunk.should_process_next_frame, chunk.hibernating) {
+            (true, true) => {
+                chunk.hibernating = false;
+            }
+            (false, false) => {
+                chunk.hibernating = true;
+            }
+            _ => {}
+        }
+
+        chunk.should_process_next_frame = false;
+    });
 }
 
 #[derive(Event)]
@@ -320,9 +295,10 @@ pub fn on_remove_particle(
     trigger: Trigger<RemoveParticleEvent>,
     mut commands: Commands,
     mut map: ResMut<ChunkMap>,
+    mut chunk_query: Query<&mut Chunk>,
 ) {
-    if let Some(entity) = map.remove(&trigger.event().coordinates) {
-        if trigger.event().despawn == true {
+    if let Some(entity) = map.remove(&trigger.event().coordinates, &mut chunk_query) {
+        if trigger.event().despawn {
             commands.entity(entity).remove_parent().despawn();
         } else {
             commands.entity(entity).remove_parent();
@@ -334,13 +310,13 @@ pub fn on_clear_chunk_map(
     _trigger: Trigger<ClearMapEvent>,
     mut commands: Commands,
     particle_parent_map: Res<ParticleTypeMap>,
-    mut map: ResMut<ChunkMap>,
+    mut chunk_query: Query<&mut Chunk>,
 ) {
     particle_parent_map.iter().for_each(|(_, entity)| {
         commands.entity(*entity).despawn_descendants();
     });
 
-    map.clear();
+    chunk_query.iter_mut().for_each(|mut chunk| chunk.clear());
 }
 
 pub fn on_clear_particle_type_children(
@@ -348,16 +324,16 @@ pub fn on_clear_particle_type_children(
     mut commands: Commands,
     particle_query: Query<&Coordinates, With<Particle>>,
     parent_query: Query<&Children, With<ParticleType>>,
-
     particle_parent_map: Res<ParticleTypeMap>,
     mut map: ResMut<ChunkMap>,
+    mut chunk_query: Query<&mut Chunk>,
 ) {
     let particle_type = trigger.event().0.clone();
     if let Some(parent_entity) = particle_parent_map.get(&particle_type) {
         if let Ok(children) = parent_query.get(*parent_entity) {
             children.iter().for_each(|child_entity| {
                 if let Ok(coordinates) = particle_query.get(*child_entity) {
-                    map.remove(&coordinates.0);
+                    map.remove(&coordinates.0, &mut chunk_query);
                 } else {
                     // If this happens, something is seriously amiss.
                     error!("No child entity found for particle type '{particle_type}' while removing child from chunk map.")

@@ -3,7 +3,7 @@ use crate::*;
 use std::mem;
 
 use bevy::utils::HashSet;
-use bfs_core::{ChunkMap, Coordinates, Particle, ParticleSimulationSet};
+use bfs_core::{Chunk, ChunkMap, Coordinates, Particle, ParticleSimulationSet};
 
 pub(super) struct SystemsPlugin;
 
@@ -27,6 +27,7 @@ pub fn handle_movement(
         &mut MovementPriority,
     )>,
     mut map: ResMut<ChunkMap>,
+    mut chunk_query: Query<&mut Chunk>,
 ) {
     // Check visited before we perform logic on a particle (particles shouldn't move more than once)
     let mut visited: HashSet<IVec2> = HashSet::default();
@@ -43,7 +44,8 @@ pub fn handle_movement(
                 density,
                 mut movement_priority,
             )| {
-                if let Some(chunk) = map.chunk(&coordinates.0) {
+                if let Some(entity) = map.chunk(&coordinates.0) {
+                    let chunk = chunk_query.get(*entity).unwrap();
                     let hibernating = chunk.hibernating();
                     if let Some(dirty_rect) = chunk.prev_dirty_rect() {
                         if hibernating {
@@ -74,7 +76,7 @@ pub fn handle_movement(
                             continue;
                         }
 
-                        match map.entity(&neighbor_coordinates) {
+                        match map.entity(&neighbor_coordinates, &mut chunk_query) {
                             Some(neighbor_entity) => {
                                 if let Ok((
                                     _,
@@ -86,13 +88,17 @@ pub fn handle_movement(
                                     _,
                                     neighbor_density,
                                     _,
-                                )) = particle_query.get_unchecked(*neighbor_entity)
+                                )) = particle_query.get_unchecked(neighbor_entity)
                                 {
                                     if *particle_type == *neighbor_particle_type {
                                         continue;
                                     }
                                     if density > neighbor_density {
-                                        map.swap(neighbor_coordinates.0, coordinates.0);
+                                        map.swap(
+                                            neighbor_coordinates.0,
+                                            coordinates.0,
+                                            &mut chunk_query,
+                                        );
 
                                         swap_particle_positions(
                                             &mut coordinates,
@@ -121,7 +127,7 @@ pub fn handle_movement(
                             }
                             // We've encountered a free slot for the target particle to move to
                             None => {
-                                map.swap(coordinates.0, neighbor_coordinates);
+                                map.swap(coordinates.0, neighbor_coordinates, &mut chunk_query);
                                 coordinates.0 = neighbor_coordinates;
 
                                 transform.translation.x = neighbor_coordinates.x as f32;

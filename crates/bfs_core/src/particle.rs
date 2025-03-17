@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy::utils::HashMap;
 use serde::{Deserialize, Serialize};
 
-use crate::{ChunkMap, ParticleSimulationSet};
+use crate::{Chunk, ChunkMap, ParticleSimulationSet};
 
 pub(super) struct ParticlePlugin;
 
@@ -25,8 +25,6 @@ impl Plugin for ParticlePlugin {
             .add_observer(on_reset_particle);
     }
 }
-
-use bevy::prelude::Component;
 
 pub trait ParticleBlueprint: Component {
     type Data: Component;
@@ -164,9 +162,10 @@ pub fn handle_new_particles(
     mut commands: Commands,
     parent_query: Query<Entity, With<ParticleType>>,
     particle_query: Query<(&Particle, &Transform, Entity), Changed<Particle>>,
-    mut map: ResMut<ChunkMap>,
+    map: Res<ChunkMap>,
     type_map: Res<ParticleTypeMap>,
     mut ev_particle_registered: EventWriter<ParticleRegistrationEvent>,
+    mut chunk_query: Query<&mut Chunk>,
 ) {
     let mut entities: Vec<Entity> = vec![];
     for (particle_type, transform, entity) in particle_query.iter() {
@@ -175,8 +174,11 @@ pub fn handle_new_particles(
             transform.translation.y as i32,
         );
 
-        let new = map.insert_no_overwrite(coordinates, entity);
-        if *new != entity {
+        let new = chunk_query
+            .get_mut(*map.chunk(&coordinates).unwrap())
+            .unwrap()
+            .insert_no_overwrite(coordinates, entity);
+        if new != entity {
             commands.entity(entity).despawn();
             continue;
         }
