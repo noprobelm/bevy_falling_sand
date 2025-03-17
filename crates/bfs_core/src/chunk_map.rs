@@ -279,7 +279,7 @@ impl Chunk {
     }
 
     pub fn empty(&self) -> bool {
-        self.chunk.len() == 0
+        self.chunk.is_empty()
     }
 }
 
