@@ -1,5 +1,4 @@
 use ahash::{HashMap, HashMapExt};
-use bevy::ecs::system::QueryLens;
 use bevy::prelude::*;
 
 use crate::{
@@ -26,22 +25,6 @@ impl Plugin for ChunkMapPlugin {
     }
 }
 
-fn setup(mut commands: Commands) {
-    let mut map = ChunkMap { chunks: vec![] };
-
-    for i in 0..32_i32.pow(2) {
-        let x = (i % 32) * 32 - 512;
-        let y = 512 - (i / 32) * 32;
-        let upper_left = IVec2::new(x, y - 31);
-        let lower_right = IVec2::new(x + 31, y);
-        let chunk = Chunk::new(upper_left, lower_right);
-        let id = commands.spawn(chunk).id();
-
-        map.chunks.push(id);
-    }
-    commands.insert_resource(map);
-}
-
 #[derive(Resource, Debug, Clone)]
 pub struct ChunkMap {
     pub chunks: Vec<Entity>,
@@ -65,37 +48,21 @@ impl ChunkMap {
 }
 
 impl ChunkMap {
-    pub fn clear(&self, chunk_lens: &mut QueryLens<&mut Chunk>) {
-        chunk_lens
-            .query()
-            .iter_mut()
-            .for_each(|mut chunk| chunk.clear());
+    pub fn iter_chunks(&self) -> impl Iterator<Item = &Entity> {
+        self.chunks.iter()
     }
 
     pub fn remove(
         &mut self,
         coords: &IVec2,
-        chunk_lens: &mut QueryLens<&mut Chunk>,
+        chunk_query: &mut Query<&mut Chunk>,
     ) -> Option<Entity> {
-        chunk_lens
-            .query()
+        chunk_query
             .get_mut(*self.chunk(coords).unwrap())
             .unwrap()
             .remove(coords)
     }
-}
 
-impl ChunkMap {
-    pub fn iter_chunks(&self) -> impl Iterator<Item = &Entity> {
-        self.chunks.iter()
-    }
-
-    pub fn iter_chunks_mut(&mut self) -> impl Iterator<Item = &mut Entity> {
-        self.chunks.iter_mut()
-    }
-}
-
-impl ChunkMap {
     fn activate_neighbor_chunks(
         &mut self,
         coord: &IVec2,
@@ -283,7 +250,23 @@ impl Chunk {
     }
 }
 
-pub fn reset_chunks(mut chunk_query: Query<&mut Chunk>) {
+fn setup(mut commands: Commands) {
+    let mut map = ChunkMap { chunks: vec![] };
+
+    for i in 0..32_i32.pow(2) {
+        let x = (i % 32) * 32 - 512;
+        let y = 512 - (i / 32) * 32;
+        let upper_left = IVec2::new(x, y - 31);
+        let lower_right = IVec2::new(x + 31, y);
+        let chunk = Chunk::new(upper_left, lower_right);
+        let id = commands.spawn(chunk).id();
+
+        map.chunks.push(id);
+    }
+    commands.insert_resource(map);
+}
+
+fn reset_chunks(mut chunk_query: Query<&mut Chunk>) {
     chunk_query.iter_mut().for_each(|mut chunk| {
         chunk.prev_dirty_rect = chunk.dirty_rect;
         chunk.dirty_rect = None;
@@ -314,11 +297,8 @@ pub fn on_remove_particle(
     mut map: ResMut<ChunkMap>,
     mut chunk_query: Query<&mut Chunk>,
 ) {
-    if let Some(entity) = map.remove(
-        &trigger.event().coordinates,
-        &mut chunk_query.as_query_lens(),
-    ) {
-        if trigger.event().despawn == true {
+    if let Some(entity) = map.remove(&trigger.event().coordinates, &mut chunk_query) {
+        if trigger.event().despawn {
             commands.entity(entity).remove_parent().despawn();
         } else {
             commands.entity(entity).remove_parent();
@@ -330,14 +310,13 @@ pub fn on_clear_chunk_map(
     _trigger: Trigger<ClearMapEvent>,
     mut commands: Commands,
     particle_parent_map: Res<ParticleTypeMap>,
-    map: ResMut<ChunkMap>,
-    mut chunks_query: Query<&mut Chunk>,
+    mut chunk_query: Query<&mut Chunk>,
 ) {
     particle_parent_map.iter().for_each(|(_, entity)| {
         commands.entity(*entity).despawn_descendants();
     });
 
-    map.clear(&mut chunks_query.as_query_lens());
+    chunk_query.iter_mut().for_each(|mut chunk| chunk.clear());
 }
 
 pub fn on_clear_particle_type_children(
@@ -354,7 +333,7 @@ pub fn on_clear_particle_type_children(
         if let Ok(children) = parent_query.get(*parent_entity) {
             children.iter().for_each(|child_entity| {
                 if let Ok(coordinates) = particle_query.get(*child_entity) {
-                    map.remove(&coordinates.0, &mut chunk_query.as_query_lens());
+                    map.remove(&coordinates.0, &mut chunk_query);
                 } else {
                     // If this happens, something is seriously amiss.
                     error!("No child entity found for particle type '{particle_type}' while removing child from chunk map.")
