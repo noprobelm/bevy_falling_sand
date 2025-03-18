@@ -1,3 +1,5 @@
+use std::collections::hash_map::Entry;
+
 use ahash::{HashMap, HashMapExt};
 use bevy::prelude::*;
 
@@ -97,10 +99,10 @@ impl ChunkMap {
 
             let entity_first = chunk.remove(&first).unwrap();
             if let Some(entity_second) = chunk.remove(&second) {
-                chunk.insert_overwrite(first, entity_second);
-                chunk.insert_overwrite(second, entity_first);
+                chunk.insert(first, entity_second);
+                chunk.insert(second, entity_first);
             } else {
-                chunk.insert_overwrite(second, entity_first);
+                chunk.insert(second, entity_first);
             }
         } else {
             let entity_first = chunk_query
@@ -116,16 +118,16 @@ impl ChunkMap {
                 chunk_query
                     .get_mut(*self.chunk(&first).unwrap())
                     .unwrap()
-                    .insert_overwrite(first, entity_second);
+                    .insert(first, entity_second);
                 chunk_query
                     .get_mut(*self.chunk(&second).unwrap())
                     .unwrap()
-                    .insert_overwrite(second, entity_first);
+                    .insert(second, entity_first);
             } else {
                 chunk_query
                     .get_mut(*self.chunk(&second).unwrap())
                     .unwrap()
-                    .insert_overwrite(second, entity_first);
+                    .insert(second, entity_first);
             }
         }
 
@@ -211,19 +213,12 @@ impl Chunk {
         self.chunk.remove(coords)
     }
 
-    pub fn insert_no_overwrite(&mut self, coords: IVec2, entity: Entity) -> Entity {
-        // Extend the dirty rect to include the newly added particle
+    pub fn entry(&mut self, coordinates: IVec2) -> Entry<IVec2, Entity> {
         self.should_process_next_frame = true;
-        if let Some(dirty_rect) = self.dirty_rect {
-            self.dirty_rect = Some(dirty_rect.union_point(coords));
-        } else {
-            self.dirty_rect = Some(IRect::from_center_size(coords, IVec2::ONE));
-        }
-
-        *self.chunk.entry(coords).or_insert(entity)
+        self.chunk.entry(coordinates)
     }
 
-    pub fn insert_overwrite(&mut self, coords: IVec2, entity: Entity) -> Option<Entity> {
+    pub fn insert(&mut self, coords: IVec2, entity: Entity) -> Option<Entity> {
         self.should_process_next_frame = true;
         // Extend the dirty rect to include the newly added particle
         if let Some(dirty_rect) = self.dirty_rect {

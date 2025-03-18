@@ -174,11 +174,13 @@ pub fn handle_new_particles(
             transform.translation.y as i32,
         );
 
-        let new = chunk_query
+        if *chunk_query
             .get_mut(*map.chunk(&coordinates).unwrap())
             .unwrap()
-            .insert_no_overwrite(coordinates, entity);
-        if new != entity {
+            .entry(coordinates)
+            .or_insert(entity)
+            != entity
+        {
             commands.entity(entity).despawn();
             continue;
         }
