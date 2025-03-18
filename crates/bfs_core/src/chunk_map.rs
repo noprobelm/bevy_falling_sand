@@ -31,7 +31,7 @@ pub struct ChunkMap {
 }
 
 impl ChunkMap {
-    fn chunk_index(&self, coord: &IVec2) -> usize {
+    fn index(&self, coord: &IVec2) -> usize {
         const OFFSET: i32 = 512;
         const GRID_WIDTH: usize = 32;
 
@@ -42,7 +42,7 @@ impl ChunkMap {
     }
 
     pub fn chunk(&self, coord: &IVec2) -> Option<&Entity> {
-        let index = self.chunk_index(coord);
+        let index = self.index(coord);
         self.chunks.get(index)
     }
 }
@@ -88,8 +88,8 @@ impl ChunkMap {
     }
 
     pub fn swap(&mut self, first: IVec2, second: IVec2, chunk_query: &mut Query<&mut Chunk>) {
-        let first_chunk_idx = self.chunk_index(&first);
-        let second_chunk_idx = self.chunk_index(&second);
+        let first_chunk_idx = self.index(&first);
+        let second_chunk_idx = self.index(&second);
 
         // Short-circuit if both positions are in the same chunk to save ourselves a hashmap lookup.
         if first_chunk_idx == second_chunk_idx {
