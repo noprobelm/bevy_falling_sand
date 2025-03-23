@@ -248,11 +248,11 @@ impl Chunk {
 fn setup(mut commands: Commands) {
     let mut map = ChunkMap { chunks: vec![] };
 
-    for i in 0..(GRID_WIDTH as i32).pow(2) {
-        let x = (i % GRID_WIDTH as i32) * GRID_WIDTH as i32 - OFFSET;
-        let y = 512 - (i / GRID_WIDTH as i32) * GRID_WIDTH as i32;
-        let upper_left = IVec2::new(x, y - GRID_WIDTH as i32 - 1);
-        let lower_right = IVec2::new(x + GRID_WIDTH as i32 - 1, y);
+    for i in 0..32_i32.pow(2) {
+        let x = (i % 32) * 32 - 512;
+        let y = 512 - (i / 32) * 32;
+        let upper_left = IVec2::new(x, y - 31);
+        let lower_right = IVec2::new(x + 31, y);
         let chunk = Chunk::new(upper_left, lower_right);
         let id = commands.spawn(chunk).id();
 
