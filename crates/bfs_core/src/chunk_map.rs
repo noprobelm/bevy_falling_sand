@@ -69,9 +69,9 @@ impl ChunkMap {
         &mut self,
         coord: &IVec2,
         chunk_idx: usize,
-        chunk_query: &mut Query<&mut Chunk>,
+        chunk_query: &mut Query<(&mut Chunk, &mut ChunkRng)>,
     ) {
-        let chunk = chunk_query.get_mut(self.chunks[chunk_idx]).unwrap();
+        let (chunk, _) = chunk_query.get_mut(self.chunks[chunk_idx]).unwrap();
         let neighbors = [
             (coord.x == chunk.min().x, chunk_idx - 1),  // Left neighbor
             (coord.x == chunk.max().x, chunk_idx + 1),  // Right neighbor
@@ -84,18 +84,24 @@ impl ChunkMap {
                 chunk_query
                     .get_mut(self.chunks[*neighbor_idx])
                     .unwrap()
+                    .0
                     .should_process_next_frame = true;
             }
         }
     }
 
-    pub fn swap(&mut self, first: IVec2, second: IVec2, chunk_query: &mut Query<&mut Chunk>) {
+    pub fn swap(
+        &mut self,
+        first: IVec2,
+        second: IVec2,
+        chunk_query: &mut Query<(&mut Chunk, &mut ChunkRng)>,
+    ) {
         let first_chunk_idx = self.index(&first);
         let second_chunk_idx = self.index(&second);
 
         // Short-circuit if both positions are in the same chunk to save ourselves a hashmap lookup.
         if first_chunk_idx == second_chunk_idx {
-            let mut chunk = chunk_query.get_mut(*self.chunk(&first).unwrap()).unwrap();
+            let (mut chunk, _) = chunk_query.get_mut(*self.chunk(&first).unwrap()).unwrap();
 
             let entity_first = chunk.remove(&first).unwrap();
             if let Some(entity_second) = chunk.remove(&second) {
@@ -108,25 +114,30 @@ impl ChunkMap {
             let entity_first = chunk_query
                 .get_mut(*self.chunk(&first).unwrap())
                 .unwrap()
+                .0
                 .remove(&first)
                 .unwrap();
             if let Some(entity_second) = chunk_query
                 .get_mut(*self.chunk(&second).unwrap())
                 .unwrap()
+                .0
                 .remove(&second)
             {
                 chunk_query
                     .get_mut(*self.chunk(&first).unwrap())
                     .unwrap()
+                    .0
                     .insert(first, entity_second);
                 chunk_query
                     .get_mut(*self.chunk(&second).unwrap())
                     .unwrap()
+                    .0
                     .insert(second, entity_first);
             } else {
                 chunk_query
                     .get_mut(*self.chunk(&second).unwrap())
                     .unwrap()
+                    .0
                     .insert(second, entity_first);
             }
         }
@@ -135,10 +146,15 @@ impl ChunkMap {
         self.activate_neighbor_chunks(&second, second_chunk_idx, chunk_query);
     }
 
-    pub fn entity(&self, coords: &IVec2, chunk_query: &mut Query<&mut Chunk>) -> Option<Entity> {
+    pub fn entity(
+        &self,
+        coords: &IVec2,
+        chunk_query: &mut Query<(&mut Chunk, &mut ChunkRng)>,
+    ) -> Option<Entity> {
         chunk_query
             .get(*self.chunk(coords).unwrap())
             .unwrap()
+            .0
             .get(coords)
             .copied()
     }
@@ -196,6 +212,10 @@ impl Chunk {
 impl Chunk {
     pub fn iter(&self) -> impl Iterator<Item = (&IVec2, &Entity)> {
         self.chunk.iter()
+    }
+
+    pub fn coordinates(&self) -> impl Iterator<Item = &IVec2> {
+        self.chunk.keys()
     }
 
     pub fn entities(&self) -> impl Iterator<Item = &Entity> {
