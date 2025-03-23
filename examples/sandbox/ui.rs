@@ -56,6 +56,7 @@ impl bevy::prelude::Plugin for UIPlugin {
                     handle_search_bar_input,
                     particle_editor_save,
                     update_particle_editor_fields,
+                    exit_on_key,
                 ),
             )
             .add_systems(OnEnter(AppState::Ui), show_cursor)
@@ -258,6 +259,12 @@ impl DebugUI {
         if show_particle_count {
             ui.label(format!("Total Particles: {}", total_particle_count));
         }
+    }
+}
+
+fn exit_on_key(keyboard_input: Res<ButtonInput<KeyCode>>, mut exit: EventWriter<AppExit>) {
+    if keyboard_input.just_pressed(KeyCode::KeyQ) {
+        exit.send(AppExit::Success);
     }
 }
 
