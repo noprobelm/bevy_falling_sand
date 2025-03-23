@@ -4,7 +4,7 @@ use ahash::{HashMap, HashMapExt};
 use bevy::prelude::*;
 
 use crate::{
-    Coordinates, Particle, ParticleSimulationSet, ParticleType, ParticleTypeMap,
+    ChunkRng, Coordinates, Particle, ParticleSimulationSet, ParticleType, ParticleTypeMap,
     RemoveParticleEvent, SimulationRun,
 };
 
@@ -254,7 +254,7 @@ fn setup(mut commands: Commands) {
         let upper_left = IVec2::new(x, y - 31);
         let lower_right = IVec2::new(x + 31, y);
         let chunk = Chunk::new(upper_left, lower_right);
-        let id = commands.spawn(chunk).id();
+        let id = commands.spawn((chunk, ChunkRng::default())).id();
 
         map.chunks.push(id);
     }
