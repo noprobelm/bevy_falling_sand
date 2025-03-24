@@ -191,6 +191,10 @@ impl Chunk {
     pub fn max(&self) -> &IVec2 {
         &self.region.max
     }
+
+    pub fn region(&self) -> &IRect {
+        &self.region
+    }
 }
 
 impl Chunk {
