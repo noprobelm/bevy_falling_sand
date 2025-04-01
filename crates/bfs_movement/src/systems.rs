@@ -29,10 +29,10 @@ pub fn handle_movement(
     mut map: ResMut<ChunkMap>,
     mut chunk_query: Query<(&mut Chunk, &mut ChunkRng)>,
 ) {
-    // Check visited before we perform logic on a particle (particles shouldn't move more than once)
     let chunk_query_ptr: *mut Query<(&mut Chunk, &mut ChunkRng)> = &mut chunk_query;
-    let mut visited: HashSet<IVec2> = HashSet::default();
+    let mut visited: HashSet<Entity> = HashSet::default();
     let mut coordinates_set: Vec<Entity> = Vec::with_capacity(1024);
+
     unsafe {
         chunk_query
             .iter_unsafe()
@@ -51,7 +51,13 @@ pub fn handle_movement(
                         }
                     });
                 }
+
+                chunk_rng.shuffle(&mut coordinates_set);
                 coordinates_set.iter().for_each(|entity| {
+                    if visited.contains(entity) {
+                        return;
+                    }
+
                     if let Ok((
                         _,
                         particle_type,
@@ -64,11 +70,9 @@ pub fn handle_movement(
                         mut movement_priority,
                     )) = particle_query.get_unchecked(*entity)
                     {
-                        // Used to determine if we should add the particle to set of visited particles.
                         let mut moved = false;
+
                         'velocity_loop: for _ in 0..velocity.val {
-                            // If a particle is blocked on a certain vector, we shouldn't attempt to swap it with other particles along that
-                            // same vector.
                             let mut obstructed: HashSet<IVec2> = HashSet::default();
 
                             for relative_coordinates in movement_priority
@@ -77,9 +81,7 @@ pub fn handle_movement(
                                 let neighbor_coordinates = coordinates.0 + *relative_coordinates;
                                 let signum = relative_coordinates.signum();
 
-                                if visited.contains(&neighbor_coordinates)
-                                    || obstructed.contains(&signum)
-                                {
+                                if obstructed.contains(&signum) {
                                     continue;
                                 }
 
@@ -88,7 +90,7 @@ pub fn handle_movement(
                                         if let Ok((
                                             _,
                                             neighbor_particle_type,
-                                            mut neighbor_coordinates,
+                                            mut neighbor_coords,
                                             mut neighbor_transform,
                                             _,
                                             _,
@@ -100,9 +102,10 @@ pub fn handle_movement(
                                             if *particle_type == *neighbor_particle_type {
                                                 continue;
                                             }
+
                                             if density > neighbor_density {
                                                 map.swap(
-                                                    neighbor_coordinates.0,
+                                                    neighbor_coords.0,
                                                     coordinates.0,
                                                     &mut *chunk_query_ptr,
                                                 );
@@ -110,29 +113,26 @@ pub fn handle_movement(
                                                 swap_particle_positions(
                                                     &mut coordinates,
                                                     &mut transform,
-                                                    &mut neighbor_coordinates,
+                                                    &mut neighbor_coords,
                                                     &mut neighbor_transform,
                                                 );
 
-                                                if let Some(ref mut momentum) = momentum {
-                                                    momentum.0 = IVec2::ZERO; // Reset momentum after a swap
+                                                if let Some(ref mut m) = momentum {
+                                                    m.0 = IVec2::ZERO;
                                                 }
 
                                                 velocity.decrement();
                                                 moved = true;
                                                 break 'velocity_loop;
                                             } else {
-                                                obstructed.insert(relative_coordinates.signum());
+                                                obstructed.insert(signum);
                                                 continue;
                                             }
-                                        }
-                                        // We've encountered an anchored particle
-                                        else {
-                                            obstructed.insert(relative_coordinates.signum());
+                                        } else {
+                                            obstructed.insert(signum);
                                             continue;
                                         }
                                     }
-                                    // We've encountered a free slot for the target particle to move to
                                     None => {
                                         map.swap(
                                             coordinates.0,
@@ -140,28 +140,26 @@ pub fn handle_movement(
                                             &mut *chunk_query_ptr,
                                         );
                                         coordinates.0 = neighbor_coordinates;
-
                                         transform.translation.x = neighbor_coordinates.x as f32;
                                         transform.translation.y = neighbor_coordinates.y as f32;
 
-                                        if let Some(ref mut momentum) = momentum {
-                                            momentum.0 = *relative_coordinates; // Set momentum relative to the current position
+                                        if let Some(ref mut m) = momentum {
+                                            m.0 = *relative_coordinates;
                                         }
 
                                         velocity.increment();
-
                                         moved = true;
-
                                         continue 'velocity_loop;
                                     }
-                                };
+                                }
                             }
                         }
+
                         if moved {
-                            visited.insert(coordinates.0);
+                            visited.insert(*entity);
                         } else {
-                            if let Some(ref mut momentum) = momentum {
-                                momentum.0 = IVec2::ZERO;
+                            if let Some(ref mut m) = momentum {
+                                m.0 = IVec2::ZERO;
                             }
                             velocity.decrement();
                         }
