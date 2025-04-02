@@ -65,43 +65,13 @@ impl ChunkMap {
             .remove(coords)
     }
 
-    fn activate_neighbor_chunks(
-        &mut self,
-        coord: &IVec2,
-        chunk_idx: usize,
-        chunk_query: &mut Query<(&mut Chunk, &mut ChunkRng)>,
-    ) {
-        let (chunk, _) = chunk_query.get_mut(self.chunks[chunk_idx]).unwrap();
-        let neighbors = [
-            (coord.x == chunk.min().x, chunk_idx - 1),  // Left neighbor
-            (coord.x == chunk.max().x, chunk_idx + 1),  // Right neighbor
-            (coord.y == chunk.min().y, chunk_idx + 32), // Bottom neighbor
-            (coord.y == chunk.max().y, chunk_idx - 32), // Top neighbor
-        ];
-
-        for (condition, neighbor_idx) in neighbors.iter() {
-            if *condition {
-                chunk_query
-                    .get_mut(self.chunks[*neighbor_idx])
-                    .unwrap()
-                    .0
-                    .should_process_next_frame = true;
-            }
-        }
-    }
-
-    pub fn swap(
-        &mut self,
-        first: IVec2,
-        second: IVec2,
-        chunk_query: &mut Query<(&mut Chunk, &mut ChunkRng)>,
-    ) {
+    pub fn swap(&mut self, first: IVec2, second: IVec2, chunk_query: &mut Query<&mut Chunk>) {
         let first_chunk_idx = self.index(&first);
         let second_chunk_idx = self.index(&second);
 
         // Short-circuit if both positions are in the same chunk to save ourselves a hashmap lookup.
         if first_chunk_idx == second_chunk_idx {
-            let (mut chunk, _) = chunk_query.get_mut(*self.chunk(&first).unwrap()).unwrap();
+            let mut chunk = chunk_query.get_mut(*self.chunk(&first).unwrap()).unwrap();
 
             let entity_first = chunk.remove(&first).unwrap();
             if let Some(entity_second) = chunk.remove(&second) {
@@ -114,47 +84,34 @@ impl ChunkMap {
             let entity_first = chunk_query
                 .get_mut(*self.chunk(&first).unwrap())
                 .unwrap()
-                .0
                 .remove(&first)
                 .unwrap();
             if let Some(entity_second) = chunk_query
                 .get_mut(*self.chunk(&second).unwrap())
                 .unwrap()
-                .0
                 .remove(&second)
             {
                 chunk_query
                     .get_mut(*self.chunk(&first).unwrap())
                     .unwrap()
-                    .0
                     .insert(first, entity_second);
                 chunk_query
                     .get_mut(*self.chunk(&second).unwrap())
                     .unwrap()
-                    .0
                     .insert(second, entity_first);
             } else {
                 chunk_query
                     .get_mut(*self.chunk(&second).unwrap())
                     .unwrap()
-                    .0
                     .insert(second, entity_first);
             }
         }
-
-        self.activate_neighbor_chunks(&first, first_chunk_idx, chunk_query);
-        self.activate_neighbor_chunks(&second, second_chunk_idx, chunk_query);
     }
 
-    pub fn entity(
-        &self,
-        coords: &IVec2,
-        chunk_query: &mut Query<(&mut Chunk, &mut ChunkRng)>,
-    ) -> Option<Entity> {
+    pub fn entity(&self, coords: &IVec2, chunk_query: &mut Query<&mut Chunk>) -> Option<Entity> {
         chunk_query
             .get(*self.chunk(coords).unwrap())
             .unwrap()
-            .0
             .get(coords)
             .copied()
     }
@@ -166,8 +123,6 @@ pub struct Chunk {
     region: IRect,
     dirty_rect: Option<IRect>,
     prev_dirty_rect: Option<IRect>,
-    should_process_next_frame: bool,
-    hibernating: bool,
 }
 
 impl Chunk {
@@ -177,8 +132,6 @@ impl Chunk {
             region: IRect::from_corners(upper_left, lower_right),
             dirty_rect: None,
             prev_dirty_rect: None,
-            should_process_next_frame: false,
-            hibernating: false,
         }
     }
 }
@@ -194,16 +147,6 @@ impl Chunk {
 
     pub fn region(&self) -> &IRect {
         &self.region
-    }
-}
-
-impl Chunk {
-    pub fn hibernating(&self) -> bool {
-        self.hibernating
-    }
-
-    pub fn should_process_next_frame(&self) -> bool {
-        self.should_process_next_frame
     }
 }
 
@@ -233,17 +176,14 @@ impl Chunk {
     }
 
     pub fn remove(&mut self, coords: &IVec2) -> Option<Entity> {
-        self.should_process_next_frame = true;
         self.chunk.remove(coords)
     }
 
     pub fn entry(&mut self, coordinates: IVec2) -> Entry<IVec2, Entity> {
-        self.should_process_next_frame = true;
         self.chunk.entry(coordinates)
     }
 
     pub fn insert(&mut self, coords: IVec2, entity: Entity) -> Option<Entity> {
-        self.should_process_next_frame = true;
         // Extend the dirty rect to include the newly added particle
         if let Some(dirty_rect) = self.dirty_rect {
             self.dirty_rect = Some(dirty_rect.union_point(coords));
@@ -289,18 +229,6 @@ fn reset_chunks(mut chunk_query: Query<&mut Chunk>) {
     chunk_query.iter_mut().for_each(|mut chunk| {
         chunk.prev_dirty_rect = chunk.dirty_rect;
         chunk.dirty_rect = None;
-
-        match (chunk.should_process_next_frame, chunk.hibernating) {
-            (true, true) => {
-                chunk.hibernating = false;
-            }
-            (false, false) => {
-                chunk.hibernating = true;
-            }
-            _ => {}
-        }
-
-        chunk.should_process_next_frame = false;
     });
 }
 

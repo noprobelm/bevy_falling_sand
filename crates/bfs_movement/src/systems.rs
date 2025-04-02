@@ -2,7 +2,7 @@ use crate::PhysicsRng;
 use crate::*;
 use std::mem;
 
-use bevy::utils::HashSet;
+use bevy::{ecs::system::QueryLens, utils::HashSet};
 use bfs_core::{Chunk, ChunkMap, ChunkRng, Coordinates, Particle, ParticleSimulationSet};
 
 pub(super) struct SystemsPlugin;
@@ -29,14 +29,17 @@ type ParticleMovementQuery<'a> = (
 pub fn handle_movement(
     mut particle_query: Query<ParticleMovementQuery>,
     mut map: ResMut<ChunkMap>,
-    mut chunk_query: Query<(&mut Chunk, &mut ChunkRng)>,
+    mut chunk_query: Query<&mut Chunk>,
+    mut chunk_rng_query: Query<&mut ChunkRng>,
 ) {
-    let chunk_query_ptr: *mut Query<(&mut Chunk, &mut ChunkRng)> = &mut chunk_query;
+    let chunk_query_ptr: *mut Query<&mut Chunk> = &mut chunk_query;
     let mut visited: HashSet<Entity> = HashSet::default();
     let mut coordinates_set: Vec<Entity> = Vec::with_capacity(1024);
+    let mut joined: QueryLens<(&mut Chunk, &mut ChunkRng)> = chunk_rng_query.join(&mut chunk_query);
 
     unsafe {
-        chunk_query
+        joined
+            .query()
             .iter_unsafe()
             .for_each(|(mut chunk, mut chunk_rng)| {
                 coordinates_set.clear();

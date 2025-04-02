@@ -1,7 +1,7 @@
 use bevy::{input::common_conditions::input_pressed, prelude::*, utils::HashSet};
 use bevy_egui::EguiContexts;
 use bevy_falling_sand::prelude::{ChunkMap, Particle, ParticleSimulationSet, RemoveParticleEvent};
-use bfs_internal::core::{Chunk, ChunkRng};
+use bfs_internal::core::Chunk;
 
 use super::{update_cursor_coordinates, AppState, CursorCoords, SelectedBrushParticle};
 
@@ -227,7 +227,7 @@ fn sample_hovered(
     cursor_coords: Res<CursorCoords>,
     chunk_map: Res<ChunkMap>,
     particle_query: Query<&Particle>,
-    mut chunk_query: Query<(&mut Chunk, &mut ChunkRng)>,
+    mut chunk_query: Query<&mut Chunk>,
     mut selected_brush_particle: ResMut<SelectedBrushParticle>,
     mut brush_state: ResMut<NextState<BrushState>>,
 ) {
