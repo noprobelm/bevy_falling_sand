@@ -45,7 +45,7 @@ pub fn handle_movement(
                 coordinates_set.clear();
                 if let Some(dirty_rect) = chunk.prev_dirty_rect() {
                     chunk.iter().for_each(|(coordinates, entity)| {
-                        if dirty_rect.contains(*coordinates) || chunk_rng.chance(0.05) {
+                        if dirty_rect.contains(*coordinates) || chunk_rng.chance(0.2) {
                             coordinates_set.push(*entity);
                         }
                     });
