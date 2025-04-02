@@ -13,19 +13,21 @@ impl Plugin for SystemsPlugin {
     }
 }
 
+type ParticleMovementQuery<'a> = (
+    Entity,
+    &'a Particle,
+    &'a mut Coordinates,
+    &'a mut Transform,
+    &'a mut PhysicsRng,
+    &'a mut Velocity,
+    Option<&'a mut Momentum>,
+    &'a Density,
+    &'a mut MovementPriority,
+);
+
 #[allow(unused_mut)]
 pub fn handle_movement(
-    mut particle_query: Query<(
-        Entity,
-        &Particle,
-        &mut Coordinates,
-        &mut Transform,
-        &mut PhysicsRng,
-        &mut Velocity,
-        Option<&mut Momentum>,
-        &Density,
-        &mut MovementPriority,
-    )>,
+    mut particle_query: Query<ParticleMovementQuery>,
     mut map: ResMut<ChunkMap>,
     mut chunk_query: Query<(&mut Chunk, &mut ChunkRng)>,
 ) {
