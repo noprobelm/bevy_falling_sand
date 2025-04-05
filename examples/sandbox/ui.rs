@@ -208,6 +208,43 @@ impl BrushControlUI {
     }
 }
 
+pub struct MovementControlUI;
+
+impl MovementControlUI {
+    pub fn render(
+        &self,
+        ui: &mut egui::Ui,
+        current_movement_source: &MovementSource,
+        next_movement_source: &mut ResMut<NextState<MovementSource>>,
+    ) {
+        egui::ComboBox::from_label("Particle Movement Logic")
+            .selected_text(format!("{:?}", current_movement_source))
+            .show_ui(ui, |ui| {
+                if ui
+                    .selectable_value(
+                        &mut current_movement_source.clone(),
+                        MovementSource::Chunks,
+                        "Chunks",
+                    )
+                    .changed()
+                {
+                    next_movement_source.set(MovementSource::Chunks);
+                }
+
+                if ui
+                    .selectable_value(
+                        &mut current_movement_source.clone(),
+                        MovementSource::Particles,
+                        "Particles",
+                    )
+                    .changed()
+                {
+                    next_movement_source.set(MovementSource::Particles);
+                }
+            });
+    }
+}
+
 pub struct DebugUI;
 
 impl DebugUI {
@@ -355,13 +392,17 @@ pub fn render_side_panel(
         EventWriter<SaveSceneEvent>,
         EventWriter<LoadSceneEvent>,
     ),
+    (current_movement_source, mut next_movement_source): (
+        Res<State<MovementSource>>,
+        ResMut<NextState<MovementSource>>,
+    ),
 ) {
     let ctx = contexts.ctx_mut();
     let brush = brush_query.single();
     let mut brush_size = brush.size;
 
     egui::SidePanel::left("side_panel")
-        .exact_width(200.0)
+        .exact_width(275.0)
         .resizable(false)
         .show(ctx, |ui| {
             SceneManagementUI.render(
@@ -371,12 +412,13 @@ pub fn render_side_panel(
                 &mut ev_save_scene,
                 &mut ev_load_scene,
             );
+            MovementControlUI.render(ui, current_movement_source.get(), &mut next_movement_source);
             BrushControlUI.render(
                 ui,
                 &mut brush_size,
                 max_brush_size.0,
                 &mut ev_brush_resize,
-                &current_brush_type.get(),
+                current_brush_type.get(),
                 &mut next_brush_type,
             );
             ParticleControlUI.render(ui, &mut brush_state, &mut commands);
