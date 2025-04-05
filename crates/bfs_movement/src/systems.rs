@@ -51,7 +51,7 @@ pub fn handle_movement(
                     });
                 } else {
                     chunk.iter().for_each(|(coordinates, entity)| {
-                        if chunk.region().contains(*coordinates) && chunk_rng.chance(0.2) {
+                        if chunk.region().contains(*coordinates) && chunk_rng.chance(0.05) {
                             coordinates_set.push(*entity);
                         }
                     });
