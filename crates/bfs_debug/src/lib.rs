@@ -65,7 +65,7 @@ pub fn color_hibernating_chunks(
     map.iter_chunks().for_each(|entity| {
         let chunk = chunk_query.get(*entity).unwrap();
         let rect = Rect::from_corners(chunk.min().as_vec2(), chunk.max().as_vec2());
-        if chunk.dirty_rect().is_some() {
+        if chunk.dirty_rect().is_none() {
             chunk_gizmos.rect_2d(
                 rect.center(),
                 rect.size() + Vec2::splat(1.),
@@ -77,7 +77,7 @@ pub fn color_hibernating_chunks(
     map.iter_chunks().for_each(|entity| {
         let chunk = chunk_query.get(*entity).unwrap();
         let rect = Rect::from_corners(chunk.min().as_vec2(), chunk.max().as_vec2());
-        if chunk.dirty_rect().is_none() {
+        if chunk.dirty_rect().is_some() {
             chunk_gizmos.rect_2d(
                 rect.center(),
                 rect.size() + Vec2::splat(1.),
