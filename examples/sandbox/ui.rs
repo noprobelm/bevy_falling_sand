@@ -198,6 +198,12 @@ impl BrushControlUI {
                 {
                     next_brush_type.set(BrushType::Circle)
                 };
+                if ui
+                    .selectable_value(&mut current_brush_type, &BrushType::Cursor, "Cursor")
+                    .changed()
+                {
+                    next_brush_type.set(BrushType::Cursor)
+                };
             });
         if ui
             .add(egui::Slider::new(brush_size, 1..=max_brush_size))

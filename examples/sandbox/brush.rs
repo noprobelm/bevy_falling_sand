@@ -86,6 +86,7 @@ pub enum BrushType {
     Line,
     #[default]
     Circle,
+    Cursor,
 }
 
 impl BrushType {
@@ -104,6 +105,7 @@ impl BrushType {
             BrushType::Circle => {
                 brush_gizmos.circle_2d(coords, brush_size, Color::WHITE);
             }
+            _ => brush_gizmos.cross_2d(coords, 6., Color::WHITE),
         }
     }
 
@@ -127,7 +129,11 @@ impl BrushType {
                 commands.spawn_batch((min_x * 3..=max_x * 3).map(move |x| {
                     (
                         particle.clone(),
-                        Transform::from_xyz(coords.current.x + x as f32, coords.current.y, 0.0),
+                        Transform::from_xyz(
+                            (coords.current.x + x as f32).round(),
+                            coords.current.y.round(),
+                            0.0,
+                        ),
                     )
                 }));
             }
@@ -159,6 +165,13 @@ impl BrushType {
                         half_length,
                     );
                 }
+            }
+            BrushType::Cursor => {
+                let particle = selected_brush_particle.clone();
+                commands.spawn((
+                    particle.clone(),
+                    Transform::from_xyz(coords.current.x.round(), coords.current.y.round(), 0.0),
+                ));
             }
         }
     }
@@ -195,6 +208,13 @@ impl BrushType {
                         despawn: true,
                     })
                 }
+            }
+            BrushType::Cursor => {
+                let coordinates = IVec2::new(coords.x, coords.y);
+                commands.trigger(RemoveParticleEvent {
+                    coordinates,
+                    despawn: true,
+                });
             }
         }
     }
