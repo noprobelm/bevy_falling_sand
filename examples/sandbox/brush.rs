@@ -74,7 +74,7 @@ pub struct MaxBrushSize(pub usize);
 
 impl Default for MaxBrushSize {
     fn default() -> Self {
-        return MaxBrushSize(50);
+        MaxBrushSize(50)
     }
 }
 
