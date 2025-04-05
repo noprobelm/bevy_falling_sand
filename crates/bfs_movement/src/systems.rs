@@ -9,8 +9,20 @@ pub(super) struct SystemsPlugin;
 
 impl Plugin for SystemsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, handle_movement.in_set(ParticleSimulationSet));
+        app.init_state::<MovementSource>().add_systems(
+            Update,
+            handle_movement_by_chunks
+                .in_set(ParticleSimulationSet)
+                .run_if(in_state(MovementSource::Chunks)),
+        );
     }
+}
+
+#[derive(States, Reflect, Default, Debug, Clone, Eq, PartialEq, Hash)]
+pub enum MovementSource {
+    #[default]
+    Chunks,
+    Particles,
 }
 
 type ParticleMovementQuery<'a> = (
@@ -26,7 +38,7 @@ type ParticleMovementQuery<'a> = (
 );
 
 #[allow(unused_mut)]
-pub fn handle_movement(
+pub fn handle_movement_by_chunks(
     mut particle_query: Query<ParticleMovementQuery>,
     mut map: ResMut<ChunkMap>,
     mut chunk_query: Query<&mut Chunk>,
@@ -50,8 +62,8 @@ pub fn handle_movement(
                         }
                     });
                 } else {
-                    chunk.iter().for_each(|(coordinates, entity)| {
-                        if chunk.region().contains(*coordinates) && chunk_rng.chance(0.05) {
+                    chunk.iter().for_each(|(_, entity)| {
+                        if chunk_rng.chance(0.05) {
                             coordinates_set.push(*entity);
                         }
                     });

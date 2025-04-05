@@ -232,7 +232,11 @@ fn setup(mut commands: Commands) {
 
 fn reset_chunks(mut chunk_query: Query<&mut Chunk>) {
     chunk_query.iter_mut().for_each(|mut chunk| {
-        chunk.prev_dirty_rect = chunk.dirty_rect;
+        if let Some(dirty_rect) = chunk.dirty_rect {
+            chunk.prev_dirty_rect = Some(dirty_rect.inflate(5).intersect(chunk.region));
+        } else {
+            chunk.prev_dirty_rect = None;
+        }
         chunk.dirty_rect = None;
     });
 }
