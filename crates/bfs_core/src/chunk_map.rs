@@ -1,7 +1,7 @@
-use std::collections::hash_map::Entry;
-
-use ahash::{HashMap, HashMapExt};
 use bevy::prelude::*;
+use bevy::utils::AHasher;
+use bevy::utils::{hashbrown::hash_map::Entry, HashMap};
+use std::hash::BuildHasherDefault;
 
 use crate::{
     ChunkRng, Coordinates, Particle, ParticleSimulationSet, ParticleType, ParticleTypeMap,
@@ -188,11 +188,13 @@ impl Chunk {
         self.chunk.remove(coordinates)
     }
 
-    pub fn entry(&mut self, coordinates: IVec2) -> Entry<IVec2, Entity> {
+    pub fn entry(
+        &mut self,
+        coordinates: IVec2,
+    ) -> Entry<'_, IVec2, Entity, BuildHasherDefault<AHasher>> {
         self.set_dirty_rect(coordinates);
         self.chunk.entry(coordinates)
     }
-
     pub fn insert(&mut self, coordinates: IVec2, entity: Entity) -> Option<Entity> {
         // Extend the dirty rect to include the newly added particle
         self.set_dirty_rect(coordinates);
