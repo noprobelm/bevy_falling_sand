@@ -171,27 +171,32 @@ impl Chunk {
 }
 
 impl Chunk {
+    fn set_dirty_rect(&mut self, coordinates: IVec2) {
+        if let Some(dirty_rect) = self.dirty_rect {
+            self.dirty_rect = Some(dirty_rect.union_point(coordinates));
+        } else {
+            self.dirty_rect = Some(IRect::from_center_size(coordinates, IVec2::ONE));
+        }
+    }
+
     pub fn clear(&mut self) {
         self.chunk.clear();
     }
 
-    pub fn remove(&mut self, coords: &IVec2) -> Option<Entity> {
-        self.chunk.remove(coords)
+    pub fn remove(&mut self, coordinates: &IVec2) -> Option<Entity> {
+        self.set_dirty_rect(*coordinates);
+        self.chunk.remove(coordinates)
     }
 
     pub fn entry(&mut self, coordinates: IVec2) -> Entry<IVec2, Entity> {
+        self.set_dirty_rect(coordinates);
         self.chunk.entry(coordinates)
     }
 
-    pub fn insert(&mut self, coords: IVec2, entity: Entity) -> Option<Entity> {
+    pub fn insert(&mut self, coordinates: IVec2, entity: Entity) -> Option<Entity> {
         // Extend the dirty rect to include the newly added particle
-        if let Some(dirty_rect) = self.dirty_rect {
-            self.dirty_rect = Some(dirty_rect.union_point(coords));
-        } else {
-            self.dirty_rect = Some(IRect::from_center_size(coords, IVec2::ONE));
-        }
-
-        self.chunk.insert(coords, entity)
+        self.set_dirty_rect(coordinates);
+        self.chunk.insert(coordinates, entity)
     }
 }
 
