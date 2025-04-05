@@ -100,12 +100,16 @@ impl BrushType {
             BrushType::Line => brush_gizmos.line_2d(
                 Vec2::new(coords.x - brush_size * 3. / 2., coords.y),
                 Vec2::new(coords.x + brush_size * 3. / 2., coords.y),
-                Color::WHITE,
+                Color::Srgba(Srgba::new(1., 1., 1., 0.3)),
             ),
             BrushType::Circle => {
-                brush_gizmos.circle_2d(coords, brush_size, Color::WHITE);
+                brush_gizmos.circle_2d(
+                    coords,
+                    brush_size,
+                    Color::Srgba(Srgba::new(1., 1., 1., 0.3)),
+                );
             }
-            _ => brush_gizmos.cross_2d(coords, 6., Color::WHITE),
+            _ => brush_gizmos.cross_2d(coords, 6., Color::Srgba(Srgba::new(1., 1., 1., 0.3))),
         }
     }
 
