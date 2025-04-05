@@ -53,7 +53,7 @@ pub fn handle_movement_by_chunks(
 ) {
     let chunk_query_ptr: *mut Query<&mut Chunk> = &mut chunk_query;
     let mut visited: HashSet<Entity> = HashSet::default();
-    let mut coordinates_set: Vec<Entity> = Vec::with_capacity(1024);
+    let mut particle_entities: Vec<Entity> = Vec::with_capacity(1024);
     let mut joined: QueryLens<(&mut Chunk, &mut ChunkRng)> = chunk_rng_query.join(&mut chunk_query);
 
     unsafe {
@@ -61,23 +61,23 @@ pub fn handle_movement_by_chunks(
             .query()
             .iter_unsafe()
             .for_each(|(mut chunk, mut chunk_rng)| {
-                coordinates_set.clear();
+                particle_entities.clear();
                 if let Some(dirty_rect) = chunk.prev_dirty_rect() {
                     chunk.iter().for_each(|(coordinates, entity)| {
                         if dirty_rect.contains(*coordinates) || chunk_rng.chance(0.2) {
-                            coordinates_set.push(*entity);
+                            particle_entities.push(*entity);
                         }
                     });
                 } else {
                     chunk.iter().for_each(|(_, entity)| {
                         if chunk_rng.chance(0.05) {
-                            coordinates_set.push(*entity);
+                            particle_entities.push(*entity);
                         }
                     });
                 }
 
-                chunk_rng.shuffle(&mut coordinates_set);
-                coordinates_set.iter().for_each(|entity| {
+                chunk_rng.shuffle(&mut particle_entities);
+                particle_entities.iter().for_each(|entity| {
                     if visited.contains(entity) {
                         return;
                     }
