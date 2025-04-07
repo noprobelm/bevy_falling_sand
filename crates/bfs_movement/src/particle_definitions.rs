@@ -269,7 +269,7 @@ impl MovementPriority {
     ) -> Result<(), String> {
         if let Some(group) = self.neighbor_groups.get_mut(group_index) {
             if index1 < group.len() && index2 < group.len() {
-                return group.swap(index1, index2);
+                group.swap(index1, index2)
             } else {
                 Err("Inner indices out of bounds".to_string())
             }
