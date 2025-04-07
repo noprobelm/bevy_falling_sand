@@ -317,17 +317,16 @@ impl MovementPriority {
 #[reflect(Component)]
 pub struct MovementPriorityBlueprint(pub MovementPriority);
 
+type BlueprintQuery<'a> = (
+    Option<&'a mut DensityBlueprint>,
+    Option<&'a mut VelocityBlueprint>,
+    Option<&'a mut MovementPriorityBlueprint>,
+    Option<&'a mut MomentumBlueprint>,
+);
+
 fn handle_particle_registration(
     mut commands: Commands,
-    parent_query: Query<
-        (
-            Option<&DensityBlueprint>,
-            Option<&VelocityBlueprint>,
-            Option<&MovementPriorityBlueprint>,
-            Option<&MomentumBlueprint>,
-        ),
-        With<ParticleType>,
-    >,
+    blueprint_query: Query<BlueprintQuery<'_>, With<ParticleType>>,
     mut ev_particle_registered: EventReader<ParticleRegistrationEvent>,
     particle_query: Query<&Parent, With<Particle>>,
 ) {
@@ -336,7 +335,7 @@ fn handle_particle_registration(
             if let Ok(parent) = particle_query.get(*entity) {
                 commands.entity(*entity).insert(PhysicsRng::default());
                 if let Ok((density, velocity, movement_priority, momentum)) =
-                    parent_query.get(parent.get())
+                    blueprint_query.get(parent.get())
                 {
                     if let Some(density) = density {
                         commands.entity(*entity).insert(density.0);
