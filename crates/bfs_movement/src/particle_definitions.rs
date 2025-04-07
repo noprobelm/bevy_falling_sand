@@ -235,6 +235,10 @@ impl MovementPriority {
         )
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.neighbor_groups.is_empty()
+    }
+
     pub fn len(&self) -> usize {
         self.neighbor_groups.len()
     }
