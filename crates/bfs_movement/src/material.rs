@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bfs_core::{ParticleBlueprint, impl_particle_blueprint, ParticleType};
+use bfs_core::{impl_particle_blueprint, ParticleBlueprint, ParticleType};
 use serde::{Deserialize, Serialize};
 
 use super::{MovementPriority, MovementPriorityBlueprint};
@@ -24,7 +24,7 @@ impl_particle_blueprint!(GasBlueprint, Gas);
 
 pub trait Material {
     #[allow(dead_code)]
-    fn into_movement_priority(&self) -> MovementPriority {
+    fn as_movement_priority(&self) -> MovementPriority {
         MovementPriority::empty()
     }
 }
@@ -92,7 +92,7 @@ impl Solid {
 }
 
 impl Material for Solid {
-    fn into_movement_priority(&self) -> MovementPriority {
+    fn as_movement_priority(&self) -> MovementPriority {
         MovementPriority::from(vec![vec![IVec2::NEG_Y]])
     }
 }
@@ -136,7 +136,7 @@ impl MovableSolid {
 }
 
 impl Material for MovableSolid {
-    fn into_movement_priority(&self) -> MovementPriority {
+    fn as_movement_priority(&self) -> MovementPriority {
         MovementPriority::from(vec![
             vec![IVec2::NEG_Y],
             vec![IVec2::NEG_ONE, IVec2::new(1, -1)],
@@ -185,7 +185,7 @@ impl Liquid {
 }
 
 impl Material for Liquid {
-    fn into_movement_priority(&self) -> MovementPriority {
+    fn as_movement_priority(&self) -> MovementPriority {
         let mut neighbors: Vec<Vec<IVec2>> = vec![
             vec![IVec2::NEG_Y],
             vec![IVec2::NEG_ONE, IVec2::new(1, -1)],
@@ -244,7 +244,7 @@ impl Gas {
 }
 
 impl Material for Gas {
-    fn into_movement_priority(&self) -> MovementPriority {
+    fn as_movement_priority(&self) -> MovementPriority {
         let mut neighbors: Vec<Vec<IVec2>> =
             vec![vec![IVec2::Y, IVec2::new(1, 1), IVec2::new(-1, 1)]];
 
@@ -284,7 +284,7 @@ pub fn on_solid_blueprint_added(
     if let Ok(solid) = particle_query.get(entity) {
         commands
             .entity(entity)
-            .insert(MovementPriorityBlueprint(solid.0.into_movement_priority()));
+            .insert(MovementPriorityBlueprint(solid.0.as_movement_priority()));
     }
 }
 
@@ -296,7 +296,7 @@ pub fn on_movable_solid_blueprint_added(
     let entity = trigger.entity();
     if let Ok(movable_solid) = particle_query.get(entity) {
         commands.entity(entity).insert(MovementPriorityBlueprint(
-            movable_solid.0.into_movement_priority(),
+            movable_solid.0.as_movement_priority(),
         ));
     }
 }
@@ -310,7 +310,7 @@ pub fn on_liquid_blueprint_added(
     if let Ok(liquid) = particle_query.get(entity) {
         commands
             .entity(entity)
-            .insert(MovementPriorityBlueprint(liquid.0.into_movement_priority()));
+            .insert(MovementPriorityBlueprint(liquid.0.as_movement_priority()));
     }
 }
 
@@ -323,7 +323,7 @@ pub fn on_gas_blueprint_added(
     if let Ok(gas) = particle_query.get(entity) {
         commands
             .entity(entity)
-            .insert(MovementPriorityBlueprint(gas.0.into_movement_priority()));
+            .insert(MovementPriorityBlueprint(gas.0.as_movement_priority()));
     }
 }
 
@@ -336,6 +336,6 @@ pub fn on_wall_added(
     if let Ok(gas) = particle_query.get(entity) {
         commands
             .entity(entity)
-            .insert(MovementPriorityBlueprint(gas.0.into_movement_priority()));
+            .insert(MovementPriorityBlueprint(gas.0.as_movement_priority()));
     }
 }
