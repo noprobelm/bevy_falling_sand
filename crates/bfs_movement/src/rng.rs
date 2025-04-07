@@ -2,7 +2,6 @@ use bevy::prelude::*;
 use bevy_turborand::{DelegatedRng, RngComponent};
 use std::ops::RangeBounds;
 
-
 #[derive(Clone, PartialEq, Debug, Default, Component, Reflect)]
 #[reflect(Component)]
 pub struct PhysicsRng(pub RngComponent);
@@ -17,7 +16,7 @@ impl PhysicsRng {
     }
 
     pub fn sample<'a, T>(&mut self, list: &'a [T]) -> Option<&'a T> {
-        self.0.sample(&list)
+        self.0.sample(list)
     }
 
     pub fn index(&mut self, bound: impl RangeBounds<usize>) -> usize {

@@ -64,7 +64,7 @@ pub fn handle_movement_by_chunks(
                 particle_entities.clear();
                 if let Some(dirty_rect) = chunk.prev_dirty_rect() {
                     chunk.iter().for_each(|(coordinates, entity)| {
-                        if dirty_rect.contains(*coordinates) || chunk_rng.chance(0.2) {
+                        if dirty_rect.contains(*coordinates) || chunk_rng.chance(0.05) {
                             particle_entities.push(*entity);
                         }
                     });
@@ -176,6 +176,9 @@ pub fn handle_movement_by_chunks(
                                         continue 'velocity_loop;
                                     }
                                 }
+                            }
+                            if !moved {
+                                break 'velocity_loop;
                             }
                         }
 
