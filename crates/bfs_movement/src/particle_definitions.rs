@@ -344,7 +344,7 @@ fn handle_particle_registration(
                         commands.entity(*entity).remove::<Density>();
                     }
                     if let Some(velocity) = velocity {
-                        commands.entity(*entity).insert(velocity.0.clone());
+                        commands.entity(*entity).insert(velocity.0);
                     } else {
                         commands.entity(*entity).remove::<Velocity>();
                     }
@@ -354,7 +354,7 @@ fn handle_particle_registration(
                         commands.entity(*entity).remove::<MovementPriority>();
                     }
                     if let Some(momentum) = momentum {
-                        commands.entity(*entity).insert(momentum.0.clone());
+                        commands.entity(*entity).insert(momentum.0);
                     } else {
                         commands.entity(*entity).remove::<Momentum>();
                     }
