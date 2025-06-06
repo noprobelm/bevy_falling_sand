@@ -290,7 +290,7 @@ pub fn on_clear_particle_type_children(
     if let Some(parent_entity) = particle_parent_map.get(&particle_type) {
         if let Ok(children) = parent_query.get(*parent_entity) {
             children.iter().for_each(|child_entity| {
-                if let Ok(coordinates) = particle_query.get(*child_entity) {
+                if let Ok(coordinates) = particle_query.get(child_entity) {
                     map.remove(&coordinates.0, &mut chunk_query);
                 } else {
                     // If this happens, something is seriously amiss.
