@@ -523,16 +523,24 @@ pub fn ev_mouse_wheel(
                 });
             }
             AppState::Canvas => {
-                let mut projection = camera_query.single_mut();
+                let mut projection = match camera_query.single_mut() {
+                    Ok(p) => p,
+                    Err(_) => return,
+                };
+                let Projection::Perspective(perspective) = projection.as_mut() else {
+                    return;
+                };
                 ev_scroll.read().for_each(|ev| {
                     let zoom = -(ev.y / 100.);
-                    if projection.scale + zoom > 0.01 {
-                        projection.scale += zoom;
+                    if perspective.fov + zoom > 0.01 {
+                        perspective.fov += zoom;
                     }
                 });
             }
         };
     }
+
+    Ok(())
 }
 
 #[derive(Resource, Default)]
