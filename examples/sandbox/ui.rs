@@ -209,7 +209,7 @@ impl BrushControlUI {
             .add(egui::Slider::new(brush_size, 1..=max_brush_size))
             .changed()
         {
-            ev_brush_resize.send(BrushResizeEvent(*brush_size));
+            ev_brush_resize.write(BrushResizeEvent(*brush_size));
         }
     }
 }
@@ -307,7 +307,7 @@ impl DebugUI {
 
 fn exit_on_key(keyboard_input: Res<ButtonInput<KeyCode>>, mut exit: EventWriter<AppExit>) {
     if keyboard_input.just_pressed(KeyCode::KeyQ) {
-        exit.send(AppExit::Success);
+        exit.write(AppExit::Success);
     }
 }
 
