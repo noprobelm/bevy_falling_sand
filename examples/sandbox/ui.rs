@@ -863,7 +863,7 @@ pub fn render_particle_editor(
                                                 particle_editor_selected_field.0 =
                                                     ParticleType::new(particle_name.as_str());
                                                 ev_particle_editor_update
-                                                    .send(ParticleEditorUpdate);
+                                                    .write(ParticleEditorUpdate);
                                             }
                                         }
                                     });
@@ -872,7 +872,7 @@ pub fn render_particle_editor(
 
                         if ui.button("New Particle").clicked() {}
                         if ui.button("Save Particle").clicked() {
-                            ev_particle_editor_save.send(ParticleEditorSave);
+                            ev_particle_editor_save.write(ParticleEditorSave);
                         }
                     },
                 );
