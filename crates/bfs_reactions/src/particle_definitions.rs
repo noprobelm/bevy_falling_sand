@@ -149,15 +149,15 @@ fn handle_particle_components(
         ),
         With<ParticleType>,
     >,
-    particle_query: &Query<&Parent, With<Particle>>,
+    particle_query: &Query<&ChildOf, With<Particle>>,
     entities: &Vec<Entity>,
 ) {
     entities.iter().for_each(|entity| {
-        if let Ok(parent) = particle_query.get(*entity) {
-            if let Ok((fire, burns, burning)) = parent_query.get(parent.get()) {
+        if let Ok(child_of) = particle_query.get(*entity) {
+            if let Ok((fire, burns, burning)) = parent_query.get(child_of.parent()) {
                 commands.entity(*entity).insert(ReactionRng::default());
                 if let Some(fire) = fire {
-                    commands.entity(*entity).insert(fire.0.clone());
+                    commands.entity(*entity).insert(fire.0);
                 } else {
                     commands.entity(*entity).remove::<Fire>();
                 }
@@ -186,7 +186,7 @@ fn handle_particle_registration(
         ),
         With<ParticleType>,
     >,
-    particle_query: Query<&Parent, With<Particle>>,
+    particle_query: Query<&ChildOf, With<Particle>>,
     mut ev_particle_registered: EventReader<ParticleRegistrationEvent>,
 ) {
     ev_particle_registered.read().for_each(|ev| {
