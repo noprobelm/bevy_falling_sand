@@ -1,4 +1,5 @@
 //! UI module.
+use bevy::platform::collections::{hash_map::Entry, HashMap};
 use bevy::{
     input::{
         common_conditions::input_just_pressed,
@@ -6,11 +7,11 @@ use bevy::{
         mouse::MouseWheel,
     },
     prelude::*,
-    utils::{Duration, Entry, HashMap},
     window::PrimaryWindow,
 };
 use bevy_egui::{egui, egui::Color32, EguiContexts};
 use bevy_falling_sand::prelude::*;
+use std::time::Duration;
 
 use super::*;
 
