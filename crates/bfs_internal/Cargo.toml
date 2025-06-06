@@ -8,9 +8,9 @@ bfs_core = { path = "../bfs_core" }
 bfs_movement = { path = "../bfs_movement" }
 bfs_color = { path = "../bfs_color" }
 bfs_debug = { path = "../bfs_debug" }
-bfs_spatial = { path = "../bfs_spatial"}
+bfs_spatial = { path = "../bfs_spatial" }
 bfs_reactions = { path = "../bfs_reactions" }
 bfs_scenes = { path = "../bfs_scenes" }
-bevy = "0.15"
-bevy_turborand = "0.10.0"
+bevy = "0.16"
+bevy_turborand = "0.11.0"
 serde = "1.0.210"
