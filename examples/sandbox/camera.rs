@@ -29,24 +29,22 @@ pub fn setup_camera(mut commands: Commands) {
 pub fn pan_camera(
     mut camera_query: Query<&mut Transform, With<MainCamera>>,
     keys: Res<ButtonInput<KeyCode>>,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let mut transform = camera_query.single_mut()?;
+) {
+    if let Ok(mut transform) = camera_query.single_mut() {
+        if keys.pressed(KeyCode::KeyW) {
+            transform.translation.y += 2.;
+        }
 
-    if keys.pressed(KeyCode::KeyW) {
-        transform.translation.y += 2.;
+        if keys.pressed(KeyCode::KeyA) {
+            transform.translation.x -= 2.;
+        }
+
+        if keys.pressed(KeyCode::KeyS) {
+            transform.translation.y -= 2.;
+        }
+
+        if keys.pressed(KeyCode::KeyD) {
+            transform.translation.x += 2.;
+        }
     }
-
-    if keys.pressed(KeyCode::KeyA) {
-        transform.translation.x -= 2.;
-    }
-
-    if keys.pressed(KeyCode::KeyS) {
-        transform.translation.y -= 2.;
-    }
-
-    if keys.pressed(KeyCode::KeyD) {
-        transform.translation.x += 2.;
-    }
-
-    Ok(())
 }
