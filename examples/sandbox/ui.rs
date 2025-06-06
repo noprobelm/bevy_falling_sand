@@ -513,11 +513,11 @@ pub fn ev_mouse_wheel(
     if !ev_scroll.is_empty() {
         match app_state.get() {
             AppState::Ui => {
-                let mut brush = brush_query.single_mut();
+                let mut brush = brush_query.single_mut().expect("No brush found!");
                 ev_scroll.read().for_each(|ev| {
-                    if ev.y < 0. && brush.size - 1 >= 1 {
+                    if ev.y < 0. && 1 <= brush.size.wrapping_sub(1) {
                         brush.size -= 1;
-                    } else if ev.y > 0. && brush.size + 1 <= max_brush_size.0 {
+                    } else if ev.y > 0. && brush.size.wrapping_add(1) <= max_brush_size.0 {
                         brush.size += 1;
                     }
                 });
