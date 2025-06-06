@@ -197,7 +197,7 @@ pub fn handle_new_particles(
             );
         }
     }
-    ev_particle_registered.send(ParticleRegistrationEvent { entities });
+    ev_particle_registered.write(ParticleRegistrationEvent { entities });
 }
 
 pub fn ev_mutate_particle(
