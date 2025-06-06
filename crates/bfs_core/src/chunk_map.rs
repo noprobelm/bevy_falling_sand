@@ -253,9 +253,9 @@ pub fn on_remove_particle(
 ) {
     if let Some(entity) = map.remove(&trigger.event().coordinates, &mut chunk_query) {
         if trigger.event().despawn {
-            commands.entity(entity).remove_parent().despawn();
+            commands.entity(entity).remove::<ChildOf>().despawn();
         } else {
-            commands.entity(entity).remove_parent();
+            commands.entity(entity).remove::<ChildOf>();
         }
     }
 }
