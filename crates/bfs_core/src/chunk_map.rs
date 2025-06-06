@@ -272,7 +272,7 @@ pub fn on_clear_chunk_map(
     mut chunk_query: Query<&mut Chunk>,
 ) {
     particle_parent_map.iter().for_each(|(_, entity)| {
-        commands.entity(*entity).despawn_descendants();
+        commands.entity(*entity).despawn_related::<Children>();
     });
 
     chunk_query.iter_mut().for_each(|mut chunk| chunk.clear());
@@ -298,7 +298,9 @@ pub fn on_clear_particle_type_children(
                     error!("No child entity found for particle type '{particle_type}' while removing child from chunk map.")
                 }
             });
-            commands.entity(*parent_entity).despawn_descendants();
+            commands
+                .entity(*parent_entity)
+                .despawn_related::<Children>();
         }
     } else {
         warn!("Ignoring particle type '{particle_type}': not found in particle type map.");
