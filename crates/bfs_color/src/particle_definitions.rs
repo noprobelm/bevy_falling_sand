@@ -137,7 +137,7 @@ fn handle_particle_components(
                     commands.entity(*entity).remove::<ColorProfile>();
                 }
                 if let Some(flows_color) = flows_color {
-                    commands.entity(*entity).insert(flows_color.0.clone());
+                    commands.entity(*entity).insert(flows_color.0);
                 } else {
                     commands.entity(*entity).remove::<ChangesColor>();
                 }
