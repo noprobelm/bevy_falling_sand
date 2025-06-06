@@ -506,7 +506,7 @@ pub fn toggle_simulation(
 pub fn ev_mouse_wheel(
     mut ev_scroll: EventReader<MouseWheel>,
     app_state: Res<State<AppState>>,
-    mut camera_query: Query<&mut OrthographicProjection, With<MainCamera>>,
+    mut camera_query: Query<&mut Projection, With<MainCamera>>,
     mut brush_query: Query<&mut Brush>,
     max_brush_size: Res<MaxBrushSize>,
 ) {
