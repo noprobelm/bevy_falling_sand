@@ -1,8 +1,8 @@
 use std::path::{Path, PathBuf};
 
 use bevy::prelude::*;
-use bevy_falling_sand::prelude::{SaveSceneEvent, LoadSceneEvent};
 use bevy_egui::egui;
+use bevy_falling_sand::prelude::{LoadSceneEvent, SaveSceneEvent};
 
 pub(super) struct ScenesPlugin;
 
@@ -68,7 +68,7 @@ impl SceneManagementUI {
                                 file_name.push_str(".ron");
                             }
                             scene_path.0.set_file_name(file_name);
-                            ev_save_scene.send(SaveSceneEvent(scene_path.0.clone()));
+                            ev_save_scene.write(SaveSceneEvent(scene_path.0.clone()));
                             dialog_state.show_save_dialog = false; // Close after saving
                         }
                         if ui.button("Cancel").clicked() {
@@ -120,7 +120,7 @@ impl SceneManagementUI {
                         });
 
                     if ui.button("Load").clicked() {
-                        ev_load_scene.send(LoadSceneEvent(scene_path.0.clone()));
+                        ev_load_scene.write(LoadSceneEvent(scene_path.0.clone()));
                         dialog_state.show_load_dialog = false; // Close after loading
                     }
                     if ui.button("Cancel").clicked() {
