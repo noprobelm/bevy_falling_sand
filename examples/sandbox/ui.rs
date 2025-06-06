@@ -1867,7 +1867,7 @@ fn particle_editor_save(
             if let Some(children) = children {
                 children
                     .iter()
-                    .for_each(|child| commands.trigger(ResetParticleEvent { entity: *child }));
+                    .for_each(|child| commands.trigger(ResetParticleEvent { entity: child }));
             }
         }
     })
