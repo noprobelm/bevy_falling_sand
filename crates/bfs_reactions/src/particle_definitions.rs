@@ -1,10 +1,10 @@
 use bevy::prelude::*;
-use bevy::utils::Duration;
 use bfs_color::*;
 use bfs_core::{
     impl_particle_blueprint, Coordinates, Particle, ParticleBlueprint, ParticleRegistrationEvent,
     ParticleType,
 };
+use std::time::Duration;
 
 use crate::ReactionRng;
 

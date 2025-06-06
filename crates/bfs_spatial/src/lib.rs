@@ -1,7 +1,7 @@
 use bevy::prelude::{App, Plugin};
 use bevy_spatial::{kdtree::KDTree2, AutomaticUpdate, SpatialStructure};
 use bfs_core::Particle;
-use bevy::utils::Duration;
+use std::time::Duration;
 
 pub struct FallingSandSpatialPlugin;
 
