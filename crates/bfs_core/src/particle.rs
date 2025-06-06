@@ -77,8 +77,7 @@ impl ParticleType {
     }
 }
 
-#[derive(Resource, Clone, Default, Debug, Reflect)]
-#[reflect(Resource)]
+#[derive(Resource, Clone, Default, Debug)]
 pub struct ParticleTypeMap {
     map: HashMap<String, Entity>,
 }
