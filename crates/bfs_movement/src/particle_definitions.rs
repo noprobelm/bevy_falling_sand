@@ -336,7 +336,7 @@ fn handle_particle_registration(
     mut commands: Commands,
     blueprint_query: Query<BlueprintQuery<'_>, With<ParticleType>>,
     mut ev_particle_registered: EventReader<ParticleRegistrationEvent>,
-    particle_query: Query<&Parent, With<Particle>>,
+    particle_query: Query<&ChildOf, With<Particle>>,
 ) {
     ev_particle_registered.read().for_each(|ev| {
         ev.entities.iter().for_each(|entity| {
