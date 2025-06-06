@@ -315,10 +315,10 @@ pub fn update_cursor_coordinates(
     mut coords: ResMut<CursorCoords>,
     q_window: Query<&Window, With<PrimaryWindow>>,
     q_camera: Query<(&Camera, &GlobalTransform), With<MainCamera>>,
-) {
-    let (camera, camera_transform) = q_camera.single();
+) -> Result<(), Box<dyn std::error::Error>> {
+    let (camera, camera_transform) = q_camera.single().expect("No camera found!");
 
-    let window = q_window.single();
+    let window = q_window.single()?;
 
     if let Some(world_position) = window
         .cursor_position()
@@ -327,16 +327,23 @@ pub fn update_cursor_coordinates(
     {
         coords.update(world_position);
     }
+    Ok(())
 }
 
-pub fn hide_cursor(mut primary_window: Query<&mut Window, With<PrimaryWindow>>) {
-    let window = &mut primary_window.single_mut();
+pub fn hide_cursor(
+    mut primary_window: Query<&mut Window, With<PrimaryWindow>>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let window = &mut primary_window.single_mut()?;
     window.cursor_options.visible = false;
+    Ok(())
 }
 
-pub fn show_cursor(mut primary_window: Query<&mut Window, With<PrimaryWindow>>) {
-    let window = &mut primary_window.single_mut();
+pub fn show_cursor(
+    mut primary_window: Query<&mut Window, With<PrimaryWindow>>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let window = &mut primary_window.single_mut()?;
     window.cursor_options.visible = true;
+    Ok(())
 }
 
 pub fn update_app_state(
