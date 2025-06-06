@@ -2,7 +2,8 @@ use crate::PhysicsRng;
 use crate::*;
 use std::mem;
 
-use bevy::{ecs::system::QueryLens, utils::HashSet};
+use bevy::ecs::system::QueryLens;
+use bevy::platform::collections::HashSet;
 use bfs_core::{Chunk, ChunkMap, ChunkRng, Coordinates, Particle, ParticleSimulationSet};
 
 pub(super) struct SystemsPlugin;
