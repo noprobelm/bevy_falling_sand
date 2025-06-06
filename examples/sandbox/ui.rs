@@ -404,7 +404,7 @@ pub fn render_side_panel(
     ),
 ) {
     let ctx = contexts.ctx_mut();
-    let brush = brush_query.single();
+    let brush = brush_query.single().expect("No brush found!");
     let mut brush_size = brush.size;
 
     egui::SidePanel::left("side_panel")
