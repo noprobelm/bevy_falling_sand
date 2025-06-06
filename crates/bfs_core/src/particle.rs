@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy::utils::HashMap;
+use hashbrown::HashMap;
 use serde::{Deserialize, Serialize};
 
 use crate::{Chunk, ChunkMap, ParticleSimulationSet};

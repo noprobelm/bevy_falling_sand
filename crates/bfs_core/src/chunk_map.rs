@@ -1,6 +1,7 @@
 use bevy::prelude::*;
-use bevy::utils::AHasher;
-use bevy::utils::{hashbrown::hash_map::Entry, HashMap};
+use hashbrown::HashMap;
+use hashbrown::{hash_map::Entry, AHasher, HashMap};
+
 use std::hash::BuildHasherDefault;
 
 use crate::{
