@@ -1,6 +1,6 @@
 use ahash::AHasher;
+use bevy::platform::collections::{hash_map::Entry, HashMap};
 use bevy::prelude::*;
-use hashbrown::{hash_map::Entry, HashMap};
 
 use std::hash::BuildHasherDefault;
 
