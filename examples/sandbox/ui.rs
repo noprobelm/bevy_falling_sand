@@ -539,8 +539,6 @@ pub fn ev_mouse_wheel(
             }
         };
     }
-
-    Ok(())
 }
 
 #[derive(Resource, Default)]
