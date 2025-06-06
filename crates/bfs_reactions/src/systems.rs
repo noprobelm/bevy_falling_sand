@@ -113,5 +113,5 @@ pub fn handle_burning(
             }
         },
     );
-    ev_reset_particle_color.send(ResetParticleColorEvent { entities });
+    ev_reset_particle_color.write(ResetParticleColorEvent { entities });
 }
