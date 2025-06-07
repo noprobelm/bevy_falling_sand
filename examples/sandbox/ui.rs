@@ -1,4 +1,5 @@
 //! UI module.
+use bevy::platform::collections::{hash_map::Entry, HashMap};
 use bevy::{
     input::{
         common_conditions::input_just_pressed,
@@ -6,11 +7,11 @@ use bevy::{
         mouse::MouseWheel,
     },
     prelude::*,
-    utils::{Duration, Entry, HashMap},
     window::PrimaryWindow,
 };
 use bevy_egui::{egui, egui::Color32, EguiContexts};
 use bevy_falling_sand::prelude::*;
+use std::time::Duration;
 
 use super::*;
 
@@ -209,7 +210,7 @@ impl BrushControlUI {
             .add(egui::Slider::new(brush_size, 1..=max_brush_size))
             .changed()
         {
-            ev_brush_resize.send(BrushResizeEvent(*brush_size));
+            ev_brush_resize.write(BrushResizeEvent(*brush_size));
         }
     }
 }
@@ -307,7 +308,7 @@ impl DebugUI {
 
 fn exit_on_key(keyboard_input: Res<ButtonInput<KeyCode>>, mut exit: EventWriter<AppExit>) {
     if keyboard_input.just_pressed(KeyCode::KeyQ) {
-        exit.send(AppExit::Success);
+        exit.write(AppExit::Success);
     }
 }
 
@@ -315,11 +316,10 @@ pub fn update_cursor_coordinates(
     mut coords: ResMut<CursorCoords>,
     q_window: Query<&Window, With<PrimaryWindow>>,
     q_camera: Query<(&Camera, &GlobalTransform), With<MainCamera>>,
-) {
-    let (camera, camera_transform) = q_camera.single();
+) -> Result {
+    let (camera, camera_transform) = q_camera.single()?;
 
-    let window = q_window.single();
-
+    let window = q_window.single()?;
     if let Some(world_position) = window
         .cursor_position()
         .and_then(|cursor| Some(camera.viewport_to_world(camera_transform, cursor)))
@@ -327,16 +327,19 @@ pub fn update_cursor_coordinates(
     {
         coords.update(world_position);
     }
+    Ok(())
 }
 
-pub fn hide_cursor(mut primary_window: Query<&mut Window, With<PrimaryWindow>>) {
-    let window = &mut primary_window.single_mut();
+pub fn hide_cursor(mut primary_window: Query<&mut Window, With<PrimaryWindow>>) -> Result {
+    let mut window = primary_window.single_mut()?;
     window.cursor_options.visible = false;
+    Ok(())
 }
 
-pub fn show_cursor(mut primary_window: Query<&mut Window, With<PrimaryWindow>>) {
-    let window = &mut primary_window.single_mut();
+pub fn show_cursor(mut primary_window: Query<&mut Window, With<PrimaryWindow>>) -> Result {
+    let mut window = primary_window.single_mut()?;
     window.cursor_options.visible = true;
+    Ok(())
 }
 
 pub fn update_app_state(
@@ -404,7 +407,7 @@ pub fn render_side_panel(
     ),
 ) {
     let ctx = contexts.ctx_mut();
-    let brush = brush_query.single();
+    let brush = brush_query.single().expect("No brush found!");
     let mut brush_size = brush.size;
 
     egui::SidePanel::left("side_panel")
@@ -506,28 +509,34 @@ pub fn toggle_simulation(
 pub fn ev_mouse_wheel(
     mut ev_scroll: EventReader<MouseWheel>,
     app_state: Res<State<AppState>>,
-    mut camera_query: Query<&mut OrthographicProjection, With<MainCamera>>,
+    mut camera_query: Query<&mut Projection, With<MainCamera>>,
     mut brush_query: Query<&mut Brush>,
     max_brush_size: Res<MaxBrushSize>,
 ) {
     if !ev_scroll.is_empty() {
         match app_state.get() {
             AppState::Ui => {
-                let mut brush = brush_query.single_mut();
+                let mut brush = brush_query.single_mut().expect("No brush found!");
                 ev_scroll.read().for_each(|ev| {
-                    if ev.y < 0. && brush.size - 1 >= 1 {
+                    if ev.y < 0. && 1 <= brush.size.wrapping_sub(1) {
                         brush.size -= 1;
-                    } else if ev.y > 0. && brush.size + 1 <= max_brush_size.0 {
+                    } else if ev.y > 0. && brush.size.wrapping_add(1) <= max_brush_size.0 {
                         brush.size += 1;
                     }
                 });
             }
             AppState::Canvas => {
-                let mut projection = camera_query.single_mut();
+                let mut projection = match camera_query.single_mut() {
+                    Ok(p) => p,
+                    Err(_) => return,
+                };
+                let Projection::Perspective(perspective) = projection.as_mut() else {
+                    return;
+                };
                 ev_scroll.read().for_each(|ev| {
                     let zoom = -(ev.y / 100.);
-                    if projection.scale + zoom > 0.01 {
-                        projection.scale += zoom;
+                    if perspective.fov + zoom > 0.01 {
+                        perspective.fov += zoom;
                     }
                 });
             }
@@ -863,7 +872,7 @@ pub fn render_particle_editor(
                                                 particle_editor_selected_field.0 =
                                                     ParticleType::new(particle_name.as_str());
                                                 ev_particle_editor_update
-                                                    .send(ParticleEditorUpdate);
+                                                    .write(ParticleEditorUpdate);
                                             }
                                         }
                                     });
@@ -872,7 +881,7 @@ pub fn render_particle_editor(
 
                         if ui.button("New Particle").clicked() {}
                         if ui.button("Save Particle").clicked() {
-                            ev_particle_editor_save.send(ParticleEditorSave);
+                            ev_particle_editor_save.write(ParticleEditorSave);
                         }
                     },
                 );
@@ -1867,7 +1876,7 @@ fn particle_editor_save(
             if let Some(children) = children {
                 children
                     .iter()
-                    .for_each(|child| commands.trigger(ResetParticleEvent { entity: *child }));
+                    .for_each(|child| commands.trigger(ResetParticleEvent { entity: child }));
             }
         }
     })

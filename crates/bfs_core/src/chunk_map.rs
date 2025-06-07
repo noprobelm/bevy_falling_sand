@@ -1,7 +1,6 @@
+use bevy::platform::collections::{hash_map::Entry, HashMap};
+use bevy::platform::hash::FixedHasher;
 use bevy::prelude::*;
-use bevy::utils::AHasher;
-use bevy::utils::{hashbrown::hash_map::Entry, HashMap};
-use std::hash::BuildHasherDefault;
 
 use crate::{
     ChunkRng, Coordinates, Particle, ParticleSimulationSet, ParticleType, ParticleTypeMap,
@@ -188,10 +187,7 @@ impl Chunk {
         self.chunk.remove(coordinates)
     }
 
-    pub fn entry(
-        &mut self,
-        coordinates: IVec2,
-    ) -> Entry<'_, IVec2, Entity, BuildHasherDefault<AHasher>> {
+    pub fn entry(&mut self, coordinates: IVec2) -> Entry<'_, IVec2, Entity, FixedHasher> {
         self.set_dirty_rect(coordinates);
         self.chunk.entry(coordinates)
     }
@@ -257,9 +253,9 @@ pub fn on_remove_particle(
 ) {
     if let Some(entity) = map.remove(&trigger.event().coordinates, &mut chunk_query) {
         if trigger.event().despawn {
-            commands.entity(entity).remove_parent().despawn();
+            commands.entity(entity).remove::<ChildOf>().despawn();
         } else {
-            commands.entity(entity).remove_parent();
+            commands.entity(entity).remove::<ChildOf>();
         }
     }
 }
@@ -271,7 +267,7 @@ pub fn on_clear_chunk_map(
     mut chunk_query: Query<&mut Chunk>,
 ) {
     particle_parent_map.iter().for_each(|(_, entity)| {
-        commands.entity(*entity).despawn_descendants();
+        commands.entity(*entity).despawn_related::<Children>();
     });
 
     chunk_query.iter_mut().for_each(|mut chunk| chunk.clear());
@@ -290,14 +286,16 @@ pub fn on_clear_particle_type_children(
     if let Some(parent_entity) = particle_parent_map.get(&particle_type) {
         if let Ok(children) = parent_query.get(*parent_entity) {
             children.iter().for_each(|child_entity| {
-                if let Ok(coordinates) = particle_query.get(*child_entity) {
+                if let Ok(coordinates) = particle_query.get(child_entity) {
                     map.remove(&coordinates.0, &mut chunk_query);
                 } else {
                     // If this happens, something is seriously amiss.
                     error!("No child entity found for particle type '{particle_type}' while removing child from chunk map.")
                 }
             });
-            commands.entity(*parent_entity).despawn_descendants();
+            commands
+                .entity(*parent_entity)
+                .despawn_related::<Children>();
         }
     } else {
         warn!("Ignoring particle type '{particle_type}': not found in particle type map.");

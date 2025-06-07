@@ -25,7 +25,9 @@ fn main() {
             }),
             ..default()
         }),
-        EguiPlugin,
+        EguiPlugin {
+            enable_multipass_for_primary_context: false,
+        },
         FallingSandPlugin,
         // Plugins provided by the modules defined in this example.
         CameraPlugin,

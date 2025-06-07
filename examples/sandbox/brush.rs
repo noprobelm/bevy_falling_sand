@@ -1,4 +1,5 @@
-use bevy::{input::common_conditions::input_pressed, prelude::*, utils::HashSet};
+use bevy::platform::collections::HashSet;
+use bevy::{input::common_conditions::input_pressed, prelude::*};
 use bevy_egui::EguiContexts;
 use bevy_falling_sand::prelude::{ChunkMap, Particle, ParticleSimulationSet, RemoveParticleEvent};
 use bfs_internal::core::Chunk;
@@ -241,9 +242,10 @@ pub fn update_brush(
     cursor_coords: Res<CursorCoords>,
     mut brush_gizmos: Gizmos<BrushGizmos>,
     brush_type: Res<State<BrushType>>,
-) {
-    let brush = brush_query.single();
+) -> Result {
+    let brush = brush_query.single()?;
     brush_type.update_brush(cursor_coords.current, brush.size as f32, &mut brush_gizmos);
+    Ok(())
 }
 
 fn sample_hovered(
@@ -268,11 +270,12 @@ fn sample_hovered(
 pub fn resize_brush_event_listener(
     mut ev_brush_resize: EventReader<BrushResizeEvent>,
     mut brush_query: Query<&mut Brush>,
-) {
-    let mut brush = brush_query.single_mut();
+) -> Result {
+    let mut brush = brush_query.single_mut()?;
     for ev in ev_brush_resize.read() {
         brush.size = ev.0;
     }
+    Ok(())
 }
 
 fn points_within_capsule(capsule: &Capsule2d, start: Vec2, end: Vec2) -> Vec<IVec2> {
@@ -310,8 +313,8 @@ pub fn spawn_particles(
     selected: Res<SelectedBrushParticle>,
     brush_type: Res<State<BrushType>>,
     brush_query: Query<&Brush>,
-) {
-    let brush = brush_query.single();
+) -> Result {
+    let brush = brush_query.single()?;
     let brush_type = brush_type.get();
     brush_type.spawn_particles(
         &mut commands,
@@ -321,6 +324,7 @@ pub fn spawn_particles(
             name: selected.0.clone(),
         },
     );
+    Ok(())
 }
 
 pub fn despawn_particles(
@@ -329,20 +333,21 @@ pub fn despawn_particles(
     brush_type: Res<State<BrushType>>,
     brush_query: Query<&Brush>,
     mut contexts: EguiContexts,
-) {
+) -> Result {
     let ctx = contexts.ctx_mut();
     if ctx.is_pointer_over_area() {
-        return;
+        return Ok(());
     }
 
-    let brush = brush_query.single();
+    let brush = brush_query.single()?;
     let brush_size = brush.size;
 
     brush_type.remove_particles(
         &mut commands,
         cursor_coords.current.as_ivec2(),
         brush_size as f32,
-    )
+    );
+    Ok(())
 }
 
 fn spawn_circle(commands: &mut Commands, particle: Particle, center: Vec2, radius: f32) {

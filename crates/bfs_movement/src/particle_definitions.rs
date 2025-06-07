@@ -336,14 +336,14 @@ fn handle_particle_registration(
     mut commands: Commands,
     blueprint_query: Query<BlueprintQuery<'_>, With<ParticleType>>,
     mut ev_particle_registered: EventReader<ParticleRegistrationEvent>,
-    particle_query: Query<&Parent, With<Particle>>,
+    particle_query: Query<&ChildOf, With<Particle>>,
 ) {
     ev_particle_registered.read().for_each(|ev| {
         ev.entities.iter().for_each(|entity| {
-            if let Ok(parent) = particle_query.get(*entity) {
+            if let Ok(child_of) = particle_query.get(*entity) {
                 commands.entity(*entity).insert(PhysicsRng::default());
                 if let Ok((density, velocity, movement_priority, momentum)) =
-                    blueprint_query.get(parent.get())
+                    blueprint_query.get(child_of.parent())
                 {
                     if let Some(density) = density {
                         commands.entity(*entity).insert(density.0);

@@ -1,5 +1,5 @@
+use bevy::platform::collections::HashMap;
 use bevy::prelude::*;
-use bevy::utils::HashMap;
 use serde::{Deserialize, Serialize};
 
 use crate::{Chunk, ChunkMap, ParticleSimulationSet};
@@ -77,8 +77,7 @@ impl ParticleType {
     }
 }
 
-#[derive(Resource, Clone, Default, Debug, Reflect)]
-#[reflect(Resource)]
+#[derive(Resource, Clone, Default, Debug)]
 pub struct ParticleTypeMap {
     map: HashMap<String, Entity>,
 }
@@ -198,7 +197,7 @@ pub fn handle_new_particles(
             );
         }
     }
-    ev_particle_registered.send(ParticleRegistrationEvent { entities });
+    ev_particle_registered.write(ParticleRegistrationEvent { entities });
 }
 
 pub fn ev_mutate_particle(

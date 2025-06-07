@@ -114,13 +114,13 @@ fn handle_particle_components(
         ),
         With<ParticleType>,
     >,
-    particle_query: &Query<&Parent, With<Particle>>,
+    particle_query: &Query<&ChildOf, With<Particle>>,
     entities: &Vec<Entity>,
 ) {
     entities.iter().for_each(|entity| {
-        if let Ok(parent) = particle_query.get(*entity) {
+        if let Ok(child_of) = particle_query.get(*entity) {
             commands.entity(*entity).insert(ColorRng::default());
-            if let Ok((particle_color, flows_color)) = parent_query.get(parent.get()) {
+            if let Ok((particle_color, flows_color)) = parent_query.get(child_of.parent()) {
                 commands.entity(*entity).insert((
                     Sprite {
                         color: Color::srgba(0., 0., 0., 0.),
@@ -137,7 +137,7 @@ fn handle_particle_components(
                     commands.entity(*entity).remove::<ColorProfile>();
                 }
                 if let Some(flows_color) = flows_color {
-                    commands.entity(*entity).insert(flows_color.0.clone());
+                    commands.entity(*entity).insert(flows_color.0);
                 } else {
                     commands.entity(*entity).remove::<ChangesColor>();
                 }
@@ -156,7 +156,7 @@ fn handle_particle_registration(
         ),
         With<ParticleType>,
     >,
-    particle_query: Query<&Parent, With<Particle>>,
+    particle_query: Query<&ChildOf, With<Particle>>,
     mut ev_particle_registered: EventReader<ParticleRegistrationEvent>,
     mut ev_reset_particle_color: EventReader<ResetParticleColorEvent>,
 ) {

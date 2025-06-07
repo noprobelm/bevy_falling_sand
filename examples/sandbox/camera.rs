@@ -17,11 +17,11 @@ pub struct MainCamera;
 pub fn setup_camera(mut commands: Commands) {
     commands.spawn((
         Camera2d,
-        OrthographicProjection {
+        Projection::Orthographic(OrthographicProjection {
             near: -1000.0,
             scale: 0.11,
             ..OrthographicProjection::default_2d()
-        },
+        }),
         MainCamera,
     ));
 }
@@ -29,9 +29,8 @@ pub fn setup_camera(mut commands: Commands) {
 pub fn pan_camera(
     mut camera_query: Query<&mut Transform, With<MainCamera>>,
     keys: Res<ButtonInput<KeyCode>>,
-) {
-    let mut transform = camera_query.single_mut();
-
+) -> Result {
+    let mut transform = camera_query.single_mut()?;
     if keys.pressed(KeyCode::KeyW) {
         transform.translation.y += 2.;
     }
@@ -47,4 +46,5 @@ pub fn pan_camera(
     if keys.pressed(KeyCode::KeyD) {
         transform.translation.x += 2.;
     }
+    Ok(())
 }

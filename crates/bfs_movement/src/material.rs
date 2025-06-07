@@ -280,7 +280,7 @@ pub fn on_solid_blueprint_added(
     mut commands: Commands,
     particle_query: Query<&SolidBlueprint, With<ParticleType>>,
 ) {
-    let entity = trigger.entity();
+    let entity = trigger.target();
     if let Ok(solid) = particle_query.get(entity) {
         commands
             .entity(entity)
@@ -293,7 +293,7 @@ pub fn on_movable_solid_blueprint_added(
     mut commands: Commands,
     particle_query: Query<&MovableSolidBlueprint, With<ParticleType>>,
 ) {
-    let entity = trigger.entity();
+    let entity = trigger.target();
     if let Ok(movable_solid) = particle_query.get(entity) {
         commands.entity(entity).insert(MovementPriorityBlueprint(
             movable_solid.0.to_movement_priority(),
@@ -306,7 +306,7 @@ pub fn on_liquid_blueprint_added(
     mut commands: Commands,
     particle_query: Query<&LiquidBlueprint, With<ParticleType>>,
 ) {
-    let entity = trigger.entity();
+    let entity = trigger.target();
     if let Ok(liquid) = particle_query.get(entity) {
         commands
             .entity(entity)
@@ -319,7 +319,7 @@ pub fn on_gas_blueprint_added(
     mut commands: Commands,
     particle_query: Query<&GasBlueprint, With<ParticleType>>,
 ) {
-    let entity = trigger.entity();
+    let entity = trigger.target();
     if let Ok(gas) = particle_query.get(entity) {
         commands
             .entity(entity)
@@ -332,7 +332,7 @@ pub fn on_wall_added(
     mut commands: Commands,
     particle_query: Query<&WallBlueprint, With<ParticleType>>,
 ) {
-    let entity = trigger.entity();
+    let entity = trigger.target();
     if let Ok(gas) = particle_query.get(entity) {
         commands
             .entity(entity)
