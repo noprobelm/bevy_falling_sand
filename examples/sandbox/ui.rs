@@ -1,4 +1,5 @@
 //! UI module.
+use bevy::math::ops::powf;
 use bevy::platform::collections::{hash_map::Entry, HashMap};
 use bevy::{
     input::{
@@ -512,6 +513,7 @@ pub fn ev_mouse_wheel(
     mut camera_query: Query<&mut Projection, With<MainCamera>>,
     mut brush_query: Query<&mut Brush>,
     max_brush_size: Res<MaxBrushSize>,
+    time: Res<Time>,
 ) {
     if !ev_scroll.is_empty() {
         match app_state.get() {
@@ -534,9 +536,10 @@ pub fn ev_mouse_wheel(
                     return;
                 };
                 ev_scroll.read().for_each(|ev| {
-                    let zoom = -(ev.y / 100.);
-                    if orthographic.scale + zoom > 0.01 {
-                        orthographic.scale += zoom;
+                    if ev.y < 0. {
+                        orthographic.scale *= powf(10.0f32, time.delta_secs());
+                    } else {
+                        orthographic.scale *= powf(0.1f32, time.delta_secs());
                     }
                 });
             }
