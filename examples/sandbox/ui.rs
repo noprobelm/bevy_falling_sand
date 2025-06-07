@@ -530,13 +530,13 @@ pub fn ev_mouse_wheel(
                     Ok(p) => p,
                     Err(_) => return,
                 };
-                let Projection::Perspective(perspective) = projection.as_mut() else {
+                let Projection::Orthographic(orthographic) = projection.as_mut() else {
                     return;
                 };
                 ev_scroll.read().for_each(|ev| {
                     let zoom = -(ev.y / 100.);
-                    if perspective.fov + zoom > 0.01 {
-                        perspective.fov += zoom;
+                    if orthographic.scale + zoom > 0.01 {
+                        orthographic.scale += zoom;
                     }
                 });
             }
