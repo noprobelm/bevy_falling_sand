@@ -1,4 +1,5 @@
-use bevy::{input::common_conditions::input_pressed, prelude::*, utils::HashSet};
+use bevy::platform::collections::HashSet;
+use bevy::{input::common_conditions::input_pressed, prelude::*};
 use bevy_egui::EguiContexts;
 use bevy_falling_sand::prelude::{ChunkMap, Particle, ParticleSimulationSet, RemoveParticleEvent};
 use bfs_internal::core::Chunk;
