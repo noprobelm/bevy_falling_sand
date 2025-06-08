@@ -8,6 +8,7 @@ use std::iter;
 use std::slice::Iter;
 
 use crate::rng::PhysicsRng;
+use crate::{Wall, WallBlueprint};
 
 pub(super) struct ParticleDefinitionsPlugin;
 
@@ -330,6 +331,7 @@ type BlueprintQuery<'a> = (
     Option<&'a mut VelocityBlueprint>,
     Option<&'a mut MovementPriorityBlueprint>,
     Option<&'a mut MomentumBlueprint>,
+    Option<&'a mut WallBlueprint>,
 );
 
 fn handle_particle_registration(
@@ -342,7 +344,7 @@ fn handle_particle_registration(
         ev.entities.iter().for_each(|entity| {
             if let Ok(child_of) = particle_query.get(*entity) {
                 commands.entity(*entity).insert(PhysicsRng::default());
-                if let Ok((density, velocity, movement_priority, momentum)) =
+                if let Ok((density, velocity, movement_priority, momentum, wall)) =
                     blueprint_query.get(child_of.parent())
                 {
                     if let Some(density) = density {
@@ -364,6 +366,9 @@ fn handle_particle_registration(
                         commands.entity(*entity).insert(momentum.0);
                     } else {
                         commands.entity(*entity).remove::<Momentum>();
+                    }
+                    if wall.is_some() {
+                        commands.entity(*entity).insert(Wall);
                     }
                 }
             }

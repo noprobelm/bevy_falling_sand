@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-avian2d = "0.3.1"
+avian2d = { version = "0.3.1", features = ["debug-plugin"] }
 bevy = "0.16.1"
 bfs_core = { path = "../bfs_core" }
 bfs_movement = { path = "../bfs_movement" }
