@@ -27,7 +27,7 @@ struct TestGizmos {}
 struct MyTestRigidBody;
 
 #[derive(Resource, Default, Debug)]
-struct PerimeterPositions((Vec<Vec<Coordinates>>, Vec<Vec<[u32; 2]>>));
+struct PerimeterPositions((Vec<Vec<Vec2>>, Vec<Vec<[u32; 2]>>));
 
 #[derive(Resource, Default, Debug)]
 struct TerrainColliders(Vec<Entity>);
@@ -76,10 +76,7 @@ fn spawn_colliders(
         let entity = commands
             .spawn((
                 RigidBody::Static,
-                Collider::polyline(
-                    vertices.iter().map(|c| c.0.as_vec2()).collect(),
-                    Some(perimeter_positions.0.1[i].clone()),
-                ),
+                Collider::polyline(vertices.clone(), Some(perimeter_positions.0.1[i].clone())),
             ))
             .id();
 
@@ -107,89 +104,56 @@ fn map_wall_particles(
     }
 
     let occupied: HashSet<Coordinates> = query.iter().copied().collect();
-    let mut visited: HashSet<Coordinates> = HashSet::new();
 
-    let mut components: Vec<Vec<Coordinates>> = Vec::new();
-    let mut perimeters: Vec<Vec<[u32; 2]>> = Vec::new();
+    let edges = extract_perimeter_edges(&occupied);
 
-    for &start in &occupied {
-        if visited.contains(&start) {
-            continue;
-        }
+    let mut components = Vec::new();
+    let mut perimeters = Vec::new();
 
-        if !is_boundary_cell(start, &occupied) {
-            visited.insert(start);
-            continue;
-        }
-
-        let perimeter = square_trace(start, &occupied, &mut visited);
-
-        let indices: Vec<[u32; 2]> = (0..perimeter.len() as u32)
-            .zip(1..=perimeter.len() as u32)
-            .map(|(a, b)| [a, b % perimeter.len() as u32])
-            .collect();
-
-        components.push(perimeter);
-        perimeters.push(indices);
+    let mut vertices = Vec::new();
+    for edge in &edges {
+        vertices.push(edge[0]);
+        vertices.push(edge[1]);
     }
+
+    let indices: Vec<[u32; 2]> = (0..vertices.len() as u32)
+        .step_by(2)
+        .map(|i| [i, i + 1])
+        .collect();
+
+    components.push(vertices);
+    perimeters.push(indices);
 
     wall_positions.0 = (components, perimeters);
 }
 
-fn is_boundary_cell(coord: Coordinates, occupied: &HashSet<Coordinates>) -> bool {
-    for offset in [
-        IVec2::new(1, 0),
-        IVec2::new(-1, 0),
-        IVec2::new(0, 1),
-        IVec2::new(0, -1),
-    ] {
-        let neighbor = Coordinates(coord.0 + offset);
-        if !occupied.contains(&neighbor) {
-            return true;
-        }
-    }
-    false
-}
+fn extract_perimeter_edges(occupied: &HashSet<Coordinates>) -> Vec<[Vec2; 2]> {
+    let mut edges = Vec::new();
 
-fn square_trace(
-    start: Coordinates,
-    occupied: &HashSet<Coordinates>,
-    visited: &mut HashSet<Coordinates>,
-) -> Vec<Coordinates> {
-    let dirs = [
-        IVec2::new(1, 0),
-        IVec2::new(0, -1),
-        IVec2::new(-1, 0),
-        IVec2::new(0, 1),
+    let directions = [
+        (IVec2::new(1, 0), Vec2::new(0.5, 0.5), Vec2::new(0.5, -0.5)),
+        (
+            IVec2::new(-1, 0),
+            Vec2::new(-0.5, -0.5),
+            Vec2::new(-0.5, 0.5),
+        ),
+        (IVec2::new(0, 1), Vec2::new(-0.5, 0.5), Vec2::new(0.5, 0.5)),
+        (
+            IVec2::new(0, -1),
+            Vec2::new(0.5, -0.5),
+            Vec2::new(-0.5, -0.5),
+        ),
     ];
 
-    let mut perimeter = Vec::new();
-    let mut current = start;
-    let mut dir_idx = 0;
-
-    loop {
-        perimeter.push(current);
-        visited.insert(current);
-
-        let mut found = false;
-        for i in 0..4 {
-            let check_dir = (dir_idx + 3 + i) % 4;
-            let neighbor = Coordinates(current.0 + dirs[check_dir]);
-            if occupied.contains(&neighbor) {
-                current = neighbor;
-                dir_idx = check_dir;
-                found = true;
-                break;
+    for &cell in occupied {
+        let base = cell.0.as_vec2();
+        for (offset, v0, v1) in directions {
+            let neighbor = Coordinates(cell.0 + offset);
+            if !occupied.contains(&neighbor) {
+                edges.push([base + v0, base + v1]);
             }
-        }
-        if !found {
-            break;
-        }
-        if current == start && perimeter.len() > 1 {
-            break;
         }
     }
 
-    perimeter
+    edges
 }
-
