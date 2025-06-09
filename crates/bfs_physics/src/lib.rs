@@ -16,6 +16,55 @@ impl Plugin for FallingSandPhysicsPlugin {
     }
 }
 
+#[derive(Debug)]
+struct Grid {
+    min: IVec2,
+    size: IVec2,
+    data: Vec<bool>,
+}
+
+impl Grid {
+    fn new(min: IVec2, max: IVec2) -> Self {
+        let size = max - min + IVec2::ONE;
+        let data = vec![false; (size.x * size.y) as usize];
+        Self { min, size, data }
+    }
+
+    fn index(&self, coord: IVec2) -> usize {
+        let local = coord - self.min;
+        (local.y * self.size.x + local.x) as usize
+    }
+
+    fn set(&mut self, coord: IVec2) {
+        let idx = self.index(coord);
+        self.data[idx] = true;
+    }
+
+    fn get(&self, coord: IVec2) -> bool {
+        if coord.x < self.min.x
+            || coord.y < self.min.y
+            || coord.x > self.min.x + self.size.x - 1
+            || coord.y > self.min.y + self.size.y - 1
+        {
+            return false;
+        }
+        let idx = self.index(coord);
+        self.data[idx]
+    }
+
+    fn iter_occupied(&self) -> impl Iterator<Item = IVec2> + '_ {
+        self.data.iter().enumerate().filter_map(move |(i, &b)| {
+            if b {
+                let x = i as i32 % self.size.x;
+                let y = i as i32 / self.size.x;
+                Some(self.min + IVec2::new(x, y))
+            } else {
+                None
+            }
+        })
+    }
+}
+
 #[derive(Resource, Default, Debug)]
 struct PerimeterPositions((Vec<Vec<Vec2>>, Vec<Vec<[u32; 2]>>));
 
@@ -101,55 +150,6 @@ fn map_wall_particles(
     wall_positions.0 = (components, perimeters);
 }
 
-#[derive(Debug)]
-struct Grid {
-    min: IVec2,
-    size: IVec2,
-    data: Vec<bool>,
-}
-
-impl Grid {
-    fn new(min: IVec2, max: IVec2) -> Self {
-        let size = max - min + IVec2::ONE;
-        let data = vec![false; (size.x * size.y) as usize];
-        Self { min, size, data }
-    }
-
-    fn index(&self, coord: IVec2) -> usize {
-        let local = coord - self.min;
-        (local.y * self.size.x + local.x) as usize
-    }
-
-    fn set(&mut self, coord: IVec2) {
-        let idx = self.index(coord);
-        self.data[idx] = true;
-    }
-
-    fn get(&self, coord: IVec2) -> bool {
-        if coord.x < self.min.x
-            || coord.y < self.min.y
-            || coord.x > self.min.x + self.size.x - 1
-            || coord.y > self.min.y + self.size.y - 1
-        {
-            return false;
-        }
-        let idx = self.index(coord);
-        self.data[idx]
-    }
-
-    fn iter_occupied(&self) -> impl Iterator<Item = IVec2> + '_ {
-        self.data.iter().enumerate().filter_map(move |(i, &b)| {
-            if b {
-                let x = i as i32 % self.size.x;
-                let y = i as i32 / self.size.x;
-                Some(self.min + IVec2::new(x, y))
-            } else {
-                None
-            }
-        })
-    }
-}
-
 fn extract_perimeter_edges(grid: &Grid) -> Vec<[Vec2; 2]> {
     let mut edges = Vec::new();
 
@@ -179,4 +179,3 @@ fn extract_perimeter_edges(grid: &Grid) -> Vec<[Vec2; 2]> {
 
     edges
 }
-
