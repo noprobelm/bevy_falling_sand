@@ -561,11 +561,9 @@ pub fn handle_search_bar_input(
     particle_type_list: Res<ParticleTypeList>,
     particle_search_bar: Option<ResMut<ParticleSearchBar>>,
 ) {
-    if keys.just_pressed(KeyCode::KeyN) {
-        if particle_search_bar.is_none() {
-            commands.insert_resource(ParticleSearchBar::default());
-            return;
-        }
+    if keys.just_pressed(KeyCode::KeyN) && particle_search_bar.is_none() {
+        commands.insert_resource(ParticleSearchBar::default());
+        return;
     }
 
     let mut particle_search_bar = match particle_search_bar {
