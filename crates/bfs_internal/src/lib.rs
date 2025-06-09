@@ -23,7 +23,9 @@ pub use bfs_spatial as spatial;
 
 pub use bundles::*;
 
-pub struct FallingSandPlugin;
+pub struct FallingSandPlugin {
+    pub length_unit: f32,
+}
 
 impl Plugin for FallingSandPlugin {
     fn build(&self, app: &mut App) {
@@ -32,11 +34,20 @@ impl Plugin for FallingSandPlugin {
             core::FallingSandCorePlugin,
             movement::FallingSandMovementPlugin,
             color::FallingSandColorPlugin,
-            debug::FallingSandDebugPlugin,
             spatial::FallingSandSpatialPlugin,
             reactions::FallingSandReactionsPlugin,
             scenes::FallingSandScenesPlugin,
-            physics::FallingSandPhysicsPlugin,
+            physics::FallingSandPhysicsPlugin {
+                length_unit: self.length_unit,
+            },
         ));
+    }
+}
+
+pub struct FallingSandMinimalPlugin;
+
+impl Plugin for FallingSandMinimalPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_plugins((RngPlugin::default(), core::FallingSandCorePlugin));
     }
 }

@@ -4,11 +4,13 @@ use bevy::prelude::*;
 use bfs_core::Coordinates;
 use bfs_movement::Wall;
 
-pub struct FallingSandPhysicsPlugin;
+pub struct FallingSandPhysicsPlugin {
+    pub length_unit: f32,
+}
 
 impl Plugin for FallingSandPhysicsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(PhysicsPlugins::default());
+        app.add_plugins(PhysicsPlugins::default().with_length_unit(self.length_unit));
         app.init_resource::<PerimeterPositions>();
         app.init_resource::<TerrainColliders>();
         app.add_systems(Update, map_wall_particles.run_if(condition_walls_changed));

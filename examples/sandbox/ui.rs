@@ -12,7 +12,7 @@ use bevy::{
 };
 use bevy_egui::{egui, egui::Color32, EguiContexts};
 use bevy_falling_sand::prelude::*;
-use bfs_internal::physics::{Collider, RigidBody};
+use bfs_internal::physics::{Collider, Mass, Restitution, RigidBody, TransformInterpolation};
 use std::time::Duration;
 
 use super::*;
@@ -1907,6 +1907,7 @@ fn spawn_ball(
         DemoBall {
             size: brush.size as f32,
         },
+        TransformInterpolation,
     ));
     Ok(())
 }

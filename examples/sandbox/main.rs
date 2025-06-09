@@ -4,6 +4,7 @@ mod scenes;
 mod setup;
 mod ui;
 
+use bfs_internal::debug::FallingSandDebugPlugin;
 use brush::*;
 use camera::*;
 use scenes::*;
@@ -28,7 +29,8 @@ fn main() {
         EguiPlugin {
             enable_multipass_for_primary_context: false,
         },
-        FallingSandPlugin,
+        FallingSandPlugin { length_unit: 8.0 },
+        FallingSandDebugPlugin,
         // Plugins provided by the modules defined in this example.
         CameraPlugin,
         ParticleSetupPlugin,
