@@ -323,7 +323,11 @@ pub fn update_cursor_coordinates(
     let window = q_window.single()?;
     if let Some(world_position) = window
         .cursor_position()
-        .and_then(|cursor| Some(camera.viewport_to_world(camera_transform, cursor)))
+        .and_then(
+            |cursor| -> Option<
+                std::result::Result<Ray3d, bevy::render::camera::ViewportConversionError>,
+            > { Some(camera.viewport_to_world(camera_transform, cursor)) },
+        )
         .map(|ray| ray.unwrap().origin.truncate())
     {
         coords.update(world_position);
@@ -495,15 +499,12 @@ pub fn toggle_simulation(
     simulation_pause: Option<Res<SimulationRun>>,
     app_state: Res<State<AppState>>,
 ) {
-    match app_state.get() {
-        AppState::Canvas => {
-            if simulation_pause.is_some() {
-                commands.remove_resource::<SimulationRun>();
-            } else {
-                commands.init_resource::<SimulationRun>();
-            }
+    if app_state.get() == &AppState::Canvas {
+        if simulation_pause.is_some() {
+            commands.remove_resource::<SimulationRun>();
+        } else {
+            commands.init_resource::<SimulationRun>();
         }
-        _ => {}
     }
 }
 
