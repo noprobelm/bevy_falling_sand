@@ -765,7 +765,7 @@ pub fn update_particle_editor_fields(
                 if let Some(velocity) = velocity {
                     particle_max_velocity_field.blueprint = *velocity;
                 }
-                if let Some(_) = momentum {
+                if momentum.is_some() {
                     particle_momentum_field.enable = true;
                 }
                 if let Some(colors) = colors {
