@@ -12,7 +12,7 @@ use bevy::{
 };
 use bevy_egui::{egui, egui::Color32, EguiContexts};
 use bevy_falling_sand::prelude::*;
-use bfs_internal::physics::{Collider, Mass, Restitution, RigidBody, TransformInterpolation};
+use bfs_internal::physics::{Collider, RigidBody, TransformInterpolation};
 use std::time::Duration;
 
 use super::*;
