@@ -1674,7 +1674,6 @@ pub fn render_fluidity_field(
 ) {
     ui.horizontal(|ui| {
         ui.label("Fluidity: ");
-        particle_liquid_field.blueprint.data().fluidity;
         match current_particle_category_field.get() {
             ParticleEditorCategoryState::Liquid => {
                 ui.add(
