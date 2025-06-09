@@ -182,3 +182,4 @@ fn extract_perimeter_edges(grid: &Grid) -> Vec<[Vec2; 2]> {
 
     edges
 }
+
