@@ -31,7 +31,6 @@ fn main() {
         },
         FallingSandPlugin { length_unit: 8.0 },
         FallingSandDebugPlugin,
-        // Plugins provided by the modules defined in this example.
         CameraPlugin,
         ParticleSetupPlugin,
         BrushPlugin,
