@@ -64,6 +64,7 @@ impl bevy::prelude::Plugin for UIPlugin {
             .add_systems(OnEnter(AppState::Ui), show_cursor)
             .add_systems(OnEnter(AppState::Canvas), hide_cursor)
             .add_systems(Update, spawn_ball.run_if(input_pressed(KeyCode::KeyB)))
+            .add_systems(Update, despawn_balls.run_if(input_pressed(KeyCode::KeyV)))
             .add_systems(Update, draw_ball)
             .add_observer(on_clear_dynamic_particles)
             .add_observer(on_clear_wall_particles);
@@ -1911,6 +1912,12 @@ fn spawn_ball(
     Ok(())
 }
 
+fn despawn_balls(mut commands: Commands, ball_query: Query<Entity, With<DemoBall>>) {
+    ball_query.iter().for_each(|entity| {
+        commands.entity(entity).despawn();
+    });
+}
+
 fn draw_ball(mut gizmos: Gizmos, ball_query: Query<(&Transform, &DemoBall)>) -> Result {
     ball_query.iter().for_each(|(transform, ball)| {
         gizmos.circle_2d(
@@ -1923,8 +1930,8 @@ fn draw_ball(mut gizmos: Gizmos, ball_query: Query<(&Transform, &DemoBall)>) -> 
 }
 
 #[derive(Clone, PartialEq, PartialOrd, Debug, Default, Component)]
-struct DemoBall {
-    size: f32,
+pub struct DemoBall {
+    pub size: f32,
 }
 
 #[derive(Event, Clone, Debug)]
