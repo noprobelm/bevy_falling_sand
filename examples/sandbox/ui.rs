@@ -1786,7 +1786,7 @@ fn particle_editor_save(
                 if particle_momentum_field.enable {
                     commands
                         .entity(entity)
-                        .insert(particle_momentum_field.blueprint.clone());
+                        .insert(particle_momentum_field.blueprint);
                 }
                 if particle_editor_burns_field.enable {
                     commands
@@ -1814,7 +1814,7 @@ fn particle_editor_save(
                 if particle_momentum_field.enable {
                     commands
                         .entity(entity)
-                        .insert(particle_momentum_field.blueprint.clone());
+                        .insert(particle_momentum_field.blueprint);
                 }
                 if particle_editor_burns_field.enable {
                     commands
@@ -1860,7 +1860,7 @@ fn particle_editor_save(
                 if particle_momentum_field.enable {
                     commands
                         .entity(entity)
-                        .insert(particle_momentum_field.blueprint.clone());
+                        .insert(particle_momentum_field.blueprint);
                 }
                 if particle_editor_burns_field.enable {
                     commands
