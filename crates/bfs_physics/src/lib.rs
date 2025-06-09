@@ -1,4 +1,5 @@
-use avian2d::prelude::*;
+pub use avian2d::prelude::*;
+
 use bevy::prelude::*;
 use bfs_core::Coordinates;
 use bfs_movement::Wall;
@@ -11,16 +12,11 @@ impl Plugin for FallingSandPhysicsPlugin {
         app.init_resource::<TerrainColliders>();
         app.add_event::<WallsChangedEvent>();
         app.add_plugins(PhysicsPlugins::default());
-        app.add_systems(Startup, setup);
-        app.add_systems(Update, draw_rigid_body_circle);
         app.add_systems(Update, walls_changed);
         app.add_systems(Update, map_wall_particles);
         app.add_systems(Update, spawn_colliders);
     }
 }
-
-#[derive(Component, Debug)]
-struct MyTestRigidBody;
 
 #[derive(Resource, Default, Debug)]
 struct PerimeterPositions((Vec<Vec<Vec2>>, Vec<Vec<[u32; 2]>>));
@@ -30,33 +26,6 @@ struct TerrainColliders(Vec<Entity>);
 
 #[derive(Event)]
 struct WallsChangedEvent;
-
-fn setup(mut commands: Commands) {
-    commands.spawn((
-        RigidBody::Dynamic,
-        Collider::circle(2.),
-        Transform::from_xyz(0.0, 2.0, 0.0),
-        // Sprite {
-        //     color: Color::srgba(1., 0., 0., 1.),
-        //     custom_size: Some(Vec2::splat(2.)),
-        //     ..default()
-        // },
-        MyTestRigidBody,
-    ));
-}
-
-fn draw_rigid_body_circle(
-    query: Query<&Transform, With<MyTestRigidBody>>,
-    mut gizmos: Gizmos,
-) -> Result {
-    let transform = query.single()?;
-    gizmos.circle_2d(
-        Vec2::new(transform.translation.x, transform.translation.y),
-        2.,
-        Color::srgba(1., 0., 0., 1.),
-    );
-    Ok(())
-}
 
 fn spawn_colliders(
     mut commands: Commands,
