@@ -10,10 +10,8 @@ impl Plugin for FallingSandPhysicsPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<PerimeterPositions>();
         app.init_resource::<TerrainColliders>();
-        app.add_event::<WallsChangedEvent>();
         app.add_plugins(PhysicsPlugins::default());
-        app.add_systems(Update, walls_changed);
-        app.add_systems(Update, map_wall_particles);
+        app.add_systems(Update, map_wall_particles.run_if(condition_walls_changed));
         app.add_systems(Update, spawn_colliders);
     }
 }
@@ -23,9 +21,6 @@ struct PerimeterPositions((Vec<Vec<Vec2>>, Vec<Vec<[u32; 2]>>));
 
 #[derive(Resource, Default, Debug)]
 struct TerrainColliders(Vec<Entity>);
-
-#[derive(Event)]
-struct WallsChangedEvent;
 
 fn spawn_colliders(
     mut commands: Commands,
@@ -51,25 +46,20 @@ fn spawn_colliders(
     }
 }
 
-fn walls_changed(
+fn condition_walls_changed(
     query: Query<Entity, Changed<Wall>>,
     removed: RemovedComponents<Wall>,
-    mut ev_walls_changed: EventWriter<WallsChangedEvent>,
-) {
+) -> bool {
     if !query.is_empty() || !removed.is_empty() {
-        ev_walls_changed.write(WallsChangedEvent);
+        return true;
     }
+    false
 }
 
 fn map_wall_particles(
-    ev_walls_changed: EventReader<WallsChangedEvent>,
     wall_query: Query<&Coordinates, With<Wall>>,
     mut wall_positions: ResMut<PerimeterPositions>,
 ) {
-    if ev_walls_changed.is_empty() {
-        return;
-    }
-
     let coords: Vec<Coordinates> = wall_query.iter().copied().collect();
 
     if coords.is_empty() {
