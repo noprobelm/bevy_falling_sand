@@ -3,7 +3,7 @@ use bevy::math::ops::powf;
 use bevy::platform::collections::{hash_map::Entry, HashMap};
 use bevy::{
     input::{
-        common_conditions::input_just_pressed,
+        common_conditions::{input_just_pressed, input_pressed},
         keyboard::{Key, KeyboardInput},
         mouse::MouseWheel,
     },
@@ -63,7 +63,7 @@ impl bevy::prelude::Plugin for UIPlugin {
             )
             .add_systems(OnEnter(AppState::Ui), show_cursor)
             .add_systems(OnEnter(AppState::Canvas), hide_cursor)
-            .add_systems(Update, spawn_ball.run_if(input_just_pressed(KeyCode::KeyB)))
+            .add_systems(Update, spawn_ball.run_if(input_pressed(KeyCode::KeyB)))
             .add_systems(Update, draw_ball)
             .add_observer(on_clear_dynamic_particles)
             .add_observer(on_clear_wall_particles);
