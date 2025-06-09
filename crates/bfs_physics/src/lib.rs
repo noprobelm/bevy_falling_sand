@@ -63,14 +63,14 @@ fn walls_changed(
 
 fn map_wall_particles(
     ev_walls_changed: EventReader<WallsChangedEvent>,
-    query: Query<&Coordinates, With<Wall>>,
+    wall_query: Query<&Coordinates, With<Wall>>,
     mut wall_positions: ResMut<PerimeterPositions>,
 ) {
     if ev_walls_changed.is_empty() {
         return;
     }
 
-    let coords: Vec<Coordinates> = query.iter().copied().collect();
+    let coords: Vec<Coordinates> = wall_query.iter().copied().collect();
 
     if coords.is_empty() {
         wall_positions.0 = (Vec::new(), Vec::new());
@@ -189,3 +189,4 @@ fn extract_perimeter_edges(grid: &Grid) -> Vec<[Vec2; 2]> {
 
     edges
 }
+
