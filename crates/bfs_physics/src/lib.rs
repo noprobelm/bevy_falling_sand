@@ -12,7 +12,7 @@ impl Plugin for FallingSandPhysicsPlugin {
         app.init_resource::<PerimeterPositions>();
         app.init_resource::<TerrainColliders>();
         app.add_systems(Update, map_wall_particles.run_if(condition_walls_changed));
-        app.add_systems(Update, spawn_colliders);
+        app.add_systems(Update, spawn_terrain_colliders);
     }
 }
 
@@ -71,7 +71,7 @@ struct PerimeterPositions((Vec<Vec<Vec2>>, Vec<Vec<[u32; 2]>>));
 #[derive(Resource, Default, Debug)]
 struct TerrainColliders(Vec<Entity>);
 
-fn spawn_colliders(
+fn spawn_terrain_colliders(
     mut commands: Commands,
     mut colliders: ResMut<TerrainColliders>,
     perimeter_positions: Res<PerimeterPositions>,
