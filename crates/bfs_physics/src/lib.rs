@@ -111,11 +111,6 @@ fn map_wall_particles(
 ) {
     let coords: Vec<Coordinates> = wall_query.iter().copied().collect();
 
-    if coords.is_empty() {
-        wall_positions.0 = (Vec::new(), Vec::new());
-        return;
-    }
-
     let min = coords
         .iter()
         .fold(IVec2::new(i32::MAX, i32::MAX), |min, c| min.min(c.0));
