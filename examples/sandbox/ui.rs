@@ -882,7 +882,9 @@ pub fn render_particle_editor(
                             }
                         }
 
-                        if ui.button("New Particle").clicked() {todo!()}
+                        if ui.button("New Particle").clicked() {
+                            todo!()
+                        }
                         if ui.button("Save Particle").clicked() {
                             ev_particle_editor_save.write(ParticleEditorSave);
                         }
@@ -1027,7 +1029,7 @@ pub fn render_particle_editor(
                     },
                 );
             });
-        });)
+        });
 }
 
 fn render_state_field(
