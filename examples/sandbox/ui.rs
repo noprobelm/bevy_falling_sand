@@ -12,6 +12,7 @@ use bevy::{
 };
 use bevy_egui::{egui, egui::Color32, EguiContexts};
 use bevy_falling_sand::prelude::*;
+use bfs_internal::physics::{Collider, RigidBody};
 use std::time::Duration;
 
 use super::*;
@@ -63,6 +64,8 @@ impl bevy::prelude::Plugin for UIPlugin {
             )
             .add_systems(OnEnter(AppState::Ui), show_cursor)
             .add_systems(OnEnter(AppState::Canvas), hide_cursor)
+            .add_systems(Update, spawn_ball.run_if(input_just_pressed(KeyCode::KeyB)))
+            .add_systems(Update, draw_ball)
             .add_observer(on_clear_dynamic_particles)
             .add_observer(on_clear_wall_particles);
     }
@@ -1884,6 +1887,44 @@ fn particle_editor_save(
         }
     })
 }
+
+fn spawn_ball(
+    mut commands: Commands,
+    cursor_coords: Res<CursorCoords>,
+    brush_query: Query<&Brush>,
+) -> Result {
+    let brush = brush_query.single()?;
+    commands.spawn((
+        RigidBody::Dynamic,
+        Collider::circle(brush.size as f32),
+        Transform::from_xyz(
+            cursor_coords.current.x as f32,
+            cursor_coords.current.y as f32,
+            0.,
+        ),
+        DemoBall,
+    ));
+    Ok(())
+}
+
+fn draw_ball(
+    mut gizmos: Gizmos,
+    ball_query: Query<&Transform, With<DemoBall>>,
+    brush_query: Query<&Brush>,
+) -> Result {
+    let brush = brush_query.single()?;
+    ball_query.iter().for_each(|transform| {
+        gizmos.circle_2d(
+            Vec2::new(transform.translation.x, transform.translation.y),
+            brush.size as f32,
+            Color::WHITE,
+        );
+    });
+    Ok(())
+}
+
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Component)]
+pub struct DemoBall;
 
 #[derive(Event, Clone, Debug)]
 pub struct ParticleEditorUpdate;
