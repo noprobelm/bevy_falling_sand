@@ -1,8 +1,8 @@
 pub use avian2d::prelude::*;
 
 use bevy::prelude::*;
-use bfs_core::Coordinates;
-use bfs_movement::Wall;
+use bfs_core::{Chunk, ChunkMap, Coordinates, Particle, ParticleSimulationSet};
+use bfs_movement::{Liquid, Wall};
 
 pub struct FallingSandPhysicsPlugin {
     pub length_unit: f32,
@@ -15,6 +15,10 @@ impl Plugin for FallingSandPhysicsPlugin {
         app.init_resource::<TerrainColliders>();
         app.add_systems(Update, map_wall_particles.run_if(condition_walls_changed));
         app.add_systems(Update, spawn_terrain_colliders);
+        app.add_systems(
+            Update,
+            float_dynamic_rigid_bodies.after(ParticleSimulationSet),
+        );
     }
 }
 
@@ -183,3 +187,39 @@ fn extract_perimeter_edges(grid: &Grid) -> Vec<[Vec2; 2]> {
     edges
 }
 
+fn float_dynamic_rigid_bodies(
+    mut rigid_body_query: Query<(
+        &RigidBody,
+        &Transform,
+        &mut GravityScale,
+        &mut LinearVelocity,
+    )>,
+    liquid_query: Query<&Particle, With<Liquid>>,
+    chunk_map: Res<ChunkMap>,
+    mut chunk_query: Query<&mut Chunk>,
+) {
+    let damping_factor = 0.95;
+    rigid_body_query.iter_mut().for_each(
+        |(rigid_body, transform, mut gravity_scale, mut linear_velocity)| {
+            if rigid_body == &RigidBody::Dynamic {
+                if let Some(entity) = chunk_map.entity(
+                    &IVec2::new(
+                        transform.translation.x as i32,
+                        transform.translation.y as i32,
+                    ),
+                    &mut chunk_query,
+                ) {
+                    if liquid_query.contains(entity) {
+                        linear_velocity.y *= damping_factor;
+                        if linear_velocity.y.abs() < 0.001 {
+                            linear_velocity.y = 0.0;
+                        }
+                        gravity_scale.0 = -1.0;
+                    }
+                } else {
+                    gravity_scale.0 = 1.0;
+                }
+            }
+        },
+    );
+}

@@ -1,4 +1,5 @@
 //! UI module.
+use bevy::color::palettes::basic::RED;
 use bevy::math::ops::powf;
 use bevy::platform::collections::{hash_map::Entry, HashMap};
 use bevy::{
@@ -65,7 +66,6 @@ impl bevy::prelude::Plugin for UIPlugin {
             .add_systems(OnEnter(AppState::Canvas), hide_cursor)
             .add_systems(Update, spawn_ball.run_if(input_pressed(KeyCode::KeyB)))
             .add_systems(Update, despawn_balls.run_if(input_pressed(KeyCode::KeyV)))
-            .add_systems(Update, draw_ball)
             .add_observer(on_clear_dynamic_particles)
             .add_observer(on_clear_wall_particles);
     }
@@ -1896,6 +1896,8 @@ fn particle_editor_save(
 
 fn spawn_ball(
     mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
     cursor_coords: Res<CursorCoords>,
     brush_query: Query<&Brush>,
 ) -> Result {
@@ -1903,11 +1905,14 @@ fn spawn_ball(
     commands.spawn((
         RigidBody::Dynamic,
         Collider::circle(brush.size as f32),
-        Transform::from_xyz(cursor_coords.current.x, cursor_coords.current.y, 0.),
+        Transform::from_xyz(cursor_coords.current.x, cursor_coords.current.y, 1.),
         DemoBall {
             size: brush.size as f32,
         },
         TransformInterpolation,
+        GravityScale(1.0),
+        Mesh2d(meshes.add(Circle::new(brush.size as f32))),
+        MeshMaterial2d(materials.add(Color::Srgba(Srgba::rgba_u8(246, 174, 45, 255)))),
     ));
     Ok(())
 }
@@ -1916,17 +1921,6 @@ fn despawn_balls(mut commands: Commands, ball_query: Query<Entity, With<DemoBall
     ball_query.iter().for_each(|entity| {
         commands.entity(entity).despawn();
     });
-}
-
-fn draw_ball(mut gizmos: Gizmos, ball_query: Query<(&Transform, &DemoBall)>) -> Result {
-    ball_query.iter().for_each(|(transform, ball)| {
-        gizmos.circle_2d(
-            Vec2::new(transform.translation.x, transform.translation.y),
-            ball.size,
-            Color::WHITE,
-        );
-    });
-    Ok(())
 }
 
 #[derive(Clone, PartialEq, PartialOrd, Debug, Default, Component)]
