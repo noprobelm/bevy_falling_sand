@@ -8,9 +8,9 @@ pub struct FallingSandPhysicsPlugin;
 
 impl Plugin for FallingSandPhysicsPlugin {
     fn build(&self, app: &mut App) {
+        app.add_plugins(PhysicsPlugins::default());
         app.init_resource::<PerimeterPositions>();
         app.init_resource::<TerrainColliders>();
-        app.add_plugins(PhysicsPlugins::default());
         app.add_systems(Update, map_wall_particles.run_if(condition_walls_changed));
         app.add_systems(Update, spawn_colliders);
     }
@@ -179,3 +179,4 @@ fn extract_perimeter_edges(grid: &Grid) -> Vec<[Vec2; 2]> {
 
     edges
 }
+
