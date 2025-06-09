@@ -79,6 +79,7 @@ fn spawn_terrain_colliders(
     if !perimeter_positions.is_changed() {
         return;
     }
+
     for entity in colliders.0.drain(..) {
         commands.entity(entity).despawn();
     }
@@ -110,6 +111,11 @@ fn map_wall_particles(
     mut wall_positions: ResMut<PerimeterPositions>,
 ) {
     let coords: Vec<Coordinates> = wall_query.iter().copied().collect();
+
+    if coords.is_empty() {
+        wall_positions.0 = (Vec::new(), Vec::new());
+        return;
+    }
 
     let min = coords
         .iter()
@@ -174,4 +180,3 @@ fn extract_perimeter_edges(grid: &Grid) -> Vec<[Vec2; 2]> {
 
     edges
 }
-
