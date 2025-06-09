@@ -501,12 +501,18 @@ pub fn toggle_simulation(
     mut commands: Commands,
     simulation_pause: Option<Res<SimulationRun>>,
     app_state: Res<State<AppState>>,
+    mut time: ResMut<Time<Virtual>>,
 ) {
     if app_state.get() == &AppState::Canvas {
         if simulation_pause.is_some() {
             commands.remove_resource::<SimulationRun>();
         } else {
             commands.init_resource::<SimulationRun>();
+        }
+        if time.is_paused() {
+            time.unpause();
+        } else {
+            time.pause();
         }
     }
 }
