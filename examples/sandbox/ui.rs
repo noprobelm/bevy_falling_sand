@@ -882,7 +882,7 @@ pub fn render_particle_editor(
                             }
                         }
 
-                        if ui.button("New Particle").clicked() {}
+                        if ui.button("New Particle").clicked() {todo!()}
                         if ui.button("Save Particle").clicked() {
                             ev_particle_editor_save.write(ParticleEditorSave);
                         }
@@ -1027,7 +1027,7 @@ pub fn render_particle_editor(
                     },
                 );
             });
-        });
+        });)
 }
 
 fn render_state_field(
@@ -1559,8 +1559,7 @@ fn render_burns_field(
             ui.horizontal(|ui| {
                 ui.label("Particle");
                 egui::ComboBox::from_id_salt("burning_reaction")
-                    .selected_text(format!(
-                        "{}",
+                    .selected_text(
                         particle_burns_field
                             .blueprint
                             .0
@@ -1569,7 +1568,8 @@ fn render_burns_field(
                             .unwrap()
                             .produces
                             .name
-                    ))
+                            .to_string(),
+                    )
                     .show_ui(ui, |ui| {
                         for particle in particle_list.iter() {
                             if ui
