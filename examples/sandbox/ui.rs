@@ -1903,34 +1903,29 @@ fn spawn_ball(
     commands.spawn((
         RigidBody::Dynamic,
         Collider::circle(brush.size as f32),
-        Transform::from_xyz(
-            cursor_coords.current.x as f32,
-            cursor_coords.current.y as f32,
-            0.,
-        ),
-        DemoBall,
+        Transform::from_xyz(cursor_coords.current.x, cursor_coords.current.y, 0.),
+        DemoBall {
+            size: brush.size as f32,
+        },
     ));
     Ok(())
 }
 
-fn draw_ball(
-    mut gizmos: Gizmos,
-    ball_query: Query<&Transform, With<DemoBall>>,
-    brush_query: Query<&Brush>,
-) -> Result {
-    let brush = brush_query.single()?;
-    ball_query.iter().for_each(|transform| {
+fn draw_ball(mut gizmos: Gizmos, ball_query: Query<(&Transform, &DemoBall)>) -> Result {
+    ball_query.iter().for_each(|(transform, ball)| {
         gizmos.circle_2d(
             Vec2::new(transform.translation.x, transform.translation.y),
-            brush.size as f32,
+            ball.size,
             Color::WHITE,
         );
     });
     Ok(())
 }
 
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Component)]
-pub struct DemoBall;
+#[derive(Clone, PartialEq, PartialOrd, Debug, Default, Component)]
+struct DemoBall {
+    size: f32,
+}
 
 #[derive(Event, Clone, Debug)]
 pub struct ParticleEditorUpdate;
