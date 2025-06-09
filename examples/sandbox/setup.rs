@@ -7,20 +7,9 @@ pub(super) struct ParticleSetupPlugin;
 impl bevy::prelude::Plugin for ParticleSetupPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
         app.add_systems(Startup, setup_particles)
-            .add_systems(Startup, setup_random_collider)
             .add_plugins(PhysicsDebugPlugin::default())
             .insert_resource(Gravity(Vec2::NEG_Y * 50.0));
     }
-}
-
-fn setup_random_collider(mut commands: Commands) {
-    commands
-        .spawn((
-            RigidBody::Static,
-            Collider::rectangle(5.0, 5.0),
-            Transform::from_xyz(0.0, 0.0, 0.0),
-        ))
-        .insert(Name::new("Random Collider"));
 }
 
 pub fn setup_particles(mut commands: Commands) {
