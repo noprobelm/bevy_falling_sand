@@ -427,6 +427,7 @@ fn handle_particle_registration(
                         commands.entity(*entity).remove::<Moved>();
                     }
                 }
+                commands.entity(*entity).insert(Moved(true));
             }
         });
     });

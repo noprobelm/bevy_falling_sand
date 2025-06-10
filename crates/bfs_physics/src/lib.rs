@@ -2,7 +2,7 @@ pub use avian2d::prelude::*;
 
 use bevy::prelude::*;
 use bfs_core::{Chunk, ChunkMap, Coordinates, Particle, ParticleSimulationSet};
-use bfs_movement::{Liquid, Wall};
+use bfs_movement::{Liquid, MovableSolid, Moved, Wall};
 
 pub struct FallingSandPhysicsPlugin {
     pub length_unit: f32,
@@ -11,10 +11,17 @@ pub struct FallingSandPhysicsPlugin {
 impl Plugin for FallingSandPhysicsPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(PhysicsPlugins::default().with_length_unit(self.length_unit));
-        app.init_resource::<PerimeterPositions>();
-        app.init_resource::<TerrainColliders>();
+        app.init_resource::<WallPerimeterPositions>();
+        app.init_resource::<MovableSolidPerimeterPositions>();
+        app.init_resource::<WallTerrainColliders>();
+        app.init_resource::<MovableSolidTerrainColliders>();
         app.add_systems(Update, map_wall_particles.run_if(condition_walls_changed));
-        app.add_systems(Update, spawn_terrain_colliders);
+        app.add_systems(Update, spawn_wall_terrain_colliders);
+        app.add_systems(
+            Update,
+            map_movable_solid_particles.run_if(condition_movable_solids_changed),
+        );
+        app.add_systems(Update, spawn_movable_solid_terrain_colliders);
         app.add_systems(
             Update,
             float_dynamic_rigid_bodies.after(ParticleSimulationSet),
@@ -72,15 +79,46 @@ impl Grid {
 }
 
 #[derive(Resource, Default, Debug)]
-struct PerimeterPositions((Vec<Vec<Vec2>>, Vec<Vec<[u32; 2]>>));
+struct WallPerimeterPositions((Vec<Vec<Vec2>>, Vec<Vec<[u32; 2]>>));
 
 #[derive(Resource, Default, Debug)]
-struct TerrainColliders(Vec<Entity>);
+struct WallTerrainColliders(Vec<Entity>);
 
-fn spawn_terrain_colliders(
+#[derive(Resource, Default, Debug)]
+struct MovableSolidPerimeterPositions((Vec<Vec<Vec2>>, Vec<Vec<[u32; 2]>>));
+
+#[derive(Resource, Default, Debug)]
+struct MovableSolidTerrainColliders(Vec<Entity>);
+
+fn spawn_wall_terrain_colliders(
     mut commands: Commands,
-    mut colliders: ResMut<TerrainColliders>,
-    perimeter_positions: Res<PerimeterPositions>,
+    mut colliders: ResMut<WallTerrainColliders>,
+    perimeter_positions: Res<WallPerimeterPositions>,
+) {
+    if !perimeter_positions.is_changed() {
+        return;
+    }
+
+    for entity in colliders.0.drain(..) {
+        commands.entity(entity).despawn();
+    }
+
+    for (i, vertices) in perimeter_positions.0.0.iter().enumerate() {
+        let entity = commands
+            .spawn((
+                RigidBody::Static,
+                Collider::polyline(vertices.clone(), Some(perimeter_positions.0.1[i].clone())),
+            ))
+            .id();
+
+        colliders.0.push(entity);
+    }
+}
+
+fn spawn_movable_solid_terrain_colliders(
+    mut commands: Commands,
+    mut colliders: ResMut<MovableSolidTerrainColliders>,
+    perimeter_positions: Res<MovableSolidPerimeterPositions>,
 ) {
     if !perimeter_positions.is_changed() {
         return;
@@ -114,9 +152,68 @@ fn condition_walls_changed(
 
 fn map_wall_particles(
     wall_query: Query<&Coordinates, With<Wall>>,
-    mut wall_positions: ResMut<PerimeterPositions>,
+    mut wall_positions: ResMut<WallPerimeterPositions>,
 ) {
     let coords: Vec<Coordinates> = wall_query.iter().copied().collect();
+
+    if coords.is_empty() {
+        wall_positions.0 = (Vec::new(), Vec::new());
+        return;
+    }
+
+    let min = coords
+        .iter()
+        .fold(IVec2::new(i32::MAX, i32::MAX), |min, c| min.min(c.0));
+    let max = coords
+        .iter()
+        .fold(IVec2::new(i32::MIN, i32::MIN), |max, c| max.max(c.0));
+
+    let mut grid = Grid::new(min, max);
+    for coord in &coords {
+        grid.set(coord.0);
+    }
+
+    let edges = extract_perimeter_edges(&grid);
+
+    let mut components = Vec::new();
+    let mut perimeters = Vec::new();
+
+    let mut vertices = Vec::new();
+    for edge in &edges {
+        vertices.push(edge[0]);
+        vertices.push(edge[1]);
+    }
+
+    let indices: Vec<[u32; 2]> = (0..vertices.len() as u32)
+        .step_by(2)
+        .map(|i| [i, i + 1])
+        .collect();
+
+    components.push(vertices);
+    perimeters.push(indices);
+
+    wall_positions.0 = (components, perimeters);
+}
+
+fn condition_movable_solids_changed(
+    query: Query<&MovableSolid, Changed<Coordinates>>,
+    removed: RemovedComponents<MovableSolid>,
+) -> bool {
+    if !query.is_empty() || !removed.is_empty() {
+        return true;
+    }
+    false
+}
+
+fn map_movable_solid_particles(
+    movable_solid_query: Query<(&Coordinates, &Moved), With<MovableSolid>>,
+    mut wall_positions: ResMut<MovableSolidPerimeterPositions>,
+) {
+    let coords: Vec<Coordinates> = movable_solid_query
+        .iter()
+        .filter_map(|(c, m)| if !m.0 { Some(c) } else { None })
+        .copied()
+        .collect();
 
     if coords.is_empty() {
         wall_positions.0 = (Vec::new(), Vec::new());
