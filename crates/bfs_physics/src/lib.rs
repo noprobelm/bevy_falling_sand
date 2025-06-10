@@ -133,6 +133,11 @@ fn spawn_movable_solid_terrain_colliders(
     }
 
     for (vertices, indices) in mesh_data.vertices.iter().zip(&mesh_data.indices) {
+        if indices.is_empty() || vertices.is_empty() {
+            warn!("Skipping empty trimesh collider (no vertices or triangles)");
+            continue;
+        }
+
         let entity = commands
             .spawn((
                 RigidBody::Static,
@@ -210,6 +215,8 @@ fn map_movable_solid_particles(
     movable_solid_query: Query<(&Coordinates, &Moved), With<MovableSolid>>,
     mut mesh_data: ResMut<MovableSolidMeshData>,
 ) {
+    use earcutr::earcut;
+
     let coords: Vec<Coordinates> = movable_solid_query
         .iter()
         .filter_map(|(c, m)| if !m.0 { Some(c) } else { None })
@@ -234,46 +241,75 @@ fn map_movable_solid_particles(
         grid.set(coord.0);
     }
 
-    let (vertices, indices) = triangulate_solid(&grid);
+    let perimeter = extract_ordered_perimeter_loop(&grid);
 
-    mesh_data.vertices = vec![vertices];
-    mesh_data.indices = vec![indices];
+    let flattened: Vec<f64> = perimeter
+        .iter()
+        .flat_map(|v| vec![v.x as f64, v.y as f64])
+        .collect();
+    if let Ok(indices_raw) = earcut(&flattened, &[], 2) {
+        let triangle_indices: Vec<[u32; 3]> = indices_raw
+            .chunks(3)
+            .map(|chunk| [chunk[0] as u32, chunk[1] as u32, chunk[2] as u32])
+            .collect();
+
+        let vertices = perimeter
+            .into_iter()
+            .map(|v| Vector::new(v.x, v.y))
+            .collect();
+
+        mesh_data.vertices = vec![vertices];
+        mesh_data.indices = vec![triangle_indices];
+    }
 }
 
-/// Generates a simple triangle mesh (two triangles per cell).
-fn triangulate_solid(grid: &Grid) -> (Vec<Vector>, Vec<[u32; 3]>) {
-    let mut vertices = Vec::new();
-    let mut indices = Vec::new();
-    let mut vertex_map = std::collections::HashMap::<IVec2, u32>::new();
-    let mut next_index = 0;
-
-    for coord in grid.iter_occupied() {
-        // Define corners in clockwise order
-        let corners = [
-            coord.as_vec2() + Vec2::new(-0.5, -0.5),
-            coord.as_vec2() + Vec2::new(0.5, -0.5),
-            coord.as_vec2() + Vec2::new(0.5, 0.5),
-            coord.as_vec2() + Vec2::new(-0.5, 0.5),
-        ];
-
-        let mut indices_local = [0u32; 4];
-        for (i, corner) in corners.iter().enumerate() {
-            let key = (corner.x.round() as i32, corner.y.round() as i32).into();
-            let index = *vertex_map.entry(key).or_insert_with(|| {
-                let idx = next_index;
-                vertices.push(Vector::new(corner.x, corner.y));
-                next_index += 1;
-                idx
-            });
-            indices_local[i] = index;
-        }
-
-        // Two triangles per cell
-        indices.push([indices_local[0], indices_local[1], indices_local[2]]);
-        indices.push([indices_local[0], indices_local[2], indices_local[3]]);
+fn extract_ordered_perimeter_loop(grid: &Grid) -> Vec<Vec2> {
+    let edges = extract_perimeter_edges(grid);
+    if edges.is_empty() {
+        return Vec::new();
     }
 
-    (vertices, indices)
+    let mut ordered = Vec::new();
+    let mut remaining = edges;
+
+    let [current_start, mut current_end] = remaining.swap_remove(0);
+    ordered.push(current_start);
+    ordered.push(current_end);
+
+    while !remaining.is_empty() {
+        let mut found = false;
+        for i in 0..remaining.len() {
+            let [start, end] = remaining[i];
+            if start == current_end {
+                ordered.push(end);
+                current_end = end;
+                remaining.swap_remove(i);
+                found = true;
+                break;
+            } else if end == current_end {
+                ordered.push(start);
+                current_end = start;
+                remaining.swap_remove(i);
+                found = true;
+                break;
+            }
+        }
+
+        if !found {
+            warn!("Could not form closed perimeter loop; perimeter might be disjoint or broken.");
+            break;
+        }
+
+        if ordered[0] == current_end {
+            break;
+        }
+    }
+
+    if ordered.len() > 1 && ordered[0] == *ordered.last().unwrap() {
+        ordered.pop();
+    }
+
+    ordered
 }
 
 fn extract_perimeter_edges(grid: &Grid) -> Vec<[Vec2; 2]> {

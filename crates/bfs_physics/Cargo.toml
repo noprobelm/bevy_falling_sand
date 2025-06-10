@@ -8,3 +8,4 @@ avian2d = { version = "0.3.1", features = ["debug-plugin"] }
 bevy = "0.16.1"
 bfs_core = { path = "../bfs_core" }
 bfs_movement = { path = "../bfs_movement" }
+earcutr = "0.5.0"
