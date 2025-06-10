@@ -12,7 +12,6 @@ pub struct FallingSandPhysicsPlugin {
 impl Plugin for FallingSandPhysicsPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(PhysicsPlugins::default().with_length_unit(self.length_unit));
-        app.add_plugins(PhysicsDebugPlugin::default());
         app.init_resource::<WallPerimeterPositions>();
         app.init_resource::<WallTerrainColliders>();
         app.init_resource::<MovableSolidMeshData>();
