@@ -216,11 +216,11 @@ fn map_movable_solid_particles(
     mut mesh_data: ResMut<MovableSolidMeshData>,
 ) {
     use earcutr::earcut;
+    use std::collections::{HashSet, VecDeque};
 
-    let coords: Vec<Coordinates> = movable_solid_query
+    let coords: Vec<IVec2> = movable_solid_query
         .iter()
-        .filter_map(|(c, m)| if !m.0 { Some(c) } else { None })
-        .copied()
+        .filter_map(|(c, m)| if !m.0 { Some(c.0) } else { None })
         .collect();
 
     if coords.is_empty() {
@@ -229,38 +229,70 @@ fn map_movable_solid_particles(
         return;
     }
 
-    let min = coords
-        .iter()
-        .fold(IVec2::new(i32::MAX, i32::MAX), |min, c| min.min(c.0));
-    let max = coords
-        .iter()
-        .fold(IVec2::new(i32::MIN, i32::MIN), |max, c| max.max(c.0));
+    let mut unvisited: HashSet<IVec2> = coords.iter().copied().collect();
+    let mut all_vertices = Vec::new();
+    let mut all_indices = Vec::new();
 
-    let mut grid = Grid::new(min, max);
-    for coord in &coords {
-        grid.set(coord.0);
-    }
+    while let Some(&start) = unvisited.iter().next() {
+        // BFS to collect one contiguous blob
+        let mut group = Vec::new();
+        let mut queue = VecDeque::new();
+        queue.push_back(start);
+        unvisited.remove(&start);
 
-    let perimeter = extract_ordered_perimeter_loop(&grid);
+        while let Some(current) = queue.pop_front() {
+            group.push(current);
 
-    let flattened: Vec<f64> = perimeter
-        .iter()
-        .flat_map(|v| vec![v.x as f64, v.y as f64])
-        .collect();
-    if let Ok(indices_raw) = earcut(&flattened, &[], 2) {
-        let triangle_indices: Vec<[u32; 3]> = indices_raw
-            .chunks(3)
-            .map(|chunk| [chunk[0] as u32, chunk[1] as u32, chunk[2] as u32])
+            for dir in [IVec2::X, -IVec2::X, IVec2::Y, -IVec2::Y] {
+                let neighbor = current + dir;
+                if unvisited.remove(&neighbor) {
+                    queue.push_back(neighbor);
+                }
+            }
+        }
+
+        // Build grid for this group
+        let min = group
+            .iter()
+            .copied()
+            .fold(IVec2::splat(i32::MAX), |a, b| a.min(b));
+        let max = group
+            .iter()
+            .copied()
+            .fold(IVec2::splat(i32::MIN), |a, b| a.max(b));
+        let mut grid = Grid::new(min, max);
+        for coord in &group {
+            grid.set(*coord);
+        }
+
+        let loop_vertices = extract_ordered_perimeter_loop(&grid);
+        if loop_vertices.len() < 3 {
+            continue;
+        }
+
+        let flattened: Vec<f64> = loop_vertices
+            .iter()
+            .flat_map(|v| vec![v.x as f64, v.y as f64])
             .collect();
 
-        let vertices = perimeter
-            .into_iter()
-            .map(|v| Vector::new(v.x, v.y))
-            .collect();
+        if let Ok(indices_raw) = earcut(&flattened, &[], 2) {
+            let triangle_indices: Vec<[u32; 3]> = indices_raw
+                .chunks(3)
+                .map(|c| [c[0] as u32, c[1] as u32, c[2] as u32])
+                .collect();
 
-        mesh_data.vertices = vec![vertices];
-        mesh_data.indices = vec![triangle_indices];
+            let vertices = loop_vertices
+                .into_iter()
+                .map(|v| Vector::new(v.x, v.y))
+                .collect();
+
+            all_vertices.push(vertices);
+            all_indices.push(triangle_indices);
+        }
     }
+
+    mesh_data.vertices = all_vertices;
+    mesh_data.indices = all_indices;
 }
 
 fn extract_ordered_perimeter_loop(grid: &Grid) -> Vec<Vec2> {
