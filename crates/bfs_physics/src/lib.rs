@@ -3,7 +3,7 @@ pub use avian2d::prelude::*;
 
 use bevy::prelude::*;
 use bfs_core::{Chunk, ChunkMap, Coordinates, Particle, ParticleSimulationSet};
-use bfs_movement::{Liquid, MovableSolid, Moved, Wall};
+use bfs_movement::{Liquid, MovableSolid, Moved, Solid, Wall};
 
 pub struct FallingSandPhysicsPlugin {
     pub length_unit: f32,
@@ -12,10 +12,13 @@ pub struct FallingSandPhysicsPlugin {
 impl Plugin for FallingSandPhysicsPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(PhysicsPlugins::default().with_length_unit(self.length_unit));
+        app.add_plugins(PhysicsDebugPlugin::default());
         app.init_resource::<WallPerimeterPositions>();
-        app.init_resource::<MovableSolidMeshData>();
         app.init_resource::<WallTerrainColliders>();
+        app.init_resource::<MovableSolidMeshData>();
         app.init_resource::<MovableSolidTerrainColliders>();
+        app.init_resource::<SolidMeshData>();
+        app.init_resource::<SolidTerrainColliders>();
         app.add_systems(Update, map_wall_particles.run_if(condition_walls_changed));
         app.add_systems(Update, spawn_wall_terrain_colliders);
         app.add_systems(
@@ -23,6 +26,8 @@ impl Plugin for FallingSandPhysicsPlugin {
             map_movable_solid_particles.run_if(condition_movable_solids_changed),
         );
         app.add_systems(Update, spawn_movable_solid_terrain_colliders);
+        app.add_systems(Update, map_solid_particles.run_if(condition_solids_changed));
+        app.add_systems(Update, spawn_solid_terrain_colliders);
         app.add_systems(
             Update,
             float_dynamic_rigid_bodies.after(ParticleSimulationSet),
@@ -94,6 +99,15 @@ struct MovableSolidMeshData {
 #[derive(Resource, Default, Debug)]
 struct MovableSolidTerrainColliders(Vec<Entity>);
 
+#[derive(Resource, Default, Debug)]
+struct SolidMeshData {
+    vertices: Vec<Vec<Vector>>,
+    indices: Vec<Vec<[u32; 3]>>,
+}
+
+#[derive(Resource, Default, Debug)]
+struct SolidTerrainColliders(Vec<Entity>);
+
 fn spawn_wall_terrain_colliders(
     mut commands: Commands,
     mut colliders: ResMut<WallTerrainColliders>,
@@ -149,14 +163,34 @@ fn spawn_movable_solid_terrain_colliders(
     }
 }
 
-fn condition_walls_changed(
-    query: Query<Entity, Changed<Wall>>,
-    removed: RemovedComponents<Wall>,
-) -> bool {
-    if !query.is_empty() || !removed.is_empty() {
-        return true;
+fn spawn_solid_terrain_colliders(
+    mut commands: Commands,
+    mut colliders: ResMut<SolidTerrainColliders>,
+    mesh_data: Res<SolidMeshData>,
+) {
+    if !mesh_data.is_changed() {
+        return;
     }
-    false
+
+    for entity in colliders.0.drain(..) {
+        commands.entity(entity).despawn();
+    }
+
+    for (vertices, indices) in mesh_data.vertices.iter().zip(&mesh_data.indices) {
+        if indices.is_empty() || vertices.is_empty() {
+            warn!("Skipping empty trimesh collider (no vertices or triangles)");
+            continue;
+        }
+
+        let entity = commands
+            .spawn((
+                RigidBody::Static,
+                Collider::trimesh(vertices.clone(), indices.clone()),
+            ))
+            .id();
+
+        colliders.0.push(entity);
+    }
 }
 
 fn map_wall_particles(
@@ -202,13 +236,6 @@ fn map_wall_particles(
     perimeters.push(indices);
 
     wall_positions.0 = (components, perimeters);
-}
-
-fn condition_movable_solids_changed(
-    query: Query<&MovableSolid, Changed<Coordinates>>,
-    removed: RemovedComponents<MovableSolid>,
-) -> bool {
-    !query.is_empty() || !removed.is_empty()
 }
 
 fn map_movable_solid_particles(
@@ -293,6 +320,114 @@ fn map_movable_solid_particles(
 
     mesh_data.vertices = all_vertices;
     mesh_data.indices = all_indices;
+}
+
+fn map_solid_particles(
+    movable_solid_query: Query<(&Coordinates, &Moved), With<Solid>>,
+    mut mesh_data: ResMut<SolidMeshData>,
+) {
+    use earcutr::earcut;
+    use std::collections::{HashSet, VecDeque};
+
+    let coords: Vec<IVec2> = movable_solid_query
+        .iter()
+        .filter_map(|(c, m)| if !m.0 { Some(c.0) } else { None })
+        .collect();
+
+    if coords.is_empty() {
+        mesh_data.vertices.clear();
+        mesh_data.indices.clear();
+        return;
+    }
+
+    let mut unvisited: HashSet<IVec2> = coords.iter().copied().collect();
+    let mut all_vertices = Vec::new();
+    let mut all_indices = Vec::new();
+
+    while let Some(&start) = unvisited.iter().next() {
+        // BFS to collect one contiguous blob
+        let mut group = Vec::new();
+        let mut queue = VecDeque::new();
+        queue.push_back(start);
+        unvisited.remove(&start);
+
+        while let Some(current) = queue.pop_front() {
+            group.push(current);
+
+            for dir in [IVec2::X, -IVec2::X, IVec2::Y, -IVec2::Y] {
+                let neighbor = current + dir;
+                if unvisited.remove(&neighbor) {
+                    queue.push_back(neighbor);
+                }
+            }
+        }
+
+        // Build grid for this group
+        let min = group
+            .iter()
+            .copied()
+            .fold(IVec2::splat(i32::MAX), |a, b| a.min(b));
+        let max = group
+            .iter()
+            .copied()
+            .fold(IVec2::splat(i32::MIN), |a, b| a.max(b));
+        let mut grid = Grid::new(min, max);
+        for coord in &group {
+            grid.set(*coord);
+        }
+
+        let loop_vertices = extract_ordered_perimeter_loop(&grid);
+        if loop_vertices.len() < 3 {
+            continue;
+        }
+
+        let flattened: Vec<f64> = loop_vertices
+            .iter()
+            .flat_map(|v| vec![v.x as f64, v.y as f64])
+            .collect();
+
+        if let Ok(indices_raw) = earcut(&flattened, &[], 2) {
+            let triangle_indices: Vec<[u32; 3]> = indices_raw
+                .chunks(3)
+                .map(|c| [c[0] as u32, c[1] as u32, c[2] as u32])
+                .collect();
+
+            let vertices = loop_vertices
+                .into_iter()
+                .map(|v| Vector::new(v.x, v.y))
+                .collect();
+
+            all_vertices.push(vertices);
+            all_indices.push(triangle_indices);
+        }
+    }
+
+    mesh_data.vertices = all_vertices;
+    mesh_data.indices = all_indices;
+}
+
+fn condition_walls_changed(
+    query: Query<Entity, Changed<Wall>>,
+    removed: RemovedComponents<Wall>,
+) -> bool {
+    if !query.is_empty() || !removed.is_empty() {
+        return true;
+    }
+    false
+}
+
+fn condition_movable_solids_changed(
+    query: Query<&MovableSolid, Changed<Coordinates>>,
+    removed: RemovedComponents<MovableSolid>,
+) -> bool {
+    !query.is_empty() || !removed.is_empty()
+}
+
+fn condition_solids_changed(
+    query: Query<&Solid, Changed<Coordinates>>,
+    removed: RemovedComponents<Solid>,
+) -> bool {
+    !query.is_empty() || !removed.is_empty()
 }
 
 fn extract_ordered_perimeter_loop(grid: &Grid) -> Vec<Vec2> {
