@@ -260,7 +260,6 @@ fn map_movable_solid_particles(
     let mut all_indices = Vec::new();
 
     while let Some(&start) = unvisited.iter().next() {
-        // BFS to collect one contiguous blob
         let mut group = Vec::new();
         let mut queue = VecDeque::new();
         queue.push_back(start);
@@ -277,7 +276,6 @@ fn map_movable_solid_particles(
             }
         }
 
-        // Build grid for this group
         let min = group
             .iter()
             .copied()
@@ -344,7 +342,6 @@ fn map_solid_particles(
     let mut all_indices = Vec::new();
 
     while let Some(&start) = unvisited.iter().next() {
-        // BFS to collect one contiguous blob
         let mut group = Vec::new();
         let mut queue = VecDeque::new();
         queue.push_back(start);
@@ -361,7 +358,6 @@ fn map_solid_particles(
             }
         }
 
-        // Build grid for this group
         let min = group
             .iter()
             .copied()
