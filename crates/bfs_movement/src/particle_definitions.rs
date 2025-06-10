@@ -8,7 +8,10 @@ use std::iter;
 use std::slice::Iter;
 
 use crate::rng::PhysicsRng;
-use crate::{Liquid, LiquidBlueprint, Wall, WallBlueprint};
+use crate::{
+    Liquid, LiquidBlueprint, MovableSolid, MovableSolidBlueprint, Solid, SolidBlueprint, Wall,
+    WallBlueprint,
+};
 
 pub(super) struct ParticleDefinitionsPlugin;
 
@@ -26,6 +29,23 @@ impl_particle_blueprint!(DensityBlueprint, Density);
 impl_particle_blueprint!(VelocityBlueprint, Velocity);
 impl_particle_blueprint!(MomentumBlueprint, Momentum);
 impl_particle_blueprint!(MovementPriorityBlueprint, MovementPriority);
+
+#[derive(
+    Copy,
+    Clone,
+    Hash,
+    Debug,
+    Default,
+    Eq,
+    PartialEq,
+    PartialOrd,
+    Component,
+    Reflect,
+    Serialize,
+    Deserialize,
+)]
+#[reflect(Component, Debug)]
+pub struct Moved(pub bool);
 
 #[derive(
     Copy,
@@ -333,6 +353,8 @@ type BlueprintQuery<'a> = (
     Option<&'a mut MomentumBlueprint>,
     Option<&'a mut WallBlueprint>,
     Option<&'a mut LiquidBlueprint>,
+    Option<&'a mut MovableSolidBlueprint>,
+    Option<&'a mut SolidBlueprint>,
 );
 
 fn handle_particle_registration(
@@ -345,8 +367,16 @@ fn handle_particle_registration(
         ev.entities.iter().for_each(|entity| {
             if let Ok(child_of) = particle_query.get(*entity) {
                 commands.entity(*entity).insert(PhysicsRng::default());
-                if let Ok((density, velocity, movement_priority, momentum, wall, liquid)) =
-                    blueprint_query.get(child_of.parent())
+                if let Ok((
+                    density,
+                    velocity,
+                    movement_priority,
+                    momentum,
+                    wall,
+                    liquid,
+                    movable_solid,
+                    solid,
+                )) = blueprint_query.get(child_of.parent())
                 {
                     if let Some(density) = density {
                         commands.entity(*entity).insert(density.0);
@@ -370,13 +400,31 @@ fn handle_particle_registration(
                     }
                     if wall.is_some() {
                         commands.entity(*entity).insert(Wall);
+                        commands.entity(*entity).insert(Moved(false));
                     } else {
                         commands.entity(*entity).remove::<Wall>();
+                        commands.entity(*entity).remove::<Moved>();
                     }
                     if let Some(liquid) = liquid {
                         commands.entity(*entity).insert(liquid.0.clone());
+                        commands.entity(*entity).insert(Moved(true));
                     } else {
                         commands.entity(*entity).remove::<Liquid>();
+                        commands.entity(*entity).remove::<Moved>();
+                    }
+                    if let Some(movable_solid) = movable_solid {
+                        commands.entity(*entity).insert(movable_solid.0.clone());
+                        commands.entity(*entity).insert(Moved(true));
+                    } else {
+                        commands.entity(*entity).remove::<MovableSolid>();
+                        commands.entity(*entity).remove::<Moved>();
+                    }
+                    if let Some(solid) = solid {
+                        commands.entity(*entity).insert(solid.0.clone());
+                        commands.entity(*entity).insert(Moved(true));
+                    } else {
+                        commands.entity(*entity).remove::<Solid>();
+                        commands.entity(*entity).remove::<Moved>();
                     }
                 }
             }
