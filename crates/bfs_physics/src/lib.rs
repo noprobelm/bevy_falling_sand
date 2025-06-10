@@ -1,3 +1,4 @@
+use avian2d::math::Vector;
 pub use avian2d::prelude::*;
 
 use bevy::prelude::*;
@@ -12,7 +13,7 @@ impl Plugin for FallingSandPhysicsPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(PhysicsPlugins::default().with_length_unit(self.length_unit));
         app.init_resource::<WallPerimeterPositions>();
-        app.init_resource::<MovableSolidPerimeterPositions>();
+        app.init_resource::<MovableSolidMeshData>();
         app.init_resource::<WallTerrainColliders>();
         app.init_resource::<MovableSolidTerrainColliders>();
         app.add_systems(Update, map_wall_particles.run_if(condition_walls_changed));
@@ -85,7 +86,10 @@ struct WallPerimeterPositions((Vec<Vec<Vec2>>, Vec<Vec<[u32; 2]>>));
 struct WallTerrainColliders(Vec<Entity>);
 
 #[derive(Resource, Default, Debug)]
-struct MovableSolidPerimeterPositions((Vec<Vec<Vec2>>, Vec<Vec<[u32; 2]>>));
+struct MovableSolidMeshData {
+    vertices: Vec<Vec<Vector>>,
+    indices: Vec<Vec<[u32; 3]>>,
+}
 
 #[derive(Resource, Default, Debug)]
 struct MovableSolidTerrainColliders(Vec<Entity>);
@@ -118,9 +122,9 @@ fn spawn_wall_terrain_colliders(
 fn spawn_movable_solid_terrain_colliders(
     mut commands: Commands,
     mut colliders: ResMut<MovableSolidTerrainColliders>,
-    perimeter_positions: Res<MovableSolidPerimeterPositions>,
+    mesh_data: Res<MovableSolidMeshData>,
 ) {
-    if !perimeter_positions.is_changed() {
+    if !mesh_data.is_changed() {
         return;
     }
 
@@ -128,11 +132,11 @@ fn spawn_movable_solid_terrain_colliders(
         commands.entity(entity).despawn();
     }
 
-    for (i, vertices) in perimeter_positions.0.0.iter().enumerate() {
+    for (vertices, indices) in mesh_data.vertices.iter().zip(&mesh_data.indices) {
         let entity = commands
             .spawn((
                 RigidBody::Static,
-                Collider::polyline(vertices.clone(), Some(perimeter_positions.0.1[i].clone())),
+                Collider::trimesh(vertices.clone(), indices.clone()),
             ))
             .id();
 
@@ -199,15 +203,12 @@ fn condition_movable_solids_changed(
     query: Query<&MovableSolid, Changed<Coordinates>>,
     removed: RemovedComponents<MovableSolid>,
 ) -> bool {
-    if !query.is_empty() || !removed.is_empty() {
-        return true;
-    }
-    false
+    !query.is_empty() || !removed.is_empty()
 }
 
 fn map_movable_solid_particles(
     movable_solid_query: Query<(&Coordinates, &Moved), With<MovableSolid>>,
-    mut wall_positions: ResMut<MovableSolidPerimeterPositions>,
+    mut mesh_data: ResMut<MovableSolidMeshData>,
 ) {
     let coords: Vec<Coordinates> = movable_solid_query
         .iter()
@@ -216,7 +217,8 @@ fn map_movable_solid_particles(
         .collect();
 
     if coords.is_empty() {
-        wall_positions.0 = (Vec::new(), Vec::new());
+        mesh_data.vertices.clear();
+        mesh_data.indices.clear();
         return;
     }
 
@@ -232,26 +234,46 @@ fn map_movable_solid_particles(
         grid.set(coord.0);
     }
 
-    let edges = extract_perimeter_edges(&grid);
+    let (vertices, indices) = triangulate_solid(&grid);
 
-    let mut components = Vec::new();
-    let mut perimeters = Vec::new();
+    mesh_data.vertices = vec![vertices];
+    mesh_data.indices = vec![indices];
+}
 
+/// Generates a simple triangle mesh (two triangles per cell).
+fn triangulate_solid(grid: &Grid) -> (Vec<Vector>, Vec<[u32; 3]>) {
     let mut vertices = Vec::new();
-    for edge in &edges {
-        vertices.push(edge[0]);
-        vertices.push(edge[1]);
+    let mut indices = Vec::new();
+    let mut vertex_map = std::collections::HashMap::<IVec2, u32>::new();
+    let mut next_index = 0;
+
+    for coord in grid.iter_occupied() {
+        // Define corners in clockwise order
+        let corners = [
+            coord.as_vec2() + Vec2::new(-0.5, -0.5),
+            coord.as_vec2() + Vec2::new(0.5, -0.5),
+            coord.as_vec2() + Vec2::new(0.5, 0.5),
+            coord.as_vec2() + Vec2::new(-0.5, 0.5),
+        ];
+
+        let mut indices_local = [0u32; 4];
+        for (i, corner) in corners.iter().enumerate() {
+            let key = (corner.x.round() as i32, corner.y.round() as i32).into();
+            let index = *vertex_map.entry(key).or_insert_with(|| {
+                let idx = next_index;
+                vertices.push(Vector::new(corner.x, corner.y));
+                next_index += 1;
+                idx
+            });
+            indices_local[i] = index;
+        }
+
+        // Two triangles per cell
+        indices.push([indices_local[0], indices_local[1], indices_local[2]]);
+        indices.push([indices_local[0], indices_local[2], indices_local[3]]);
     }
 
-    let indices: Vec<[u32; 2]> = (0..vertices.len() as u32)
-        .step_by(2)
-        .map(|i| [i, i + 1])
-        .collect();
-
-    components.push(vertices);
-    perimeters.push(indices);
-
-    wall_positions.0 = (components, perimeters);
+    (vertices, indices)
 }
 
 fn extract_perimeter_edges(grid: &Grid) -> Vec<[Vec2; 2]> {
