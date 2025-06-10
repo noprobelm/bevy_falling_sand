@@ -108,11 +108,14 @@ impl ChunkMap {
     }
 
     pub fn entity(&self, coords: &IVec2, chunk_query: &mut Query<&mut Chunk>) -> Option<Entity> {
-        chunk_query
-            .get(*self.chunk(coords).unwrap())
-            .unwrap()
-            .get(coords)
-            .copied()
+        if let Some(entity) = self.chunk(coords) {
+            if let Ok(chunk) = chunk_query.get(*entity) {
+                return chunk.get(coords).copied();
+            }
+            None
+        } else {
+            None
+        }
     }
 }
 
