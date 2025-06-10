@@ -14,4 +14,6 @@ pub use crate::reactions::*;
 
 pub use crate::scenes::*;
 
+pub use crate::physics::*;
+
 pub use super::FallingSandPlugin;

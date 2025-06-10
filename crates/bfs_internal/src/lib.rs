@@ -16,13 +16,16 @@ pub use bfs_color as color;
 pub use bfs_core as core;
 pub use bfs_debug as debug;
 pub use bfs_movement as movement;
+pub use bfs_physics as physics;
 pub use bfs_reactions as reactions;
 pub use bfs_scenes as scenes;
 pub use bfs_spatial as spatial;
 
 pub use bundles::*;
 
-pub struct FallingSandPlugin;
+pub struct FallingSandPlugin {
+    pub length_unit: f32,
+}
 
 impl Plugin for FallingSandPlugin {
     fn build(&self, app: &mut App) {
@@ -31,10 +34,20 @@ impl Plugin for FallingSandPlugin {
             core::FallingSandCorePlugin,
             movement::FallingSandMovementPlugin,
             color::FallingSandColorPlugin,
-            debug::FallingSandDebugPlugin,
             spatial::FallingSandSpatialPlugin,
             reactions::FallingSandReactionsPlugin,
             scenes::FallingSandScenesPlugin,
+            physics::FallingSandPhysicsPlugin {
+                length_unit: self.length_unit,
+            },
         ));
+    }
+}
+
+pub struct FallingSandMinimalPlugin;
+
+impl Plugin for FallingSandMinimalPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_plugins((RngPlugin::default(), core::FallingSandCorePlugin));
     }
 }

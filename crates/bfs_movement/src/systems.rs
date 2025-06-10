@@ -28,8 +28,8 @@ impl Plugin for SystemsPlugin {
 
 #[derive(States, Reflect, Default, Debug, Clone, Eq, PartialEq, Hash)]
 pub enum MovementSource {
-    #[default]
     Chunks,
+    #[default]
     Particles,
 }
 

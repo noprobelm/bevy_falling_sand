@@ -3,7 +3,7 @@ use bevy::math::ops::powf;
 use bevy::platform::collections::{hash_map::Entry, HashMap};
 use bevy::{
     input::{
-        common_conditions::input_just_pressed,
+        common_conditions::{input_just_pressed, input_pressed},
         keyboard::{Key, KeyboardInput},
         mouse::MouseWheel,
     },
@@ -63,6 +63,8 @@ impl bevy::prelude::Plugin for UIPlugin {
             )
             .add_systems(OnEnter(AppState::Ui), show_cursor)
             .add_systems(OnEnter(AppState::Canvas), hide_cursor)
+            .add_systems(Update, spawn_ball.run_if(input_pressed(KeyCode::KeyB)))
+            .add_systems(Update, despawn_balls.run_if(input_pressed(KeyCode::KeyV)))
             .add_observer(on_clear_dynamic_particles)
             .add_observer(on_clear_wall_particles);
     }
@@ -323,7 +325,11 @@ pub fn update_cursor_coordinates(
     let window = q_window.single()?;
     if let Some(world_position) = window
         .cursor_position()
-        .and_then(|cursor| Some(camera.viewport_to_world(camera_transform, cursor)))
+        .and_then(
+            |cursor| -> Option<
+                std::result::Result<Ray3d, bevy::render::camera::ViewportConversionError>,
+            > { Some(camera.viewport_to_world(camera_transform, cursor)) },
+        )
         .map(|ray| ray.unwrap().origin.truncate())
     {
         coords.update(world_position);
@@ -494,16 +500,19 @@ pub fn toggle_simulation(
     mut commands: Commands,
     simulation_pause: Option<Res<SimulationRun>>,
     app_state: Res<State<AppState>>,
+    mut time: ResMut<Time<Virtual>>,
 ) {
-    match app_state.get() {
-        AppState::Canvas => {
-            if simulation_pause.is_some() {
-                commands.remove_resource::<SimulationRun>();
-            } else {
-                commands.init_resource::<SimulationRun>();
-            }
+    if app_state.get() == &AppState::Canvas {
+        if simulation_pause.is_some() {
+            commands.remove_resource::<SimulationRun>();
+        } else {
+            commands.init_resource::<SimulationRun>();
         }
-        _ => {}
+        if time.is_paused() {
+            time.unpause();
+        } else {
+            time.pause();
+        }
     }
 }
 
@@ -561,11 +570,9 @@ pub fn handle_search_bar_input(
     particle_type_list: Res<ParticleTypeList>,
     particle_search_bar: Option<ResMut<ParticleSearchBar>>,
 ) {
-    if keys.just_pressed(KeyCode::KeyN) {
-        if particle_search_bar.is_none() {
-            commands.insert_resource(ParticleSearchBar::default());
-            return;
-        }
+    if keys.just_pressed(KeyCode::KeyN) && particle_search_bar.is_none() {
+        commands.insert_resource(ParticleSearchBar::default());
+        return;
     }
 
     let mut particle_search_bar = match particle_search_bar {
@@ -765,7 +772,7 @@ pub fn update_particle_editor_fields(
                 if let Some(velocity) = velocity {
                     particle_max_velocity_field.blueprint = *velocity;
                 }
-                if let Some(_) = momentum {
+                if momentum.is_some() {
                     particle_momentum_field.enable = true;
                 }
                 if let Some(colors) = colors {
@@ -882,7 +889,9 @@ pub fn render_particle_editor(
                             }
                         }
 
-                        if ui.button("New Particle").clicked() {}
+                        if ui.button("New Particle").clicked() {
+                            todo!()
+                        }
                         if ui.button("Save Particle").clicked() {
                             ev_particle_editor_save.write(ParticleEditorSave);
                         }
@@ -1559,8 +1568,7 @@ fn render_burns_field(
             ui.horizontal(|ui| {
                 ui.label("Particle");
                 egui::ComboBox::from_id_salt("burning_reaction")
-                    .selected_text(format!(
-                        "{}",
+                    .selected_text(
                         particle_burns_field
                             .blueprint
                             .0
@@ -1569,7 +1577,8 @@ fn render_burns_field(
                             .unwrap()
                             .produces
                             .name
-                    ))
+                            .to_string(),
+                    )
                     .show_ui(ui, |ui| {
                         for particle in particle_list.iter() {
                             if ui
@@ -1674,7 +1683,6 @@ pub fn render_fluidity_field(
 ) {
     ui.horizontal(|ui| {
         ui.label("Fluidity: ");
-        particle_liquid_field.blueprint.data().fluidity;
         match current_particle_category_field.get() {
             ParticleEditorCategoryState::Liquid => {
                 ui.add(
@@ -1787,7 +1795,7 @@ fn particle_editor_save(
                 if particle_momentum_field.enable {
                     commands
                         .entity(entity)
-                        .insert(particle_momentum_field.blueprint.clone());
+                        .insert(particle_momentum_field.blueprint);
                 }
                 if particle_editor_burns_field.enable {
                     commands
@@ -1815,7 +1823,7 @@ fn particle_editor_save(
                 if particle_momentum_field.enable {
                     commands
                         .entity(entity)
-                        .insert(particle_momentum_field.blueprint.clone());
+                        .insert(particle_momentum_field.blueprint);
                 }
                 if particle_editor_burns_field.enable {
                     commands
@@ -1861,7 +1869,7 @@ fn particle_editor_save(
                 if particle_momentum_field.enable {
                     commands
                         .entity(entity)
-                        .insert(particle_momentum_field.blueprint.clone());
+                        .insert(particle_momentum_field.blueprint);
                 }
                 if particle_editor_burns_field.enable {
                     commands
@@ -1883,6 +1891,40 @@ fn particle_editor_save(
             }
         }
     })
+}
+
+fn spawn_ball(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+    cursor_coords: Res<CursorCoords>,
+    brush_query: Query<&Brush>,
+) -> Result {
+    let brush = brush_query.single()?;
+    commands.spawn((
+        RigidBody::Dynamic,
+        Collider::circle(brush.size as f32),
+        Transform::from_xyz(cursor_coords.current.x, cursor_coords.current.y, 1.),
+        DemoBall {
+            size: brush.size as f32,
+        },
+        TransformInterpolation,
+        GravityScale(1.0),
+        Mesh2d(meshes.add(Circle::new(brush.size as f32))),
+        MeshMaterial2d(materials.add(Color::Srgba(Srgba::rgba_u8(246, 174, 45, 255)))),
+    ));
+    Ok(())
+}
+
+fn despawn_balls(mut commands: Commands, ball_query: Query<Entity, With<DemoBall>>) {
+    ball_query.iter().for_each(|entity| {
+        commands.entity(entity).despawn();
+    });
+}
+
+#[derive(Clone, PartialEq, PartialOrd, Debug, Default, Component)]
+pub struct DemoBall {
+    pub size: f32,
 }
 
 #[derive(Event, Clone, Debug)]
