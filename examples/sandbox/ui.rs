@@ -1904,7 +1904,7 @@ fn spawn_ball(
     commands.spawn((
         RigidBody::Dynamic,
         Collider::circle(brush.size as f32),
-        Transform::from_xyz(cursor_coords.current.x, cursor_coords.current.y, 1.),
+        Transform::from_xyz(cursor_coords.current.x, cursor_coords.current.y, 0.),
         DemoBall {
             size: brush.size as f32,
         },

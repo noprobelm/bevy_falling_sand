@@ -43,6 +43,7 @@ type ParticleMovementQuery<'a> = (
     Option<&'a mut Momentum>,
     &'a Density,
     &'a mut MovementPriority,
+    &'a mut Moved,
 );
 
 #[allow(unused_mut)]
@@ -93,6 +94,7 @@ pub fn handle_movement_by_chunks(
                         mut momentum,
                         density,
                         mut movement_priority,
+                        mut particle_moved,
                     )) = particle_query.get_unchecked(*entity)
                     {
                         let mut moved = false;
@@ -121,6 +123,7 @@ pub fn handle_movement_by_chunks(
                                             _,
                                             _,
                                             neighbor_density,
+                                            _,
                                             _,
                                         )) = particle_query.get_unchecked(neighbor_entity)
                                         {
@@ -181,6 +184,7 @@ pub fn handle_movement_by_chunks(
                             if !moved {
                                 break 'velocity_loop;
                             }
+                            particle_moved.0 = moved;
                         }
 
                         if moved {
@@ -191,6 +195,7 @@ pub fn handle_movement_by_chunks(
                             }
                             velocity.decrement();
                         }
+                        particle_moved.0 = moved;
                     }
                 });
             });
@@ -217,6 +222,7 @@ pub fn handle_movement_by_particles(
                 mut momentum,
                 density,
                 mut movement_priority,
+                mut particle_moved,
             )| {
                 if let Some(entity) = map.chunk(&coordinates.0) {
                     let chunk = chunk_query.get(*entity).unwrap();
@@ -258,6 +264,7 @@ pub fn handle_movement_by_particles(
                                     _,
                                     _,
                                     neighbor_density,
+                                    _,
                                     _,
                                 )) = particle_query.get_unchecked(neighbor_entity)
                                 {
@@ -326,6 +333,7 @@ pub fn handle_movement_by_particles(
                     }
                     velocity.decrement();
                 }
+                particle_moved.0 = moved;
             },
         );
     }
