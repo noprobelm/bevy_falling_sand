@@ -4,6 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-bevy = "0.16"
+bevy.workspace = true
 bfs_core = { path = "../bfs_core" }
 bfs_movement = { path = "../bfs_movement" }
