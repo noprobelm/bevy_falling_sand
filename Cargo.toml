@@ -19,9 +19,26 @@ exclude = [
 documentation = "http://docs.rs/bevy_falling_sand"
 categories = ["game-engines", "game-development"]
 
+[workspace]
+members = [
+  "crates/bfs_internal",
+  "crates/bfs_core",
+  "crates/bfs_movement",
+  "crates/bfs_debug",
+  "crates/bfs_color",
+  "crates/bfs_spatial",
+  "crates/bfs_reactions",
+  "crates/bfs_physics",
+  "crates/bfs_reactions",
+  "crates/bfs_scenes",
+]
+
+[workspace.dependencies]
+bevy = { version = "0.16", features = ["wayland"] }
+
 [dependencies]
 bfs_internal = { path = "crates/bfs_internal" }
-bevy = { version = "0.16", features = ["wayland"] }
+bevy.workspace = true
 
 [dev-dependencies]
 bevy_egui = "0.34.1"
