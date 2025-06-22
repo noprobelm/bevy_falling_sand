@@ -4,6 +4,8 @@ mod scenes;
 mod setup;
 mod ui;
 
+use std::time::Duration;
+
 use bfs_internal::debug::FallingSandDebugPlugin;
 use brush::*;
 use camera::*;
@@ -29,7 +31,10 @@ fn main() {
         EguiPlugin {
             enable_multipass_for_primary_context: false,
         },
-        FallingSandPlugin { length_unit: 8.0 },
+        FallingSandPlugin {
+            length_unit: 8.0,
+            spatial_refresh_frequency: Duration::from_millis(50),
+        },
         FallingSandDebugPlugin,
         CameraPlugin,
         ParticleSetupPlugin,
