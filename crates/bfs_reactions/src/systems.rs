@@ -13,7 +13,7 @@ impl Plugin for SystemsPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            (handle_fire, handle_burning).in_set(ParticleSimulationSet),
+            (handle_burning, handle_fire.after(handle_burning)).in_set(ParticleSimulationSet),
         );
     }
 }
