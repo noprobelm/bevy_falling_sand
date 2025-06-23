@@ -9,6 +9,7 @@ use crate::{
 
 const OFFSET: i32 = 512;
 const GRID_WIDTH: usize = 32;
+const NUM_CHUNKS: usize = GRID_WIDTH.pow(2);
 
 pub struct ParticleMapPlugin;
 
