@@ -13,7 +13,7 @@ impl Plugin for SystemsPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            (handle_fire, handle_burning).in_set(ParticleSimulationSet),
+            (handle_burning, handle_fire.after(handle_burning)).in_set(ParticleSimulationSet),
         );
     }
 }
@@ -46,17 +46,19 @@ pub fn handle_fire(
                 .within_distance(coordinates.0.as_vec2(), fire.burn_radius)
                 .iter()
                 .for_each(|(_, entity)| {
-                    if let Ok((entity, burns)) = burns_query.get(entity.unwrap()) {
-                        commands.entity(entity).insert(burns.to_burning());
-                        if let Some(colors) = &burns.color {
-                            commands.entity(entity).insert(colors.clone());
-                            commands.entity(entity).insert(ChangesColor::new(0.75));
-                        }
-                        if let Some(fire) = &burns.spreads {
-                            commands.entity(entity).insert(fire.clone());
-                        }
-                        if fire.destroys_on_spread {
-                            destroy_fire = true;
+                    if let Some(entity) = entity {
+                        if let Ok((entity, burns)) = burns_query.get(*entity) {
+                            commands.entity(entity).insert(burns.to_burning());
+                            if let Some(colors) = &burns.color {
+                                commands.entity(entity).insert(colors.clone());
+                                commands.entity(entity).insert(ChangesColor::new(0.75));
+                            }
+                            if let Some(fire) = &burns.spreads {
+                                commands.entity(entity).insert(*fire);
+                            }
+                            if fire.destroys_on_spread {
+                                destroy_fire = true;
+                            }
                         }
                     }
                 });

@@ -9,6 +9,8 @@
 pub mod bundles;
 pub mod prelude;
 
+use std::time::Duration;
+
 use bevy::prelude::{App, Plugin};
 use bevy_turborand::prelude::*;
 
@@ -25,6 +27,7 @@ pub use bundles::*;
 
 pub struct FallingSandPlugin {
     pub length_unit: f32,
+    pub spatial_refresh_frequency: Duration,
 }
 
 impl Plugin for FallingSandPlugin {
@@ -34,7 +37,9 @@ impl Plugin for FallingSandPlugin {
             core::FallingSandCorePlugin,
             movement::FallingSandMovementPlugin,
             color::FallingSandColorPlugin,
-            spatial::FallingSandSpatialPlugin,
+            spatial::FallingSandSpatialPlugin {
+                frequency: self.spatial_refresh_frequency,
+            },
             reactions::FallingSandReactionsPlugin,
             scenes::FallingSandScenesPlugin,
             physics::FallingSandPhysicsPlugin {
