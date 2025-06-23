@@ -4,7 +4,7 @@ use std::mem;
 
 use bevy::platform::collections::HashSet;
 use bevy_turborand::{DelegatedRng, GlobalRng};
-use bfs_core::{Coordinates, Particle, ParticleMap, ParticleSimulationSet};
+use bfs_core::{Particle, ParticleMap, ParticlePosition, ParticleSimulationSet};
 
 pub(super) struct SystemsPlugin;
 
@@ -36,7 +36,7 @@ pub enum MovementSource {
 type ParticleMovementQuery<'a> = (
     Entity,
     &'a Particle,
-    &'a mut Coordinates,
+    &'a mut ParticlePosition,
     &'a mut Transform,
     &'a mut PhysicsRng,
     &'a mut Velocity,
@@ -53,13 +53,13 @@ pub fn handle_movement_by_chunks(
     mut rng: ResMut<GlobalRng>,
 ) {
     let mut visited: HashSet<Entity> = HashSet::default();
-    let mut particle_entities: Vec<Entity> = Vec::with_capacity(1024);
+    let mut particle_entities: Vec<Entity> = Vec::with_capacity(map.particles_per_chunk);
 
     unsafe {
         map.iter_chunks_mut().for_each(|mut chunk| {
-            chunk.iter().for_each(|(coordinates, entity)| {
-                if let Some(dirty_rect) = chunk.prev_dirty_rect() {
-                    if dirty_rect.contains(*coordinates) || rng.chance(0.05) {
+            chunk.iter().for_each(|(position, entity)| {
+                if let Some(dirty_rect) = chunk.dirty_rect() {
+                    if dirty_rect.contains(*position) || rng.chance(0.05) {
                         particle_entities.push(*entity);
                     }
                 } else if rng.chance(0.05) {
@@ -76,7 +76,7 @@ pub fn handle_movement_by_chunks(
             if let Ok((
                 _,
                 particle_type,
-                mut coordinates,
+                mut position,
                 mut transform,
                 mut rng,
                 mut velocity,
@@ -91,22 +91,22 @@ pub fn handle_movement_by_chunks(
                 'velocity_loop: for _ in 0..velocity.val {
                     let mut obstructed: HashSet<IVec2> = HashSet::default();
 
-                    for relative_coordinates in movement_priority
+                    for relative_position in movement_priority
                         .iter_candidates(&mut rng, momentum.as_deref().cloned().as_ref())
                     {
-                        let neighbor_coordinates = coordinates.0 + *relative_coordinates;
-                        let signum = relative_coordinates.signum();
+                        let neighbor_position = position.0 + *relative_position;
+                        let signum = relative_position.signum();
 
                         if obstructed.contains(&signum) {
                             continue;
                         }
 
-                        match map.get(&neighbor_coordinates) {
+                        match map.get(&neighbor_position) {
                             Some(neighbor_entity) => {
                                 if let Ok((
                                     _,
                                     neighbor_particle_type,
-                                    mut neighbor_coords,
+                                    mut neighbor_position,
                                     mut neighbor_transform,
                                     _,
                                     _,
@@ -121,12 +121,12 @@ pub fn handle_movement_by_chunks(
                                     }
 
                                     if density > neighbor_density {
-                                        map.swap(neighbor_coords.0, coordinates.0);
+                                        map.swap(neighbor_position.0, position.0);
 
                                         swap_particle_positions(
-                                            &mut coordinates,
+                                            &mut position,
                                             &mut transform,
-                                            &mut neighbor_coords,
+                                            &mut neighbor_position,
                                             &mut neighbor_transform,
                                         );
 
@@ -147,13 +147,13 @@ pub fn handle_movement_by_chunks(
                                 }
                             }
                             None => {
-                                map.swap(coordinates.0, neighbor_coordinates);
-                                coordinates.0 = neighbor_coordinates;
-                                transform.translation.x = neighbor_coordinates.x as f32;
-                                transform.translation.y = neighbor_coordinates.y as f32;
+                                map.swap(position.0, neighbor_position);
+                                position.0 = neighbor_position;
+                                transform.translation.x = neighbor_position.x as f32;
+                                transform.translation.y = neighbor_position.y as f32;
 
                                 if let Some(ref mut m) = momentum {
-                                    m.0 = *relative_coordinates;
+                                    m.0 = *relative_position;
                                 }
 
                                 velocity.increment();
@@ -194,7 +194,7 @@ pub fn handle_movement_by_particles(
             |(
                 _,
                 particle_type,
-                mut coordinates,
+                mut position,
                 mut transform,
                 mut rng,
                 mut velocity,
@@ -203,9 +203,9 @@ pub fn handle_movement_by_particles(
                 mut movement_priority,
                 mut particle_moved,
             )| {
-                if let Some(chunk) = map.chunk(&coordinates.0) {
-                    if let Some(dirty_rect) = chunk.prev_dirty_rect() {
-                        if !dirty_rect.contains(coordinates.0) && !rng.chance(0.2) {
+                if let Some(chunk) = map.chunk(&position.0) {
+                    if let Some(dirty_rect) = chunk.dirty_rect() {
+                        if !dirty_rect.contains(position.0) && !rng.chance(0.2) {
                             return;
                         }
                     } else if !rng.chance(0.05) {
@@ -220,23 +220,23 @@ pub fn handle_movement_by_particles(
                     // same vector.
                     let mut obstructed: HashSet<IVec2> = HashSet::default();
 
-                    for relative_coordinates in movement_priority
+                    for relative_position in movement_priority
                         .iter_candidates(&mut rng, momentum.as_deref().cloned().as_ref())
                     {
-                        let neighbor_coordinates = coordinates.0 + *relative_coordinates;
+                        let neighbor_position = position.0 + *relative_position;
 
-                        if visited.contains(&neighbor_coordinates)
-                            || obstructed.contains(&relative_coordinates.signum())
+                        if visited.contains(&neighbor_position)
+                            || obstructed.contains(&relative_position.signum())
                         {
                             continue;
                         }
 
-                        match map.get(&neighbor_coordinates) {
+                        match map.get(&neighbor_position) {
                             Some(neighbor_entity) => {
                                 if let Ok((
                                     _,
                                     neighbor_particle_type,
-                                    mut neighbor_coordinates,
+                                    mut neighbor_position,
                                     mut neighbor_transform,
                                     _,
                                     _,
@@ -250,12 +250,12 @@ pub fn handle_movement_by_particles(
                                         continue;
                                     }
                                     if density > neighbor_density {
-                                        map.swap(neighbor_coordinates.0, coordinates.0);
+                                        map.swap(neighbor_position.0, position.0);
 
                                         swap_particle_positions(
-                                            &mut coordinates,
+                                            &mut position,
                                             &mut transform,
-                                            &mut neighbor_coordinates,
+                                            &mut neighbor_position,
                                             &mut neighbor_transform,
                                         );
 
@@ -267,26 +267,26 @@ pub fn handle_movement_by_particles(
                                         moved = true;
                                         break 'velocity_loop;
                                     } else {
-                                        obstructed.insert(relative_coordinates.signum());
+                                        obstructed.insert(relative_position.signum());
                                         continue;
                                     }
                                 }
                                 // We've encountered an anchored particle
                                 else {
-                                    obstructed.insert(relative_coordinates.signum());
+                                    obstructed.insert(relative_position.signum());
                                     continue;
                                 }
                             }
                             // We've encountered a free slot for the target particle to move to
                             None => {
-                                map.swap(coordinates.0, neighbor_coordinates);
-                                coordinates.0 = neighbor_coordinates;
+                                map.swap(position.0, neighbor_position);
+                                position.0 = neighbor_position;
 
-                                transform.translation.x = neighbor_coordinates.x as f32;
-                                transform.translation.y = neighbor_coordinates.y as f32;
+                                transform.translation.x = neighbor_position.x as f32;
+                                transform.translation.y = neighbor_position.y as f32;
 
                                 if let Some(ref mut momentum) = momentum {
-                                    momentum.0 = *relative_coordinates; // Set momentum relative to the current position
+                                    momentum.0 = *relative_position; // Set momentum relative to the current position
                                 }
 
                                 velocity.increment();
@@ -300,7 +300,7 @@ pub fn handle_movement_by_particles(
                 }
 
                 if moved {
-                    visited.insert(coordinates.0);
+                    visited.insert(position.0);
                 } else {
                     if let Some(ref mut momentum) = momentum {
                         momentum.0 = IVec2::ZERO;
@@ -314,14 +314,14 @@ pub fn handle_movement_by_particles(
 }
 
 fn swap_particle_positions(
-    first_coordinates: &mut Coordinates,
+    first_position: &mut ParticlePosition,
     first_transform: &mut Transform,
-    second_coordinates: &mut Coordinates,
+    second_position: &mut ParticlePosition,
     second_transform: &mut Transform,
 ) {
     mem::swap(
         &mut first_transform.translation,
         &mut second_transform.translation,
     );
-    mem::swap(&mut first_coordinates.0, &mut second_coordinates.0);
+    mem::swap(&mut first_position.0, &mut second_position.0);
 }

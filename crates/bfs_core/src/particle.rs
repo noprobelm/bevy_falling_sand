@@ -2,15 +2,20 @@ use bevy::platform::collections::HashMap;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::{ParticleMap, ParticleSimulationSet};
+use crate::ParticleMap;
 
 pub(super) struct ParticleCorePlugin;
 
 impl Plugin for ParticleCorePlugin {
     fn build(&self, app: &mut App) {
-        app.register_type::<ParticleType>()
+        app.init_resource::<SimulationRun>()
+            .configure_sets(
+                Update,
+                ParticleSimulationSet.run_if(resource_exists::<SimulationRun>),
+            )
+            .register_type::<ParticleType>()
             .register_type::<Particle>()
-            .register_type::<Coordinates>()
+            .register_type::<ParticlePosition>()
             .init_resource::<ParticleTypeMap>()
             .add_event::<ParticleRegistrationEvent>()
             .add_event::<ResetParticleEvent>()
@@ -49,6 +54,15 @@ macro_rules! impl_particle_blueprint {
         }
     };
 }
+
+#[derive(Resource, Default)]
+pub struct SimulationRun;
+
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ParticleSimulationSet;
+
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ParticleDebugSet;
 
 #[derive(
     Clone,
@@ -118,7 +132,7 @@ impl Particle {
     Copy, Clone, Eq, PartialEq, Hash, Debug, Default, Component, Reflect, Serialize, Deserialize,
 )]
 #[reflect(Component)]
-pub struct Coordinates(pub IVec2);
+pub struct ParticlePosition(pub IVec2);
 
 #[derive(Clone, Event, Hash, Debug, Eq, PartialEq, PartialOrd)]
 pub struct ParticleRegistrationEvent {
@@ -133,7 +147,7 @@ pub struct MutateParticleEvent {
 
 #[derive(Event)]
 pub struct RemoveParticleEvent {
-    pub coordinates: IVec2,
+    pub position: IVec2,
     pub despawn: bool,
 }
 
@@ -187,7 +201,9 @@ pub fn handle_new_particles(
             if let Ok(parent_entity) = parent_query.get(*parent_entity) {
                 entities.push(entity);
                 commands.entity(parent_entity).add_child(entity);
-                commands.entity(entity).insert((Coordinates(coordinates),));
+                commands
+                    .entity(entity)
+                    .insert((ParticlePosition(coordinates),));
             }
         } else {
             panic!(

@@ -44,7 +44,7 @@ impl bevy::prelude::Plugin for UIPlugin {
             .init_state::<ParticleEditorCategoryState>()
             .add_event::<ParticleEditorSave>()
             .add_event::<ParticleEditorUpdate>()
-            .add_systems(First, update_cursor_coordinates)
+            .add_systems(First, update_cursor_position)
             .add_systems(
                 Update,
                 (
@@ -315,7 +315,7 @@ fn exit_on_key(keyboard_input: Res<ButtonInput<KeyCode>>, mut exit: EventWriter<
     }
 }
 
-pub fn update_cursor_coordinates(
+pub fn update_cursor_position(
     mut coords: ResMut<CursorCoords>,
     q_window: Query<&Window, With<PrimaryWindow>>,
     q_camera: Query<(&Camera, &GlobalTransform), With<MainCamera>>,
