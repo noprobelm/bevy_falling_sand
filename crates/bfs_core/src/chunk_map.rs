@@ -237,10 +237,6 @@ impl Chunk {
     }
 }
 
-fn reset_chunks(mut map: ResMut<ParticleMap>) {
-    map.reset_chunks();
-}
-
 #[derive(Event)]
 pub struct ClearMapEvent;
 
@@ -259,6 +255,10 @@ pub fn on_remove_particle(
             commands.entity(entity).remove::<ChildOf>();
         }
     }
+}
+
+fn reset_chunks(mut map: ResMut<ParticleMap>) {
+    map.reset_chunks();
 }
 
 pub fn on_clear_particle_map(
