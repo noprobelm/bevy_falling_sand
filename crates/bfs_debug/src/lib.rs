@@ -42,7 +42,7 @@ pub struct TotalParticleCount(pub u64);
 
 pub fn color_dirty_rects(map: Res<ParticleMap>, mut chunk_gizmos: Gizmos<DebugGizmos>) {
     map.iter_chunks().for_each(|chunk| {
-        if let Some(dirty_rect) = chunk.prev_dirty_rect() {
+        if let Some(dirty_rect) = chunk.dirty_rect() {
             chunk_gizmos.rect_2d(
                 dirty_rect.center().as_vec2(),
                 dirty_rect.size().as_vec2() + Vec2::splat(1.),
@@ -55,7 +55,7 @@ pub fn color_dirty_rects(map: Res<ParticleMap>, mut chunk_gizmos: Gizmos<DebugGi
 pub fn color_hibernating_chunks(map: Res<ParticleMap>, mut chunk_gizmos: Gizmos<DebugGizmos>) {
     map.iter_chunks().for_each(|chunk| {
         let rect = Rect::from_corners(chunk.region().min.as_vec2(), chunk.region().max.as_vec2());
-        if chunk.dirty_rect().is_none() {
+        if chunk.next_dirty_rect().is_none() {
             chunk_gizmos.rect_2d(
                 rect.center(),
                 rect.size() + Vec2::splat(1.),
@@ -66,7 +66,7 @@ pub fn color_hibernating_chunks(map: Res<ParticleMap>, mut chunk_gizmos: Gizmos<
 
     map.iter_chunks().for_each(|chunk| {
         let rect = Rect::from_corners(chunk.region().min.as_vec2(), chunk.region().max.as_vec2());
-        if chunk.dirty_rect().is_some() {
+        if chunk.next_dirty_rect().is_some() {
             chunk_gizmos.rect_2d(
                 rect.center(),
                 rect.size() + Vec2::splat(1.),

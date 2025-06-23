@@ -153,19 +153,19 @@ impl ParticleMap {
 
     fn reset_chunks(&mut self) {
         self.chunks.iter_mut().for_each(|chunk| {
-            if let Some(dirty_rect) = chunk.dirty_rect {
-                chunk.prev_dirty_rect = Some(dirty_rect.inflate(5).intersect(chunk.region));
+            if let Some(dirty_rect) = chunk.next_dirty_rect {
+                chunk.dirty_rect = Some(dirty_rect.inflate(5).intersect(chunk.region));
             } else {
-                chunk.prev_dirty_rect = None;
+                chunk.dirty_rect = None;
             }
-            chunk.dirty_rect = None;
+            chunk.next_dirty_rect = None;
         })
     }
 
     pub fn clear(&mut self) {
         self.chunks.iter_mut().for_each(|chunk| {
             chunk.clear();
-            chunk.dirty_rect = None;
+            chunk.next_dirty_rect = None;
         })
     }
 }
@@ -182,8 +182,8 @@ pub enum ChunkGroup {
 pub struct Chunk {
     chunk: HashMap<IVec2, Entity>,
     region: IRect,
+    next_dirty_rect: Option<IRect>,
     dirty_rect: Option<IRect>,
-    prev_dirty_rect: Option<IRect>,
 }
 
 impl Chunk {
@@ -191,16 +191,16 @@ impl Chunk {
         Chunk {
             chunk: HashMap::with_capacity(size.pow(2)),
             region: IRect::from_corners(upper_left, lower_right),
+            next_dirty_rect: None,
             dirty_rect: None,
-            prev_dirty_rect: None,
         }
     }
 
     fn set_dirty_rect(&mut self, coordinates: IVec2) {
-        if let Some(dirty_rect) = self.dirty_rect {
-            self.dirty_rect = Some(dirty_rect.union_point(coordinates));
+        if let Some(dirty_rect) = self.next_dirty_rect {
+            self.next_dirty_rect = Some(dirty_rect.union_point(coordinates));
         } else {
-            self.dirty_rect = Some(IRect::from_center_size(coordinates, IVec2::ONE));
+            self.next_dirty_rect = Some(IRect::from_center_size(coordinates, IVec2::ONE));
         }
     }
 }
@@ -231,15 +231,15 @@ impl Chunk {
 
     pub fn clear(&mut self) {
         self.chunk.clear();
-        self.dirty_rect = None;
+        self.next_dirty_rect = None;
+    }
+
+    pub fn next_dirty_rect(&self) -> Option<IRect> {
+        self.next_dirty_rect
     }
 
     pub fn dirty_rect(&self) -> Option<IRect> {
         self.dirty_rect
-    }
-
-    pub fn prev_dirty_rect(&self) -> Option<IRect> {
-        self.prev_dirty_rect
     }
 
     pub fn iter(&self) -> impl Iterator<Item = (&IVec2, &Entity)> {

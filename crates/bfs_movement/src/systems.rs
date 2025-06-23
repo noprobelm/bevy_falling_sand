@@ -58,7 +58,7 @@ pub fn handle_movement_by_chunks(
     unsafe {
         map.iter_chunks_mut().for_each(|mut chunk| {
             chunk.iter().for_each(|(coordinates, entity)| {
-                if let Some(dirty_rect) = chunk.prev_dirty_rect() {
+                if let Some(dirty_rect) = chunk.dirty_rect() {
                     if dirty_rect.contains(*coordinates) || rng.chance(0.05) {
                         particle_entities.push(*entity);
                     }
@@ -204,7 +204,7 @@ pub fn handle_movement_by_particles(
                 mut particle_moved,
             )| {
                 if let Some(chunk) = map.chunk(&coordinates.0) {
-                    if let Some(dirty_rect) = chunk.prev_dirty_rect() {
+                    if let Some(dirty_rect) = chunk.dirty_rect() {
                         if !dirty_rect.contains(coordinates.0) && !rng.chance(0.2) {
                             return;
                         }
