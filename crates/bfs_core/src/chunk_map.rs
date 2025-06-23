@@ -32,38 +32,43 @@ pub struct ParticleMap {
 
 impl Default for ParticleMap {
     fn default() -> Self {
-        const GRID_SIZE: usize = 32;
+        const MAP_SIZE: usize = 32;
         const CHUNK_SIZE: usize = 32;
-        const NUM_CHUNKS: usize = GRID_SIZE.pow(2);
-        const GRID_OFFSET: usize = GRID_SIZE.pow(2) / 2;
-        let mut chunks = Vec::with_capacity(NUM_CHUNKS);
-        for i in 0..(NUM_CHUNKS as i32) {
-            let row = i / GRID_SIZE as i32;
-            let col = i % GRID_SIZE as i32;
-
-            let x = col * CHUNK_SIZE as i32 - GRID_OFFSET as i32;
-            let y = GRID_OFFSET as i32 - row * CHUNK_SIZE as i32;
-            let upper_left = IVec2::new(x, y - (CHUNK_SIZE as i32 - 1));
-            let lower_right = IVec2::new(x + (CHUNK_SIZE as i32 - 1), y);
-
-            let chunk = Chunk::new(upper_left, lower_right, CHUNK_SIZE);
-            chunks.push(chunk);
-        }
-        ParticleMap {
-            chunks,
-            size: GRID_SIZE,
-            particles_per_chunk: CHUNK_SIZE.pow(2),
-            flat_map_offset_value: GRID_OFFSET,
-            chunk_shift: CHUNK_SIZE.pow(2).trailing_zeros(),
-        }
+        ParticleMap::new(MAP_SIZE, CHUNK_SIZE)
     }
 }
 
 impl ParticleMap {
-    fn index(&self, coord: &IVec2) -> usize {
-        let col = ((coord.x + self.flat_map_offset_value as i32) >> 5) as usize;
-        let row = ((self.flat_map_offset_value as i32 - coord.y) >> 5) as usize;
+    pub fn new(map_size: usize, chunk_size: usize) -> Self {
+        if !map_size.is_power_of_two() {
+            panic!("Particle map size must be a power of 2")
+        }
+        let num_chunks: usize = map_size.pow(2);
+        let grid_offset: usize = map_size.pow(2) / 2;
+        let mut chunks = Vec::with_capacity(num_chunks);
+        for i in 0..(num_chunks as i32) {
+            let row = i / map_size as i32;
+            let col = i % map_size as i32;
 
+            let x = col * chunk_size as i32 - grid_offset as i32;
+            let y = grid_offset as i32 - row * chunk_size as i32;
+            let upper_left = IVec2::new(x, y - (chunk_size as i32 - 1));
+            let lower_right = IVec2::new(x + (chunk_size as i32 - 1), y);
+
+            let chunk = Chunk::new(upper_left, lower_right, map_size);
+            chunks.push(chunk);
+        }
+        ParticleMap {
+            chunks,
+            size: map_size,
+            particles_per_chunk: chunk_size.pow(2),
+            flat_map_offset_value: grid_offset,
+            chunk_shift: chunk_size.trailing_zeros(),
+        }
+    }
+    fn index(&self, coord: &IVec2) -> usize {
+        let col = ((coord.x + self.flat_map_offset_value as i32) >> self.chunk_shift) as usize;
+        let row = ((self.flat_map_offset_value as i32 - coord.y) >> self.chunk_shift) as usize;
         row * self.size + col
     }
 
