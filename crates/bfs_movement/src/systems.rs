@@ -2,9 +2,9 @@ use crate::PhysicsRng;
 use crate::*;
 use std::mem;
 
-use bevy::ecs::system::QueryLens;
 use bevy::platform::collections::HashSet;
-use bfs_core::{Chunk, ChunkMap, ChunkRng, Coordinates, Particle, ParticleSimulationSet};
+use bevy_turborand::{DelegatedRng, GlobalRng};
+use bfs_core::{ChunkMap, Coordinates, Particle, ParticleSimulationSet};
 
 pub(super) struct SystemsPlugin;
 
@@ -50,163 +50,275 @@ type ParticleMovementQuery<'a> = (
 pub fn handle_movement_by_chunks(
     mut particle_query: Query<ParticleMovementQuery>,
     mut map: ResMut<ChunkMap>,
-    mut chunk_query: Query<&mut Chunk>,
-    mut chunk_rng_query: Query<&mut ChunkRng>,
+    mut rng: ResMut<GlobalRng>,
 ) {
-    let chunk_query_ptr: *mut Query<&mut Chunk> = &mut chunk_query;
     let mut visited: HashSet<Entity> = HashSet::default();
     let mut particle_entities: Vec<Entity> = Vec::with_capacity(1024);
-    let mut joined: QueryLens<(&mut Chunk, &mut ChunkRng)> = chunk_rng_query.join(&mut chunk_query);
 
     unsafe {
-        joined
-            .query()
-            .iter_unsafe()
-            .for_each(|(mut chunk, mut chunk_rng)| {
-                particle_entities.clear();
+        map.iter_chunks_mut().for_each(|mut chunk| {
+            chunk.iter().for_each(|(coordinates, entity)| {
                 if let Some(dirty_rect) = chunk.prev_dirty_rect() {
-                    chunk.iter().for_each(|(coordinates, entity)| {
-                        if dirty_rect.contains(*coordinates) || chunk_rng.chance(0.05) {
-                            particle_entities.push(*entity);
-                        }
-                    });
-                } else {
-                    chunk.iter().for_each(|(_, entity)| {
-                        if chunk_rng.chance(0.05) {
-                            particle_entities.push(*entity);
-                        }
-                    });
-                }
-
-                chunk_rng.shuffle(&mut particle_entities);
-                particle_entities.iter().for_each(|entity| {
-                    if visited.contains(entity) {
-                        return;
+                    if dirty_rect.contains(*coordinates) || rng.chance(0.05) {
+                        particle_entities.push(*entity);
                     }
+                } else if rng.chance(0.05) {
+                    particle_entities.push(*entity);
+                }
+            });
+        });
+        rng.shuffle(&mut particle_entities);
+        particle_entities.iter().for_each(|entity| {
+            if visited.contains(entity) {
+                return;
+            }
 
-                    if let Ok((
-                        _,
-                        particle_type,
-                        mut coordinates,
-                        mut transform,
-                        mut rng,
-                        mut velocity,
-                        mut momentum,
-                        density,
-                        mut movement_priority,
-                        mut particle_moved,
-                    )) = particle_query.get_unchecked(*entity)
+            if let Ok((
+                _,
+                particle_type,
+                mut coordinates,
+                mut transform,
+                mut rng,
+                mut velocity,
+                mut momentum,
+                density,
+                mut movement_priority,
+                mut particle_moved,
+            )) = particle_query.get_unchecked(*entity)
+            {
+                let mut moved = false;
+
+                'velocity_loop: for _ in 0..velocity.val {
+                    let mut obstructed: HashSet<IVec2> = HashSet::default();
+
+                    for relative_coordinates in movement_priority
+                        .iter_candidates(&mut rng, momentum.as_deref().cloned().as_ref())
                     {
-                        let mut moved = false;
+                        let neighbor_coordinates = coordinates.0 + *relative_coordinates;
+                        let signum = relative_coordinates.signum();
 
-                        'velocity_loop: for _ in 0..velocity.val {
-                            let mut obstructed: HashSet<IVec2> = HashSet::default();
+                        if obstructed.contains(&signum) {
+                            continue;
+                        }
 
-                            for relative_coordinates in movement_priority
-                                .iter_candidates(&mut rng, momentum.as_deref().cloned().as_ref())
-                            {
-                                let neighbor_coordinates = coordinates.0 + *relative_coordinates;
-                                let signum = relative_coordinates.signum();
-
-                                if obstructed.contains(&signum) {
-                                    continue;
-                                }
-
-                                match map.entity(&neighbor_coordinates, &mut *chunk_query_ptr) {
-                                    Some(neighbor_entity) => {
-                                        if let Ok((
-                                            _,
-                                            neighbor_particle_type,
-                                            mut neighbor_coords,
-                                            mut neighbor_transform,
-                                            _,
-                                            _,
-                                            _,
-                                            neighbor_density,
-                                            _,
-                                            _,
-                                        )) = particle_query.get_unchecked(neighbor_entity)
-                                        {
-                                            if *particle_type == *neighbor_particle_type {
-                                                continue;
-                                            }
-
-                                            if density > neighbor_density {
-                                                map.swap(
-                                                    neighbor_coords.0,
-                                                    coordinates.0,
-                                                    &mut *chunk_query_ptr,
-                                                );
-
-                                                swap_particle_positions(
-                                                    &mut coordinates,
-                                                    &mut transform,
-                                                    &mut neighbor_coords,
-                                                    &mut neighbor_transform,
-                                                );
-
-                                                if let Some(ref mut m) = momentum {
-                                                    m.0 = IVec2::ZERO;
-                                                }
-
-                                                velocity.decrement();
-                                                moved = true;
-                                                break 'velocity_loop;
-                                            } else {
-                                                obstructed.insert(signum);
-                                                continue;
-                                            }
-                                        } else {
-                                            obstructed.insert(signum);
-                                            continue;
-                                        }
+                        match map.get(&neighbor_coordinates) {
+                            Some(neighbor_entity) => {
+                                if let Ok((
+                                    _,
+                                    neighbor_particle_type,
+                                    mut neighbor_coords,
+                                    mut neighbor_transform,
+                                    _,
+                                    _,
+                                    _,
+                                    neighbor_density,
+                                    _,
+                                    _,
+                                )) = particle_query.get_unchecked(*neighbor_entity)
+                                {
+                                    if *particle_type == *neighbor_particle_type {
+                                        continue;
                                     }
-                                    None => {
-                                        map.swap(
-                                            coordinates.0,
-                                            neighbor_coordinates,
-                                            &mut *chunk_query_ptr,
+
+                                    if density > neighbor_density {
+                                        map.swap(neighbor_coords.0, coordinates.0);
+
+                                        swap_particle_positions(
+                                            &mut coordinates,
+                                            &mut transform,
+                                            &mut neighbor_coords,
+                                            &mut neighbor_transform,
                                         );
-                                        coordinates.0 = neighbor_coordinates;
-                                        transform.translation.x = neighbor_coordinates.x as f32;
-                                        transform.translation.y = neighbor_coordinates.y as f32;
 
                                         if let Some(ref mut m) = momentum {
-                                            m.0 = *relative_coordinates;
+                                            m.0 = IVec2::ZERO;
                                         }
 
-                                        velocity.increment();
+                                        velocity.decrement();
                                         moved = true;
-                                        continue 'velocity_loop;
+                                        break 'velocity_loop;
+                                    } else {
+                                        obstructed.insert(signum);
+                                        continue;
                                     }
+                                } else {
+                                    obstructed.insert(signum);
+                                    continue;
                                 }
                             }
-                            if !moved {
-                                break 'velocity_loop;
-                            }
-                            particle_moved.0 = moved;
-                        }
+                            None => {
+                                map.swap(coordinates.0, neighbor_coordinates);
+                                coordinates.0 = neighbor_coordinates;
+                                transform.translation.x = neighbor_coordinates.x as f32;
+                                transform.translation.y = neighbor_coordinates.y as f32;
 
-                        if moved {
-                            visited.insert(*entity);
-                        } else {
-                            if let Some(ref mut m) = momentum {
-                                m.0 = IVec2::ZERO;
+                                if let Some(ref mut m) = momentum {
+                                    m.0 = *relative_coordinates;
+                                }
+
+                                velocity.increment();
+                                moved = true;
+                                continue 'velocity_loop;
                             }
-                            velocity.decrement();
                         }
-                        particle_moved.0 = moved;
                     }
-                });
-            });
+                    if !moved {
+                        break 'velocity_loop;
+                    }
+                    particle_moved.0 = moved;
+                }
+
+                if moved {
+                    visited.insert(*entity);
+                } else {
+                    if let Some(ref mut m) = momentum {
+                        m.0 = IVec2::ZERO;
+                    }
+                    velocity.decrement();
+                }
+                particle_moved.0 = moved;
+            }
+        });
     }
+    // joined
+    //     .query()
+    //     .iter_unsafe()
+    //     .for_each(|(mut chunk, mut chunk_rng)| {
+    //         particle_entities.clear();
+    //         if let Some(dirty_rect) = chunk.prev_dirty_rect() {
+    //             chunk.iter().for_each(|(coordinates, entity)| {
+    //                 if dirty_rect.contains(*coordinates) || chunk_rng.chance(0.05) {
+    //                     particle_entities.push(*entity);
+    //                 }
+    //             });
+    //         } else {
+    //             chunk.iter().for_each(|(_, entity)| {
+    //                 if chunk_rng.chance(0.05) {
+    //                     particle_entities.push(*entity);
+    //                 }
+    //             });
+    //         }
+    //
+    //         chunk_rng.shuffle(&mut particle_entities);
+    //         particle_entities.iter().for_each(|entity| {
+    //             if visited.contains(entity) {
+    //                 return;
+    //             }
+    //
+    //             if let Ok((
+    //                 _,
+    //                 particle_type,
+    //                 mut coordinates,
+    //                 mut transform,
+    //                 mut rng,
+    //                 mut velocity,
+    //                 mut momentum,
+    //                 density,
+    //                 mut movement_priority,
+    //                 mut particle_moved,
+    //             )) = particle_query.get_unchecked(*entity)
+    //             {
+    //                 let mut moved = false;
+    //
+    //                 'velocity_loop: for _ in 0..velocity.val {
+    //                     let mut obstructed: HashSet<IVec2> = HashSet::default();
+    //
+    //                     for relative_coordinates in movement_priority
+    //                         .iter_candidates(&mut rng, momentum.as_deref().cloned().as_ref())
+    //                     {
+    //                         let neighbor_coordinates = coordinates.0 + *relative_coordinates;
+    //                         let signum = relative_coordinates.signum();
+    //
+    //                         if obstructed.contains(&signum) {
+    //                             continue;
+    //                         }
+    //
+    //                         match map.entity(&neighbor_coordinates) {
+    //                             Some(neighbor_entity) => {
+    //                                 if let Ok((
+    //                                     _,
+    //                                     neighbor_particle_type,
+    //                                     mut neighbor_coords,
+    //                                     mut neighbor_transform,
+    //                                     _,
+    //                                     _,
+    //                                     _,
+    //                                     neighbor_density,
+    //                                     _,
+    //                                     _,
+    //                                 )) = particle_query.get_unchecked(neighbor_entity)
+    //                                 {
+    //                                     if *particle_type == *neighbor_particle_type {
+    //                                         continue;
+    //                                     }
+    //
+    //                                     if density > neighbor_density {
+    //                                         map.swap(neighbor_coords.0, coordinates.0);
+    //
+    //                                         swap_particle_positions(
+    //                                             &mut coordinates,
+    //                                             &mut transform,
+    //                                             &mut neighbor_coords,
+    //                                             &mut neighbor_transform,
+    //                                         );
+    //
+    //                                         if let Some(ref mut m) = momentum {
+    //                                             m.0 = IVec2::ZERO;
+    //                                         }
+    //
+    //                                         velocity.decrement();
+    //                                         moved = true;
+    //                                         break 'velocity_loop;
+    //                                     } else {
+    //                                         obstructed.insert(signum);
+    //                                         continue;
+    //                                     }
+    //                                 } else {
+    //                                     obstructed.insert(signum);
+    //                                     continue;
+    //                                 }
+    //                             }
+    //                             None => {
+    //                                 map.swap(coordinates.0, neighbor_coordinates);
+    //                                 coordinates.0 = neighbor_coordinates;
+    //                                 transform.translation.x = neighbor_coordinates.x as f32;
+    //                                 transform.translation.y = neighbor_coordinates.y as f32;
+    //
+    //                                 if let Some(ref mut m) = momentum {
+    //                                     m.0 = *relative_coordinates;
+    //                                 }
+    //
+    //                                 velocity.increment();
+    //                                 moved = true;
+    //                                 continue 'velocity_loop;
+    //                             }
+    //                         }
+    //                     }
+    //                     if !moved {
+    //                         break 'velocity_loop;
+    //                     }
+    //                     particle_moved.0 = moved;
+    //                 }
+    //
+    //                 if moved {
+    //                     visited.insert(*entity);
+    //                 } else {
+    //                     if let Some(ref mut m) = momentum {
+    //                         m.0 = IVec2::ZERO;
+    //                     }
+    //                     velocity.decrement();
+    //                 }
+    //                 particle_moved.0 = moved;
+    //             }
+    //         });
+    //     });
+    //     }
 }
 
 #[allow(unused_mut)]
 pub fn handle_movement_by_particles(
     mut particle_query: Query<ParticleMovementQuery>,
     mut map: ResMut<ChunkMap>,
-    mut chunk_query: Query<&mut Chunk>,
 ) {
     // Check visited before we perform logic on a particle (particles shouldn't move more than once)
     let mut visited: HashSet<IVec2> = HashSet::default();
@@ -224,8 +336,7 @@ pub fn handle_movement_by_particles(
                 mut movement_priority,
                 mut particle_moved,
             )| {
-                if let Some(entity) = map.chunk(&coordinates.0) {
-                    let chunk = chunk_query.get(*entity).unwrap();
+                if let Some(chunk) = map.chunk(&coordinates.0) {
                     if let Some(dirty_rect) = chunk.prev_dirty_rect() {
                         if !dirty_rect.contains(coordinates.0) && !rng.chance(0.2) {
                             return;
@@ -253,7 +364,7 @@ pub fn handle_movement_by_particles(
                             continue;
                         }
 
-                        match map.entity(&neighbor_coordinates, &mut chunk_query) {
+                        match map.get(&neighbor_coordinates) {
                             Some(neighbor_entity) => {
                                 if let Ok((
                                     _,
@@ -266,17 +377,13 @@ pub fn handle_movement_by_particles(
                                     neighbor_density,
                                     _,
                                     _,
-                                )) = particle_query.get_unchecked(neighbor_entity)
+                                )) = particle_query.get_unchecked(*neighbor_entity)
                                 {
                                     if *particle_type == *neighbor_particle_type {
                                         continue;
                                     }
                                     if density > neighbor_density {
-                                        map.swap(
-                                            neighbor_coordinates.0,
-                                            coordinates.0,
-                                            &mut chunk_query,
-                                        );
+                                        map.swap(neighbor_coordinates.0, coordinates.0);
 
                                         swap_particle_positions(
                                             &mut coordinates,
@@ -305,7 +412,7 @@ pub fn handle_movement_by_particles(
                             }
                             // We've encountered a free slot for the target particle to move to
                             None => {
-                                map.swap(coordinates.0, neighbor_coordinates, &mut chunk_query);
+                                map.swap(coordinates.0, neighbor_coordinates);
                                 coordinates.0 = neighbor_coordinates;
 
                                 transform.translation.x = neighbor_coordinates.x as f32;

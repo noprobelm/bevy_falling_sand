@@ -2,7 +2,7 @@ use avian2d::math::Vector;
 pub use avian2d::prelude::*;
 
 use bevy::prelude::*;
-use bfs_core::{Chunk, ChunkMap, Coordinates, Particle, ParticleSimulationSet};
+use bfs_core::{ChunkMap, Coordinates, Particle, ParticleSimulationSet};
 use bfs_movement::{Liquid, MovableSolid, Moved, Solid, Wall};
 
 pub struct FallingSandPhysicsPlugin {
@@ -513,20 +513,16 @@ fn float_dynamic_rigid_bodies(
     )>,
     liquid_query: Query<&Particle, With<Liquid>>,
     chunk_map: Res<ChunkMap>,
-    mut chunk_query: Query<&mut Chunk>,
 ) {
     let damping_factor = 0.95;
     rigid_body_query.iter_mut().for_each(
         |(rigid_body, transform, mut gravity_scale, mut linear_velocity)| {
             if rigid_body == &RigidBody::Dynamic {
-                if let Some(entity) = chunk_map.entity(
-                    &IVec2::new(
-                        transform.translation.x as i32,
-                        transform.translation.y as i32,
-                    ),
-                    &mut chunk_query,
-                ) {
-                    if liquid_query.contains(entity) {
+                if let Some(entity) = chunk_map.get(&IVec2::new(
+                    transform.translation.x as i32,
+                    transform.translation.y as i32,
+                )) {
+                    if liquid_query.contains(*entity) {
                         linear_velocity.y *= damping_factor;
                         if linear_velocity.y.abs() < 0.001 {
                             linear_velocity.y = 0.0;
