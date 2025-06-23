@@ -10,9 +10,9 @@ use crate::{
 const OFFSET: i32 = 512;
 const GRID_WIDTH: usize = 32;
 
-pub struct ChunkMapPlugin;
+pub struct ParticleMapPlugin;
 
-impl Plugin for ChunkMapPlugin {
+impl Plugin for ParticleMapPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<ParticleMap>()
             .add_event::<ClearMapEvent>()
