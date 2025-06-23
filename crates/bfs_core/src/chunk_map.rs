@@ -170,14 +170,6 @@ impl ParticleMap {
     }
 }
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub enum ChunkGroup {
-    One,
-    Two,
-    Three,
-    Four,
-}
-
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Chunk {
     chunk: HashMap<IVec2, Entity>,
