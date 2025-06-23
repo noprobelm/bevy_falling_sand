@@ -7,10 +7,6 @@ use crate::{
     RemoveParticleEvent,
 };
 
-const OFFSET: i32 = 512;
-const GRID_WIDTH: usize = 32;
-const NUM_CHUNKS: usize = GRID_WIDTH.pow(2);
-
 pub struct ParticleMapPlugin;
 
 impl Plugin for ParticleMapPlugin {
@@ -27,39 +23,48 @@ impl Plugin for ParticleMapPlugin {
 
 #[derive(Clone, Eq, PartialEq, Debug, Resource)]
 pub struct ParticleMap {
+    pub size: usize,
+    pub particles_per_chunk: usize,
     chunks: Vec<Chunk>,
+    flat_map_offset_value: usize,
+    chunk_shift: u32,
 }
 
 impl Default for ParticleMap {
     fn default() -> Self {
-        const CHUNK_SIZE: i32 = 32;
-        const GRID_SIZE: i32 = GRID_WIDTH as i32;
-        const GRID_OFFSET: i32 = 512;
+        const GRID_SIZE: usize = 32;
+        const CHUNK_SIZE: usize = 32;
+        const NUM_CHUNKS: usize = GRID_SIZE.pow(2);
+        const GRID_OFFSET: usize = GRID_SIZE.pow(2) / 2;
+        let mut chunks = Vec::with_capacity(NUM_CHUNKS);
+        for i in 0..(NUM_CHUNKS as i32) {
+            let row = i / GRID_SIZE as i32;
+            let col = i % GRID_SIZE as i32;
 
-        let mut chunks = Vec::with_capacity((GRID_SIZE.pow(2)) as usize);
-        for i in 0..GRID_SIZE.pow(2) {
-            let row = i / GRID_SIZE;
-            let col = i % GRID_SIZE;
+            let x = col * CHUNK_SIZE as i32 - GRID_OFFSET as i32;
+            let y = GRID_OFFSET as i32 - row * CHUNK_SIZE as i32;
+            let upper_left = IVec2::new(x, y - (CHUNK_SIZE as i32 - 1));
+            let lower_right = IVec2::new(x + (CHUNK_SIZE as i32 - 1), y);
 
-            let x = col * CHUNK_SIZE - GRID_OFFSET;
-            let y = GRID_OFFSET - row * CHUNK_SIZE;
-            let upper_left = IVec2::new(x, y - (CHUNK_SIZE - 1));
-            let lower_right = IVec2::new(x + (CHUNK_SIZE - 1), y);
-
-            let chunk = Chunk::new(upper_left, lower_right);
+            let chunk = Chunk::new(upper_left, lower_right, CHUNK_SIZE);
             chunks.push(chunk);
         }
-
-        ParticleMap { chunks }
+        ParticleMap {
+            chunks,
+            size: GRID_SIZE,
+            particles_per_chunk: CHUNK_SIZE.pow(2),
+            flat_map_offset_value: GRID_OFFSET,
+            chunk_shift: CHUNK_SIZE.pow(2).trailing_zeros(),
+        }
     }
 }
 
 impl ParticleMap {
     fn index(&self, coord: &IVec2) -> usize {
-        let col = ((coord.x + OFFSET) >> 5) as usize;
-        let row = ((OFFSET - coord.y) >> 5) as usize;
+        let col = ((coord.x + self.flat_map_offset_value as i32) >> 5) as usize;
+        let row = ((self.flat_map_offset_value as i32 - coord.y) >> 5) as usize;
 
-        row * GRID_WIDTH + col
+        row * self.size + col
     }
 
     pub fn chunk(&self, coord: &IVec2) -> Option<&Chunk> {
@@ -177,9 +182,9 @@ pub struct Chunk {
 }
 
 impl Chunk {
-    pub fn new(upper_left: IVec2, lower_right: IVec2) -> Chunk {
+    pub fn new(upper_left: IVec2, lower_right: IVec2, size: usize) -> Chunk {
         Chunk {
-            chunk: HashMap::with_capacity(1024),
+            chunk: HashMap::with_capacity(size.pow(2)),
             region: IRect::from_corners(upper_left, lower_right),
             dirty_rect: None,
             prev_dirty_rect: None,
@@ -258,24 +263,7 @@ pub fn on_remove_particle(
 }
 
 fn setup_particle_map(mut commands: Commands) {
-    const CHUNK_SIZE: i32 = 32;
-    const GRID_SIZE: i32 = GRID_WIDTH as i32;
-    const GRID_OFFSET: i32 = 512;
-
-    let mut chunks = Vec::with_capacity((GRID_SIZE.pow(2)) as usize);
-    for i in 0..GRID_SIZE.pow(2) {
-        let row = i / GRID_SIZE;
-        let col = i % GRID_SIZE;
-
-        let x = col * CHUNK_SIZE - GRID_OFFSET;
-        let y = GRID_OFFSET - row * CHUNK_SIZE;
-        let upper_left = IVec2::new(x, y - (CHUNK_SIZE - 1));
-        let lower_right = IVec2::new(x + (CHUNK_SIZE - 1), y);
-
-        let chunk = Chunk::new(upper_left, lower_right);
-        chunks.push(chunk);
-    }
-    commands.insert_resource(ParticleMap { chunks });
+    commands.insert_resource(ParticleMap::default());
 }
 
 fn reset_chunks(mut map: ResMut<ParticleMap>) {

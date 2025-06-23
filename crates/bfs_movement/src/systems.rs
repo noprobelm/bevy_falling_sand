@@ -53,7 +53,7 @@ pub fn handle_movement_by_chunks(
     mut rng: ResMut<GlobalRng>,
 ) {
     let mut visited: HashSet<Entity> = HashSet::default();
-    let mut particle_entities: Vec<Entity> = Vec::with_capacity(1024);
+    let mut particle_entities: Vec<Entity> = Vec::with_capacity(map.particles_per_chunk);
 
     unsafe {
         map.iter_chunks_mut().for_each(|mut chunk| {
