@@ -24,7 +24,7 @@ impl Plugin for ParticleMapPlugin {
     }
 }
 
-#[derive(Resource, Debug, Clone)]
+#[derive(Clone, Eq, PartialEq, Debug, Resource)]
 pub struct ParticleMap {
     chunks: Vec<Chunk>,
 }
