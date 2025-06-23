@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use bfs_core::{ChunkMap, Particle};
+use bfs_core::{Particle, ParticleMap};
 use bfs_movement::Wall;
 
 pub struct FallingSandDebugPlugin;
@@ -40,7 +40,7 @@ pub struct DynamicParticleCount(pub u64);
 #[derive(Default, Resource)]
 pub struct TotalParticleCount(pub u64);
 
-pub fn color_dirty_rects(map: Res<ChunkMap>, mut chunk_gizmos: Gizmos<DebugGizmos>) {
+pub fn color_dirty_rects(map: Res<ParticleMap>, mut chunk_gizmos: Gizmos<DebugGizmos>) {
     map.iter_chunks().for_each(|chunk| {
         if let Some(dirty_rect) = chunk.prev_dirty_rect() {
             chunk_gizmos.rect_2d(
@@ -52,7 +52,7 @@ pub fn color_dirty_rects(map: Res<ChunkMap>, mut chunk_gizmos: Gizmos<DebugGizmo
     });
 }
 
-pub fn color_hibernating_chunks(map: Res<ChunkMap>, mut chunk_gizmos: Gizmos<DebugGizmos>) {
+pub fn color_hibernating_chunks(map: Res<ParticleMap>, mut chunk_gizmos: Gizmos<DebugGizmos>) {
     map.iter_chunks().for_each(|chunk| {
         let rect = Rect::from_corners(chunk.region().min.as_vec2(), chunk.region().max.as_vec2());
         if chunk.dirty_rect().is_none() {

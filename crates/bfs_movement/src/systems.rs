@@ -4,7 +4,7 @@ use std::mem;
 
 use bevy::platform::collections::HashSet;
 use bevy_turborand::{DelegatedRng, GlobalRng};
-use bfs_core::{ChunkMap, Coordinates, Particle, ParticleSimulationSet};
+use bfs_core::{Coordinates, Particle, ParticleMap, ParticleSimulationSet};
 
 pub(super) struct SystemsPlugin;
 
@@ -49,7 +49,7 @@ type ParticleMovementQuery<'a> = (
 #[allow(unused_mut)]
 pub fn handle_movement_by_chunks(
     mut particle_query: Query<ParticleMovementQuery>,
-    mut map: ResMut<ChunkMap>,
+    mut map: ResMut<ParticleMap>,
     mut rng: ResMut<GlobalRng>,
 ) {
     let mut visited: HashSet<Entity> = HashSet::default();
@@ -185,7 +185,7 @@ pub fn handle_movement_by_chunks(
 #[allow(unused_mut)]
 pub fn handle_movement_by_particles(
     mut particle_query: Query<ParticleMovementQuery>,
-    mut map: ResMut<ChunkMap>,
+    mut map: ResMut<ParticleMap>,
 ) {
     // Check visited before we perform logic on a particle (particles shouldn't move more than once)
     let mut visited: HashSet<IVec2> = HashSet::default();
