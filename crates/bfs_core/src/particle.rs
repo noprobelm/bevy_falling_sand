@@ -2,11 +2,11 @@ use bevy::platform::collections::HashMap;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::{ChunkMap, ParticleSimulationSet};
+use crate::{ParticleMap, ParticleSimulationSet};
 
-pub(super) struct ParticlePlugin;
+pub(super) struct ParticleCorePlugin;
 
-impl Plugin for ParticlePlugin {
+impl Plugin for ParticleCorePlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<ParticleType>()
             .register_type::<Particle>()
@@ -161,7 +161,7 @@ pub fn handle_new_particles(
     mut commands: Commands,
     parent_query: Query<Entity, With<ParticleType>>,
     particle_query: Query<(&Particle, &Transform, Entity), Changed<Particle>>,
-    mut map: ResMut<ChunkMap>,
+    mut map: ResMut<ParticleMap>,
     type_map: Res<ParticleTypeMap>,
     mut ev_particle_registered: EventWriter<ParticleRegistrationEvent>,
 ) {

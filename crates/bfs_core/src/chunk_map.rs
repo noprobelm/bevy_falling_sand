@@ -10,26 +10,26 @@ use crate::{
 const OFFSET: i32 = 512;
 const GRID_WIDTH: usize = 32;
 
-pub struct ChunkMapPlugin;
+pub struct ParticleMapPlugin;
 
-impl Plugin for ChunkMapPlugin {
+impl Plugin for ParticleMapPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<ChunkMap>()
+        app.init_resource::<ParticleMap>()
             .add_event::<ClearMapEvent>()
             .add_event::<ClearParticleTypeChildrenEvent>()
             .add_systems(Update, reset_chunks.after(ParticleSimulationSet))
             .add_observer(on_remove_particle)
-            .add_observer(on_clear_chunk_map)
+            .add_observer(on_clear_particle_map)
             .add_observer(on_clear_particle_type_children);
     }
 }
 
-#[derive(Resource, Debug, Clone)]
-pub struct ChunkMap {
+#[derive(Clone, Eq, PartialEq, Debug, Resource)]
+pub struct ParticleMap {
     chunks: Vec<Chunk>,
 }
 
-impl Default for ChunkMap {
+impl Default for ParticleMap {
     fn default() -> Self {
         const CHUNK_SIZE: i32 = 32;
         const GRID_SIZE: i32 = GRID_WIDTH as i32;
@@ -49,11 +49,11 @@ impl Default for ChunkMap {
             chunks.push(chunk);
         }
 
-        ChunkMap { chunks }
+        ParticleMap { chunks }
     }
 }
 
-impl ChunkMap {
+impl ParticleMap {
     fn index(&self, coord: &IVec2) -> usize {
         let col = ((coord.x + OFFSET) >> 5) as usize;
         let row = ((OFFSET - coord.y) >> 5) as usize;
@@ -236,7 +236,7 @@ impl Chunk {
     }
 }
 
-fn reset_chunks(mut map: ResMut<ChunkMap>) {
+fn reset_chunks(mut map: ResMut<ParticleMap>) {
     map.reset_chunks();
 }
 
@@ -249,7 +249,7 @@ pub struct ClearParticleTypeChildrenEvent(pub String);
 pub fn on_remove_particle(
     trigger: Trigger<RemoveParticleEvent>,
     mut commands: Commands,
-    mut map: ResMut<ChunkMap>,
+    mut map: ResMut<ParticleMap>,
 ) {
     if let Some(entity) = map.remove(&trigger.event().coordinates) {
         if trigger.event().despawn {
@@ -260,10 +260,10 @@ pub fn on_remove_particle(
     }
 }
 
-pub fn on_clear_chunk_map(
+pub fn on_clear_particle_map(
     _trigger: Trigger<ClearMapEvent>,
     mut commands: Commands,
-    mut map: ResMut<ChunkMap>,
+    mut map: ResMut<ParticleMap>,
     particle_parent_map: Res<ParticleTypeMap>,
 ) {
     particle_parent_map.iter().for_each(|(_, entity)| {
@@ -278,7 +278,7 @@ pub fn on_clear_particle_type_children(
     particle_query: Query<&Coordinates, With<Particle>>,
     parent_query: Query<&Children, With<ParticleType>>,
     particle_parent_map: Res<ParticleTypeMap>,
-    mut map: ResMut<ChunkMap>,
+    mut map: ResMut<ParticleMap>,
 ) {
     let particle_type = trigger.event().0.clone();
     if let Some(parent_entity) = particle_parent_map.get(&particle_type) {

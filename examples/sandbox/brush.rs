@@ -1,7 +1,9 @@
 use bevy::platform::collections::HashSet;
 use bevy::{input::common_conditions::input_pressed, prelude::*};
 use bevy_egui::EguiContexts;
-use bevy_falling_sand::prelude::{ChunkMap, Particle, ParticleSimulationSet, RemoveParticleEvent};
+use bevy_falling_sand::prelude::{
+    Particle, ParticleMap, ParticleSimulationSet, RemoveParticleEvent,
+};
 
 use super::{update_cursor_coordinates, AppState, CursorCoords, SelectedBrushParticle};
 
@@ -250,7 +252,7 @@ pub fn update_brush(
 fn sample_hovered(
     mouse_buttons: Res<ButtonInput<MouseButton>>,
     cursor_coords: Res<CursorCoords>,
-    chunk_map: Res<ChunkMap>,
+    chunk_map: Res<ParticleMap>,
     particle_query: Query<&Particle>,
     mut selected_brush_particle: ResMut<SelectedBrushParticle>,
     mut brush_state: ResMut<NextState<BrushState>>,
