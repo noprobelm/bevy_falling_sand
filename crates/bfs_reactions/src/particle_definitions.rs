@@ -124,12 +124,12 @@ impl Reacting {
         &self,
         commands: &mut Commands,
         rng: &mut ReactionRng,
-        coordinates: &ParticlePosition,
+        position: &ParticlePosition,
     ) {
         if self.chance(rng) {
             commands.spawn((
                 self.produces.clone(),
-                Transform::from_xyz(coordinates.0.x as f32, coordinates.0.y as f32 + 1., 0.),
+                Transform::from_xyz(position.0.x as f32, position.0.y as f32 + 1., 0.),
             ));
         }
     }
