@@ -14,6 +14,6 @@ pub struct FallingSandCorePlugin;
 
 impl Plugin for FallingSandCorePlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((ParticlePlugin, ParticleMapPlugin, CommonPlugin));
+        app.add_plugins((ParticleCorePlugin, ParticleMapPlugin, CommonPlugin));
     }
 }

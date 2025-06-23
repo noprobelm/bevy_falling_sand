@@ -4,9 +4,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::{ParticleMap, ParticleSimulationSet};
 
-pub(super) struct ParticlePlugin;
+pub(super) struct ParticleCorePlugin;
 
-impl Plugin for ParticlePlugin {
+impl Plugin for ParticleCorePlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<ParticleType>()
             .register_type::<Particle>()
