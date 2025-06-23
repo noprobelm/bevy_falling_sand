@@ -15,9 +15,9 @@ pub struct ParticleMapPlugin;
 
 impl Plugin for ParticleMapPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<ParticleMap>()
-            .add_event::<ClearMapEvent>()
+        app.add_event::<ClearMapEvent>()
             .add_event::<ClearParticleTypeChildrenEvent>()
+            .add_systems(Startup, setup_particle_map)
             .add_systems(Update, reset_chunks.after(ParticleSimulationSet))
             .add_observer(on_remove_particle)
             .add_observer(on_clear_particle_map)
@@ -255,6 +255,27 @@ pub fn on_remove_particle(
             commands.entity(entity).remove::<ChildOf>();
         }
     }
+}
+
+fn setup_particle_map(mut commands: Commands) {
+    const CHUNK_SIZE: i32 = 32;
+    const GRID_SIZE: i32 = GRID_WIDTH as i32;
+    const GRID_OFFSET: i32 = 512;
+
+    let mut chunks = Vec::with_capacity((GRID_SIZE.pow(2)) as usize);
+    for i in 0..GRID_SIZE.pow(2) {
+        let row = i / GRID_SIZE;
+        let col = i % GRID_SIZE;
+
+        let x = col * CHUNK_SIZE - GRID_OFFSET;
+        let y = GRID_OFFSET - row * CHUNK_SIZE;
+        let upper_left = IVec2::new(x, y - (CHUNK_SIZE - 1));
+        let lower_right = IVec2::new(x + (CHUNK_SIZE - 1), y);
+
+        let chunk = Chunk::new(upper_left, lower_right);
+        chunks.push(chunk);
+    }
+    commands.insert_resource(ParticleMap { chunks });
 }
 
 fn reset_chunks(mut map: ResMut<ParticleMap>) {
