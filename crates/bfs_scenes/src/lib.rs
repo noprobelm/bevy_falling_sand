@@ -28,7 +28,7 @@ impl Plugin for FallingSandScenesPlugin {
 #[derive(Serialize, Deserialize)]
 pub struct ParticleData {
     pub particle_type: Particle,
-    pub coordinates: ParticlePosition,
+    pub position: ParticlePosition,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -43,9 +43,9 @@ pub fn save_scene_system(
     for ev in ev_save_scene.read() {
         let particles: Vec<ParticleData> = particle_query
             .iter()
-            .map(|(particle_type, coordinates)| ParticleData {
+            .map(|(particle_type, position)| ParticleData {
                 particle_type: particle_type.clone(),
-                coordinates: *coordinates,
+                position: *position,
             })
             .collect();
 
@@ -64,8 +64,8 @@ pub fn load_scene_system(mut commands: Commands, mut ev_load_scene: EventReader<
 
         for particle_data in particle_scene.particles {
             let transform = Transform::from_xyz(
-                particle_data.coordinates.0.x as f32,
-                particle_data.coordinates.0.y as f32,
+                particle_data.position.0.x as f32,
+                particle_data.position.0.y as f32,
                 0.,
             );
 
