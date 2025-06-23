@@ -5,7 +5,7 @@ use bevy_falling_sand::prelude::{
     Particle, ParticleMap, ParticleSimulationSet, RemoveParticleEvent,
 };
 
-use super::{update_cursor_coordinates, AppState, CursorCoords, SelectedBrushParticle};
+use super::{update_cursor_position, AppState, CursorCoords, SelectedBrushParticle};
 
 pub(super) struct BrushPlugin;
 
@@ -28,13 +28,13 @@ impl bevy::prelude::Plugin for BrushPlugin {
                     .run_if(input_pressed(MouseButton::Left))
                     .run_if(in_state(BrushState::Spawn))
                     .run_if(in_state(AppState::Canvas))
-                    .after(update_cursor_coordinates),
+                    .after(update_cursor_position),
                 despawn_particles
                     .run_if(input_pressed(MouseButton::Left))
                     .run_if(in_state(BrushState::Despawn))
                     .run_if(in_state(AppState::Canvas))
                     .before(ParticleSimulationSet)
-                    .after(update_cursor_coordinates),
+                    .after(update_cursor_position),
             ),
         );
     }
@@ -191,9 +191,9 @@ impl BrushType {
         match self {
             BrushType::Line => {
                 for x in min_x * 3..=max_x * 3 {
-                    let coordinates = IVec2::new(coords.x + x, coords.y);
+                    let position = IVec2::new(coords.x + x, coords.y);
                     commands.trigger(RemoveParticleEvent {
-                        coordinates,
+                        position,
                         despawn: true,
                     });
                 }
@@ -203,22 +203,22 @@ impl BrushType {
                 let circle = Circle::new(brush_size);
                 for x in min_x * 2..=max_x * 2 {
                     for y in min_y * 2..=max_y * 2 {
-                        let mut coordinates = Vec2::new(x as f32, y as f32);
-                        coordinates = circle.closest_point(coordinates);
-                        circle_coords.insert((coordinates + coords.as_vec2()).as_ivec2());
+                        let mut position = Vec2::new(x as f32, y as f32);
+                        position = circle.closest_point(position);
+                        circle_coords.insert((position + coords.as_vec2()).as_ivec2());
                     }
                 }
-                for coordinates in circle_coords {
+                for position in circle_coords {
                     commands.trigger(RemoveParticleEvent {
-                        coordinates,
+                        position,
                         despawn: true,
                     })
                 }
             }
             BrushType::Cursor => {
-                let coordinates = IVec2::new(coords.x, coords.y);
+                let position = IVec2::new(coords.x, coords.y);
                 commands.trigger(RemoveParticleEvent {
-                    coordinates,
+                    position,
                     despawn: true,
                 });
             }

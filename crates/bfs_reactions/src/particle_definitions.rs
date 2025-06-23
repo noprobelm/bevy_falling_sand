@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 use bfs_color::*;
 use bfs_core::{
-    impl_particle_blueprint, Coordinates, Particle, ParticleBlueprint, ParticleRegistrationEvent,
-    ParticleType,
+    impl_particle_blueprint, Particle, ParticleBlueprint, ParticlePosition,
+    ParticleRegistrationEvent, ParticleType,
 };
 use std::time::Duration;
 
@@ -124,7 +124,7 @@ impl Reacting {
         &self,
         commands: &mut Commands,
         rng: &mut ReactionRng,
-        coordinates: &Coordinates,
+        coordinates: &ParticlePosition,
     ) {
         if self.chance(rng) {
             commands.spawn((

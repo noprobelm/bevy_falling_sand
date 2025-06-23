@@ -1,10 +1,10 @@
-mod chunk_map;
+mod map;
 mod particle;
 mod rng;
 
 use bevy::prelude::*;
 
-pub use chunk_map::*;
+pub use map::*;
 pub use particle::*;
 pub use rng::*;
 

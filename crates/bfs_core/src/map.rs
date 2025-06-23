@@ -3,7 +3,7 @@ use bevy::platform::hash::FixedHasher;
 use bevy::prelude::*;
 
 use crate::{
-    Coordinates, Particle, ParticleSimulationSet, ParticleType, ParticleTypeMap,
+    Particle, ParticlePosition, ParticleSimulationSet, ParticleType, ParticleTypeMap,
     RemoveParticleEvent,
 };
 
@@ -66,19 +66,19 @@ impl ParticleMap {
             chunk_shift: chunk_size.trailing_zeros(),
         }
     }
-    fn index(&self, coord: &IVec2) -> usize {
-        let col = ((coord.x + self.flat_map_offset_value as i32) >> self.chunk_shift) as usize;
-        let row = ((self.flat_map_offset_value as i32 - coord.y) >> self.chunk_shift) as usize;
+    fn index(&self, position: &IVec2) -> usize {
+        let col = ((position.x + self.flat_map_offset_value as i32) >> self.chunk_shift) as usize;
+        let row = ((self.flat_map_offset_value as i32 - position.y) >> self.chunk_shift) as usize;
         row * self.size + col
     }
 
-    pub fn chunk(&self, coord: &IVec2) -> Option<&Chunk> {
-        let index = self.index(coord);
+    pub fn chunk(&self, position: &IVec2) -> Option<&Chunk> {
+        let index = self.index(position);
         self.chunks.get(index)
     }
 
-    pub fn chunk_mut(&mut self, coord: &IVec2) -> Option<&mut Chunk> {
-        let index = self.index(coord);
+    pub fn chunk_mut(&mut self, position: &IVec2) -> Option<&mut Chunk> {
+        let index = self.index(position);
         self.chunks.get_mut(index)
     }
 
@@ -90,19 +90,19 @@ impl ParticleMap {
         self.chunks.iter_mut()
     }
 
-    pub fn get(&self, coordinates: &IVec2) -> Option<&Entity> {
-        let index = self.index(coordinates);
+    pub fn get(&self, position: &IVec2) -> Option<&Entity> {
+        let index = self.index(position);
         if let Some(chunk) = self.chunks.get(index) {
-            chunk.get(coordinates)
+            chunk.get(position)
         } else {
             None
         }
     }
 
-    pub fn remove(&mut self, coordinates: &IVec2) -> Option<Entity> {
-        let index = self.index(coordinates); // Calculate index first
+    pub fn remove(&mut self, position: &IVec2) -> Option<Entity> {
+        let index = self.index(position); // Calculate index first
         if let Some(chunk) = self.chunks.get_mut(index) {
-            chunk.remove(coordinates)
+            chunk.remove(position)
         } else {
             None
         }
@@ -188,11 +188,11 @@ impl Chunk {
         }
     }
 
-    fn set_dirty_rect(&mut self, coordinates: IVec2) {
+    fn set_dirty_rect(&mut self, position: IVec2) {
         if let Some(dirty_rect) = self.next_dirty_rect {
-            self.next_dirty_rect = Some(dirty_rect.union_point(coordinates));
+            self.next_dirty_rect = Some(dirty_rect.union_point(position));
         } else {
-            self.next_dirty_rect = Some(IRect::from_center_size(coordinates, IVec2::ONE));
+            self.next_dirty_rect = Some(IRect::from_center_size(position, IVec2::ONE));
         }
     }
 }
@@ -202,23 +202,23 @@ impl Chunk {
         self.region
     }
 
-    pub fn get(&self, coordinates: &IVec2) -> Option<&Entity> {
-        self.chunk.get(coordinates)
+    pub fn get(&self, position: &IVec2) -> Option<&Entity> {
+        self.chunk.get(position)
     }
 
-    pub fn insert(&mut self, coordinates: IVec2, item: Entity) -> Option<Entity> {
-        self.set_dirty_rect(coordinates);
-        self.chunk.insert(coordinates, item)
+    pub fn insert(&mut self, position: IVec2, item: Entity) -> Option<Entity> {
+        self.set_dirty_rect(position);
+        self.chunk.insert(position, item)
     }
 
-    pub fn entry(&mut self, coordinates: IVec2) -> Entry<'_, IVec2, Entity, FixedHasher> {
-        self.set_dirty_rect(coordinates);
-        self.chunk.entry(coordinates)
+    pub fn entry(&mut self, position: IVec2) -> Entry<'_, IVec2, Entity, FixedHasher> {
+        self.set_dirty_rect(position);
+        self.chunk.entry(position)
     }
 
-    pub fn remove(&mut self, coordinates: &IVec2) -> Option<Entity> {
-        self.set_dirty_rect(*coordinates);
-        self.chunk.remove(coordinates)
+    pub fn remove(&mut self, position: &IVec2) -> Option<Entity> {
+        self.set_dirty_rect(*position);
+        self.chunk.remove(position)
     }
 
     pub fn clear(&mut self) {
@@ -250,7 +250,7 @@ pub fn on_remove_particle(
     mut commands: Commands,
     mut map: ResMut<ParticleMap>,
 ) {
-    if let Some(entity) = map.remove(&trigger.event().coordinates) {
+    if let Some(entity) = map.remove(&trigger.event().position) {
         if trigger.event().despawn {
             commands.entity(entity).remove::<ChildOf>().despawn();
         } else {
@@ -282,7 +282,7 @@ pub fn on_clear_particle_map(
 pub fn on_clear_particle_type_children(
     trigger: Trigger<ClearParticleTypeChildrenEvent>,
     mut commands: Commands,
-    particle_query: Query<&Coordinates, With<Particle>>,
+    particle_query: Query<&ParticlePosition, With<Particle>>,
     parent_query: Query<&Children, With<ParticleType>>,
     particle_parent_map: Res<ParticleTypeMap>,
     mut map: ResMut<ParticleMap>,
@@ -291,8 +291,8 @@ pub fn on_clear_particle_type_children(
     if let Some(parent_entity) = particle_parent_map.get(&particle_type) {
         if let Ok(children) = parent_query.get(*parent_entity) {
             children.iter().for_each(|child_entity| {
-                if let Ok(coordinates) = particle_query.get(child_entity) {
-                    map.remove(&coordinates.0);
+                if let Ok(position) = particle_query.get(child_entity) {
+                    map.remove(&position.0);
                 } else {
                     // If this happens, something is seriously amiss.
                     error!("No child entity found for particle type '{particle_type}' while removing child from chunk map.")

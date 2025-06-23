@@ -23,4 +23,3 @@ impl ReactionRng {
         self.0.index(bound)
     }
 }
-

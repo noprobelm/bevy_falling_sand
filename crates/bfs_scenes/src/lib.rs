@@ -1,7 +1,7 @@
 mod events;
 
 use bevy::prelude::*;
-use bfs_core::{Coordinates, Particle};
+use bfs_core::{Particle, ParticlePosition};
 use ron::de::from_reader;
 use serde::{Deserialize, Serialize};
 use std::fs::File;
@@ -28,7 +28,7 @@ impl Plugin for FallingSandScenesPlugin {
 #[derive(Serialize, Deserialize)]
 pub struct ParticleData {
     pub particle_type: Particle,
-    pub coordinates: Coordinates,
+    pub coordinates: ParticlePosition,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -37,7 +37,7 @@ pub struct ParticleScene {
 }
 
 pub fn save_scene_system(
-    particle_query: Query<(&Particle, &Coordinates)>,
+    particle_query: Query<(&Particle, &ParticlePosition)>,
     mut ev_save_scene: EventReader<SaveSceneEvent>,
 ) {
     for ev in ev_save_scene.read() {

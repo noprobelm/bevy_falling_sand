@@ -2,7 +2,7 @@ use avian2d::math::Vector;
 pub use avian2d::prelude::*;
 
 use bevy::prelude::*;
-use bfs_core::{Coordinates, Particle, ParticleMap, ParticleSimulationSet};
+use bfs_core::{Particle, ParticleMap, ParticlePosition, ParticleSimulationSet};
 use bfs_movement::{Liquid, MovableSolid, Moved, Solid, Wall};
 
 pub struct FallingSandPhysicsPlugin {
@@ -193,10 +193,10 @@ fn spawn_solid_terrain_colliders(
 }
 
 fn map_wall_particles(
-    wall_query: Query<&Coordinates, With<Wall>>,
+    wall_query: Query<&ParticlePosition, With<Wall>>,
     mut wall_positions: ResMut<WallPerimeterPositions>,
 ) {
-    let coords: Vec<Coordinates> = wall_query.iter().copied().collect();
+    let coords: Vec<ParticlePosition> = wall_query.iter().copied().collect();
 
     if coords.is_empty() {
         wall_positions.0 = (Vec::new(), Vec::new());
@@ -238,7 +238,7 @@ fn map_wall_particles(
 }
 
 fn map_movable_solid_particles(
-    movable_solid_query: Query<(&Coordinates, &Moved), With<MovableSolid>>,
+    movable_solid_query: Query<(&ParticlePosition, &Moved), With<MovableSolid>>,
     mut mesh_data: ResMut<MovableSolidMeshData>,
 ) {
     use earcutr::earcut;
@@ -320,7 +320,7 @@ fn map_movable_solid_particles(
 }
 
 fn map_solid_particles(
-    movable_solid_query: Query<(&Coordinates, &Moved), With<Solid>>,
+    movable_solid_query: Query<(&ParticlePosition, &Moved), With<Solid>>,
     mut mesh_data: ResMut<SolidMeshData>,
 ) {
     use earcutr::earcut;
@@ -412,14 +412,14 @@ fn condition_walls_changed(
 }
 
 fn condition_movable_solids_changed(
-    query: Query<&MovableSolid, Changed<Coordinates>>,
+    query: Query<&MovableSolid, Changed<ParticlePosition>>,
     removed: RemovedComponents<MovableSolid>,
 ) -> bool {
     !query.is_empty() || !removed.is_empty()
 }
 
 fn condition_solids_changed(
-    query: Query<&Solid, Changed<Coordinates>>,
+    query: Query<&Solid, Changed<ParticlePosition>>,
     removed: RemovedComponents<Solid>,
 ) -> bool {
     !query.is_empty() || !removed.is_empty()
