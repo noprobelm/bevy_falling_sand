@@ -2,13 +2,18 @@ use bevy::platform::collections::HashMap;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::{ParticleMap, ParticleSimulationSet};
+use crate::ParticleMap;
 
 pub(super) struct ParticleCorePlugin;
 
 impl Plugin for ParticleCorePlugin {
     fn build(&self, app: &mut App) {
-        app.register_type::<ParticleType>()
+        app.init_resource::<SimulationRun>()
+            .configure_sets(
+                Update,
+                ParticleSimulationSet.run_if(resource_exists::<SimulationRun>),
+            )
+            .register_type::<ParticleType>()
             .register_type::<Particle>()
             .register_type::<Coordinates>()
             .init_resource::<ParticleTypeMap>()
@@ -49,6 +54,15 @@ macro_rules! impl_particle_blueprint {
         }
     };
 }
+
+#[derive(Resource, Default)]
+pub struct SimulationRun;
+
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ParticleSimulationSet;
+
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ParticleDebugSet;
 
 #[derive(
     Clone,
