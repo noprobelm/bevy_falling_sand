@@ -19,7 +19,7 @@ impl Plugin for ParticleMapPlugin {
             .add_event::<ClearParticleTypeChildrenEvent>()
             .add_systems(Update, reset_chunks.after(ParticleSimulationSet))
             .add_observer(on_remove_particle)
-            .add_observer(on_clear_chunk_map)
+            .add_observer(on_clear_particle_map)
             .add_observer(on_clear_particle_type_children);
     }
 }
@@ -260,7 +260,7 @@ pub fn on_remove_particle(
     }
 }
 
-pub fn on_clear_chunk_map(
+pub fn on_clear_particle_map(
     _trigger: Trigger<ClearMapEvent>,
     mut commands: Commands,
     mut map: ResMut<ParticleMap>,
