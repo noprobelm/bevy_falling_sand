@@ -1,12 +1,18 @@
+//! This crate sources all peripheral plugins for *Bevy Falling Sand* and provides some convenient
+//! plugins and commonly used particle bundles.
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![warn(
     clippy::nursery,
     clippy::pedantic,
     nonstandard_style,
-    rustdoc::broken_intra_doc_links
+    rustdoc::broken_intra_doc_links,
+    missing_docs
 )]
 #![allow(clippy::default_trait_access, clippy::module_name_repetitions)]
 
+/// Provides bundles for commonly used particle types.
 pub mod bundles;
+/// Prelude for commonly accessed constructs
 pub mod prelude;
 
 use std::time::Duration;
@@ -25,8 +31,12 @@ pub use bfs_spatial as spatial;
 
 pub use bundles::*;
 
+/// Plugin which includes all main *Bevy Falling Sand* sub-plugins.
 pub struct FallingSandPlugin {
+    /// The length unit to use for [avian2d]
+    /// [avian2d](https://docs.rs/avian2d/latest/avian2d/)
     pub length_unit: f32,
+    /// The spatial refresh frequency to use for [bevy_spatial](https://docs.rs/bevy_spatial/latest/bevy_spatial/)
     pub spatial_refresh_frequency: Duration,
 }
 
@@ -40,6 +50,8 @@ impl Default for FallingSandPlugin {
 }
 
 impl FallingSandPlugin {
+    /// Change the units-per-meter scaling factor for avian2d, which influences some of the engine's
+    /// internal properties with respect to the scale of the world.
     #[must_use]
     pub const fn with_length_unit(self, length_unit: f32) -> Self {
         Self {
@@ -49,6 +61,9 @@ impl FallingSandPlugin {
     }
 
     #[must_use]
+    /// Change the update rate for particle spatial queries.
+    ///
+    /// Expects a [Duration] which is the delay between kdtree updates.
     pub const fn with_spatial_refresh_frequency(self, spatial_refresh_frequency: Duration) -> Self {
         Self {
             spatial_refresh_frequency,
@@ -76,6 +91,7 @@ impl Plugin for FallingSandPlugin {
     }
 }
 
+/// A minimal plugin for *Bevy Falling Sand*, which only adds the crate's core features.
 pub struct FallingSandMinimalPlugin;
 
 impl Plugin for FallingSandMinimalPlugin {
