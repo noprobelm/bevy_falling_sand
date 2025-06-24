@@ -1,9 +1,13 @@
 use bevy::prelude::*;
-use serde::{Deserialize, Serialize};
-use bfs_color::*;
-use bfs_core::*;
-use bfs_movement::*;
+use bfs_color::{ChangesColorBlueprint, ColorProfile, ColorProfileBlueprint};
+use bfs_core::ParticleType;
+use bfs_movement::{
+    Density, DensityBlueprint, Gas, GasBlueprint, Liquid, LiquidBlueprint, MomentumBlueprint,
+    MovableSolid, MovableSolidBlueprint, MovementPriority, MovementPriorityBlueprint, Solid,
+    SolidBlueprint, Velocity, VelocityBlueprint, Wall, WallBlueprint,
+};
 use bfs_reactions::{BurningBlueprint, BurnsBlueprint};
+use serde::{Deserialize, Serialize};
 
 #[derive(Bundle)]
 pub struct ParticleBundle {
