@@ -30,6 +30,33 @@ pub struct FallingSandPlugin {
     pub spatial_refresh_frequency: Duration,
 }
 
+impl Default for FallingSandPlugin {
+    fn default() -> Self {
+        Self {
+            length_unit: 8.0,
+            spatial_refresh_frequency: Duration::from_millis(50),
+        }
+    }
+}
+
+impl FallingSandPlugin {
+    #[must_use]
+    pub const fn with_length_unit(self, length_unit: f32) -> Self {
+        Self {
+            length_unit,
+            ..self
+        }
+    }
+
+    #[must_use]
+    pub const fn with_spatial_refresh_frequency(self, spatial_refresh_frequency: Duration) -> Self {
+        Self {
+            spatial_refresh_frequency,
+            ..self
+        }
+    }
+}
+
 impl Plugin for FallingSandPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
