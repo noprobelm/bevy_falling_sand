@@ -48,25 +48,25 @@ impl Grid {
         Self { min, size, data }
     }
 
-    fn index(&self, coord: IVec2) -> usize {
-        let local = coord - self.min;
+    fn index(&self, position: IVec2) -> usize {
+        let local = position - self.min;
         (local.y * self.size.x + local.x) as usize
     }
 
-    fn set(&mut self, coord: IVec2) {
-        let idx = self.index(coord);
+    fn set(&mut self, position: IVec2) {
+        let idx = self.index(position);
         self.data[idx] = true;
     }
 
-    fn get(&self, coord: IVec2) -> bool {
-        if coord.x < self.min.x
-            || coord.y < self.min.y
-            || coord.x > self.min.x + self.size.x - 1
-            || coord.y > self.min.y + self.size.y - 1
+    fn get(&self, position: IVec2) -> bool {
+        if position.x < self.min.x
+            || position.y < self.min.y
+            || position.x > self.min.x + self.size.x - 1
+            || position.y > self.min.y + self.size.y - 1
         {
             return false;
         }
-        let idx = self.index(coord);
+        let idx = self.index(position);
         self.data[idx]
     }
 
@@ -196,23 +196,23 @@ fn map_wall_particles(
     wall_query: Query<&ParticlePosition, With<Wall>>,
     mut wall_positions: ResMut<WallPerimeterPositions>,
 ) {
-    let coords: Vec<ParticlePosition> = wall_query.iter().copied().collect();
+    let positions: Vec<ParticlePosition> = wall_query.iter().copied().collect();
 
-    if coords.is_empty() {
+    if positions.is_empty() {
         wall_positions.0 = (Vec::new(), Vec::new());
         return;
     }
 
-    let min = coords
+    let min = positions
         .iter()
         .fold(IVec2::new(i32::MAX, i32::MAX), |min, c| min.min(c.0));
-    let max = coords
+    let max = positions
         .iter()
         .fold(IVec2::new(i32::MIN, i32::MIN), |max, c| max.max(c.0));
 
     let mut grid = Grid::new(min, max);
-    for coord in &coords {
-        grid.set(coord.0);
+    for position in &positions {
+        grid.set(position.0);
     }
 
     let edges = extract_perimeter_edges(&grid);
@@ -244,18 +244,18 @@ fn map_movable_solid_particles(
     use earcutr::earcut;
     use std::collections::{HashSet, VecDeque};
 
-    let coords: Vec<IVec2> = movable_solid_query
+    let positions: Vec<IVec2> = movable_solid_query
         .iter()
         .filter_map(|(c, m)| if !m.0 { Some(c.0) } else { None })
         .collect();
 
-    if coords.is_empty() {
+    if positions.is_empty() {
         mesh_data.vertices.clear();
         mesh_data.indices.clear();
         return;
     }
 
-    let mut unvisited: HashSet<IVec2> = coords.iter().copied().collect();
+    let mut unvisited: HashSet<IVec2> = positions.iter().copied().collect();
     let mut all_vertices = Vec::new();
     let mut all_indices = Vec::new();
 
@@ -285,8 +285,8 @@ fn map_movable_solid_particles(
             .copied()
             .fold(IVec2::splat(i32::MIN), |a, b| a.max(b));
         let mut grid = Grid::new(min, max);
-        for coord in &group {
-            grid.set(*coord);
+        for position in &group {
+            grid.set(*position);
         }
 
         let loop_vertices = extract_ordered_perimeter_loop(&grid);
@@ -326,18 +326,18 @@ fn map_solid_particles(
     use earcutr::earcut;
     use std::collections::{HashSet, VecDeque};
 
-    let coords: Vec<IVec2> = movable_solid_query
+    let positions: Vec<IVec2> = movable_solid_query
         .iter()
         .filter_map(|(c, m)| if !m.0 { Some(c.0) } else { None })
         .collect();
 
-    if coords.is_empty() {
+    if positions.is_empty() {
         mesh_data.vertices.clear();
         mesh_data.indices.clear();
         return;
     }
 
-    let mut unvisited: HashSet<IVec2> = coords.iter().copied().collect();
+    let mut unvisited: HashSet<IVec2> = positions.iter().copied().collect();
     let mut all_vertices = Vec::new();
     let mut all_indices = Vec::new();
 
@@ -367,8 +367,8 @@ fn map_solid_particles(
             .copied()
             .fold(IVec2::splat(i32::MIN), |a, b| a.max(b));
         let mut grid = Grid::new(min, max);
-        for coord in &group {
-            grid.set(*coord);
+        for position in &group {
+            grid.set(*position);
         }
 
         let loop_vertices = extract_ordered_perimeter_loop(&grid);
@@ -492,10 +492,10 @@ fn extract_perimeter_edges(grid: &Grid) -> Vec<[Vec2; 2]> {
         ),
     ];
 
-    for coord in grid.iter_occupied() {
-        let base = coord.as_vec2();
+    for position in grid.iter_occupied() {
+        let base = position.as_vec2();
         for (offset, v0, v1) in directions {
-            if !grid.get(coord + offset) {
+            if !grid.get(position + offset) {
                 edges.push([base + v0, base + v1]);
             }
         }
