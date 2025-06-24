@@ -45,6 +45,7 @@ impl bevy::prelude::Plugin for UIPlugin {
             .add_event::<ParticleEditorSave>()
             .add_event::<ParticleEditorUpdate>()
             .add_systems(First, update_cursor_position)
+            .add_systems(Update, float_dynamic_rigid_bodies)
             .add_systems(
                 Update,
                 (
@@ -1914,6 +1915,39 @@ fn spawn_ball(
         MeshMaterial2d(materials.add(Color::Srgba(Srgba::rgba_u8(246, 174, 45, 255)))),
     ));
     Ok(())
+}
+
+fn float_dynamic_rigid_bodies(
+    mut rigid_body_query: Query<(
+        &RigidBody,
+        &Transform,
+        &mut GravityScale,
+        &mut LinearVelocity,
+    )>,
+    liquid_query: Query<&Particle, With<Liquid>>,
+    chunk_map: Res<ParticleMap>,
+) {
+    let damping_factor = 0.95;
+    rigid_body_query.iter_mut().for_each(
+        |(rigid_body, transform, mut gravity_scale, mut linear_velocity)| {
+            if rigid_body == &RigidBody::Dynamic {
+                if let Some(entity) = chunk_map.get(&IVec2::new(
+                    transform.translation.x as i32,
+                    transform.translation.y as i32,
+                )) {
+                    if liquid_query.contains(*entity) {
+                        linear_velocity.y *= damping_factor;
+                        if linear_velocity.y.abs() < 0.001 {
+                            linear_velocity.y = 0.0;
+                        }
+                        gravity_scale.0 = -1.0;
+                    }
+                } else {
+                    gravity_scale.0 = 1.0;
+                }
+            }
+        },
+    );
 }
 
 fn despawn_balls(mut commands: Commands, ball_query: Query<Entity, With<DemoBall>>) {

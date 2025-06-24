@@ -2,8 +2,8 @@ use avian2d::math::Vector;
 pub use avian2d::prelude::*;
 
 use bevy::prelude::*;
-use bfs_core::{Particle, ParticleMap, ParticlePosition, ParticleSimulationSet};
-use bfs_movement::{Liquid, MovableSolid, Moved, Solid, Wall};
+use bfs_core::ParticlePosition;
+use bfs_movement::{MovableSolid, Moved, Solid, Wall};
 
 pub struct FallingSandPhysicsPlugin {
     pub length_unit: f32,
@@ -27,10 +27,6 @@ impl Plugin for FallingSandPhysicsPlugin {
         app.add_systems(Update, spawn_movable_solid_terrain_colliders);
         app.add_systems(Update, map_solid_particles.run_if(condition_solids_changed));
         app.add_systems(Update, spawn_solid_terrain_colliders);
-        app.add_systems(
-            Update,
-            float_dynamic_rigid_bodies.after(ParticleSimulationSet),
-        );
     }
 }
 
@@ -502,37 +498,4 @@ fn extract_perimeter_edges(grid: &Grid) -> Vec<[Vec2; 2]> {
     }
 
     edges
-}
-
-fn float_dynamic_rigid_bodies(
-    mut rigid_body_query: Query<(
-        &RigidBody,
-        &Transform,
-        &mut GravityScale,
-        &mut LinearVelocity,
-    )>,
-    liquid_query: Query<&Particle, With<Liquid>>,
-    chunk_map: Res<ParticleMap>,
-) {
-    let damping_factor = 0.95;
-    rigid_body_query.iter_mut().for_each(
-        |(rigid_body, transform, mut gravity_scale, mut linear_velocity)| {
-            if rigid_body == &RigidBody::Dynamic {
-                if let Some(entity) = chunk_map.get(&IVec2::new(
-                    transform.translation.x as i32,
-                    transform.translation.y as i32,
-                )) {
-                    if liquid_query.contains(*entity) {
-                        linear_velocity.y *= damping_factor;
-                        if linear_velocity.y.abs() < 0.001 {
-                            linear_velocity.y = 0.0;
-                        }
-                        gravity_scale.0 = -1.0;
-                    }
-                } else {
-                    gravity_scale.0 = 1.0;
-                }
-            }
-        },
-    );
 }
