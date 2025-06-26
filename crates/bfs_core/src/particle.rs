@@ -225,6 +225,14 @@ pub fn handle_new_particles(
     ev_particle_registered.write(ParticleRegistrationEvent { entities });
 }
 
+/// Observer which listens for [`ResetParticleEvent`] and subsequently triggers the associated
+/// [`Particle`] component of an entity (if it exists) as 
+/// [`Changed`](https://docs.rs/bevy/latest/bevy/ecs/prelude/struct.Changed.html). Systems which 
+/// act on [`Particle`] change detection can then perform their actions accordingly.
+///
+/// For example, [`handle_new_particles`] utilizes [`Particle`] component change detection to send a
+/// `ParticleRegistrationEvent`, which subcrates of *Bevy Falling Sand* rely on to insert or remove
+/// Particle components based on their parent's blueprint data.
 pub fn on_reset_particle(
     trigger: Trigger<ResetParticleEvent>,
     mut particle_query: Query<&mut Particle>,
