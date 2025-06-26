@@ -144,21 +144,15 @@ impl ParticleMap {
     #[must_use]
     pub fn get(&self, position: &IVec2) -> Option<&Entity> {
         let index = self.index(*position);
-        if let Some(chunk) = self.chunks.get(index) {
-            chunk.get(position)
-        } else {
-            None
-        }
+        self.chunks.get(index).and_then(|chunk| chunk.get(position))
     }
 
     /// Remove the entity at position.
     pub fn remove(&mut self, position: &IVec2) -> Option<Entity> {
-        let index = self.index(*position); // Calculate index first
-        if let Some(chunk) = self.chunks.get_mut(index) {
-            chunk.remove(position)
-        } else {
-            None
-        }
+        let index = self.index(*position);
+        self.chunks
+            .get_mut(index)
+            .and_then(|chunk| chunk.remove(position))
     }
 
     /// Swap the entities between the first and second positions.
