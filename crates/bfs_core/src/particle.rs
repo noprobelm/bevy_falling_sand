@@ -127,6 +127,7 @@ pub struct Particle {
 
 impl Particle {
     /// Initialize a new `Particle`
+    #[must_use]
     pub fn new(name: &str) -> Self {
         Self {
             name: name.to_string(),
