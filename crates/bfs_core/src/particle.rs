@@ -34,28 +34,28 @@ impl Plugin for ParticleCorePlugin {
 /// A type that can hold parent data for a child particle. It can be used to access or modify data
 /// for a particle type.
 #[doc(hidden)]
-pub trait ParticleBlueprint: Component {
+pub trait ParticleComponent: Component {
     /// The data held by the blueprint
     type Data: Component;
 
     /// The immutable data
-    fn data(&self) -> &Self::Data;
+    fn component(&self) -> &Self::Data;
     /// The mutable data
-    fn data_mut(&mut self) -> &mut Self::Data;
+    fn component_mut(&mut self) -> &mut Self::Data;
 }
 
 #[macro_export]
 #[doc(hidden)]
 macro_rules! impl_particle_blueprint {
     ($struct_name:ident, $data_type:ty) => {
-        impl ParticleBlueprint for $struct_name {
+        impl ParticleComponent for $struct_name {
             type Data = $data_type;
 
-            fn data(&self) -> &Self::Data {
+            fn component(&self) -> &Self::Data {
                 &self.0
             }
 
-            fn data_mut(&mut self) -> &mut Self::Data {
+            fn component_mut(&mut self) -> &mut Self::Data {
                 &mut self.0
             }
         }

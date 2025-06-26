@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use super::ColorRng;
 use bfs_core::{
-    impl_particle_blueprint, Particle, ParticleBlueprint, ParticleRegistrationEvent, ParticleType,
+    impl_particle_blueprint, Particle, ParticleComponent, ParticleRegistrationEvent, ParticleType,
 };
 
 pub(super) struct ParticleDefinitionsPlugin;

@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bfs_core::{impl_particle_blueprint, ParticleBlueprint, ParticleType};
+use bfs_core::{impl_particle_blueprint, ParticleComponent, ParticleType};
 use serde::{Deserialize, Serialize};
 
 use super::{MovementPriority, MovementPriorityBlueprint};

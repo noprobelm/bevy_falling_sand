@@ -3,8 +3,8 @@ use bevy::platform::hash::FixedHasher;
 use bevy::prelude::*;
 
 use crate::{
-    Particle, ParticlePosition, ParticleSimulationSet, ParticleType, ParticleTypeMap,
-    RemoveParticleEvent,
+    Particle, ParticleComponent, ParticlePosition, ParticleSimulationSet, ParticleType,
+    ParticleTypeMap, RemoveParticleEvent,
 };
 
 pub struct ParticleMapPlugin;

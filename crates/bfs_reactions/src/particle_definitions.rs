@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bfs_color::*;
 use bfs_core::{
-    impl_particle_blueprint, Particle, ParticleBlueprint, ParticlePosition,
+    impl_particle_blueprint, Particle, ParticleComponent, ParticlePosition,
     ParticleRegistrationEvent, ParticleType,
 };
 use std::time::Duration;
