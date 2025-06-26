@@ -147,8 +147,10 @@ pub struct ParticleRegistrationEvent {
     pub entities: Vec<Entity>,
 }
 
+/// Event to send each tiem a Particle is removed from the simulation.
 #[derive(Event)]
 pub struct RemoveParticleEvent {
+    /// The position of the particle.
     pub position: IVec2,
     pub despawn: bool,
 }
