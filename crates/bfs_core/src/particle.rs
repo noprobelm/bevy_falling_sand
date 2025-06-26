@@ -118,9 +118,9 @@ impl ParticleTypeMap {
 }
 
 /// Marker component for a Particle entity.
-#[derive(Component, Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Component, Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Particle {
-    /// The name of the particle, which corresponds to its [`ParticleType`]` and can be used as an
+    /// The name of the particle, which corresponds to its [`ParticleType`] and can be used as an
     /// index in the  [`ParticleTypeMap`] resource.
     pub name: String,
 }
