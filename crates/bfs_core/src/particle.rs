@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::ParticleMap;
 
-#[doc(hidden)]
+/// Adds core constructs necessary for *Bevy Falling Sand* to function.
 pub struct ParticleCorePlugin;
 
 impl Plugin for ParticleCorePlugin {
@@ -31,8 +31,9 @@ impl Plugin for ParticleCorePlugin {
     }
 }
 
-/// Trait to designate a component as a blueprint for some particle data. Types implmeneting this
-/// trait can use its underlying methods to access component data for a particle.
+/// Designates a component as a blueprint for some particle data. Types implmeneting this
+/// trait can use its underlying methods to access component data for a particle, which can be
+/// useful for resetting particle data back to the blueprint its parent holds.
 #[doc(hidden)]
 pub trait ParticleComponent: Component {
     /// The data held by the blueprint
@@ -62,22 +63,25 @@ macro_rules! impl_particle_blueprint {
     };
 }
 
-#[derive(Resource, Default)]
 /// Marker resource to indicate whether the simulation should be running.
+#[derive(Resource, Default)]
 pub struct SimulationRun;
 
-#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
 /// System set for particle simulation systems.
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ParticleSimulationSet;
 
+/// Unique identifer for a particle type. No two particle types with the same name can exist.
 #[derive(
     Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Component, Serialize, Deserialize,
 )]
 pub struct ParticleType {
+    /// The particle type's name.
     pub name: String,
 }
 
 impl ParticleType {
+    /// Initialize a new `ParticleType`
     pub fn new(name: &str) -> ParticleType {
         ParticleType {
             name: name.to_string(),
@@ -85,26 +89,32 @@ impl ParticleType {
     }
 }
 
+/// Maps each [`ParticleType`] to their corresponding entity in the ECS world.
 #[derive(Resource, Clone, Default, Debug)]
 pub struct ParticleTypeMap {
     map: HashMap<String, Entity>,
 }
 
 impl ParticleTypeMap {
+    /// Iterate over key value pairs in the map.
     pub fn iter(&self) -> impl Iterator<Item = (&String, &Entity)> {
         self.map.iter()
     }
 
+    /// Iterate over keys in the map.
     pub fn keys(&self) -> impl Iterator<Item = &String> {
         self.map.keys()
     }
 
-    pub fn insert(&mut self, ptype: String, entity: Entity) -> &mut Entity {
-        self.map.entry(ptype).or_insert(entity)
+    /// Insert a new particle type entity.
+    pub fn insert(&mut self, name: String, entity: Entity) -> Option<Entity> {
+        self.map.insert(name, entity)
     }
 
-    pub fn get(&self, ptype: &String) -> Option<&Entity> {
-        self.map.get(ptype)
+    /// Get a particle type from the map if it exists.
+    #[must_use]
+    pub fn get(&self, name: &String) -> Option<&Entity> {
+        self.map.get(name)
     }
 }
 
