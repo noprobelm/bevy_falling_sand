@@ -1,3 +1,4 @@
+//! Provides spatial mapping functionality for particles.
 use bevy::platform::collections::{hash_map::Entry, HashMap};
 use bevy::platform::hash::FixedHasher;
 use bevy::prelude::*;
@@ -7,6 +8,7 @@ use crate::{
     ParticleTypeMap, RemoveParticleEvent,
 };
 
+/// Adds Bevy plugin elements for particle mapping functionality.
 pub struct ParticleMapPlugin;
 
 impl Plugin for ParticleMapPlugin {
@@ -21,12 +23,25 @@ impl Plugin for ParticleMapPlugin {
     }
 }
 
+/// Maps spatial positions to Particle entities, which can then be cross referenced to a Particle
+/// query.
+///
+/// The map is segmented into a series of chunks, which assists in particle movement systems by
+/// allowing for the definition of dirty_rects, and eventually parallelized operations on chunks.
+///
+/// Preliminary testing suggests the ideal map and chunk size are both '32'. Initializing with
+/// "default" will ensure optimal values are used.
 #[derive(Clone, Eq, PartialEq, Debug, Resource)]
 pub struct ParticleMap {
+    /// The x/y size of the particle map.
     pub size: usize,
+    /// The x/y number of particles assigned per chunk.
     pub particles_per_chunk: usize,
+    /// The chunks, stored as a flat map
     chunks: Vec<Chunk>,
+    /// The offset value to use when finding the index of a chunk.
     flat_map_offset_value: usize,
+    /// Bitwise right shift operand to use when finding the index of a chunk.
     chunk_shift: u32,
 }
 
@@ -39,9 +54,13 @@ impl Default for ParticleMap {
 }
 
 impl ParticleMap {
+    /// Initialize a new ParticleMap using custom values for the map and chunk size.
     pub fn new(map_size: usize, chunk_size: usize) -> Self {
         if !map_size.is_power_of_two() {
             panic!("Particle map size must be a power of 2")
+        }
+        if !chunk_size.is_power_of_two() {
+            panic!("Chunk size must be a power of 2")
         }
         let num_chunks: usize = map_size.pow(2);
         let grid_offset: usize = map_size.pow(2) / 2;
@@ -66,30 +85,36 @@ impl ParticleMap {
             chunk_shift: chunk_size.trailing_zeros(),
         }
     }
+
     fn index(&self, position: &IVec2) -> usize {
         let col = ((position.x + self.flat_map_offset_value as i32) >> self.chunk_shift) as usize;
         let row = ((self.flat_map_offset_value as i32 - position.y) >> self.chunk_shift) as usize;
         row * self.size + col
     }
 
+    /// Gets a chunk if the position falls anywhere within its bounds.
     pub fn chunk(&self, position: &IVec2) -> Option<&Chunk> {
         let index = self.index(position);
         self.chunks.get(index)
     }
 
+    /// Gets a mutable chunk if the position falls anywhere within its bounds.
     pub fn chunk_mut(&mut self, position: &IVec2) -> Option<&mut Chunk> {
         let index = self.index(position);
         self.chunks.get_mut(index)
     }
 
+    /// Iterate through all chunks in the [`ParticleMap`]
     pub fn iter_chunks(&self) -> impl Iterator<Item = &Chunk> {
         self.chunks.iter()
     }
 
+    /// Iterate through all mutable chunks in the [`ParticleMap`]
     pub fn iter_chunks_mut(&mut self) -> impl Iterator<Item = &mut Chunk> {
         self.chunks.iter_mut()
     }
 
+    /// Get the entity at position.
     pub fn get(&self, position: &IVec2) -> Option<&Entity> {
         let index = self.index(position);
         if let Some(chunk) = self.chunks.get(index) {
@@ -99,6 +124,7 @@ impl ParticleMap {
         }
     }
 
+    /// Remove the entity at position.
     pub fn remove(&mut self, position: &IVec2) -> Option<Entity> {
         let index = self.index(position); // Calculate index first
         if let Some(chunk) = self.chunks.get_mut(index) {
@@ -108,6 +134,7 @@ impl ParticleMap {
         }
     }
 
+    /// Swap the entities between the first and second positions.
     pub fn swap(&mut self, first: IVec2, second: IVec2) {
         let first_chunk_idx = self.index(&first);
         let second_chunk_idx = self.index(&second);
@@ -162,6 +189,7 @@ impl ParticleMap {
         })
     }
 
+    /// Clear the particle map of all entities
     pub fn clear(&mut self) {
         self.chunks.iter_mut().for_each(|chunk| {
             chunk.clear();
@@ -170,6 +198,7 @@ impl ParticleMap {
     }
 }
 
+/// A chunk, used to map positions to entities
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Chunk {
     chunk: HashMap<IVec2, Entity>,
@@ -179,6 +208,7 @@ pub struct Chunk {
 }
 
 impl Chunk {
+    /// Initialize a new Chunk.
     pub fn new(upper_left: IVec2, lower_right: IVec2, size: usize) -> Chunk {
         Chunk {
             chunk: HashMap::with_capacity(size.pow(2)),
@@ -198,42 +228,52 @@ impl Chunk {
 }
 
 impl Chunk {
+    /// Get the region a chunk covers.
     pub fn region(&self) -> IRect {
         self.region
     }
 
+    /// Get the entity at position.
     pub fn get(&self, position: &IVec2) -> Option<&Entity> {
         self.chunk.get(position)
     }
 
+    /// Insert an entity at position.
     pub fn insert(&mut self, position: IVec2, item: Entity) -> Option<Entity> {
         self.set_dirty_rect(position);
         self.chunk.insert(position, item)
     }
 
+    /// Get the 
+    /// ['Entry'](https://docs.rs/bevy/latest/bevy/platform/collections/hash_map/type.Entry.html)
+    /// at position.
     pub fn entry(&mut self, position: IVec2) -> Entry<'_, IVec2, Entity, FixedHasher> {
         self.set_dirty_rect(position);
         self.chunk.entry(position)
     }
 
+    /// Remove the entity at position.
     pub fn remove(&mut self, position: &IVec2) -> Option<Entity> {
         self.set_dirty_rect(*position);
         self.chunk.remove(position)
     }
 
-    pub fn clear(&mut self) {
+    fn clear(&mut self) {
         self.chunk.clear();
         self.next_dirty_rect = None;
     }
 
+    /// Get the dirty rect computed for the current frame.
     pub fn next_dirty_rect(&self) -> Option<IRect> {
         self.next_dirty_rect
     }
 
+    /// Get the dirty rect computed from the previous frame.
     pub fn dirty_rect(&self) -> Option<IRect> {
         self.dirty_rect
     }
 
+    /// Iterate through all entities in the chunk.
     pub fn iter(&self) -> impl Iterator<Item = (&IVec2, &Entity)> {
         self.chunk.iter()
     }

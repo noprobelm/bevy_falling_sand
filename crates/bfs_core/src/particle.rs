@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::ParticleMap;
 
-/// Adds core constructs necessary for *Bevy Falling Sand* to function.
+/// Adds Bevy plugin elements for core particle functionality.
 pub struct ParticleCorePlugin;
 
 impl Plugin for ParticleCorePlugin {
