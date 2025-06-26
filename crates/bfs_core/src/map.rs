@@ -369,7 +369,7 @@ fn on_clear_particle_map(
     map.clear();
 }
 
-pub fn on_clear_particle_type_children(
+fn on_clear_particle_type_children(
     trigger: Trigger<ClearParticleTypeChildrenEvent>,
     mut commands: Commands,
     particle_query: Query<&ParticlePosition, With<Particle>>,
