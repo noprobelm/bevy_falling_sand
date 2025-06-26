@@ -170,7 +170,7 @@ impl ParticleControlUI {
             }
 
             if ui.button("Despawn All Particles").clicked() {
-                commands.trigger(ClearMapEvent);
+                commands.trigger(ClearParticleMapEvent);
             }
         });
     }

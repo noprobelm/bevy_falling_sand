@@ -13,7 +13,7 @@ pub struct ParticleMapPlugin;
 
 impl Plugin for ParticleMapPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<ClearMapEvent>()
+        app.add_event::<ClearParticleMapEvent>()
             .add_event::<ClearParticleTypeChildrenEvent>()
             .add_systems(Startup, setup_particle_map)
             .add_systems(Update, reset_chunks.after(ParticleSimulationSet))
@@ -317,7 +317,7 @@ impl Chunk {
 }
 
 #[derive(Event)]
-pub struct ClearMapEvent;
+pub struct ClearParticleMapEvent;
 
 #[derive(Event)]
 pub struct ClearParticleTypeChildrenEvent(pub String);
@@ -345,7 +345,7 @@ fn reset_chunks(mut map: ResMut<ParticleMap>) {
 }
 
 pub fn on_clear_particle_map(
-    _trigger: Trigger<ClearMapEvent>,
+    _trigger: Trigger<ClearParticleMapEvent>,
     mut commands: Commands,
     mut map: ResMut<ParticleMap>,
     particle_parent_map: Res<ParticleTypeMap>,
