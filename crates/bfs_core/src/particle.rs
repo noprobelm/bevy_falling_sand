@@ -31,16 +31,16 @@ impl Plugin for ParticleCorePlugin {
     }
 }
 
-/// A type that can hold parent data for a child particle. It can be used to access or modify data
-/// for a particle type.
+/// Trait to designate a component as a blueprint for some particle data. Types implmeneting this
+/// trait can use its underlying methods to access component data for a particle.
 #[doc(hidden)]
 pub trait ParticleComponent: Component {
     /// The data held by the blueprint
     type Data: Component;
 
-    /// The immutable data
+    /// The immutable component
     fn component(&self) -> &Self::Data;
-    /// The mutable data
+    /// The mutable component
     fn component_mut(&mut self) -> &mut Self::Data;
 }
 
