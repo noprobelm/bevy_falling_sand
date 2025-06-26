@@ -1,10 +1,13 @@
+//! Provides all core functionality for particles, including registration, mutation, removal, and
+//! even extension through external plugins if desired.
 use bevy::platform::collections::HashMap;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::ParticleMap;
 
-pub(super) struct ParticleCorePlugin;
+#[doc(hidden)]
+pub struct ParticleCorePlugin;
 
 impl Plugin for ParticleCorePlugin {
     fn build(&self, app: &mut App) {
@@ -13,9 +16,6 @@ impl Plugin for ParticleCorePlugin {
                 Update,
                 ParticleSimulationSet.run_if(resource_exists::<SimulationRun>),
             )
-            .register_type::<ParticleType>()
-            .register_type::<Particle>()
-            .register_type::<ParticlePosition>()
             .init_resource::<ParticleTypeMap>()
             .add_event::<ParticleRegistrationEvent>()
             .add_event::<ResetParticleEvent>()
@@ -31,14 +31,21 @@ impl Plugin for ParticleCorePlugin {
     }
 }
 
+/// A type that can hold parent data for a child particle. It can be used to access or modify data
+/// for a particle type.
+#[doc(hidden)]
 pub trait ParticleBlueprint: Component {
+    /// The data held by the blueprint
     type Data: Component;
 
+    /// The immutable data
     fn data(&self) -> &Self::Data;
+    /// The mutable data
     fn data_mut(&mut self) -> &mut Self::Data;
 }
 
 #[macro_export]
+#[doc(hidden)]
 macro_rules! impl_particle_blueprint {
     ($struct_name:ident, $data_type:ty) => {
         impl ParticleBlueprint for $struct_name {
@@ -56,29 +63,16 @@ macro_rules! impl_particle_blueprint {
 }
 
 #[derive(Resource, Default)]
+/// Marker resource to indicate whether the simulation should be running.
 pub struct SimulationRun;
 
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+/// System set for particle simulation systems.
 pub struct ParticleSimulationSet;
 
-#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ParticleDebugSet;
-
 #[derive(
-    Clone,
-    Eq,
-    PartialEq,
-    Ord,
-    PartialOrd,
-    Hash,
-    Debug,
-    Default,
-    Component,
-    Reflect,
-    Serialize,
-    Deserialize,
+    Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Component, Serialize, Deserialize,
 )]
-#[reflect(Component)]
 pub struct ParticleType {
     pub name: String,
 }
@@ -114,8 +108,7 @@ impl ParticleTypeMap {
     }
 }
 
-#[derive(Component, Clone, Debug, PartialEq, Reflect, Serialize, Deserialize)]
-#[reflect(Component)]
+#[derive(Component, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Particle {
     pub name: String,
 }
@@ -128,10 +121,7 @@ impl Particle {
     }
 }
 
-#[derive(
-    Copy, Clone, Eq, PartialEq, Hash, Debug, Default, Component, Reflect, Serialize, Deserialize,
-)]
-#[reflect(Component)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, Default, Component, Serialize, Deserialize)]
 pub struct ParticlePosition(pub IVec2);
 
 #[derive(Clone, Event, Hash, Debug, Eq, PartialEq, PartialOrd)]

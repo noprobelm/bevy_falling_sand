@@ -12,11 +12,7 @@ pub struct ParticleDefinitionsPlugin;
 
 impl Plugin for ParticleDefinitionsPlugin {
     fn build(&self, app: &mut App) {
-        app.register_type::<Fire>()
-            .register_type::<Burns>()
-            .register_type::<Burning>()
-            .register_type::<Reacting>()
-            .add_systems(Update, handle_particle_registration);
+        app.add_systems(Update, handle_particle_registration);
     }
 }
 
@@ -24,20 +20,17 @@ impl_particle_blueprint!(FireBlueprint, Fire);
 impl_particle_blueprint!(BurnsBlueprint, Burns);
 impl_particle_blueprint!(BurningBlueprint, Burning);
 
-#[derive(Copy, Clone, PartialEq, PartialOrd, Debug, Default, Component, Reflect)]
-#[reflect(Component)]
+#[derive(Copy, Clone, PartialEq, PartialOrd, Debug, Default, Component)]
 pub struct Fire {
     pub burn_radius: f32,
     pub chance_to_spread: f64,
     pub destroys_on_spread: bool,
 }
 
-#[derive(Copy, Clone, PartialEq, PartialOrd, Debug, Default, Component, Reflect)]
-#[reflect(Component)]
+#[derive(Copy, Clone, PartialEq, PartialOrd, Debug, Default, Component)]
 pub struct FireBlueprint(pub Fire);
 
-#[derive(Clone, PartialEq, Debug, Default, Component, Reflect)]
-#[reflect(Component)]
+#[derive(Clone, PartialEq, Debug, Default, Component)]
 pub struct Burns {
     pub duration: Duration,
     pub tick_rate: Duration,
@@ -72,8 +65,7 @@ impl Burns {
     }
 }
 
-#[derive(Clone, PartialEq, Debug, Default, Component, Reflect)]
-#[reflect(Component)]
+#[derive(Clone, PartialEq, Debug, Default, Component)]
 pub struct BurnsBlueprint(pub Burns);
 
 #[derive(Clone, Eq, PartialEq, Debug, Default, Component, Reflect)]
@@ -105,8 +97,7 @@ impl Burning {
 #[derive(Clone, Eq, PartialEq, Debug, Default, Component, Reflect)]
 pub struct BurningBlueprint(pub Burning);
 
-#[derive(Clone, PartialEq, Debug, Component, Reflect)]
-#[reflect(Component)]
+#[derive(Clone, PartialEq, Debug, Component)]
 pub struct Reacting {
     pub produces: Particle,
     pub chance_to_produce: f64,
