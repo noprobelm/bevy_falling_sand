@@ -1,14 +1,12 @@
-use std::path::PathBuf;
 use bevy::prelude::*;
-use bfs_core::MutateParticleEvent;
+use std::path::PathBuf;
 
 pub struct EventsPlugin;
 
 impl Plugin for EventsPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<LoadSceneEvent>()
-            .add_event::<SaveSceneEvent>()
-            .add_event::<MutateParticleEvent>();
+            .add_event::<SaveSceneEvent>();
     }
 }
 

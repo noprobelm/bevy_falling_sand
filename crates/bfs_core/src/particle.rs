@@ -20,13 +20,11 @@ impl Plugin for ParticleCorePlugin {
             .add_event::<ParticleRegistrationEvent>()
             .add_event::<ResetParticleEvent>()
             .add_event::<RemoveParticleEvent>()
-            .add_event::<MutateParticleEvent>()
             .add_systems(
                 PreUpdate,
                 handle_new_particles.before(ParticleSimulationSet),
             )
             .add_systems(Update, handle_new_particle_types)
-            .add_systems(Update, ev_mutate_particle.in_set(ParticleSimulationSet))
             .add_observer(on_reset_particle);
     }
 }
@@ -119,31 +117,33 @@ impl ParticleTypeMap {
     }
 }
 
+/// Marker component for a Particle entity.
 #[derive(Component, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Particle {
+    /// The name of the particle, which corresponds to its [`ParticleType`]` and can be used as an
+    /// index in the  [`ParticleTypeMap`] resource.
     pub name: String,
 }
 
 impl Particle {
-    pub fn new(name: &str) -> Particle {
-        Particle {
+    /// Initialize a new `Particle`
+    pub fn new(name: &str) -> Self {
+        Self {
             name: name.to_string(),
         }
     }
 }
 
+/// Holds the position of a particle in the simulation
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, Default, Component, Serialize, Deserialize)]
 pub struct ParticlePosition(pub IVec2);
 
+/// An event which is sent each time a new [`Particle`] has been spawned into the world. Systems
+/// which listen for this event can insert other Particle-type components to the subject entitiesa.
 #[derive(Clone, Event, Hash, Debug, Eq, PartialEq, PartialOrd)]
 pub struct ParticleRegistrationEvent {
+    /// The new particle entities.
     pub entities: Vec<Entity>,
-}
-
-#[derive(Event)]
-pub struct MutateParticleEvent {
-    pub entity: Entity,
-    pub particle: Particle,
 }
 
 #[derive(Event)]
@@ -214,16 +214,6 @@ pub fn handle_new_particles(
         }
     }
     ev_particle_registered.write(ParticleRegistrationEvent { entities });
-}
-
-pub fn ev_mutate_particle(
-    mut ev_change_particle: EventReader<MutateParticleEvent>,
-    mut particle_query: Query<&mut Particle>,
-) {
-    for ev in ev_change_particle.read() {
-        let mut particle = particle_query.get_mut(ev.entity).unwrap();
-        particle.name = ev.particle.name.clone();
-    }
 }
 
 pub fn on_reset_particle(
