@@ -7,7 +7,7 @@
     missing_docs
 )]
 #![allow(clippy::default_trait_access, clippy::module_name_repetitions)]
-//! This crate provides a [Falling Sand] plugin for [Bevy]. This plugin provides support for:
+//! This crate provides a [Falling Sand] plugin for [Bevy]. It provides support for:
 //! - Creating and rendering custom particles
 //! - Simulating particle movement
 //! - Mapping walls and solids to static rigid body colliders using avian2d
