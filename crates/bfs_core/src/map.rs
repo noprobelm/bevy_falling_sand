@@ -324,13 +324,21 @@ pub struct ClearParticleMapEvent;
 /// Event used to trigger the removal of all children under a specified [`ParticleType`].
 pub struct ClearParticleTypeChildrenEvent(pub String);
 
-/// Observer to handle the [`RemoveParticleEvent`].
+fn setup_particle_map(mut commands: Commands) {
+    commands.insert_resource(ParticleMap::default());
+}
+
+fn reset_chunks(mut map: ResMut<ParticleMap>) {
+    map.reset_chunks();
+}
+
+/// Observer for handling [`RemoveParticleEvent`].
 ///
 /// When this event is received, the particle entity at the corresponding position is removed from
 /// the [`ParticleMap`] and also unlinked from its [`ParticleType`] parent entity. If the `despawn`
 /// flag is set, despawn the particle entity from the ECS world.
 #[allow(clippy::needless_pass_by_value)]
-pub fn on_remove_particle(
+fn on_remove_particle(
     trigger: Trigger<RemoveParticleEvent>,
     mut commands: Commands,
     mut map: ResMut<ParticleMap>,
@@ -344,15 +352,12 @@ pub fn on_remove_particle(
     }
 }
 
-fn setup_particle_map(mut commands: Commands) {
-    commands.insert_resource(ParticleMap::default());
-}
-
-fn reset_chunks(mut map: ResMut<ParticleMap>) {
-    map.reset_chunks();
-}
-
-pub fn on_clear_particle_map(
+/// Observer for handling [`ClearParticleMapEvent`].
+///
+/// When this event is received, all children are removed from their [`ParticleType`] parents and
+/// the [`ParticleMap`] is cleared.
+#[allow(clippy::needless_pass_by_value)]
+fn on_clear_particle_map(
     _trigger: Trigger<ClearParticleMapEvent>,
     mut commands: Commands,
     mut map: ResMut<ParticleMap>,
