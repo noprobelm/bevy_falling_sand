@@ -152,14 +152,18 @@ pub struct ParticleRegistrationEvent {
 pub struct RemoveParticleEvent {
     /// The position of the particle.
     pub position: IVec2,
+    /// Should the underlying entity be despawned
     pub despawn: bool,
 }
 
 #[derive(Event)]
+/// Triggers a particle to reset itself to its parent's blueprint data.
 pub struct ResetParticleEvent {
     pub entity: Entity,
 }
 
+/// Handles new particle types as they are added to the world. Particle types with existing names
+/// will overwrite the previous entry.
 pub fn handle_new_particle_types(
     mut commands: Commands,
     particle_type_query: Query<(Entity, &ParticleType), Changed<ParticleType>>,
@@ -175,6 +179,8 @@ pub fn handle_new_particle_types(
         });
 }
 
+/// Handles new particles as they are added to the world. If a new particle is being added at the same
+/// coordinate of an existing entity, the new particle is despawned.
 pub fn handle_new_particles(
     mut commands: Commands,
     parent_query: Query<Entity, With<ParticleType>>,
