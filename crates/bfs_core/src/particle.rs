@@ -2,7 +2,9 @@
 //! even extension through external plugins if desired.
 use bevy::platform::collections::HashMap;
 use bevy::prelude::*;
+use bevy_turborand::DelegatedRng;
 use serde::{Deserialize, Serialize};
+use std::ops::RangeBounds;
 
 use crate::ParticleMap;
 
@@ -55,6 +57,49 @@ macro_rules! impl_particle_blueprint {
             }
 
             fn component_mut(&mut self) -> &mut Self::Data {
+                &mut self.0
+            }
+        }
+    };
+}
+
+/// A trait for RNG utilities used in particle systems.
+pub trait ParticleRng: Component {
+    /// The type of the internal RNG (must implement the required methods).
+    type InnerRng: DelegatedRng;
+
+    /// Get mutable access to the inner RNG.
+    fn inner_mut(&mut self) -> &mut Self::InnerRng;
+
+    /// Shuffle the given slice.
+    fn shuffle<T>(&mut self, slice: &mut [T]) {
+        self.inner_mut().shuffle(slice);
+    }
+
+    /// Return true with the given probability.
+    fn chance(&mut self, rate: f64) -> bool {
+        self.inner_mut().chance(rate)
+    }
+
+    /// Sample a random element from a list.
+    fn sample<'a, T>(&mut self, list: &'a [T]) -> Option<&'a T> {
+        self.inner_mut().sample(list)
+    }
+
+    /// Return a random index within the given bounds.
+    fn index(&mut self, bound: impl RangeBounds<usize>) -> usize {
+        self.inner_mut().index(bound)
+    }
+}
+
+/// Convenience macro for implementing [`ParticleRng`] on a component.
+#[macro_export]
+macro_rules! impl_particle_rng {
+    ($wrapper:ident, $inner:ty) => {
+        impl ParticleRng for $wrapper {
+            type InnerRng = $inner;
+
+            fn inner_mut(&mut self) -> &mut Self::InnerRng {
                 &mut self.0
             }
         }
@@ -226,8 +271,8 @@ pub fn handle_new_particles(
 }
 
 /// Observer which listens for [`ResetParticleEvent`] and subsequently triggers the associated
-/// [`Particle`] component of an entity (if it exists) as 
-/// [`Changed`](https://docs.rs/bevy/latest/bevy/ecs/prelude/struct.Changed.html). Systems which 
+/// [`Particle`] component of an entity (if it exists) as
+/// [`Changed`](https://docs.rs/bevy/latest/bevy/ecs/prelude/struct.Changed.html). Systems which
 /// act on [`Particle`] change detection can then perform their actions accordingly.
 ///
 /// For example, [`handle_new_particles`] utilizes [`Particle`] component change detection to send a

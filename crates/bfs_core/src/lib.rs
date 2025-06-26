@@ -11,13 +11,11 @@
 //! extensions to *Bevy Falling Sand* require the constructs provided in this crate.
 mod map;
 mod particle;
-mod rng;
 
 use bevy::prelude::*;
 
 pub use map::*;
 pub use particle::*;
-pub use rng::*;
 
 /// The core plugin, which manages particle definitions and map setup.
 pub struct FallingSandCorePlugin;
