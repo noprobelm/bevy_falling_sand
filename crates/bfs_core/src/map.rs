@@ -223,7 +223,7 @@ impl ParticleMap {
                 chunk.dirty_rect = None;
             }
             chunk.next_dirty_rect = None;
-        })
+        });
     }
 
     /// Clear the particle map of all entities
@@ -231,14 +231,14 @@ impl ParticleMap {
         self.chunks.iter_mut().for_each(|chunk| {
             chunk.clear();
             chunk.next_dirty_rect = None;
-        })
+        });
     }
 }
 
 /// A chunk, used to map positions to entities
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Chunk {
-    chunk: HashMap<IVec2, Entity>,
+    map: HashMap<IVec2, Entity>,
     region: IRect,
     next_dirty_rect: Option<IRect>,
     dirty_rect: Option<IRect>,
@@ -246,9 +246,10 @@ pub struct Chunk {
 
 impl Chunk {
     /// Initialize a new Chunk.
-    pub fn new(upper_left: IVec2, lower_right: IVec2, size: usize) -> Chunk {
-        Chunk {
-            chunk: HashMap::with_capacity(size.pow(2)),
+    #[must_use]
+    pub fn new(upper_left: IVec2, lower_right: IVec2, size: usize) -> Self {
+        Self {
+            map: HashMap::with_capacity(size.pow(2)),
             region: IRect::from_corners(upper_left, lower_right),
             next_dirty_rect: None,
             dirty_rect: None,
@@ -272,13 +273,13 @@ impl Chunk {
 
     /// Get the entity at position.
     pub fn get(&self, position: &IVec2) -> Option<&Entity> {
-        self.chunk.get(position)
+        self.map.get(position)
     }
 
     /// Insert an entity at position.
     pub fn insert(&mut self, position: IVec2, item: Entity) -> Option<Entity> {
         self.set_dirty_rect(position);
-        self.chunk.insert(position, item)
+        self.map.insert(position, item)
     }
 
     /// Get the
@@ -286,17 +287,17 @@ impl Chunk {
     /// at position.
     pub fn entry(&mut self, position: IVec2) -> Entry<'_, IVec2, Entity, FixedHasher> {
         self.set_dirty_rect(position);
-        self.chunk.entry(position)
+        self.map.entry(position)
     }
 
     /// Remove the entity at position.
     pub fn remove(&mut self, position: &IVec2) -> Option<Entity> {
         self.set_dirty_rect(*position);
-        self.chunk.remove(position)
+        self.map.remove(position)
     }
 
     fn clear(&mut self) {
-        self.chunk.clear();
+        self.map.clear();
         self.next_dirty_rect = None;
     }
 
@@ -312,7 +313,7 @@ impl Chunk {
 
     /// Iterate through all entities in the chunk.
     pub fn iter(&self) -> impl Iterator<Item = (&IVec2, &Entity)> {
-        self.chunk.iter()
+        self.map.iter()
     }
 }
 
