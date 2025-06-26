@@ -7,7 +7,7 @@
     missing_docs
 )]
 #![allow(clippy::default_trait_access, clippy::module_name_repetitions)]
-//! This crate provides all of the core constructs required for a falling sand simulation. All
+//! Provides all of the core constructs required for a falling sand simulation. All
 //! extensions to *Bevy Falling Sand* require the constructs provided in this crate.
 mod map;
 mod particle;
