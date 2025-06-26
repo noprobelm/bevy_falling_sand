@@ -23,6 +23,12 @@ impl Plugin for ParticleMapPlugin {
     }
 }
 
+#[derive(Debug)]
+pub enum SwapError {
+    ChunkOutOfBounds { index: usize },
+    PositionNotFound { position: IVec2 },
+}
+
 /// Maps spatial positions to Particle entities, which can then be cross referenced to a Particle
 /// query.
 ///
@@ -135,6 +141,7 @@ impl ParticleMap {
     }
 
     /// Get the entity at position.
+    #[must_use]
     pub fn get(&self, position: &IVec2) -> Option<&Entity> {
         let index = self.index(*position);
         if let Some(chunk) = self.chunks.get(index) {
@@ -155,47 +162,64 @@ impl ParticleMap {
     }
 
     /// Swap the entities between the first and second positions.
-    pub fn swap(&mut self, first: IVec2, second: IVec2) {
+    ///
+    /// Returns `Err(SwapError)` if any position or chunk is invalid.
+    pub fn swap(&mut self, first: IVec2, second: IVec2) -> Result<(), SwapError> {
         let first_chunk_idx = self.index(first);
         let second_chunk_idx = self.index(second);
 
-        // Short-circuit if both positions are in the same chunk
         if first_chunk_idx == second_chunk_idx {
-            if let Some(chunk) = self.chunks.get_mut(first_chunk_idx) {
-                let entity_first = chunk.remove(&first).unwrap();
-                if let Some(entity_second) = chunk.remove(&second) {
-                    chunk.insert(first, entity_second);
-                    chunk.insert(second, entity_first);
-                } else {
-                    chunk.insert(second, entity_first);
-                }
-            }
-        } else {
-            let entity_first = self
-                .chunks
-                .get_mut(first_chunk_idx)
-                .and_then(|chunk| chunk.remove(&first))
-                .unwrap();
-            if let Some(entity_second) = self
-                .chunks
-                .get_mut(second_chunk_idx)
-                .and_then(|chunk| chunk.remove(&second))
-            {
+            let chunk =
                 self.chunks
                     .get_mut(first_chunk_idx)
-                    .unwrap()
-                    .insert(first, entity_second);
-                self.chunks
-                    .get_mut(second_chunk_idx)
-                    .unwrap()
-                    .insert(second, entity_first);
+                    .ok_or(SwapError::ChunkOutOfBounds {
+                        index: first_chunk_idx,
+                    })?;
+
+            let entity_first = chunk
+                .remove(&first)
+                .ok_or(SwapError::PositionNotFound { position: first })?;
+
+            if let Some(entity_second) = chunk.remove(&second) {
+                chunk.insert(first, entity_second);
+                chunk.insert(second, entity_first);
             } else {
-                self.chunks
-                    .get_mut(second_chunk_idx)
-                    .unwrap()
-                    .insert(second, entity_first);
+                chunk.insert(second, entity_first);
             }
+
+            return Ok(());
         }
+
+        // Safe mutable borrow of two chunks
+        let (chunk_a, chunk_b) = if first_chunk_idx < second_chunk_idx {
+            let (left, right) = self.chunks.split_at_mut(second_chunk_idx);
+            (left.get_mut(first_chunk_idx), right.get_mut(0))
+        } else {
+            let (left, right) = self.chunks.split_at_mut(first_chunk_idx);
+            (right.get_mut(0), left.get_mut(second_chunk_idx))
+        };
+
+        let (chunk_first, chunk_second) = match (chunk_a, chunk_b) {
+            (Some(a), Some(b)) => (a, b),
+            _ => {
+                return Err(SwapError::ChunkOutOfBounds {
+                    index: first_chunk_idx.max(second_chunk_idx),
+                });
+            }
+        };
+
+        let entity_first = chunk_first
+            .remove(&first)
+            .ok_or(SwapError::PositionNotFound { position: first })?;
+
+        if let Some(entity_second) = chunk_second.remove(&second) {
+            chunk_first.insert(first, entity_second);
+            chunk_second.insert(second, entity_first);
+        } else {
+            chunk_second.insert(second, entity_first);
+        }
+
+        Ok(())
     }
 
     fn reset_chunks(&mut self) {
