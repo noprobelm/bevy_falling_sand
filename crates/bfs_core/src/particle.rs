@@ -11,10 +11,10 @@ pub struct ParticleCorePlugin;
 
 impl Plugin for ParticleCorePlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<SimulationRun>()
+        app.init_resource::<ParticleSimulationRun>()
             .configure_sets(
                 Update,
-                ParticleSimulationSet.run_if(resource_exists::<SimulationRun>),
+                ParticleSimulationSet.run_if(resource_exists::<ParticleSimulationRun>),
             )
             .init_resource::<ParticleTypeMap>()
             .add_event::<ParticleRegistrationEvent>()
@@ -65,7 +65,7 @@ macro_rules! impl_particle_blueprint {
 
 /// Marker resource to indicate whether the simulation should be running.
 #[derive(Resource, Default)]
-pub struct SimulationRun;
+pub struct ParticleSimulationRun;
 
 /// System set for particle simulation systems.
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
@@ -82,8 +82,8 @@ pub struct ParticleType {
 
 impl ParticleType {
     /// Initialize a new `ParticleType`
-    pub fn new(name: &str) -> ParticleType {
-        ParticleType {
+    pub fn new(name: &str) -> Self {
+        Self {
             name: name.to_string(),
         }
     }

@@ -499,15 +499,15 @@ pub fn update_particle_list(
 
 pub fn toggle_simulation(
     mut commands: Commands,
-    simulation_pause: Option<Res<SimulationRun>>,
+    simulation_pause: Option<Res<ParticleSimulationRun>>,
     app_state: Res<State<AppState>>,
     mut time: ResMut<Time<Virtual>>,
 ) {
     if app_state.get() == &AppState::Canvas {
         if simulation_pause.is_some() {
-            commands.remove_resource::<SimulationRun>();
+            commands.remove_resource::<ParticleSimulationRun>();
         } else {
-            commands.init_resource::<SimulationRun>();
+            commands.init_resource::<ParticleSimulationRun>();
         }
         if time.is_paused() {
             time.unpause();
