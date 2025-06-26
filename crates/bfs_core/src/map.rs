@@ -369,6 +369,16 @@ fn on_clear_particle_map(
     map.clear();
 }
 
+/// Observer for handling [`ClearParticleTypeChildrenEvent`].
+///
+/// When this event is received, all children of a specified [`ParticleType`] are removed from the
+/// simulation and despawned.
+///
+/// # Panics
+///
+/// This function panics if we attempt to remove a particle from the ECS world which does not exist
+/// in the [`ParticleMap`].
+#[allow(clippy::needless_pass_by_value)]
 fn on_clear_particle_type_children(
     trigger: Trigger<ClearParticleTypeChildrenEvent>,
     mut commands: Commands,
@@ -384,8 +394,7 @@ fn on_clear_particle_type_children(
                 if let Ok(position) = particle_query.get(child_entity) {
                     map.remove(&position.0);
                 } else {
-                    // If this happens, something is seriously amiss.
-                    error!("No child entity found for particle type '{particle_type}' while removing child from chunk map.")
+                    panic!("No child entity found for particle type '{particle_type}' while removing child from particle map!")
                 }
             });
             commands
