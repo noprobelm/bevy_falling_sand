@@ -182,10 +182,8 @@ impl ParticleMap {
 
             if let Some(entity_second) = chunk.remove(&second) {
                 chunk.insert(first, entity_second);
-                chunk.insert(second, entity_first);
-            } else {
-                chunk.insert(second, entity_first);
             }
+            chunk.insert(second, entity_first);
 
             return Ok(());
         }
@@ -199,13 +197,10 @@ impl ParticleMap {
             (right.get_mut(0), left.get_mut(second_chunk_idx))
         };
 
-        let (chunk_first, chunk_second) = match (chunk_a, chunk_b) {
-            (Some(a), Some(b)) => (a, b),
-            _ => {
-                return Err(SwapError::ChunkOutOfBounds {
-                    index: first_chunk_idx.max(second_chunk_idx),
-                });
-            }
+        let (Some(chunk_first), Some(chunk_second)) = (chunk_a, chunk_b) else {
+            return Err(SwapError::ChunkOutOfBounds {
+                index: first_chunk_idx.max(second_chunk_idx),
+            });
         };
 
         let entity_first = chunk_first
@@ -214,10 +209,8 @@ impl ParticleMap {
 
         if let Some(entity_second) = chunk_second.remove(&second) {
             chunk_first.insert(first, entity_second);
-            chunk_second.insert(second, entity_first);
-        } else {
-            chunk_second.insert(second, entity_first);
         }
+        chunk_second.insert(second, entity_first);
 
         Ok(())
     }
