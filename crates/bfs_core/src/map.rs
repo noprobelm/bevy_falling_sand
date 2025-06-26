@@ -299,12 +299,14 @@ impl Chunk {
     }
 
     /// Get the dirty rect computed for the current frame.
-    pub fn next_dirty_rect(&self) -> Option<IRect> {
+    #[must_use]
+    pub const fn next_dirty_rect(&self) -> Option<IRect> {
         self.next_dirty_rect
     }
 
     /// Get the dirty rect computed from the previous frame.
-    pub fn dirty_rect(&self) -> Option<IRect> {
+    #[must_use]
+    pub const fn dirty_rect(&self) -> Option<IRect> {
         self.dirty_rect
     }
 
