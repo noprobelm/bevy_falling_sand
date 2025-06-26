@@ -82,6 +82,7 @@ pub struct ParticleType {
 
 impl ParticleType {
     /// Initialize a new `ParticleType`
+    #[must_use]
     pub fn new(name: &str) -> Self {
         Self {
             name: name.to_string(),
