@@ -157,7 +157,9 @@ impl ParticleMap {
 
     /// Swap the entities between the first and second positions.
     ///
-    /// Returns `Err(SwapError)` if any position or chunk is invalid.
+    /// # Errors
+    ///
+    /// Returns `Err(SwapError)` if any position is invalid.
     pub fn swap(&mut self, first: IVec2, second: IVec2) -> Result<(), SwapError> {
         let first_chunk_idx = self.index(first);
         let second_chunk_idx = self.index(second);
