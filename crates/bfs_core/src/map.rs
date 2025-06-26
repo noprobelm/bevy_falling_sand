@@ -54,30 +54,49 @@ impl Default for ParticleMap {
 }
 
 impl ParticleMap {
-    /// Initialize a new ParticleMap using custom values for the map and chunk size.
-    pub fn new(map_size: usize, chunk_size: usize) -> Self {
-        if !map_size.is_power_of_two() {
-            panic!("Particle map size must be a power of 2")
-        }
-        if !chunk_size.is_power_of_two() {
-            panic!("Chunk size must be a power of 2")
-        }
-        let num_chunks: usize = map_size.pow(2);
-        let grid_offset: usize = map_size.pow(2) / 2;
-        let mut chunks = Vec::with_capacity(num_chunks);
-        for i in 0..(num_chunks as i32) {
-            let row = i / map_size as i32;
-            let col = i % map_size as i32;
+    /// Initialize a new [`ParticleMap`] using custom values for the map and chunk size.
+    ///
+    /// # Panics
+    ///
+    /// The returned [`ParticleMap`] will panic if the `map_size` or `chunk_size` is not a power of
+    /// two. The internals of this struct rely on this property for efficient indexing.
 
-            let x = col * chunk_size as i32 - grid_offset as i32;
-            let y = grid_offset as i32 - row * chunk_size as i32;
-            let upper_left = IVec2::new(x, y - (chunk_size as i32 - 1));
-            let lower_right = IVec2::new(x + (chunk_size as i32 - 1), y);
+    #[must_use]
+    pub fn new(map_size: usize, chunk_size: usize) -> Self {
+        assert!(
+            map_size.is_power_of_two(),
+            "Particle map size must be a power of 2"
+        );
+        assert!(
+            chunk_size.is_power_of_two(),
+            "Chunk size must be a power of 2"
+        );
+
+        let num_chunks = map_size.pow(2);
+        let grid_offset = num_chunks / 2;
+        let mut chunks = Vec::with_capacity(num_chunks);
+
+        let map_size_i32: i32 = map_size.try_into().expect("map_size exceeds i32::MAX");
+        let chunk_size_i32: i32 = chunk_size.try_into().expect("chunk_size exceeds i32::MAX");
+        let grid_offset_i32: i32 = grid_offset
+            .try_into()
+            .expect("grid_offset exceeds i32::MAX");
+
+        for i in 0..num_chunks {
+            let i_i32: i32 = i.try_into().expect("num_chunks exceeds i32::MAX");
+            let row = i_i32 / map_size_i32;
+            let col = i_i32 % map_size_i32;
+
+            let x = col * chunk_size_i32 - grid_offset_i32;
+            let y = grid_offset_i32 - row * chunk_size_i32;
+            let upper_left = IVec2::new(x, y - (chunk_size_i32 - 1));
+            let lower_right = IVec2::new(x + (chunk_size_i32 - 1), y);
 
             let chunk = Chunk::new(upper_left, lower_right, map_size);
             chunks.push(chunk);
         }
-        ParticleMap {
+
+        Self {
             chunks,
             size: map_size,
             particles_per_chunk: chunk_size.pow(2),
@@ -244,7 +263,7 @@ impl Chunk {
         self.chunk.insert(position, item)
     }
 
-    /// Get the 
+    /// Get the
     /// ['Entry'](https://docs.rs/bevy/latest/bevy/platform/collections/hash_map/type.Entry.html)
     /// at position.
     pub fn entry(&mut self, position: IVec2) -> Entry<'_, IVec2, Entity, FixedHasher> {
