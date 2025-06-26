@@ -105,21 +105,22 @@ impl ParticleMap {
         }
     }
 
-    fn index(&self, position: &IVec2) -> usize {
+    const fn index(&self, position: IVec2) -> usize {
         let col = ((position.x + self.flat_map_offset_value as i32) >> self.chunk_shift) as usize;
         let row = ((self.flat_map_offset_value as i32 - position.y) >> self.chunk_shift) as usize;
         row * self.size + col
     }
 
     /// Gets a chunk if the position falls anywhere within its bounds.
+    #[must_use]
     pub fn chunk(&self, position: &IVec2) -> Option<&Chunk> {
-        let index = self.index(position);
+        let index = self.index(*position);
         self.chunks.get(index)
     }
 
     /// Gets a mutable chunk if the position falls anywhere within its bounds.
     pub fn chunk_mut(&mut self, position: &IVec2) -> Option<&mut Chunk> {
-        let index = self.index(position);
+        let index = self.index(*position);
         self.chunks.get_mut(index)
     }
 
@@ -135,7 +136,7 @@ impl ParticleMap {
 
     /// Get the entity at position.
     pub fn get(&self, position: &IVec2) -> Option<&Entity> {
-        let index = self.index(position);
+        let index = self.index(*position);
         if let Some(chunk) = self.chunks.get(index) {
             chunk.get(position)
         } else {
@@ -145,7 +146,7 @@ impl ParticleMap {
 
     /// Remove the entity at position.
     pub fn remove(&mut self, position: &IVec2) -> Option<Entity> {
-        let index = self.index(position); // Calculate index first
+        let index = self.index(*position); // Calculate index first
         if let Some(chunk) = self.chunks.get_mut(index) {
             chunk.remove(position)
         } else {
@@ -155,8 +156,8 @@ impl ParticleMap {
 
     /// Swap the entities between the first and second positions.
     pub fn swap(&mut self, first: IVec2, second: IVec2) {
-        let first_chunk_idx = self.index(&first);
-        let second_chunk_idx = self.index(&second);
+        let first_chunk_idx = self.index(first);
+        let second_chunk_idx = self.index(second);
 
         // Short-circuit if both positions are in the same chunk
         if first_chunk_idx == second_chunk_idx {
