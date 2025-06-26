@@ -324,6 +324,12 @@ pub struct ClearParticleMapEvent;
 /// Event used to trigger the removal of all children under a specified [`ParticleType`].
 pub struct ClearParticleTypeChildrenEvent(pub String);
 
+/// Observer to handle the [`RemoveParticleEvent`].
+///
+/// When this event is received, the particle entity at the corresponding position is removed from
+/// the [`ParticleMap`] and also unlinked from its [`ParticleType`] parent entity. If the `despawn`
+/// flag is set, despawn the particle entity from the ECS world.
+#[allow(clippy::needless_pass_by_value)]
 pub fn on_remove_particle(
     trigger: Trigger<RemoveParticleEvent>,
     mut commands: Commands,
