@@ -117,14 +117,14 @@ impl ParticleMap {
         row * self.size + col
     }
 
-    /// Gets a chunk if the position falls anywhere within its bounds.
+    /// Get a chunk if the position falls anywhere within its bounds.
     #[must_use]
     pub fn chunk(&self, position: &IVec2) -> Option<&Chunk> {
         let index = self.index(*position);
         self.chunks.get(index)
     }
 
-    /// Gets a mutable chunk if the position falls anywhere within its bounds.
+    /// Get a mutable chunk if the position falls anywhere within its bounds.
     pub fn chunk_mut(&mut self, position: &IVec2) -> Option<&mut Chunk> {
         let index = self.index(*position);
         self.chunks.get_mut(index)
@@ -256,7 +256,7 @@ impl Chunk {
         }
     }
 
-    fn set_dirty_rect(&mut self, position: IVec2) {
+    fn dirty_rect_union_point(&mut self, position: IVec2) {
         if let Some(dirty_rect) = self.next_dirty_rect {
             self.next_dirty_rect = Some(dirty_rect.union_point(position));
         } else {
@@ -267,32 +267,33 @@ impl Chunk {
 
 impl Chunk {
     /// Get the region a chunk covers.
-    pub fn region(&self) -> IRect {
+    #[must_use]
+    pub const fn region(&self) -> IRect {
         self.region
     }
 
     /// Get the entity at position.
+    #[must_use]
     pub fn get(&self, position: &IVec2) -> Option<&Entity> {
         self.map.get(position)
     }
 
     /// Insert an entity at position.
     pub fn insert(&mut self, position: IVec2, item: Entity) -> Option<Entity> {
-        self.set_dirty_rect(position);
+        self.dirty_rect_union_point(position);
         self.map.insert(position, item)
     }
 
-    /// Get the
-    /// ['Entry'](https://docs.rs/bevy/latest/bevy/platform/collections/hash_map/type.Entry.html)
+    /// Get the [`bevy::platform::collections::hash_map::Entry`]
     /// at position.
     pub fn entry(&mut self, position: IVec2) -> Entry<'_, IVec2, Entity, FixedHasher> {
-        self.set_dirty_rect(position);
+        self.dirty_rect_union_point(position);
         self.map.entry(position)
     }
 
     /// Remove the entity at position.
     pub fn remove(&mut self, position: &IVec2) -> Option<Entity> {
-        self.set_dirty_rect(*position);
+        self.dirty_rect_union_point(*position);
         self.map.remove(position)
     }
 
