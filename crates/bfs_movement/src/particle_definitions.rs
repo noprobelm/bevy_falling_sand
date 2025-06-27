@@ -91,6 +91,7 @@ pub struct Density(pub u32);
 #[reflect(Component, Debug)]
 pub struct DensityBlueprint(pub Density);
 
+///  Stores the velocity of a particle
 #[derive(
     Copy,
     Clone,
@@ -113,23 +114,28 @@ pub struct Velocity {
 }
 
 impl Velocity {
-    pub fn new(val: u8, max: u8) -> Self {
-        Velocity { val, max }
+    /// Initialize a Velocity
+    #[must_use]
+    pub const fn new(val: u8, max: u8) -> Self {
+        Self { val, max }
     }
 
-    pub fn increment(&mut self) {
+    /// Increment the velocity by 1.
+    pub const fn increment(&mut self) {
         if self.val < self.max {
             self.val += 1;
         }
     }
 
-    pub fn decrement(&mut self) {
+    /// Decrement the velocity by 1.
+    pub const fn decrement(&mut self) {
         if self.val > 1 {
             self.val -= 1;
         }
     }
 }
 
+/// Blueprint for a [`Velocity`].
 #[derive(
     Copy,
     Clone,
@@ -148,6 +154,7 @@ impl Velocity {
 #[reflect(Component)]
 pub struct VelocityBlueprint(pub Velocity);
 
+/// Stores the momentum for a particle.
 #[derive(
     Copy, Clone, Eq, PartialEq, Hash, Debug, Default, Component, Reflect, Serialize, Deserialize,
 )]
@@ -155,35 +162,53 @@ pub struct VelocityBlueprint(pub Velocity);
 pub struct Momentum(pub IVec2);
 
 impl Momentum {
+    /// Get a [`Momentum`] with zero.
     pub const ZERO: Self = Self(IVec2::splat(0));
 }
 
+/// Blueprint for a [`Momentum`]
 #[derive(
     Copy, Clone, Eq, PartialEq, Hash, Debug, Default, Component, Reflect, Serialize, Deserialize,
 )]
 #[reflect(Component)]
 pub struct MomentumBlueprint(pub Momentum);
 
+/// A `NeighborGroup` defines an ordered, hierarchial group of relative neighbors usedto evalute
+/// particle movement.
+///
+/// The outer collection is an ordered group of prioritized tiers. The inner collection are the
+/// positions of the neighbors relative to the current tier.
 #[derive(Clone, Eq, PartialEq, Hash, Debug, Default, Component, Reflect)]
 pub struct NeighborGroup {
+    /// The underlying neighbor group.
     pub neighbor_group: SmallVec<[IVec2; 4]>,
 }
 
 impl NeighborGroup {
-    pub fn new(neighbor_group: SmallVec<[IVec2; 4]>) -> NeighborGroup {
-        NeighborGroup { neighbor_group }
+    /// Initialize a new `NeighborGroup`
+    #[must_use]
+    pub const fn new(neighbor_group: SmallVec<[IVec2; 4]>) -> Self {
+        Self { neighbor_group }
     }
 
-    pub fn empty() -> NeighborGroup {
-        NeighborGroup {
+    #[must_use]
+    /// Initialize an empty `NeighborGroup`
+    pub fn empty() -> Self {
+        Self {
             neighbor_group: SmallVec::new(),
         }
     }
 
+    /// Push a new neighbor group to the back.
     pub fn push(&mut self, neighbor: IVec2) {
         self.neighbor_group.push(neighbor);
     }
 
+    /// Swap the position of two indices in the outer collection with one another
+    ///
+    /// # Errors
+    ///
+    /// An error is returned if either of the swap indices are out of bounds.
     pub fn swap(&mut self, index1: usize, index2: usize) -> Result<(), String> {
         if index1 < self.neighbor_group.len() && index2 < self.neighbor_group.len() {
             self.neighbor_group.swap(index1, index2);
@@ -198,18 +223,24 @@ impl NeighborGroup {
         }
     }
 
+    /// Returns true if the `NeighborGroup` holds no data.
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.neighbor_group.is_empty()
     }
 
+    /// Returns the length of the `NeighborGroup`.
+    #[must_use]
     pub fn len(&self) -> usize {
         self.neighbor_group.len()
     }
 
+    /// Iperator of each group of neighbors.
     pub fn iter(&self) -> impl Iterator<Item = &IVec2> {
         self.neighbor_group.iter()
     }
 
+    /// Mutable iterator of each group of neighbors.
     pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut IVec2> {
         self.neighbor_group.iter_mut()
     }
