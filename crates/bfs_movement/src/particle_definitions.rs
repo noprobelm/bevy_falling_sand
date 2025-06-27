@@ -109,7 +109,9 @@ pub struct DensityBlueprint(pub Density);
 )]
 #[reflect(Component)]
 pub struct Velocity {
+    /// The current velocity value.
     pub val: u8,
+    /// The maximum velocity value.
     pub max: u8,
 }
 
@@ -278,19 +280,27 @@ impl<'a> Iterator for NeighborGroupIter<'a> {
     }
 }
 
+/// Specifies the order of movement priority for a particle. This is mandatory for a particle to
+/// move while using [`bfs_movement`].
 #[derive(Clone, Eq, PartialEq, Hash, Debug, Default, Component, Reflect)]
 #[reflect(Component)]
 pub struct MovementPriority {
+    /// The underlying groups of neighbors that define the movement priority.
     pub neighbor_groups: SmallVec<[NeighborGroup; 8]>,
 }
 
 impl MovementPriority {
-    pub fn new(neighbor_groups: SmallVec<[NeighborGroup; 8]>) -> MovementPriority {
-        MovementPriority { neighbor_groups }
+    /// Initialize a new `MovementPriority` with the specified neighbor groups.
+    #[must_use]
+    pub const fn new(neighbor_groups: SmallVec<[NeighborGroup; 8]>) -> Self {
+        Self { neighbor_groups }
     }
 
-    pub fn from(movement_priority: Vec<Vec<IVec2>>) -> MovementPriority {
-        MovementPriority::new(
+    /// Build a [`MovementPriority`] from Vec<Vec<IVec2>>. Each inner vector represents a group of
+    /// neighbors
+    #[must_use]
+    pub fn from(movement_priority: Vec<Vec<IVec2>>) -> Self {
+        Self::new(
             movement_priority
                 .into_iter()
                 .map(|neighbor_group| NeighborGroup::new(SmallVec::from_vec(neighbor_group)))
@@ -298,27 +308,42 @@ impl MovementPriority {
         )
     }
 
+    /// Returns true if the [`MovementPriority`] holds no data.
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.neighbor_groups.is_empty()
     }
 
+    /// Returns the length of the [`MovementPriority`].
+    #[must_use]
     pub fn len(&self) -> usize {
         self.neighbor_groups.len()
     }
 
+    /// Pushes back a new group of neighbors to the [`MovementPriority`].
     pub fn push_outer(&mut self, neighbor_group: NeighborGroup) {
         self.neighbor_groups.push(neighbor_group);
     }
 
+    /// Pushes back a new neighbor to a specified inner group index of the [`MovementPriority`].
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the specified inner group index is out of bounds.
     pub fn push_inner(&mut self, group_index: usize, neighbor: IVec2) -> Result<(), String> {
-        if let Some(group) = self.neighbor_groups.get_mut(group_index) {
-            group.push(neighbor);
-            Ok(())
-        } else {
-            Err(format!("Group index {} out of bounds", group_index))
-        }
+        self.neighbor_groups
+            .get_mut(group_index)
+            .map(|group| {
+                group.push(neighbor);
+            })
+            .ok_or_else(|| format!("Group index {} out of bounds", group_index))
     }
 
+    /// Swaps one outer group with another from two provided indices.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if either index is out of bounds for the outer groups.
     pub fn swap_outer(&mut self, index1: usize, index2: usize) -> Result<(), String> {
         if index1 < self.neighbor_groups.len() && index2 < self.neighbor_groups.len() {
             self.neighbor_groups.swap(index1, index2);
@@ -328,27 +353,41 @@ impl MovementPriority {
         }
     }
 
+    /// Swaps one inner rgoup with another from two provided indices.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if either index is out of bounds for the inner groups.
     pub fn swap_inner(
         &mut self,
         group_index: usize,
         index1: usize,
         index2: usize,
     ) -> Result<(), String> {
-        if let Some(group) = self.neighbor_groups.get_mut(group_index) {
-            if index1 < group.len() && index2 < group.len() {
-                group.swap(index1, index2)
-            } else {
-                Err("Inner indices out of bounds".to_string())
-            }
-        } else {
-            Err(format!("Group index {} out of bounds", group_index))
-        }
+        self.neighbor_groups
+            .get_mut(group_index)
+            .ok_or_else(|| format!("Group index {group_index} out of bounds"))
+            .and_then(|group| {
+                if index1 < group.len() && index2 < group.len() {
+                    group.swap(index1, index2)?;
+                    Ok(())
+                } else {
+                    Err("Inner indices out of bounds".to_string())
+                }
+            })
     }
 
+    /// An iterator for the outer groups of the [`MovementPriority`].
     pub fn iter(&self) -> impl Iterator<Item = &NeighborGroup> {
         self.neighbor_groups.iter()
     }
 
+    /// Iterates through `NeighborGroup` tiers, using `MovementRng` to randomly select a candidate
+    /// in each tier and optionally `Momentum` to specify a movement preference.
+    ///
+    /// If `Momentum` is specified, automatically return a position in a neighbor group if it
+    /// matches the passed `Momentum`. Otherwise, all neighbors in each tier are weighted equally
+    /// using rng.
     pub fn iter_candidates<'a>(
         &'a mut self,
         rng: &'a mut MovementRng,
@@ -359,10 +398,12 @@ impl MovementPriority {
             .flat_map(move |neighbor_group| neighbor_group.iter_candidates(rng, momentum))
     }
 
+    /// Mutable getter for a neighbor group at a specified index.
     pub fn get_mut(&mut self, index: usize) -> Option<&mut NeighborGroup> {
         self.neighbor_groups.get_mut(index)
     }
 
+    /// Remove a neighbor group at a specified index and return it.
     pub fn remove(&mut self, index: usize) -> Option<NeighborGroup> {
         if index < self.neighbor_groups.len() {
             Some(self.neighbor_groups.remove(index))
@@ -373,8 +414,10 @@ impl MovementPriority {
 }
 
 impl MovementPriority {
-    pub const fn empty() -> MovementPriority {
-        MovementPriority {
+    /// Initialize an empty `NeighborGroup`
+    #[must_use]
+    pub const fn empty() -> Self {
+        Self {
             neighbor_groups: SmallVec::new_const(),
         }
     }
@@ -382,6 +425,7 @@ impl MovementPriority {
 
 #[derive(Clone, Eq, PartialEq, Hash, Debug, Default, Component, Reflect)]
 #[reflect(Component)]
+/// Blueprint for a [`MovementPriority`]
 pub struct MovementPriorityBlueprint(pub MovementPriority);
 
 type BlueprintQuery<'a> = (
@@ -395,6 +439,7 @@ type BlueprintQuery<'a> = (
     Option<&'a mut SolidBlueprint>,
 );
 
+#[allow(clippy::needless_pass_by_value)]
 fn handle_particle_registration(
     mut commands: Commands,
     blueprint_query: Query<BlueprintQuery<'_>, With<ParticleType>>,
