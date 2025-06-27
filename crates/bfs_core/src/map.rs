@@ -9,7 +9,7 @@ use crate::{
 };
 
 /// Adds Bevy plugin elements for particle mapping functionality.
-pub struct ParticleMapPlugin;
+pub(super) struct ParticleMapPlugin;
 
 impl Plugin for ParticleMapPlugin {
     fn build(&self, app: &mut App) {

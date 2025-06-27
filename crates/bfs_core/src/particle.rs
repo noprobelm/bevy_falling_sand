@@ -9,7 +9,7 @@ use std::ops::RangeBounds;
 use crate::ParticleMap;
 
 /// Adds Bevy plugin elements for core particle functionality.
-pub struct ParticleCorePlugin;
+pub(super) struct ParticleCorePlugin;
 
 impl Plugin for ParticleCorePlugin {
     fn build(&self, app: &mut App) {
