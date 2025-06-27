@@ -31,8 +31,8 @@ pub trait Material {
     }
 }
 
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Component)]
 /// A simple wall, which has no movement to it.
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Component)]
 pub struct Wall;
 
 /// Blueprint for a [`Wall`]
@@ -49,6 +49,7 @@ impl Wall {
 
 impl Material for Wall {}
 
+/// A solid particle, which can move only downwards.
 #[derive(
     Clone,
     Eq,
@@ -63,7 +64,6 @@ impl Material for Wall {}
     Serialize,
     Deserialize,
 )]
-/// A solid particle, which can move only downwards.
 pub struct Solid;
 
 impl Solid {
@@ -80,6 +80,7 @@ impl Material for Solid {
     }
 }
 
+/// Blueprint for a [`Solid`]
 #[derive(
     Clone,
     Eq,
@@ -94,9 +95,9 @@ impl Material for Solid {
     Serialize,
     Deserialize,
 )]
-/// Blueprint for a [`Solid`]
 pub struct SolidBlueprint(pub Solid);
 
+/// A movable solid particle, which can move downwards and diagonally.
 #[derive(
     Clone,
     Eq,
@@ -111,7 +112,6 @@ pub struct SolidBlueprint(pub Solid);
     Serialize,
     Deserialize,
 )]
-/// A movable solid particle, which can move downwards and diagonally.
 pub struct MovableSolid;
 
 impl MovableSolid {
@@ -131,6 +131,7 @@ impl Material for MovableSolid {
     }
 }
 
+/// Blueprint for a [`MovableSolid`]
 #[derive(
     Clone,
     Eq,
@@ -145,28 +146,27 @@ impl Material for MovableSolid {
     Serialize,
     Deserialize,
 )]
-/// Blueprint for a [`MovableSolid`]
 pub struct MovableSolidBlueprint(pub MovableSolid);
 
-#[derive(
-    Clone,
-    Eq,
-    PartialEq,
-    Ord,
-    PartialOrd,
-    Hash,
-    Debug,
-    Default,
-    Component,
-    Reflect,
-    Serialize,
-    Deserialize,
-)]
 /// A liquid particle, which can move downwards, diagonally, and horizontally.
 ///
 /// A liquid particle will first attempt to move downards, then downwards diagonally. If no valid
 /// positions are found, it will attempt to move horizontally n spaces as a function of its fluidity
 /// + 1.
+#[derive(
+    Clone,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Hash,
+    Debug,
+    Default,
+    Component,
+    Reflect,
+    Serialize,
+    Deserialize,
+)]
 pub struct Liquid {
     /// The fluidity of a liquid. Higher values equate to more fluid-like behavior.
     pub fluidity: usize,
@@ -199,6 +199,7 @@ impl Material for Liquid {
     }
 }
 
+/// Blueprint for a [`Liquid`]
 #[derive(
     Clone,
     Eq,
@@ -213,9 +214,9 @@ impl Material for Liquid {
     Serialize,
     Deserialize,
 )]
-/// Blueprint for a [`Liquid`]
 pub struct LiquidBlueprint(pub Liquid);
 
+/// A gas particle, which can move upwards, upwards diagonally, and horizontally.
 #[derive(
     Clone,
     Eq,
@@ -230,7 +231,6 @@ pub struct LiquidBlueprint(pub Liquid);
     Serialize,
     Deserialize,
 )]
-/// A gas particle, which can move upwards, upwards diagonally, and horizontally.
 pub struct Gas {
     /// The fluidity of the gas. Higher values equate to more fluid-like behavior.
     pub fluidity: usize,
@@ -260,6 +260,7 @@ impl Material for Gas {
     }
 }
 
+/// Blueprint for a [`Gas`]
 #[derive(
     Clone,
     Eq,
@@ -274,7 +275,6 @@ impl Material for Gas {
     Serialize,
     Deserialize,
 )]
-/// Blueprint for a [`Gas`]
 pub struct GasBlueprint(pub Gas);
 
 #[allow(clippy::needless_pass_by_value)]

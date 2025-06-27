@@ -32,10 +32,12 @@ impl_particle_blueprint!(VelocityBlueprint, Velocity);
 impl_particle_blueprint!(MomentumBlueprint, Momentum);
 impl_particle_blueprint!(MovementPriorityBlueprint, MovementPriority);
 
+/// Provides rng for particle movement.
 #[derive(Clone, PartialEq, Debug, Default, Component, Reflect)]
 #[reflect(Component)]
 pub struct MovementRng(pub RngComponent);
 
+/// Marker comopenponent to indicate that a particle has been moved.
 #[derive(
     Copy,
     Clone,
@@ -53,6 +55,7 @@ pub struct MovementRng(pub RngComponent);
 #[reflect(Component, Debug)]
 pub struct Moved(pub bool);
 
+/// Stores the density of a particle
 #[derive(
     Copy,
     Clone,
@@ -70,6 +73,7 @@ pub struct Moved(pub bool);
 #[reflect(Component, Debug)]
 pub struct Density(pub u32);
 
+/// Blueprint for a [`Density`]
 #[derive(
     Copy,
     Clone,
