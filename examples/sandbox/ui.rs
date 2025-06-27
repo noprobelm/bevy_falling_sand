@@ -262,7 +262,7 @@ impl DebugUI {
     pub fn render(
         &self,
         ui: &mut egui::Ui,
-        debug_hibernating_chunks: &Option<Res<DebugHibernatingChunks>>,
+        debug_hibernating_chunks: &Option<Res<DebugParticleMap>>,
         debug_dirty_rects: &Option<Res<DebugDirtyRects>>,
         debug_particle_count: &Option<Res<DebugParticleCount>>,
         total_particle_count: u64,
@@ -276,9 +276,9 @@ impl DebugUI {
             .clicked()
         {
             if show_hibernating {
-                commands.init_resource::<DebugHibernatingChunks>();
+                commands.init_resource::<DebugParticleMap>();
             } else {
-                commands.remove_resource::<DebugHibernatingChunks>();
+                commands.remove_resource::<DebugParticleMap>();
             }
         }
 
@@ -398,7 +398,7 @@ pub fn render_side_panel(
         Res<MaxBrushSize>,
     ),
     (debug_hibernating_chunks, debug_dirty_rects, debug_particle_count, total_particle_count): (
-        Option<Res<DebugHibernatingChunks>>,
+        Option<Res<DebugParticleMap>>,
         Option<Res<DebugDirtyRects>>,
         Option<Res<DebugParticleCount>>,
         Res<TotalParticleCount>,

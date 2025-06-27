@@ -1,8 +1,20 @@
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
+#![warn(
+    clippy::nursery,
+    clippy::pedantic,
+    nonstandard_style,
+    rustdoc::broken_intra_doc_links,
+    missing_docs
+)]
+#![allow(clippy::default_trait_access, clippy::module_name_repetitions)]
+//! Provides debug functionality for the Falling Sand simulation. This includes visualizing
+//! chunks, dirty rectangles, and more.
 use bevy::prelude::*;
 
 use bfs_core::{Particle, ParticleMap};
 use bfs_movement::Wall;
 
+/// Adds the constructs and systems necessary for debugging the Falling Sand simulation.
 pub struct FallingSandDebugPlugin;
 
 impl Plugin for FallingSandDebugPlugin {
@@ -16,7 +28,7 @@ impl Plugin for FallingSandDebugPlugin {
             .add_systems(
                 Update,
                 (
-                    color_hibernating_chunks.run_if(resource_exists::<DebugHibernatingChunks>),
+                    color_active_chunks.run_if(resource_exists::<DebugParticleMap>),
                     color_dirty_rects.run_if(resource_exists::<DebugDirtyRects>),
                     (count_dynamic_particles, count_total_particles)
                         .run_if(resource_exists::<DebugParticleCount>),
@@ -26,51 +38,60 @@ impl Plugin for FallingSandDebugPlugin {
 }
 
 #[derive(Default, Reflect, GizmoConfigGroup)]
-pub struct DebugGizmos;
+struct DebugGizmos;
 
+/// Marker resource to indicate we should count the number of particles present.
 #[derive(Default, Resource)]
 pub struct DebugParticleCount;
 
 #[derive(Default, Resource)]
-pub struct DebugHibernatingChunks;
+/// Resource to control whether the [`ParticleMap`] should be visualized.
+pub struct DebugParticleMap;
 
 #[derive(Default, Resource)]
+/// Resource to control whether dirty rectangles should be visualized.
 pub struct DebugDirtyRects;
 
 #[derive(Default, Resource)]
+/// Resource to hold the numebr of dynamic particles in the simulation.
 pub struct DynamicParticleCount(pub u64);
 
 #[derive(Default, Resource)]
+/// Resource to hold the total number of particles in the simulation.
 pub struct TotalParticleCount(pub u64);
 
 #[derive(Resource)]
+/// Resource to hold the color we render active chunks as.
 pub struct ActiveChunkColor(pub Color);
 
 impl Default for ActiveChunkColor {
     fn default() -> Self {
-        ActiveChunkColor(Color::srgba(0.52, 0.80, 0.51, 1.0))
+        Self(Color::srgba(0.52, 0.80, 0.51, 1.0))
     }
 }
 
 #[derive(Resource)]
+/// Resource to hold the color we render inactive chunks as.
 pub struct InactiveChunkColor(pub Color);
 
 impl Default for InactiveChunkColor {
     fn default() -> Self {
-        InactiveChunkColor(Color::srgba(0.67, 0.21, 0.24, 1.0))
+        Self(Color::srgba(0.67, 0.21, 0.24, 1.0))
     }
 }
 
 #[derive(Resource)]
+/// Resource to hold the color we render dirty rectangles as.
 pub struct DirtyRectColor(pub Color);
 
 impl Default for DirtyRectColor {
     fn default() -> Self {
-        DirtyRectColor(Color::srgba(1., 1., 1., 1.))
+        Self(Color::srgba(1., 1., 1., 1.))
     }
 }
 
-pub fn color_dirty_rects(
+#[allow(clippy::needless_pass_by_value)]
+fn color_dirty_rects(
     map: Res<ParticleMap>,
     dirty_rect_color: Res<DirtyRectColor>,
     mut chunk_gizmos: Gizmos<DebugGizmos>,
@@ -81,12 +102,13 @@ pub fn color_dirty_rects(
                 dirty_rect.center().as_vec2(),
                 dirty_rect.size().as_vec2() + Vec2::splat(1.),
                 dirty_rect_color.0,
-            )
+            );
         }
     });
 }
 
-pub fn color_hibernating_chunks(
+#[allow(clippy::needless_pass_by_value)]
+fn color_active_chunks(
     map: Res<ParticleMap>,
     active_chunk_color: Res<ActiveChunkColor>,
     inactive_chunk_color: Res<InactiveChunkColor>,
@@ -115,14 +137,14 @@ pub fn color_hibernating_chunks(
     });
 }
 
-pub fn count_dynamic_particles(
+fn count_dynamic_particles(
     mut dynamic_particle_count: ResMut<DynamicParticleCount>,
-    particle_query: Query<&Particle, Without<Wall>>,
+    particle_query: Query<&Particle, With<Wall>>,
 ) {
     dynamic_particle_count.0 = particle_query.iter().fold(0, |acc, _| acc + 1);
 }
 
-pub fn count_total_particles(
+fn count_total_particles(
     mut total_particle_count: ResMut<TotalParticleCount>,
     particle_query: Query<&Particle>,
 ) {
