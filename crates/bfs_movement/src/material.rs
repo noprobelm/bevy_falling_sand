@@ -277,7 +277,8 @@ impl Material for Gas {
 /// Blueprint for a [`Gas`]
 pub struct GasBlueprint(pub Gas);
 
-pub fn on_solid_blueprint_added(
+#[allow(clippy::needless_pass_by_value)]
+fn on_solid_blueprint_added(
     trigger: Trigger<OnAdd, SolidBlueprint>,
     mut commands: Commands,
     particle_query: Query<&SolidBlueprint, With<ParticleType>>,
@@ -290,7 +291,8 @@ pub fn on_solid_blueprint_added(
     }
 }
 
-pub fn on_movable_solid_blueprint_added(
+#[allow(clippy::needless_pass_by_value)]
+fn on_movable_solid_blueprint_added(
     trigger: Trigger<OnAdd, MovableSolidBlueprint>,
     mut commands: Commands,
     particle_query: Query<&MovableSolidBlueprint, With<ParticleType>>,
@@ -303,7 +305,8 @@ pub fn on_movable_solid_blueprint_added(
     }
 }
 
-pub fn on_liquid_blueprint_added(
+#[allow(clippy::needless_pass_by_value)]
+fn on_liquid_blueprint_added(
     trigger: Trigger<OnAdd, LiquidBlueprint>,
     mut commands: Commands,
     particle_query: Query<&LiquidBlueprint, With<ParticleType>>,
@@ -316,7 +319,8 @@ pub fn on_liquid_blueprint_added(
     }
 }
 
-pub fn on_gas_blueprint_added(
+#[allow(clippy::needless_pass_by_value)]
+fn on_gas_blueprint_added(
     trigger: Trigger<OnAdd, GasBlueprint>,
     mut commands: Commands,
     particle_query: Query<&GasBlueprint, With<ParticleType>>,
@@ -329,7 +333,8 @@ pub fn on_gas_blueprint_added(
     }
 }
 
-pub fn on_wall_added(
+#[allow(clippy::needless_pass_by_value)]
+fn on_wall_added(
     trigger: Trigger<OnAdd, WallBlueprint>,
     mut commands: Commands,
     particle_query: Query<&WallBlueprint, With<ParticleType>>,
