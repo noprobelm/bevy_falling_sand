@@ -26,9 +26,12 @@ impl Plugin for SystemsPlugin {
     }
 }
 
+/// Controls whether particle iteration for movement is carried out per chunk or by particle query.
 #[derive(States, Reflect, Default, Debug, Clone, Eq, PartialEq, Hash)]
 pub enum MovementSource {
+    /// The `Chunks` state.
     Chunks,
+    /// The `Particles` state.
     #[default]
     Particles,
 }
