@@ -235,22 +235,18 @@ impl NeighborGroup {
         self.neighbor_group.len()
     }
 
-    /// Iperator of each group of neighbors.
-    pub fn iter(&self) -> impl Iterator<Item = &IVec2> {
-        self.neighbor_group.iter()
-    }
-
-    /// Mutable iterator of each group of neighbors.
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut IVec2> {
-        self.neighbor_group.iter_mut()
-    }
-
-    pub fn iter_candidates<'a>(
+    /// Iterates through `NeighborGroup` tiers, using `MovementRng` to randomly select a candidate
+    /// in each tier and optionally `Momentum` to specify a movement preference.
+    ///
+    /// If `Momentum` is specified, automatically return a position in a neighbor group if it
+    /// matches the passed `Momentum`. Otherwise, all neighbors in each tier are weighted equally
+    /// using rng.
+    fn iter_candidates<'a>(
         &'a mut self,
         rng: &mut MovementRng,
-        momentum: Option<&Momentum>,
+        preferred: Option<&Momentum>,
     ) -> NeighborGroupIter<'a> {
-        if let Some(momentum) = momentum {
+        if let Some(momentum) = preferred {
             if let Some(position) = self
                 .neighbor_group
                 .iter()
@@ -265,7 +261,8 @@ impl NeighborGroup {
     }
 }
 
-pub enum NeighborGroupIter<'a> {
+/// Enum for a `NeighborGroup` iterator.
+enum NeighborGroupIter<'a> {
     Single(iter::Once<&'a IVec2>),
     All(Iter<'a, IVec2>),
 }
