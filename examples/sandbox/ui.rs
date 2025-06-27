@@ -170,7 +170,7 @@ impl ParticleControlUI {
             }
 
             if ui.button("Despawn All Particles").clicked() {
-                commands.trigger(ClearMapEvent);
+                commands.trigger(ClearParticleMapEvent);
             }
         });
     }
@@ -262,7 +262,7 @@ impl DebugUI {
     pub fn render(
         &self,
         ui: &mut egui::Ui,
-        debug_hibernating_chunks: &Option<Res<DebugHibernatingChunks>>,
+        debug_hibernating_chunks: &Option<Res<DebugParticleMap>>,
         debug_dirty_rects: &Option<Res<DebugDirtyRects>>,
         debug_particle_count: &Option<Res<DebugParticleCount>>,
         total_particle_count: u64,
@@ -276,9 +276,9 @@ impl DebugUI {
             .clicked()
         {
             if show_hibernating {
-                commands.init_resource::<DebugHibernatingChunks>();
+                commands.init_resource::<DebugParticleMap>();
             } else {
-                commands.remove_resource::<DebugHibernatingChunks>();
+                commands.remove_resource::<DebugParticleMap>();
             }
         }
 
@@ -398,7 +398,7 @@ pub fn render_side_panel(
         Res<MaxBrushSize>,
     ),
     (debug_hibernating_chunks, debug_dirty_rects, debug_particle_count, total_particle_count): (
-        Option<Res<DebugHibernatingChunks>>,
+        Option<Res<DebugParticleMap>>,
         Option<Res<DebugDirtyRects>>,
         Option<Res<DebugParticleCount>>,
         Res<TotalParticleCount>,
@@ -499,15 +499,15 @@ pub fn update_particle_list(
 
 pub fn toggle_simulation(
     mut commands: Commands,
-    simulation_pause: Option<Res<SimulationRun>>,
+    simulation_pause: Option<Res<ParticleSimulationRun>>,
     app_state: Res<State<AppState>>,
     mut time: ResMut<Time<Virtual>>,
 ) {
     if app_state.get() == &AppState::Canvas {
         if simulation_pause.is_some() {
-            commands.remove_resource::<SimulationRun>();
+            commands.remove_resource::<ParticleSimulationRun>();
         } else {
-            commands.init_resource::<SimulationRun>();
+            commands.init_resource::<ParticleSimulationRun>();
         }
         if time.is_paused() {
             time.unpause();
@@ -1120,8 +1120,11 @@ fn render_density_field(
     ui.horizontal(|ui| {
         ui.label("Density: ");
         ui.add(
-            egui::Slider::new(&mut particle_density_field.blueprint.data_mut().0, 1..=1000)
-                .step_by(1.),
+            egui::Slider::new(
+                &mut particle_density_field.blueprint.component_mut().0,
+                1..=1000,
+            )
+            .step_by(1.),
         );
     });
 }
@@ -1134,7 +1137,7 @@ fn render_max_velocity_field(
         ui.label("Max Velocity: ");
         ui.add(
             egui::Slider::new(
-                &mut particle_max_velocity_field.blueprint.data_mut().max,
+                &mut particle_max_velocity_field.blueprint.component_mut().max,
                 1..=5,
             )
             .step_by(1.),
@@ -1171,7 +1174,7 @@ fn render_colors_field(
     let mut to_change: Option<(usize, Color)> = None;
     for (i, color) in particle_colors_field
         .blueprint
-        .data()
+        .component()
         .palette
         .iter()
         .enumerate()
@@ -1204,12 +1207,12 @@ fn render_colors_field(
     if let Some(to_remove) = to_remove {
         particle_colors_field
             .blueprint
-            .data_mut()
+            .component_mut()
             .palette
             .remove(to_remove);
     }
     if let Some((to_change, color)) = to_change {
-        particle_colors_field.blueprint.data_mut().palette[to_change] = color;
+        particle_colors_field.blueprint.component_mut().palette[to_change] = color;
     }
 }
 
@@ -1225,7 +1228,7 @@ fn render_flows_color_field(
         ui.horizontal(|ui| {
             ui.label("Rate: ");
             ui.add(egui::Slider::new(
-                &mut particle_flows_color_field.blueprint.data_mut().rate,
+                &mut particle_flows_color_field.blueprint.component_mut().chance,
                 0.0..=1.0,
             ));
         });
@@ -1268,7 +1271,7 @@ fn render_movement_priority_field(
                 outer_to_swap = Some((i, i - 1));
             }
             if ui.button("v").clicked()
-                && i < particle_movement_priority_field.blueprint.data().len() - 1
+                && i < particle_movement_priority_field.blueprint.component().len() - 1
             {
                 outer_to_swap = Some((i, i + 1));
             }
@@ -1315,7 +1318,7 @@ fn render_movement_priority_field(
     if let Some((i, j)) = inner_to_remove {
         if let Some(group) = particle_movement_priority_field
             .blueprint
-            .data_mut()
+            .component_mut()
             .get_mut(i)
         {
             group.neighbor_group.remove(j);
@@ -1324,7 +1327,7 @@ fn render_movement_priority_field(
     if let Some((i, j1, j2)) = inner_to_swap {
         if let Some(group) = particle_movement_priority_field
             .blueprint
-            .data_mut()
+            .component_mut()
             .get_mut(i)
         {
             group.swap(j1, j2).unwrap_or_else(|err| error!("{}", err));
@@ -1340,7 +1343,7 @@ fn render_movement_priority_field(
     if let Some(i) = outer_to_add {
         if let Some(group) = particle_movement_priority_field
             .blueprint
-            .data_mut()
+            .component_mut()
             .get_mut(i)
         {
             group.push(IVec2::ZERO);
@@ -1349,13 +1352,13 @@ fn render_movement_priority_field(
     if let Some(i) = outer_to_remove {
         particle_movement_priority_field
             .blueprint
-            .data_mut()
+            .component_mut()
             .remove(i);
     }
     if let Some(((i, j), new_ivec)) = to_change {
         if let Some(group) = particle_movement_priority_field
             .blueprint
-            .data_mut()
+            .component_mut()
             .get_mut(i)
         {
             if let Some(neighbor) = group.neighbor_group.get_mut(j) {
@@ -1383,7 +1386,7 @@ fn render_burns_field(
             );
             if edit_duration.lost_focus() {
                 if let Ok(new_duration) = particle_burns_field.duration_str.parse::<u64>() {
-                    particle_burns_field.blueprint.data_mut().duration =
+                    particle_burns_field.blueprint.component_mut().duration =
                         Duration::from_millis(new_duration);
                     particle_burns_field.duration_str = particle_burns_field
                         .blueprint
@@ -1392,7 +1395,8 @@ fn render_burns_field(
                         .as_millis()
                         .to_string();
                 } else {
-                    particle_burns_field.blueprint.data_mut().duration = Duration::from_millis(0);
+                    particle_burns_field.blueprint.component_mut().duration =
+                        Duration::from_millis(0);
                     particle_burns_field.duration_str = particle_burns_field
                         .blueprint
                         .0
@@ -1411,7 +1415,7 @@ fn render_burns_field(
             );
             if edit_duration.lost_focus() {
                 if let Ok(new_duration) = particle_burns_field.tick_rate_str.parse::<u64>() {
-                    particle_burns_field.blueprint.data_mut().tick_rate =
+                    particle_burns_field.blueprint.component_mut().tick_rate =
                         Duration::from_millis(new_duration);
                     particle_burns_field.tick_rate_str = particle_burns_field
                         .blueprint
@@ -1420,7 +1424,8 @@ fn render_burns_field(
                         .as_millis()
                         .to_string();
                 } else {
-                    particle_burns_field.blueprint.data_mut().tick_rate = Duration::from_millis(0);
+                    particle_burns_field.blueprint.component_mut().tick_rate =
+                        Duration::from_millis(0);
                     particle_burns_field.tick_rate_str = particle_burns_field
                         .blueprint
                         .0
@@ -1438,9 +1443,9 @@ fn render_burns_field(
             .clicked()
         {
             if particle_burns_field.color_enable {
-                particle_burns_field.blueprint.data_mut().color = Some(ColorProfile::default())
+                particle_burns_field.blueprint.component_mut().color = Some(ColorProfile::default())
             } else {
-                particle_burns_field.blueprint.data_mut().color = None;
+                particle_burns_field.blueprint.component_mut().color = None;
             }
         }
 
@@ -1529,12 +1534,12 @@ fn render_burns_field(
             if particle_burns_field.chance_destroy_enable {
                 particle_burns_field
                     .blueprint
-                    .data_mut()
+                    .component_mut()
                     .chance_destroy_per_tick = Some(0.);
             } else {
                 particle_burns_field
                     .blueprint
-                    .data_mut()
+                    .component_mut()
                     .chance_destroy_per_tick = None;
             }
         };
@@ -1559,10 +1564,10 @@ fn render_burns_field(
             .clicked()
         {
             if particle_burns_field.reaction_enable {
-                particle_burns_field.blueprint.data_mut().reaction =
+                particle_burns_field.blueprint.component_mut().reaction =
                     Some(Reacting::new(Particle::new("Water"), 0.1));
             } else {
-                particle_burns_field.blueprint.data_mut().reaction = None;
+                particle_burns_field.blueprint.component_mut().reaction = None;
             }
         }
         if particle_burns_field.reaction_enable {
@@ -1622,13 +1627,13 @@ fn render_burns_field(
             .clicked()
         {
             if particle_burns_field.spreads_enable {
-                particle_burns_field.blueprint.data_mut().spreads = Some(Fire {
+                particle_burns_field.blueprint.component_mut().spreads = Some(Fire {
                     burn_radius: 2.,
                     chance_to_spread: 0.01,
                     destroys_on_spread: false,
                 });
             } else {
-                particle_burns_field.blueprint.data_mut().spreads = None;
+                particle_burns_field.blueprint.component_mut().spreads = None;
             }
         }
         if particle_burns_field.spreads_enable {
@@ -1688,7 +1693,7 @@ pub fn render_fluidity_field(
             ParticleEditorCategoryState::Liquid => {
                 ui.add(
                     egui::Slider::new(
-                        &mut particle_liquid_field.blueprint.data_mut().fluidity,
+                        &mut particle_liquid_field.blueprint.component_mut().fluidity,
                         1..=5,
                     )
                     .step_by(1.),
@@ -1696,8 +1701,11 @@ pub fn render_fluidity_field(
             }
             ParticleEditorCategoryState::Gas => {
                 ui.add(
-                    egui::Slider::new(&mut particle_gas_field.blueprint.data_mut().fluidity, 1..=5)
-                        .step_by(1.),
+                    egui::Slider::new(
+                        &mut particle_gas_field.blueprint.component_mut().fluidity,
+                        1..=5,
+                    )
+                    .step_by(1.),
                 );
             }
             _ => {}
@@ -1762,9 +1770,12 @@ fn particle_editor_save(
                         .entity(entity)
                         .insert(particle_editor_burns_field.blueprint.clone());
                     if particle_editor_burns_field.spawns_on_fire {
-                        commands
-                            .entity(entity)
-                            .insert(particle_editor_burns_field.blueprint.data().to_burning());
+                        commands.entity(entity).insert(
+                            particle_editor_burns_field
+                                .blueprint
+                                .component()
+                                .to_burning(),
+                        );
                     }
                 }
             }
@@ -1780,9 +1791,12 @@ fn particle_editor_save(
                         .entity(entity)
                         .insert(particle_editor_burns_field.blueprint.clone());
                     if particle_editor_burns_field.spawns_on_fire {
-                        commands
-                            .entity(entity)
-                            .insert(particle_editor_burns_field.blueprint.data().to_burning());
+                        commands.entity(entity).insert(
+                            particle_editor_burns_field
+                                .blueprint
+                                .component()
+                                .to_burning(),
+                        );
                     }
                 }
             }
@@ -1803,9 +1817,12 @@ fn particle_editor_save(
                         .entity(entity)
                         .insert(particle_editor_burns_field.blueprint.clone());
                     if particle_editor_burns_field.spawns_on_fire {
-                        commands
-                            .entity(entity)
-                            .insert(particle_editor_burns_field.blueprint.data().to_burning());
+                        commands.entity(entity).insert(
+                            particle_editor_burns_field
+                                .blueprint
+                                .component()
+                                .to_burning(),
+                        );
                     }
                 }
             }
@@ -1831,9 +1848,12 @@ fn particle_editor_save(
                         .entity(entity)
                         .insert(particle_editor_burns_field.blueprint.clone());
                     if particle_editor_burns_field.spawns_on_fire {
-                        commands
-                            .entity(entity)
-                            .insert(particle_editor_burns_field.blueprint.data().to_burning());
+                        commands.entity(entity).insert(
+                            particle_editor_burns_field
+                                .blueprint
+                                .component()
+                                .to_burning(),
+                        );
                     }
                 }
             }
@@ -1854,9 +1874,12 @@ fn particle_editor_save(
                         .entity(entity)
                         .insert(particle_editor_burns_field.blueprint.clone());
                     if particle_editor_burns_field.spawns_on_fire {
-                        commands
-                            .entity(entity)
-                            .insert(particle_editor_burns_field.blueprint.data().to_burning());
+                        commands.entity(entity).insert(
+                            particle_editor_burns_field
+                                .blueprint
+                                .component()
+                                .to_burning(),
+                        );
                     }
                 }
             }
@@ -1877,9 +1900,12 @@ fn particle_editor_save(
                         .entity(entity)
                         .insert(particle_editor_burns_field.blueprint.clone());
                     if particle_editor_burns_field.spawns_on_fire {
-                        commands
-                            .entity(entity)
-                            .insert(particle_editor_burns_field.blueprint.data().to_burning());
+                        commands.entity(entity).insert(
+                            particle_editor_burns_field
+                                .blueprint
+                                .component()
+                                .to_burning(),
+                        );
                     }
                 }
             }

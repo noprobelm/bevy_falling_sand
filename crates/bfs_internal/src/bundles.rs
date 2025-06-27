@@ -1,94 +1,58 @@
 use bevy::prelude::*;
+use bfs_color::{ChangesColor, ColorProfile, ColorProfileBlueprint};
+use bfs_core::ParticleType;
+use bfs_movement::{
+    Density, DensityBlueprint, Gas, GasBlueprint, Liquid, LiquidBlueprint, Momentum, MovableSolid,
+    MovableSolidBlueprint, MovementPriority, Solid, SolidBlueprint, Velocity, VelocityBlueprint,
+    Wall, WallBlueprint,
+};
+use bfs_reactions::{Burning, Burns};
 use serde::{Deserialize, Serialize};
-use bfs_color::*;
-use bfs_core::*;
-use bfs_movement::*;
-use bfs_reactions::{BurningBlueprint, BurnsBlueprint};
 
-#[derive(Bundle)]
+/// A bundle used primarily to allow bulk removal of particle components from an entity.
+#[doc(hidden)]
+#[derive(Clone, PartialEq, Asset, TypePath, Bundle)]
 pub struct ParticleBundle {
-    pub colors: ColorProfileBlueprint,
-    pub flows: ChangesColorBlueprint,
-    pub density: DensityBlueprint,
-    pub velocity: VelocityBlueprint,
-    pub momentum: MomentumBlueprint,
-    pub movement_priority: MovementPriorityBlueprint,
-    pub burns: BurnsBlueprint,
-    pub burning: BurningBlueprint,
-    pub wall: WallBlueprint,
-    pub solid: SolidBlueprint,
-    pub movable_solid: MovableSolidBlueprint,
-    pub liquid: LiquidBlueprint,
-    pub gas: GasBlueprint,
+    pub colors: ColorProfile,
+    pub flows: ChangesColor,
+    pub density: Density,
+    pub velocity: Velocity,
+    pub momentum: Momentum,
+    pub movement_priority: MovementPriority,
+    pub burns: Burns,
+    pub burning: Burning,
+    pub wall: Wall,
+    pub solid: Solid,
+    pub movable_solid: MovableSolid,
+    pub liquid: Liquid,
+    pub gas: Gas,
 }
 
-#[derive(Bundle)]
-pub struct StaticParticleTypeBundle {
-    pub particle_type: ParticleType,
-    pub colors: ColorProfileBlueprint,
-    pub transform: Transform,
-    pub visibility: Visibility,
-}
-
-impl StaticParticleTypeBundle {
-    pub fn new(particle_type: ParticleType, colors: ColorProfile) -> StaticParticleTypeBundle {
-        StaticParticleTypeBundle {
-            particle_type,
-            colors: ColorProfileBlueprint(colors),
-            transform: Transform::default(),
-            visibility: Visibility::default(),
-        }
-    }
-}
-
-#[derive(Bundle)]
-pub struct DynamicParticleTypeBundle {
-    pub particle_type: ParticleType,
-    pub density: DensityBlueprint,
-    pub velocity: VelocityBlueprint,
-    pub movement_priority: MovementPriorityBlueprint,
-    pub colors: ColorProfileBlueprint,
-    pub transform: Transform,
-    pub visibility: Visibility,
-}
-
-impl DynamicParticleTypeBundle {
-    pub fn new(
-        particle_type: ParticleType,
-        density: Density,
-        velocity: Velocity,
-        movement_priority: MovementPriority,
-        colors: ColorProfile,
-    ) -> DynamicParticleTypeBundle {
-        DynamicParticleTypeBundle {
-            particle_type,
-            density: DensityBlueprint(density),
-            velocity: VelocityBlueprint(velocity),
-            movement_priority: MovementPriorityBlueprint(movement_priority),
-            colors: ColorProfileBlueprint(colors),
-            transform: Transform::default(),
-            visibility: Visibility::default(),
-        }
-    }
-}
-
-#[derive(Bundle)]
+/// A bundle to quickly create a movable solid (e.g., sand) particle.
+#[derive(Clone, PartialEq, Asset, TypePath, Bundle, Serialize, Deserialize)]
 pub struct MovableSolidBundle {
+    /// The particle type designator.
     pub particle_type: ParticleType,
+    /// The Density of the particle.
     pub density: DensityBlueprint,
+    /// The maximum Velocity of the particle.
     pub velocity: VelocityBlueprint,
+    /// The color profile of the particle.
     pub colors: ColorProfileBlueprint,
+    /// The movable solid component.
     pub movable_solid: MovableSolidBlueprint,
 }
 
 impl MovableSolidBundle {
+    /// Create a new instance of movable solid bundle.
+    #[must_use]
     pub fn new(
         particle_type: ParticleType,
         density: Density,
         velocity: Velocity,
         colors: ColorProfile,
-    ) -> MovableSolidBundle {
-        MovableSolidBundle {
+    ) -> Self {
+        Self {
             particle_type,
             density: DensityBlueprint(density),
             velocity: VelocityBlueprint(velocity),
@@ -98,23 +62,31 @@ impl MovableSolidBundle {
     }
 }
 
-#[derive(Bundle)]
+#[derive(Clone, PartialEq, Asset, TypePath, Bundle, Serialize, Deserialize)]
+/// A bundle to quickly create a solid particle.
 pub struct SolidBundle {
+    /// The particle type designator.
     pub particle_type: ParticleType,
+    /// The Density of the particle.
     pub density: DensityBlueprint,
+    /// The maximum Velocity of the particle.
     pub velocity: VelocityBlueprint,
+    /// The color profile of the particle.
     pub colors: ColorProfileBlueprint,
+    /// The solid component.
     pub solid: SolidBlueprint,
 }
 
 impl SolidBundle {
+    /// Create a new instance of solid bundle.
+    #[must_use]
     pub fn new(
         particle_type: ParticleType,
         density: Density,
         velocity: Velocity,
         colors: ColorProfile,
-    ) -> SolidBundle {
-        SolidBundle {
+    ) -> Self {
+        Self {
             particle_type,
             density: DensityBlueprint(density),
             velocity: VelocityBlueprint(velocity),
@@ -124,24 +96,32 @@ impl SolidBundle {
     }
 }
 
-#[derive(Bundle)]
+#[derive(Clone, PartialEq, Asset, TypePath, Bundle, Serialize, Deserialize)]
+/// A bundle to quickly create a liquid particle.
 pub struct LiquidBundle {
+    /// The particle type designator.
     pub particle_type: ParticleType,
+    /// The Density of the particle.
     pub density: DensityBlueprint,
+    /// The maximum Velocity of the particle.
     pub velocity: VelocityBlueprint,
+    /// The color profile of the particle.
     pub colors: ColorProfileBlueprint,
+    /// The liquid component.
     pub liquid: LiquidBlueprint,
 }
 
 impl LiquidBundle {
+    /// Create a new instance of liquid bundle.
+    #[must_use]
     pub fn new(
         particle_type: ParticleType,
         density: Density,
         velocity: Velocity,
         fluidity: usize,
         colors: ColorProfile,
-    ) -> LiquidBundle {
-        LiquidBundle {
+    ) -> Self {
+        Self {
             particle_type,
             density: DensityBlueprint(density),
             velocity: VelocityBlueprint(velocity),
@@ -152,23 +132,31 @@ impl LiquidBundle {
 }
 
 #[derive(Asset, TypePath, Bundle, Serialize, Deserialize)]
+/// A bundle to quickly create a gas particle.
 pub struct GasBundle {
+    /// The particle type designator.
     pub particle_type: ParticleType,
+    /// The Density of the particle.
     pub density: DensityBlueprint,
+    /// The maximum Velocity of the particle.
     pub velocity: VelocityBlueprint,
+    /// The color profile of the particle.
     pub colors: ColorProfileBlueprint,
+    /// The gas component.
     pub gas: GasBlueprint,
 }
 
 impl GasBundle {
+    /// Create a new instance of gas bundle.
+    #[must_use]
     pub fn new(
         particle_type: ParticleType,
         density: Density,
         velocity: Velocity,
         fluidity: usize,
         colors: ColorProfile,
-    ) -> GasBundle {
-        GasBundle {
+    ) -> Self {
+        Self {
             particle_type,
             density: DensityBlueprint(density),
             velocity: VelocityBlueprint(velocity),
@@ -178,23 +166,25 @@ impl GasBundle {
     }
 }
 
-#[derive(Bundle)]
+#[derive(Asset, TypePath, Bundle)]
+/// A bundle to quickly create a wall particle.
 pub struct WallBundle {
+    /// The particle type designator.
     pub particle_type: ParticleType,
+    /// The color profile of the particle.
     pub colors: ColorProfileBlueprint,
+    /// The wall component.
     pub wall: WallBlueprint,
-    pub transform: Transform,
-    pub visibility: Visibility,
 }
 
 impl WallBundle {
-    pub fn new(particle_type: ParticleType, colors: ColorProfile) -> WallBundle {
-        WallBundle {
+    /// Create a new instance of gas bundle.
+    #[must_use]
+    pub const fn new(particle_type: ParticleType, colors: ColorProfile) -> Self {
+        Self {
             particle_type,
             colors: ColorProfileBlueprint(colors),
             wall: WallBlueprint(Wall),
-            transform: Transform::default(),
-            visibility: Visibility::default(),
         }
     }
 }

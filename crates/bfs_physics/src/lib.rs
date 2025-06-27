@@ -1,3 +1,13 @@
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
+#![warn(
+    clippy::nursery,
+    clippy::pedantic,
+    nonstandard_style,
+    rustdoc::broken_intra_doc_links,
+    missing_docs
+)]
+#![allow(clippy::default_trait_access, clippy::module_name_repetitions)]
+//! Integrates avian2d physics with the Falling Sand simulation.
 use avian2d::math::Vector;
 pub use avian2d::prelude::*;
 
@@ -5,7 +15,11 @@ use bevy::prelude::*;
 use bfs_core::ParticlePosition;
 use bfs_movement::{MovableSolid, Moved, Solid, Wall};
 
+/// Provides the constructs and systems necessary to integrate avian2d in the Falling Sand simulation.
 pub struct FallingSandPhysicsPlugin {
+    /// The value for
+    /// [`PhysicsLengthUnit`](https://docs.rs/avian2d/latest/avian2d/dynamics/solver/struct.PhysicsLengthUnit.html)
+    /// in the avian2d crate.
     pub length_unit: f32,
 }
 
@@ -103,6 +117,7 @@ struct SolidMeshData {
 #[derive(Resource, Default, Debug)]
 struct SolidTerrainColliders(Vec<Entity>);
 
+#[allow(clippy::needless_pass_by_value)]
 fn spawn_wall_terrain_colliders(
     mut commands: Commands,
     mut colliders: ResMut<WallTerrainColliders>,
@@ -128,6 +143,7 @@ fn spawn_wall_terrain_colliders(
     }
 }
 
+#[allow(clippy::needless_pass_by_value)]
 fn spawn_movable_solid_terrain_colliders(
     mut commands: Commands,
     mut colliders: ResMut<MovableSolidTerrainColliders>,
@@ -275,11 +291,11 @@ fn map_movable_solid_particles(
         let min = group
             .iter()
             .copied()
-            .fold(IVec2::splat(i32::MAX), |a, b| a.min(b));
+            .fold(IVec2::splat(i32::MAX), bevy::prelude::IVec2::min);
         let max = group
             .iter()
             .copied()
-            .fold(IVec2::splat(i32::MIN), |a, b| a.max(b));
+            .fold(IVec2::splat(i32::MIN), bevy::prelude::IVec2::max);
         let mut grid = Grid::new(min, max);
         for position in &group {
             grid.set(*position);
@@ -357,11 +373,11 @@ fn map_solid_particles(
         let min = group
             .iter()
             .copied()
-            .fold(IVec2::splat(i32::MAX), |a, b| a.min(b));
+            .fold(IVec2::splat(i32::MAX), bevy::prelude::IVec2::min);
         let max = group
             .iter()
             .copied()
-            .fold(IVec2::splat(i32::MIN), |a, b| a.max(b));
+            .fold(IVec2::splat(i32::MIN), bevy::prelude::IVec2::max);
         let mut grid = Grid::new(min, max);
         for position in &group {
             grid.set(*position);
@@ -397,6 +413,7 @@ fn map_solid_particles(
     mesh_data.indices = all_indices;
 }
 
+#[allow(clippy::needless_pass_by_value)]
 fn condition_walls_changed(
     query: Query<Entity, Changed<Wall>>,
     removed: RemovedComponents<Wall>,
@@ -407,6 +424,7 @@ fn condition_walls_changed(
     false
 }
 
+#[allow(clippy::needless_pass_by_value)]
 fn condition_movable_solids_changed(
     query: Query<&MovableSolid, Changed<ParticlePosition>>,
     removed: RemovedComponents<MovableSolid>,
@@ -414,6 +432,7 @@ fn condition_movable_solids_changed(
     !query.is_empty() || !removed.is_empty()
 }
 
+#[allow(clippy::needless_pass_by_value)]
 fn condition_solids_changed(
     query: Query<&Solid, Changed<ParticlePosition>>,
     removed: RemovedComponents<Solid>,

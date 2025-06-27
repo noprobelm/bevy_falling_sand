@@ -1,13 +1,23 @@
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
+#![warn(
+    clippy::nursery,
+    clippy::pedantic,
+    nonstandard_style,
+    rustdoc::broken_intra_doc_links,
+    missing_docs
+)]
+#![allow(clippy::default_trait_access, clippy::module_name_repetitions)]
+//! Provides basic rendering functionality for the Falling Sand simulation.
 mod particle_definitions;
-mod rng;
 mod systems;
 
 use bevy::prelude::*;
 
 pub use particle_definitions::*;
-pub use rng::*;
-use systems::*;
+use systems::SystemsPlugin;
 
+/// Provides the constructs and systems necessary for rendering particles in the Falling Sand
+/// simulation.
 pub struct FallingSandColorPlugin;
 
 impl Plugin for FallingSandColorPlugin {

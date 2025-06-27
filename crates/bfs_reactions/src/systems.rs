@@ -1,13 +1,15 @@
 use super::ReactionRng;
 use bevy::prelude::*;
 use bevy_spatial::SpatialAccess;
-use bfs_color::*;
-use bfs_core::{Particle, ParticlePosition, ParticleSimulationSet, RemoveParticleEvent};
+use bfs_color::{ChangesColor, ResetParticleColorEvent};
+use bfs_core::{
+    Particle, ParticlePosition, ParticleRng, ParticleSimulationSet, RemoveParticleEvent,
+};
 use bfs_spatial::ParticleTree;
 
 use crate::{Burning, Burns, Fire};
 
-pub struct SystemsPlugin;
+pub(super) struct SystemsPlugin;
 
 impl Plugin for SystemsPlugin {
     fn build(&self, app: &mut App) {
@@ -18,18 +20,8 @@ impl Plugin for SystemsPlugin {
     }
 }
 
-pub struct BurningPlugin;
-
-impl Plugin for BurningPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_systems(
-            Update,
-            (handle_fire, handle_burning).in_set(ParticleSimulationSet),
-        );
-    }
-}
-
-pub fn handle_fire(
+#[allow(clippy::needless_pass_by_value, clippy::type_complexity)]
+fn handle_fire(
     mut commands: Commands,
     mut fire_query: Query<(&Fire, &ParticlePosition, &mut ReactionRng)>,
     burns_query: Query<(Entity, &Burns), (With<Particle>, Without<Burning>)>,
@@ -69,7 +61,8 @@ pub fn handle_fire(
     });
 }
 
-pub fn handle_burning(
+#[allow(clippy::needless_pass_by_value)]
+fn handle_burning(
     mut commands: Commands,
     mut burning_query: Query<(
         Entity,
@@ -90,7 +83,7 @@ pub fn handle_burning(
                     commands.trigger(RemoveParticleEvent {
                         position: position.0,
                         despawn: true,
-                    })
+                    });
                 } else {
                     commands.entity(entity).remove::<Burning>();
                     entities.push(entity);
@@ -107,7 +100,7 @@ pub fn handle_burning(
                         commands.trigger(RemoveParticleEvent {
                             position: position.0,
                             despawn: true,
-                        })
+                        });
                     }
                 }
             }

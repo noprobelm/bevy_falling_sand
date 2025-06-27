@@ -1,10 +1,10 @@
-use crate::PhysicsRng;
-use crate::*;
+use crate::{MovementRng, Velocity, Momentum, Density, MovementPriority, Moved};
 use std::mem;
 
+use bevy::prelude::*;
 use bevy::platform::collections::HashSet;
 use bevy_turborand::{DelegatedRng, GlobalRng};
-use bfs_core::{Particle, ParticleMap, ParticlePosition, ParticleSimulationSet};
+use bfs_core::{Particle, ParticleMap, ParticlePosition, ParticleRng, ParticleSimulationSet};
 
 pub(super) struct SystemsPlugin;
 
@@ -26,9 +26,12 @@ impl Plugin for SystemsPlugin {
     }
 }
 
+/// Controls whether particle iteration for movement is carried out per chunk or by particle query.
 #[derive(States, Reflect, Default, Debug, Clone, Eq, PartialEq, Hash)]
 pub enum MovementSource {
+    /// The `Chunks` state.
     Chunks,
+    /// The `Particles` state.
     #[default]
     Particles,
 }
@@ -38,7 +41,7 @@ type ParticleMovementQuery<'a> = (
     &'a Particle,
     &'a mut ParticlePosition,
     &'a mut Transform,
-    &'a mut PhysicsRng,
+    &'a mut MovementRng,
     &'a mut Velocity,
     Option<&'a mut Momentum>,
     &'a Density,
@@ -46,8 +49,8 @@ type ParticleMovementQuery<'a> = (
     &'a mut Moved,
 );
 
-#[allow(unused_mut)]
-pub fn handle_movement_by_chunks(
+#[allow(unused_mut, clippy::too_many_lines)]
+fn handle_movement_by_chunks(
     mut particle_query: Query<ParticleMovementQuery>,
     mut map: ResMut<ParticleMap>,
     mut rng: ResMut<GlobalRng>,
@@ -121,22 +124,27 @@ pub fn handle_movement_by_chunks(
                                     }
 
                                     if density > neighbor_density {
-                                        map.swap(neighbor_position.0, position.0);
+                                        match map.swap(neighbor_position.0, position.0) {
+                                            Ok(()) => {
+                                                swap_particle_positions(
+                                                    &mut position,
+                                                    &mut transform,
+                                                    &mut neighbor_position,
+                                                    &mut neighbor_transform,
+                                                );
 
-                                        swap_particle_positions(
-                                            &mut position,
-                                            &mut transform,
-                                            &mut neighbor_position,
-                                            &mut neighbor_transform,
-                                        );
+                                                if let Some(ref mut m) = momentum {
+                                                    m.0 = IVec2::ZERO;
+                                                }
 
-                                        if let Some(ref mut m) = momentum {
-                                            m.0 = IVec2::ZERO;
+                                                velocity.decrement();
+                                                moved = true;
+                                                break 'velocity_loop;
+                                            }
+                                            Err(err) => {
+                                                debug!("Attempted to swap particles at {:?} and {:?} but failed: {:?}", position.0, neighbor_position, err);
+                                            }
                                         }
-
-                                        velocity.decrement();
-                                        moved = true;
-                                        break 'velocity_loop;
                                     } else {
                                         obstructed.insert(signum);
                                         continue;
@@ -147,18 +155,21 @@ pub fn handle_movement_by_chunks(
                                 }
                             }
                             None => {
-                                map.swap(position.0, neighbor_position);
-                                position.0 = neighbor_position;
-                                transform.translation.x = neighbor_position.x as f32;
-                                transform.translation.y = neighbor_position.y as f32;
-
-                                if let Some(ref mut m) = momentum {
-                                    m.0 = *relative_position;
+                                match map.swap(position.0, neighbor_position) {
+                                    Ok(()) => {
+                                        position.0 = neighbor_position;
+                                        transform.translation.x = neighbor_position.x as f32;
+                                        transform.translation.y = neighbor_position.y as f32;
+                                        if let Some(ref mut m) = momentum {
+                                            m.0 = *relative_position;
+                                        }
+                                        velocity.increment();
+                                        moved = true;
+                                        continue 'velocity_loop;
+                                    },
+                                    Err(err) => {debug!("Attempted to swap particles at {:?} and {:?} but failed: {:?}", position.0, neighbor_position, err);}
                                 }
 
-                                velocity.increment();
-                                moved = true;
-                                continue 'velocity_loop;
                             }
                         }
                     }
@@ -182,8 +193,8 @@ pub fn handle_movement_by_chunks(
     }
 }
 
-#[allow(unused_mut)]
-pub fn handle_movement_by_particles(
+#[allow(unused_mut, clippy::too_many_lines)]
+fn handle_movement_by_particles(
     mut particle_query: Query<ParticleMovementQuery>,
     mut map: ResMut<ParticleMap>,
 ) {
@@ -250,22 +261,23 @@ pub fn handle_movement_by_particles(
                                         continue;
                                     }
                                     if density > neighbor_density {
-                                        map.swap(neighbor_position.0, position.0);
-
-                                        swap_particle_positions(
-                                            &mut position,
-                                            &mut transform,
-                                            &mut neighbor_position,
-                                            &mut neighbor_transform,
-                                        );
-
-                                        if let Some(ref mut momentum) = momentum {
-                                            momentum.0 = IVec2::ZERO; // Reset momentum after a swap
+                                        match map.swap(neighbor_position.0, position.0) {
+                                            Ok(()) => {
+                                                swap_particle_positions(
+                                                    &mut position,
+                                                    &mut transform,
+                                                    &mut neighbor_position,
+                                                    &mut neighbor_transform,
+                                                );
+                                                if let Some(ref mut momentum) = momentum {
+                                                    momentum.0 = IVec2::ZERO; 
+                                                }
+                                                velocity.decrement();
+                                                moved = true;
+                                                break 'velocity_loop;
+                                            },
+                                            Err(err) => {debug!("Attempted to swap particles at {:?} and {:?} but failed: {:?}", position.0, neighbor_position, err);}
                                         }
-
-                                        velocity.decrement();
-                                        moved = true;
-                                        break 'velocity_loop;
                                     } else {
                                         obstructed.insert(relative_position.signum());
                                         continue;
@@ -279,21 +291,22 @@ pub fn handle_movement_by_particles(
                             }
                             // We've encountered a free slot for the target particle to move to
                             None => {
-                                map.swap(position.0, neighbor_position);
-                                position.0 = neighbor_position;
-
-                                transform.translation.x = neighbor_position.x as f32;
-                                transform.translation.y = neighbor_position.y as f32;
-
-                                if let Some(ref mut momentum) = momentum {
-                                    momentum.0 = *relative_position; // Set momentum relative to the current position
+                                match  map.swap(position.0, neighbor_position) {
+                                    Ok(()) => {
+                                        position.0 = neighbor_position;
+                                        transform.translation.x = neighbor_position.x as f32;
+                                        transform.translation.y = neighbor_position.y as f32;
+                                        if let Some(ref mut momentum) = momentum {
+                                            momentum.0 = *relative_position; // Set momentum relative to the current position
+                                        }
+                                        velocity.increment();
+                                        moved = true;
+                                        continue 'velocity_loop;
+                                    },
+                                    Err(err) => {
+                                        debug!("Attempted to swap particles at {:?} and {:?} but failed: {:?}", position.0, neighbor_position, err);
+                                    }
                                 }
-
-                                velocity.increment();
-
-                                moved = true;
-
-                                continue 'velocity_loop;
                             }
                         };
                     }

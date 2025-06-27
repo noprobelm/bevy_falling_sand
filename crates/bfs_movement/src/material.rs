@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bfs_core::{impl_particle_blueprint, ParticleBlueprint, ParticleType};
+use bfs_core::{impl_particle_blueprint, ParticleComponent, ParticleType};
 use serde::{Deserialize, Serialize};
 
 use super::{MovementPriority, MovementPriorityBlueprint};
@@ -22,53 +22,34 @@ impl_particle_blueprint!(MovableSolidBlueprint, MovableSolid);
 impl_particle_blueprint!(LiquidBlueprint, Liquid);
 impl_particle_blueprint!(GasBlueprint, Gas);
 
+/// Used to describe a Material, which can be translated to a [`MovementPriority`].
 pub trait Material {
     #[allow(dead_code)]
+    /// Get the [`MovementPriority`] for the material type.
     fn to_movement_priority(&self) -> MovementPriority {
         MovementPriority::empty()
     }
 }
 
-#[derive(
-    Clone,
-    Eq,
-    PartialEq,
-    Ord,
-    PartialOrd,
-    Hash,
-    Debug,
-    Default,
-    Component,
-    Reflect,
-    Serialize,
-    Deserialize,
-)]
+/// A simple wall, which has no movement to it.
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Component)]
 pub struct Wall;
 
-#[derive(
-    Clone,
-    Eq,
-    PartialEq,
-    Ord,
-    PartialOrd,
-    Hash,
-    Debug,
-    Default,
-    Component,
-    Reflect,
-    Serialize,
-    Deserialize,
-)]
+/// Blueprint for a [`Wall`]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Component)]
 pub struct WallBlueprint(pub Wall);
 
 impl Wall {
-    pub fn new() -> Wall {
-        Wall
+    /// Initialize a new `Wall`
+    #[must_use]
+    pub const fn new() -> Self {
+        Self
     }
 }
 
 impl Material for Wall {}
 
+/// A solid particle, which can move only downwards.
 #[derive(
     Clone,
     Eq,
@@ -86,8 +67,10 @@ impl Material for Wall {}
 pub struct Solid;
 
 impl Solid {
-    pub fn new() -> Solid {
-        Solid
+    /// Initialize a new `Solid`
+    #[must_use]
+    pub const fn new() -> Self {
+        Self
     }
 }
 
@@ -97,6 +80,7 @@ impl Material for Solid {
     }
 }
 
+/// Blueprint for a [`Solid`]
 #[derive(
     Clone,
     Eq,
@@ -113,6 +97,7 @@ impl Material for Solid {
 )]
 pub struct SolidBlueprint(pub Solid);
 
+/// A movable solid particle, which can move downwards and diagonally.
 #[derive(
     Clone,
     Eq,
@@ -130,8 +115,10 @@ pub struct SolidBlueprint(pub Solid);
 pub struct MovableSolid;
 
 impl MovableSolid {
-    pub fn new() -> MovableSolid {
-        MovableSolid
+    /// Initialize a new `MovableSolid`
+    #[must_use]
+    pub const fn new() -> Self {
+        Self
     }
 }
 
@@ -144,6 +131,7 @@ impl Material for MovableSolid {
     }
 }
 
+/// Blueprint for a [`MovableSolid`]
 #[derive(
     Clone,
     Eq,
@@ -160,6 +148,11 @@ impl Material for MovableSolid {
 )]
 pub struct MovableSolidBlueprint(pub MovableSolid);
 
+/// A liquid particle, which can move downwards, diagonally, and horizontally.
+///
+/// A liquid particle will first attempt to move downards, then downwards diagonally. If no valid
+/// positions are found, it will attempt to move horizontally n spaces as a function of its fluidity
+/// + 1.
 #[derive(
     Clone,
     Eq,
@@ -175,12 +168,15 @@ pub struct MovableSolidBlueprint(pub MovableSolid);
     Deserialize,
 )]
 pub struct Liquid {
+    /// The fluidity of a liquid. Higher values equate to more fluid-like behavior.
     pub fluidity: usize,
 }
 
 impl Liquid {
-    pub fn new(fluidity: usize) -> Liquid {
-        Liquid { fluidity }
+    /// Initialize a new `Liquid` with a specified fluidity.
+    #[must_use]
+    pub const fn new(fluidity: usize) -> Self {
+        Self { fluidity }
     }
 }
 
@@ -203,6 +199,7 @@ impl Material for Liquid {
     }
 }
 
+/// Blueprint for a [`Liquid`]
 #[derive(
     Clone,
     Eq,
@@ -219,6 +216,7 @@ impl Material for Liquid {
 )]
 pub struct LiquidBlueprint(pub Liquid);
 
+/// A gas particle, which can move upwards, upwards diagonally, and horizontally.
 #[derive(
     Clone,
     Eq,
@@ -234,12 +232,15 @@ pub struct LiquidBlueprint(pub Liquid);
     Deserialize,
 )]
 pub struct Gas {
+    /// The fluidity of the gas. Higher values equate to more fluid-like behavior.
     pub fluidity: usize,
 }
 
 impl Gas {
-    pub fn new(fluidity: usize) -> Gas {
-        Gas { fluidity }
+    /// Initialize a new `Gas` with a specified fluidity.
+    #[must_use]
+    pub const fn new(fluidity: usize) -> Self {
+        Self { fluidity }
     }
 }
 
@@ -259,6 +260,7 @@ impl Material for Gas {
     }
 }
 
+/// Blueprint for a [`Gas`]
 #[derive(
     Clone,
     Eq,
@@ -275,7 +277,8 @@ impl Material for Gas {
 )]
 pub struct GasBlueprint(pub Gas);
 
-pub fn on_solid_blueprint_added(
+#[allow(clippy::needless_pass_by_value)]
+fn on_solid_blueprint_added(
     trigger: Trigger<OnAdd, SolidBlueprint>,
     mut commands: Commands,
     particle_query: Query<&SolidBlueprint, With<ParticleType>>,
@@ -288,7 +291,8 @@ pub fn on_solid_blueprint_added(
     }
 }
 
-pub fn on_movable_solid_blueprint_added(
+#[allow(clippy::needless_pass_by_value)]
+fn on_movable_solid_blueprint_added(
     trigger: Trigger<OnAdd, MovableSolidBlueprint>,
     mut commands: Commands,
     particle_query: Query<&MovableSolidBlueprint, With<ParticleType>>,
@@ -301,7 +305,8 @@ pub fn on_movable_solid_blueprint_added(
     }
 }
 
-pub fn on_liquid_blueprint_added(
+#[allow(clippy::needless_pass_by_value)]
+fn on_liquid_blueprint_added(
     trigger: Trigger<OnAdd, LiquidBlueprint>,
     mut commands: Commands,
     particle_query: Query<&LiquidBlueprint, With<ParticleType>>,
@@ -314,7 +319,8 @@ pub fn on_liquid_blueprint_added(
     }
 }
 
-pub fn on_gas_blueprint_added(
+#[allow(clippy::needless_pass_by_value)]
+fn on_gas_blueprint_added(
     trigger: Trigger<OnAdd, GasBlueprint>,
     mut commands: Commands,
     particle_query: Query<&GasBlueprint, With<ParticleType>>,
@@ -327,7 +333,8 @@ pub fn on_gas_blueprint_added(
     }
 }
 
-pub fn on_wall_added(
+#[allow(clippy::needless_pass_by_value)]
+fn on_wall_added(
     trigger: Trigger<OnAdd, WallBlueprint>,
     mut commands: Commands,
     particle_query: Query<&WallBlueprint, With<ParticleType>>,
