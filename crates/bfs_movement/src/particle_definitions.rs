@@ -1,13 +1,14 @@
 use bevy::prelude::*;
+use bevy_turborand::RngComponent;
 use bfs_core::{
-    impl_particle_blueprint, Particle, ParticleComponent, ParticleRegistrationEvent, ParticleType,
+    impl_particle_blueprint, impl_particle_rng, Particle, ParticleComponent,
+    ParticleRegistrationEvent, ParticleRng, ParticleType,
 };
 use serde::{Deserialize, Serialize};
 use smallvec::SmallVec;
 use std::iter;
 use std::slice::Iter;
 
-use crate::rng::PhysicsRng;
 use crate::{
     Liquid, LiquidBlueprint, MovableSolid, MovableSolidBlueprint, Solid, SolidBlueprint, Wall,
     WallBlueprint,
@@ -25,10 +26,15 @@ impl Plugin for ParticleDefinitionsPlugin {
     }
 }
 
+impl_particle_rng!(MovementRng, RngComponent);
 impl_particle_blueprint!(DensityBlueprint, Density);
 impl_particle_blueprint!(VelocityBlueprint, Velocity);
 impl_particle_blueprint!(MomentumBlueprint, Momentum);
 impl_particle_blueprint!(MovementPriorityBlueprint, MovementPriority);
+
+#[derive(Clone, PartialEq, Debug, Default, Component, Reflect)]
+#[reflect(Component)]
+pub struct MovementRng(pub RngComponent);
 
 #[derive(
     Copy,
@@ -206,7 +212,7 @@ impl NeighborGroup {
 
     pub fn iter_candidates<'a>(
         &'a mut self,
-        rng: &mut PhysicsRng,
+        rng: &mut MovementRng,
         momentum: Option<&Momentum>,
     ) -> NeighborGroupIter<'a> {
         if let Some(momentum) = momentum {
@@ -313,7 +319,7 @@ impl MovementPriority {
 
     pub fn iter_candidates<'a>(
         &'a mut self,
-        rng: &'a mut PhysicsRng,
+        rng: &'a mut MovementRng,
         momentum: Option<&'a Momentum>,
     ) -> impl Iterator<Item = &'a IVec2> + 'a {
         self.neighbor_groups
@@ -366,7 +372,7 @@ fn handle_particle_registration(
     ev_particle_registered.read().for_each(|ev| {
         ev.entities.iter().for_each(|entity| {
             if let Ok(child_of) = particle_query.get(*entity) {
-                commands.entity(*entity).insert(PhysicsRng::default());
+                commands.entity(*entity).insert(MovementRng::default());
                 if let Ok((
                     density,
                     velocity,

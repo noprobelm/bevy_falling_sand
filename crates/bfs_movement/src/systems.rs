@@ -4,7 +4,7 @@ use std::mem;
 
 use bevy::platform::collections::HashSet;
 use bevy_turborand::{DelegatedRng, GlobalRng};
-use bfs_core::{Particle, ParticleMap, ParticlePosition, ParticleSimulationSet};
+use bfs_core::{Particle, ParticleMap, ParticlePosition, ParticleRng, ParticleSimulationSet};
 
 pub(super) struct SystemsPlugin;
 
