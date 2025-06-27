@@ -204,6 +204,7 @@ pub struct RemoveParticleEvent {
 #[derive(Event)]
 /// Triggers a particle to reset itself to its parent's blueprint data.
 pub struct ResetParticleEvent {
+    /// The entity to reset particle blueprint data for.
     pub entity: Entity,
 }
 
