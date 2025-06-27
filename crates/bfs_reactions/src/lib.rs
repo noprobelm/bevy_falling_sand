@@ -14,7 +14,7 @@ mod systems;
 use bevy::prelude::*;
 
 pub use particle_definitions::*;
-pub use systems::*;
+use systems::SystemsPlugin;
 
 /// Provides the constructs and systems necessary for particle reactions in the Falling Sand
 /// Simulation.

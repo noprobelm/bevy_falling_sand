@@ -58,6 +58,7 @@ pub struct Burns {
 }
 
 impl Burns {
+    /// Initialize a new `Burns` with a specific duration, tick rate, and optional parameters.
     #[must_use]
     pub const fn new(
         duration: Duration,
