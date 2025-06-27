@@ -1,12 +1,11 @@
 use bevy::prelude::*;
+use bevy_turborand::RngComponent;
 use bfs_color::*;
 use bfs_core::{
-    impl_particle_blueprint, Particle, ParticleComponent, ParticlePosition,
-    ParticleRegistrationEvent, ParticleType,
+    impl_particle_blueprint, impl_particle_rng, Particle, ParticleComponent, ParticlePosition,
+    ParticleRegistrationEvent, ParticleRng, ParticleType,
 };
 use std::time::Duration;
-
-use crate::ReactionRng;
 
 pub struct ParticleDefinitionsPlugin;
 
@@ -16,9 +15,14 @@ impl Plugin for ParticleDefinitionsPlugin {
     }
 }
 
+impl_particle_rng!(ReactionRng, RngComponent);
 impl_particle_blueprint!(FireBlueprint, Fire);
 impl_particle_blueprint!(BurnsBlueprint, Burns);
 impl_particle_blueprint!(BurningBlueprint, Burning);
+
+#[derive(Clone, PartialEq, Debug, Default, Component, Reflect)]
+#[reflect(Component)]
+pub struct ReactionRng(pub RngComponent);
 
 #[derive(Copy, Clone, PartialEq, PartialOrd, Debug, Default, Component)]
 pub struct Fire {

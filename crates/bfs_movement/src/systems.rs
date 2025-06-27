@@ -1,4 +1,4 @@
-use crate::PhysicsRng;
+use crate::MovementRng;
 use crate::*;
 use std::mem;
 
@@ -38,7 +38,7 @@ type ParticleMovementQuery<'a> = (
     &'a Particle,
     &'a mut ParticlePosition,
     &'a mut Transform,
-    &'a mut PhysicsRng,
+    &'a mut MovementRng,
     &'a mut Velocity,
     Option<&'a mut Momentum>,
     &'a Density,

@@ -2,7 +2,9 @@ use super::ReactionRng;
 use bevy::prelude::*;
 use bevy_spatial::SpatialAccess;
 use bfs_color::*;
-use bfs_core::{Particle, ParticlePosition, ParticleSimulationSet, RemoveParticleEvent};
+use bfs_core::{
+    Particle, ParticlePosition, ParticleRng, ParticleSimulationSet, RemoveParticleEvent,
+};
 use bfs_spatial::ParticleTree;
 
 use crate::{Burning, Burns, Fire};
