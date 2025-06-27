@@ -9,7 +9,7 @@
 #![allow(clippy::default_trait_access, clippy::module_name_repetitions)]
 use bevy::prelude::*;
 
-pub mod material;
+mod material;
 mod particle_definitions;
 mod systems;
 
