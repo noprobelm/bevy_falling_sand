@@ -22,48 +22,28 @@ impl_particle_blueprint!(MovableSolidBlueprint, MovableSolid);
 impl_particle_blueprint!(LiquidBlueprint, Liquid);
 impl_particle_blueprint!(GasBlueprint, Gas);
 
+/// Used to describe a Material, which can be translated to a [`MovementPriority`].
 pub trait Material {
     #[allow(dead_code)]
+    /// Get the [`MovementPriority`] for the material type.
     fn to_movement_priority(&self) -> MovementPriority {
         MovementPriority::empty()
     }
 }
 
-#[derive(
-    Clone,
-    Eq,
-    PartialEq,
-    Ord,
-    PartialOrd,
-    Hash,
-    Debug,
-    Default,
-    Component,
-    Reflect,
-    Serialize,
-    Deserialize,
-)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Component)]
+/// A simple wall, which has no movement to it.
 pub struct Wall;
 
-#[derive(
-    Clone,
-    Eq,
-    PartialEq,
-    Ord,
-    PartialOrd,
-    Hash,
-    Debug,
-    Default,
-    Component,
-    Reflect,
-    Serialize,
-    Deserialize,
-)]
+/// Blueprint for a Wall
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Component)]
 pub struct WallBlueprint(pub Wall);
 
 impl Wall {
-    pub fn new() -> Wall {
-        Wall
+    /// Initialize a new `Wall`
+    #[must_use]
+    pub const fn new() -> Self {
+        Self
     }
 }
 
