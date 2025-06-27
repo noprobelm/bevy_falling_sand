@@ -35,7 +35,7 @@ pub trait Material {
 /// A simple wall, which has no movement to it.
 pub struct Wall;
 
-/// Blueprint for a Wall
+/// Blueprint for a [`Wall`]
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Component)]
 pub struct WallBlueprint(pub Wall);
 
@@ -63,11 +63,14 @@ impl Material for Wall {}
     Serialize,
     Deserialize,
 )]
+/// A solid particle, which can move only downwards.
 pub struct Solid;
 
 impl Solid {
-    pub fn new() -> Solid {
-        Solid
+    /// Initialize a new `Solid`
+    #[must_use]
+    pub const fn new() -> Self {
+        Self
     }
 }
 
@@ -91,6 +94,7 @@ impl Material for Solid {
     Serialize,
     Deserialize,
 )]
+/// Blueprint for a [`Solid`]
 pub struct SolidBlueprint(pub Solid);
 
 #[derive(
@@ -107,11 +111,14 @@ pub struct SolidBlueprint(pub Solid);
     Serialize,
     Deserialize,
 )]
+/// A movable solid particle, which can move downwards and diagonally.
 pub struct MovableSolid;
 
 impl MovableSolid {
-    pub fn new() -> MovableSolid {
-        MovableSolid
+    /// Initialize a new `MovableSolid`
+    #[must_use]
+    pub const fn new() -> Self {
+        Self
     }
 }
 
@@ -138,6 +145,7 @@ impl Material for MovableSolid {
     Serialize,
     Deserialize,
 )]
+/// Blueprint for a [`MovableSolid`]
 pub struct MovableSolidBlueprint(pub MovableSolid);
 
 #[derive(
@@ -154,13 +162,21 @@ pub struct MovableSolidBlueprint(pub MovableSolid);
     Serialize,
     Deserialize,
 )]
+/// A liquid particle, which can move downwards, diagonally, and horizontally.
+///
+/// A liquid particle will first attempt to move downards, then downwards diagonally. If no valid
+/// positions are found, it will attempt to move horizontally n spaces as a function of its fluidity
+/// + 1.
 pub struct Liquid {
+    /// The fluidity of a liquid. Higher values equate to more fluid-like behavior.
     pub fluidity: usize,
 }
 
 impl Liquid {
-    pub fn new(fluidity: usize) -> Liquid {
-        Liquid { fluidity }
+    /// Initialize a new `Liquid` with a specified fluidity.
+    #[must_use]
+    pub const fn new(fluidity: usize) -> Self {
+        Self { fluidity }
     }
 }
 
@@ -197,6 +213,7 @@ impl Material for Liquid {
     Serialize,
     Deserialize,
 )]
+/// Blueprint for a [`Liquid`]
 pub struct LiquidBlueprint(pub Liquid);
 
 #[derive(
@@ -213,13 +230,17 @@ pub struct LiquidBlueprint(pub Liquid);
     Serialize,
     Deserialize,
 )]
+/// A gas particle, which can move upwards, upwards diagonally, and horizontally.
 pub struct Gas {
+    /// The fluidity of the gas. Higher values equate to more fluid-like behavior.
     pub fluidity: usize,
 }
 
 impl Gas {
-    pub fn new(fluidity: usize) -> Gas {
-        Gas { fluidity }
+    /// Initialize a new `Gas` with a specified fluidity.
+    #[must_use]
+    pub const fn new(fluidity: usize) -> Self {
+        Self { fluidity }
     }
 }
 
@@ -253,6 +274,7 @@ impl Material for Gas {
     Serialize,
     Deserialize,
 )]
+/// Blueprint for a [`Gas`]
 pub struct GasBlueprint(pub Gas);
 
 pub fn on_solid_blueprint_added(
