@@ -1228,7 +1228,7 @@ fn render_flows_color_field(
         ui.horizontal(|ui| {
             ui.label("Rate: ");
             ui.add(egui::Slider::new(
-                &mut particle_flows_color_field.blueprint.component_mut().rate,
+                &mut particle_flows_color_field.blueprint.component_mut().chance,
                 0.0..=1.0,
             ));
         });

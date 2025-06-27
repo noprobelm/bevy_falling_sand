@@ -12,10 +12,7 @@ pub(super) struct ParticleDefinitionsPlugin;
 
 impl Plugin for ParticleDefinitionsPlugin {
     fn build(&self, app: &mut App) {
-        app.register_type::<ColorRng>()
-            .register_type::<ColorProfile>()
-            .register_type::<ChangesColor>()
-            .add_event::<ResetParticleColorEvent>()
+        app.add_event::<ResetParticleColorEvent>()
             .add_systems(Update, handle_particle_registration);
     }
 }
@@ -24,91 +21,135 @@ impl_particle_blueprint!(ColorProfileBlueprint, ColorProfile);
 impl_particle_blueprint!(ChangesColorBlueprint, ChangesColor);
 impl_particle_rng!(ColorRng, RngComponent);
 
-#[derive(Clone, PartialEq, Debug, Default, Component, Reflect)]
-#[reflect(Component)]
+/// Provides rng for coloring particles.
+#[derive(Clone, PartialEq, Debug, Default, Component)]
 pub struct ColorRng(pub RngComponent);
 
+/// Provides a color profile for particles, which can be used to set the color of particles from a
+/// predefined palette.
 #[derive(Clone, PartialEq, Debug, Component, Reflect, Serialize, Deserialize)]
 #[reflect(Component)]
 pub struct ColorProfile {
     index: usize,
+    /// The color of the particle.
     pub color: Color,
+    /// The possible colors of the particle.
     pub palette: Vec<Color>,
 }
 
 impl ColorProfile {
-    pub fn new(palette: Vec<Color>) -> ColorProfile {
-        ColorProfile {
+    /// Initialize a new `ColorProfile` with the first color in the palette.
+    #[must_use]
+    pub fn new(palette: Vec<Color>) -> Self {
+        Self {
             index: 0,
             color: palette[0],
             palette,
         }
     }
 
-    pub fn new_with_selected(index: usize, palette: Vec<Color>) -> ColorProfile {
-        ColorProfile {
+    /// Intiialize a new `ColorProfile` with a specific index and palette.
+    #[must_use]
+    pub fn new_with_selected(index: usize, palette: Vec<Color>) -> Self {
+        Self {
             index,
             color: palette[index],
             palette,
         }
     }
 
-    pub fn new_with_random<R: TurboRand>(&self, rng: &mut R) -> ColorProfile {
+    /// Initialize a new `ColorProfile` with a random color from the palette.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the palette is empty.
+    #[must_use]
+    pub fn new_with_random<R: TurboRand>(&self, rng: &mut R) -> Self {
+        assert!(
+            !self.palette.is_empty(),
+            "ColorProfile palette cannot be empty when initializing with random color."
+        );
         let color_index = rng.index(0..self.palette.len());
-        ColorProfile {
+        Self {
             index: color_index,
-            color: *self.palette.get(color_index).unwrap(),
+            color: *self.palette.get(color_index).unwrap(), // safe because of assert
             palette: self.palette.clone(),
         }
     }
 
+    /// Set the particle color to a random color from the palette.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the palette is empty.
     pub fn set_random(&mut self, rng: &mut ColorRng) {
+        assert!(
+            !self.palette.is_empty(),
+            "ColorProfile palette cannot be empty setting color to random."
+        );
         self.index = rng.index(0..self.palette.len());
         self.color = *self.palette.get(self.index).unwrap();
     }
 
+    /// Set the particle color to the next color in the palette, returning to the start if at the end.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the palette is empty.
     pub fn set_next(&mut self) {
-        if self.palette.len() - 1 == self.index {
+        assert!(
+            !self.palette.is_empty(),
+            "Palette cannot be empty if setting to next color."
+        );
+        if self.index >= self.palette.len() - 1 {
             self.index = 0;
         } else {
             self.index += 1;
         }
-        self.color = *self.palette.get(self.index).unwrap();
+        self.color = self.palette[self.index];
     }
 }
 
 impl Default for ColorProfile {
     fn default() -> Self {
-        ColorProfile::new(vec![Color::srgba(255., 255., 255., 255.)])
+        Self::new(vec![Color::srgba(255., 255., 255., 255.)])
     }
 }
 
+/// Blueprint for a [`ColorProfile`].
 #[derive(Clone, PartialEq, Debug, Default, Component, Reflect, Serialize, Deserialize)]
 #[reflect(Component)]
 pub struct ColorProfileBlueprint(pub ColorProfile);
 
+/// Component that allows particles to change color based on an input chance.
 #[derive(Copy, Clone, PartialEq, Debug, Component, Reflect, Serialize, Deserialize)]
 #[reflect(Component)]
 pub struct ChangesColor {
-    pub rate: f64,
+    /// The chance that a particle will change color when provided to rng.
+    pub chance: f64,
 }
 
 impl ChangesColor {
-    pub fn new(chance: f64) -> ChangesColor {
-        ChangesColor { rate: chance }
+    #[must_use]
+    /// Initialize a new `ChangesColor` with a specific chance.
+    pub const fn new(chance: f64) -> Self {
+        Self { chance }
     }
 }
 
+/// Blueprint for holding a `ChangesColor`.
+#[derive(Copy, Clone, PartialEq, Debug, Component, Reflect, Serialize, Deserialize)]
+#[reflect(Component)]
+pub struct ChangesColorBlueprint(pub ChangesColor);
+
+/// Triggers a particle to reset its [`ParticleColor`] to its parent's blueprint data.
 #[derive(
     Clone, Hash, Debug, Default, Eq, PartialEq, PartialOrd, Event, Reflect, Serialize, Deserialize,
 )]
 pub struct ResetParticleColorEvent {
+    /// The particle entities to reset color for.
     pub entities: Vec<Entity>,
 }
-
-#[derive(Copy, Clone, PartialEq, Debug, Component, Reflect, Serialize, Deserialize)]
-#[reflect(Component)]
-pub struct ChangesColorBlueprint(pub ChangesColor);
 
 fn handle_particle_components(
     commands: &mut Commands,
@@ -121,9 +162,9 @@ fn handle_particle_components(
         With<ParticleType>,
     >,
     particle_query: &Query<&ChildOf, With<Particle>>,
-    entities: &Vec<Entity>,
+    entities: &[Entity],
 ) {
-    entities.iter().for_each(|entity| {
+    for entity in entities {
         if let Ok(child_of) = particle_query.get(*entity) {
             commands.entity(*entity).insert(ColorRng::default());
             if let Ok((particle_color, flows_color)) = parent_query.get(child_of.parent()) {
@@ -149,7 +190,7 @@ fn handle_particle_components(
                 }
             }
         }
-    });
+    }
 }
 
 fn handle_particle_registration(
