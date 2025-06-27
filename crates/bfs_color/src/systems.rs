@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bfs_core::{Particle, ParticleSimulationSet};
+use bfs_core::{Particle, ParticleRng, ParticleSimulationSet};
 
 use super::{ChangesColor, ColorProfile, ColorRng};
 

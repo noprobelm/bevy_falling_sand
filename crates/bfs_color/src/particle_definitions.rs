@@ -1,10 +1,11 @@
 use bevy::prelude::*;
+use bevy_turborand::RngComponent;
 use bevy_turborand::{DelegatedRng, GlobalRng, TurboRand};
 use serde::{Deserialize, Serialize};
 
-use super::ColorRng;
 use bfs_core::{
-    impl_particle_blueprint, Particle, ParticleComponent, ParticleRegistrationEvent, ParticleType,
+    impl_particle_blueprint, impl_particle_rng, Particle, ParticleComponent,
+    ParticleRegistrationEvent, ParticleRng, ParticleType,
 };
 
 pub(super) struct ParticleDefinitionsPlugin;
@@ -21,6 +22,11 @@ impl Plugin for ParticleDefinitionsPlugin {
 
 impl_particle_blueprint!(ColorProfileBlueprint, ColorProfile);
 impl_particle_blueprint!(ChangesColorBlueprint, ChangesColor);
+impl_particle_rng!(ColorRng, RngComponent);
+
+#[derive(Clone, PartialEq, Debug, Default, Component, Reflect)]
+#[reflect(Component)]
+pub struct ColorRng(pub RngComponent);
 
 #[derive(Clone, PartialEq, Debug, Component, Reflect, Serialize, Deserialize)]
 #[reflect(Component)]

@@ -1,11 +1,9 @@
 mod particle_definitions;
-mod rng;
 mod systems;
 
 use bevy::prelude::*;
 
 pub use particle_definitions::*;
-pub use rng::*;
 use systems::*;
 
 pub struct FallingSandColorPlugin;
