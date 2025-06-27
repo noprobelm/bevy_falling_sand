@@ -1,7 +1,7 @@
-use crate::MovementRng;
-use crate::*;
+use crate::{MovementRng, Velocity, Momentum, Density, MovementPriority, Moved};
 use std::mem;
 
+use bevy::prelude::*;
 use bevy::platform::collections::HashSet;
 use bevy_turborand::{DelegatedRng, GlobalRng};
 use bfs_core::{Particle, ParticleMap, ParticlePosition, ParticleRng, ParticleSimulationSet};
@@ -49,8 +49,8 @@ type ParticleMovementQuery<'a> = (
     &'a mut Moved,
 );
 
-#[allow(unused_mut)]
-pub fn handle_movement_by_chunks(
+#[allow(unused_mut, clippy::too_many_lines)]
+fn handle_movement_by_chunks(
     mut particle_query: Query<ParticleMovementQuery>,
     mut map: ResMut<ParticleMap>,
     mut rng: ResMut<GlobalRng>,
@@ -193,8 +193,8 @@ pub fn handle_movement_by_chunks(
     }
 }
 
-#[allow(unused_mut)]
-pub fn handle_movement_by_particles(
+#[allow(unused_mut, clippy::too_many_lines)]
+fn handle_movement_by_particles(
     mut particle_query: Query<ParticleMovementQuery>,
     mut map: ResMut<ParticleMap>,
 ) {

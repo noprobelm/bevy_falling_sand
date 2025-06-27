@@ -7,7 +7,7 @@
     missing_docs
 )]
 #![allow(clippy::default_trait_access, clippy::module_name_repetitions)]
-use bevy::prelude::*;
+use bevy::prelude::{App, Plugin};
 
 mod material;
 mod particle_definitions;
