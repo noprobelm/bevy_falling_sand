@@ -139,7 +139,7 @@ pub fn handle_movement_by_chunks(
                                                 break 'velocity_loop;
                                             }
                                             Err(err) => {
-                                                warn!("Attempted to swap particles at {:?} and {:?} but failed: {:?}", position.0, neighbor_position, err);
+                                                debug!("Attempted to swap particles at {:?} and {:?} but failed: {:?}", position.0, neighbor_position, err);
                                             }
                                         }
                                     } else {
@@ -164,7 +164,7 @@ pub fn handle_movement_by_chunks(
                                         moved = true;
                                         continue 'velocity_loop;
                                     },
-                                    Err(err) => {warn!("Attempted to swap particles at {:?} and {:?} but failed: {:?}", position.0, neighbor_position, err);}
+                                    Err(err) => {debug!("Attempted to swap particles at {:?} and {:?} but failed: {:?}", position.0, neighbor_position, err);}
                                 }
 
                             }
@@ -273,7 +273,7 @@ pub fn handle_movement_by_particles(
                                                 moved = true;
                                                 break 'velocity_loop;
                                             },
-                                            Err(err) => {warn!("Attempted to swap particles at {:?} and {:?} but failed: {:?}", position.0, neighbor_position, err);}
+                                            Err(err) => {debug!("Attempted to swap particles at {:?} and {:?} but failed: {:?}", position.0, neighbor_position, err);}
                                         }
                                     } else {
                                         obstructed.insert(relative_position.signum());
@@ -301,7 +301,7 @@ pub fn handle_movement_by_particles(
                                         continue 'velocity_loop;
                                     },
                                     Err(err) => {
-                                        warn!("Attempted to swap particles at {:?} and {:?} but failed: {:?}", position.0, neighbor_position, err);
+                                        debug!("Attempted to swap particles at {:?} and {:?} but failed: {:?}", position.0, neighbor_position, err);
                                     }
                                 }
                             }

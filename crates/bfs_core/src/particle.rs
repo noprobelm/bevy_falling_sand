@@ -226,6 +226,7 @@ pub fn handle_new_particle_types(
 
 /// Handles new particles as they are added to the world. If a new particle is being added at the same
 /// coordinate of an existing entity, the new particle is despawned.
+#[allow(clippy::needless_pass_by_value)]
 pub fn handle_new_particles(
     mut commands: Commands,
     parent_query: Query<Entity, With<ParticleType>>,
@@ -235,25 +236,26 @@ pub fn handle_new_particles(
     mut ev_particle_registered: EventWriter<ParticleRegistrationEvent>,
 ) {
     let mut entities: Vec<Entity> = vec![];
+
     for (particle_type, transform, entity) in particle_query.iter() {
         let coordinates = IVec2::new(
             transform.translation.x as i32,
             transform.translation.y as i32,
         );
 
-        if map
-            .chunk_mut(&coordinates)
-            .unwrap()
-            .entry(coordinates)
-            .or_insert(entity)
-            != &entity
-        {
+        if let Some(chunk) = map.chunk_mut(&coordinates) {
+            if chunk.entry(coordinates).or_insert(entity) != &entity {
+                commands.entity(entity).despawn();
+                continue;
+            }
+        } else {
+            // If the chunk is out of bounds, also despawn the entity
             commands.entity(entity).despawn();
             continue;
         }
 
-        if let Some(parent_entity) = type_map.get(&particle_type.name) {
-            if let Ok(parent_entity) = parent_query.get(*parent_entity) {
+        if let Some(parent_handle) = type_map.get(&particle_type.name) {
+            if let Ok(parent_entity) = parent_query.get(*parent_handle) {
                 entities.push(entity);
                 commands.entity(parent_entity).add_child(entity);
                 commands
@@ -261,12 +263,13 @@ pub fn handle_new_particles(
                     .insert((ParticlePosition(coordinates),));
             }
         } else {
-            panic!(
+            warn!(
                 "No parent entity found for particle type {:?}",
                 particle_type
             );
         }
     }
+
     ev_particle_registered.write(ParticleRegistrationEvent { entities });
 }
 
