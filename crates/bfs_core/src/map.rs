@@ -4,8 +4,8 @@ use bevy::platform::hash::FixedHasher;
 use bevy::prelude::*;
 
 use crate::{
-    Particle, ParticleComponent, ParticlePosition, ParticleSimulationSet, ParticleType,
-    ParticleTypeMap, RemoveParticleEvent,
+    Particle, ParticlePosition, ParticleSimulationSet, ParticleType, ParticleTypeMap,
+    RemoveParticleEvent,
 };
 
 /// Adds Bevy plugin elements for particle mapping functionality.
@@ -23,11 +23,24 @@ impl Plugin for ParticleMapPlugin {
     }
 }
 
+/// Error for particle map indexing.
 #[derive(Debug)]
 pub enum SwapError {
-    ChunkOutOfBounds { index: usize },
-    PositionNotFound { position: IVec2 },
-    PositionOutOfBounds { position: IVec2 },
+    /// The chunk index is out of bounds.
+    ChunkOutOfBounds {
+        /// The out of bounds index.
+        index: usize,
+    },
+    /// No entity exists at the specified position.
+    PositionNotFound {
+        /// The invalid position.
+        position: IVec2,
+    },
+    /// The position is out of bounds of the particle map.
+    PositionOutOfBounds {
+        /// The out of bounds position.
+        position: IVec2,
+    },
 }
 
 /// Maps spatial positions to Particle entities, which can then be cross referenced to a Particle
