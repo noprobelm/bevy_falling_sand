@@ -27,6 +27,7 @@ impl Plugin for ParticleMapPlugin {
 pub enum SwapError {
     ChunkOutOfBounds { index: usize },
     PositionNotFound { position: IVec2 },
+    PositionOutOfBounds { position: IVec2 },
 }
 
 /// Maps spatial positions to Particle entities, which can then be cross referenced to a Particle
@@ -66,7 +67,6 @@ impl ParticleMap {
     ///
     /// The returned [`ParticleMap`] will panic if the `map_size` or `chunk_size` is not a power of
     /// two. The internals of this struct rely on this property for efficient indexing.
-
     #[must_use]
     pub fn new(map_size: usize, chunk_size: usize) -> Self {
         assert!(
@@ -111,23 +111,75 @@ impl ParticleMap {
         }
     }
 
-    const fn index(&self, position: IVec2) -> usize {
-        let col = ((position.x + self.flat_map_offset_value as i32) >> self.chunk_shift) as usize;
-        let row = ((self.flat_map_offset_value as i32 - position.y) >> self.chunk_shift) as usize;
-        row * self.size + col
+    const fn index(&self, position: IVec2) -> Option<usize> {
+        let col = ((position.x + self.flat_map_offset_value as i32) >> self.chunk_shift) as isize;
+        let row = ((self.flat_map_offset_value as i32 - position.y) >> self.chunk_shift) as isize;
+
+        if col < 0 || col >= self.size as isize || row < 0 || row >= self.size as isize {
+            None
+        } else {
+            Some((row as usize) * self.size + (col as usize))
+        }
     }
 
     /// Get a chunk if the position falls anywhere within its bounds.
     #[must_use]
     pub fn chunk(&self, position: &IVec2) -> Option<&Chunk> {
-        let index = self.index(*position);
-        self.chunks.get(index)
+        self.index(*position).and_then(|i| self.chunks.get(i))
     }
 
     /// Get a mutable chunk if the position falls anywhere within its bounds.
     pub fn chunk_mut(&mut self, position: &IVec2) -> Option<&mut Chunk> {
-        let index = self.index(*position);
-        self.chunks.get_mut(index)
+        self.index(*position)
+            .and_then(move |index| self.chunks.get_mut(index))
+    }
+
+    /// Get the entity at position.
+    #[must_use]
+    pub fn get(&self, position: &IVec2) -> Option<&Entity> {
+        self.chunk(position)?.get(position)
+    }
+
+    /// Remove the entity at position.
+    pub fn remove(&mut self, position: &IVec2) -> Option<Entity> {
+        self.chunk_mut(position)?.remove(position)
+    }
+
+    /// # Safety
+    /// Caller must ensure that the position lies within the bounds of the particle map.
+    #[must_use]
+    pub const unsafe fn index_unchecked(&self, position: IVec2) -> usize {
+        let col = ((position.x + self.flat_map_offset_value as i32) >> self.chunk_shift) as usize;
+        let row = ((self.flat_map_offset_value as i32 - position.y) >> self.chunk_shift) as usize;
+        row * self.size + col
+    }
+
+    /// # Safety
+    /// Caller must ensure that the position lies within the bounds of the particle map.
+    #[must_use]
+    pub unsafe fn chunk_unchecked(&self, position: &IVec2) -> &Chunk {
+        let index = self.index_unchecked(*position);
+        self.chunks.get_unchecked(index)
+    }
+
+    /// # Safety
+    /// Caller must ensure that the position lies within the bounds of the particle map.
+    pub unsafe fn chunk_unchecked_mut(&mut self, position: &IVec2) -> &mut Chunk {
+        let index = self.index_unchecked(*position);
+        self.chunks.get_unchecked_mut(index)
+    }
+
+    /// # Safety
+    /// Caller must ensure that the position lies within bounds, and the chunk contains the entity.
+    #[must_use]
+    pub unsafe fn get_unchecked(&self, position: &IVec2) -> Option<&Entity> {
+        self.chunk_unchecked(position).get(position)
+    }
+
+    /// # Safety
+    /// Caller must ensure that the position lies within bounds, and the chunk contains the entity.
+    pub unsafe fn remove_unchecked(&mut self, position: &IVec2) -> Option<Entity> {
+        self.chunk_unchecked_mut(position).remove(position)
     }
 
     /// Iterate through all chunks in the [`ParticleMap`]
@@ -140,37 +192,24 @@ impl ParticleMap {
         self.chunks.iter_mut()
     }
 
-    /// Get the entity at position.
-    #[must_use]
-    pub fn get(&self, position: &IVec2) -> Option<&Entity> {
-        let index = self.index(*position);
-        self.chunks.get(index).and_then(|chunk| chunk.get(position))
-    }
-
-    /// Remove the entity at position.
-    pub fn remove(&mut self, position: &IVec2) -> Option<Entity> {
-        let index = self.index(*position);
-        self.chunks
-            .get_mut(index)
-            .and_then(|chunk| chunk.remove(position))
-    }
-
     /// Swap the entities between the first and second positions.
     ///
     /// # Errors
     ///
     /// Returns `Err(SwapError)` if any position is invalid.
     pub fn swap(&mut self, first: IVec2, second: IVec2) -> Result<(), SwapError> {
-        let first_chunk_idx = self.index(first);
-        let second_chunk_idx = self.index(second);
+        let first_index = self
+            .index(first)
+            .ok_or(SwapError::PositionOutOfBounds { position: first })?;
+        let second_index = self
+            .index(second)
+            .ok_or(SwapError::PositionOutOfBounds { position: second })?;
 
-        if first_chunk_idx == second_chunk_idx {
-            let chunk =
-                self.chunks
-                    .get_mut(first_chunk_idx)
-                    .ok_or(SwapError::ChunkOutOfBounds {
-                        index: first_chunk_idx,
-                    })?;
+        if first_index == second_index {
+            let chunk = self
+                .chunks
+                .get_mut(first_index)
+                .ok_or(SwapError::ChunkOutOfBounds { index: first_index })?;
 
             let entity_first = chunk
                 .remove(&first)
@@ -184,18 +223,17 @@ impl ParticleMap {
             return Ok(());
         }
 
-        // Safe mutable borrow of two chunks
-        let (chunk_a, chunk_b) = if first_chunk_idx < second_chunk_idx {
-            let (left, right) = self.chunks.split_at_mut(second_chunk_idx);
-            (left.get_mut(first_chunk_idx), right.get_mut(0))
+        let (chunk_a, chunk_b) = if first_index < second_index {
+            let (left, right) = self.chunks.split_at_mut(second_index);
+            (left.get_mut(first_index), right.get_mut(0))
         } else {
-            let (left, right) = self.chunks.split_at_mut(first_chunk_idx);
-            (right.get_mut(0), left.get_mut(second_chunk_idx))
+            let (left, right) = self.chunks.split_at_mut(first_index);
+            (right.get_mut(0), left.get_mut(second_index))
         };
 
         let (Some(chunk_first), Some(chunk_second)) = (chunk_a, chunk_b) else {
             return Err(SwapError::ChunkOutOfBounds {
-                index: first_chunk_idx.max(second_chunk_idx),
+                index: first_index.max(second_index),
             });
         };
 
