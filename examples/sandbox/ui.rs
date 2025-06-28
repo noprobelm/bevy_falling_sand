@@ -1,5 +1,4 @@
 //! UI module.
-use bevy::math::ops::powf;
 use bevy::platform::collections::{hash_map::Entry, HashMap};
 use bevy::{
     input::{
