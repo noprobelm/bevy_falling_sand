@@ -62,6 +62,10 @@ impl bevy::prelude::Plugin for UIPlugin {
                     exit_on_key,
                 ),
             )
+            .add_systems(
+                Update,
+                ev_write_step_simulation.run_if(input_just_pressed(KeyCode::KeyP)),
+            )
             .add_systems(OnEnter(AppState::Ui), show_cursor)
             .add_systems(OnEnter(AppState::Canvas), hide_cursor)
             .add_systems(Update, spawn_ball.run_if(input_pressed(KeyCode::KeyB)))
@@ -313,6 +317,15 @@ impl DebugUI {
 fn exit_on_key(keyboard_input: Res<ButtonInput<KeyCode>>, mut exit: EventWriter<AppExit>) {
     if keyboard_input.just_pressed(KeyCode::KeyQ) {
         exit.write(AppExit::Success);
+    }
+}
+
+fn ev_write_step_simulation(
+    app_state: Res<State<AppState>>,
+    mut ev_step_simulation: EventWriter<SimulationStepEvent>,
+) {
+    if app_state.get() == &AppState::Canvas {
+        ev_step_simulation.write(SimulationStepEvent);
     }
 }
 

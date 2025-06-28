@@ -22,6 +22,7 @@ impl Plugin for ParticleCorePlugin {
                 ),
             )
             .init_resource::<ParticleTypeMap>()
+            .add_event::<SimulationStepEvent>()
             .add_event::<ParticleRegistrationEvent>()
             .add_event::<ResetParticleEvent>()
             .add_event::<RemoveParticleEvent>()
@@ -217,9 +218,9 @@ pub struct ResetParticleEvent {
 
 #[allow(clippy::needless_pass_by_value)]
 fn condition_ev_simulation_step_received(
-    ev_simulation_step: EventReader<SimulationStepEvent>,
+    mut ev_simulation_step: EventReader<SimulationStepEvent>,
 ) -> bool {
-    if !ev_simulation_step.is_empty() {
+    for _ in ev_simulation_step.read() {
         return true;
     }
     false
