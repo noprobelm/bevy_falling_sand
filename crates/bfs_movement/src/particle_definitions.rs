@@ -169,11 +169,15 @@ impl Momentum {
 }
 
 /// Blueprint for a [`Momentum`]
-#[derive(
-    Copy, Clone, Eq, PartialEq, Hash, Debug, Default, Component, Reflect, Serialize, Deserialize,
-)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, Component, Reflect, Serialize, Deserialize)]
 #[reflect(Component)]
 pub struct MomentumBlueprint(pub Momentum);
+
+impl Default for MomentumBlueprint {
+    fn default() -> Self {
+        Self(Momentum::ZERO)
+    }
+}
 
 /// A `NeighborGroup` defines an ordered, hierarchial group of relative neighbors usedto evalute
 /// particle movement.

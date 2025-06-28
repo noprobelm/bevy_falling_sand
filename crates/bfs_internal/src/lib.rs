@@ -92,6 +92,9 @@ impl Plugin for FallingSandPlugin {
 }
 
 /// A minimal plugin for *Bevy Falling Sand*, which only adds the crate's core features.
+///
+/// This plugin is useful for users who want to selectively import the additional plugins provided
+/// by the *Bevy Falling Sand* subcrates.
 pub struct FallingSandMinimalPlugin;
 
 impl Plugin for FallingSandMinimalPlugin {

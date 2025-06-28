@@ -16,4 +16,4 @@ pub use crate::scenes::*;
 
 pub use crate::physics::*;
 
-pub use super::FallingSandPlugin;
+pub use super::{FallingSandMinimalPlugin, FallingSandPlugin};
