@@ -9,7 +9,7 @@ fn main() {
             FallingSandMovementPlugin,
             FallingSandColorPlugin,
         ))
-        .add_systems(Startup, (setup_camera, setup_particles))
+        .add_systems(Startup, setup)
         .add_systems(
             Update,
             setup_boundary.run_if(resource_not_exists::<BoundaryReady>),
@@ -35,7 +35,7 @@ struct BoundaryReady;
 #[derive(Component)]
 struct MainCamera;
 
-fn setup_camera(mut commands: Commands) {
+fn setup(mut commands: Commands) {
     commands.spawn((
         Camera2d,
         Projection::Orthographic(OrthographicProjection {
@@ -45,9 +45,7 @@ fn setup_camera(mut commands: Commands) {
         }),
         MainCamera,
     ));
-}
 
-fn setup_particles(mut commands: Commands) {
     commands.spawn((WallBundle::new(
         ParticleType::new("Dirt Wall"),
         ColorProfile::new(vec![
