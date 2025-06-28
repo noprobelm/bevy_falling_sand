@@ -144,6 +144,11 @@ pub struct ParticleTypeMap {
 }
 
 impl ParticleTypeMap {
+    /// Returns true if the designated key exists in the map.
+    pub fn contains(&self, name: &str) -> bool {
+        self.map.contains_key(name)
+    }
+
     /// Iterate over key value pairs in the map.
     pub fn iter(&self) -> impl Iterator<Item = (&String, &Entity)> {
         self.map.iter()
