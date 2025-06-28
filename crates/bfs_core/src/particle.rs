@@ -16,7 +16,10 @@ impl Plugin for ParticleCorePlugin {
         app.init_resource::<ParticleSimulationRun>()
             .configure_sets(
                 Update,
-                ParticleSimulationSet.run_if(resource_exists::<ParticleSimulationRun>),
+                ParticleSimulationSet.run_if(
+                    resource_exists::<ParticleSimulationRun>
+                        .or(condition_ev_simulation_step_received),
+                ),
             )
             .init_resource::<ParticleTypeMap>()
             .add_event::<ParticleRegistrationEvent>()
@@ -184,6 +187,10 @@ impl Particle {
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, Default, Component, Serialize, Deserialize)]
 pub struct ParticlePosition(pub IVec2);
 
+/// Event which is used to trigger the simulation to step forward by one tick.
+#[derive(Clone, Event, Hash, Debug, Eq, PartialEq, PartialOrd)]
+pub struct SimulationStepEvent;
+
 /// An event which is sent each time a new [`Particle`] has been spawned into the world. Systems
 /// which listen for this event can insert other Particle-type components to the subject entitiesa.
 #[derive(Clone, Event, Hash, Debug, Eq, PartialEq, PartialOrd)]
@@ -206,6 +213,16 @@ pub struct RemoveParticleEvent {
 pub struct ResetParticleEvent {
     /// The entity to reset particle blueprint data for.
     pub entity: Entity,
+}
+
+#[allow(clippy::needless_pass_by_value)]
+fn condition_ev_simulation_step_received(
+    ev_simulation_step: EventReader<SimulationStepEvent>,
+) -> bool {
+    if !ev_simulation_step.is_empty() {
+        return true;
+    }
+    false
 }
 
 /// Handles new particle types as they are added to the world. Particle types with existing names
