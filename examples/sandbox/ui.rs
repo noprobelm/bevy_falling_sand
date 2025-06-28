@@ -536,8 +536,10 @@ pub fn ev_mouse_wheel(
     mut camera_query: Query<&mut Projection, With<MainCamera>>,
     mut brush_query: Query<&mut Brush>,
     max_brush_size: Res<MaxBrushSize>,
-    time: Res<Time>,
 ) {
+    const ZOOM_IN_FACTOR: f32 = 0.9;
+    const ZOOM_OUT_FACTOR: f32 = 1.1;
+
     if !ev_scroll.is_empty() {
         match app_state.get() {
             AppState::Ui => {
@@ -560,9 +562,9 @@ pub fn ev_mouse_wheel(
                 };
                 ev_scroll.read().for_each(|ev| {
                     if ev.y < 0. {
-                        orthographic.scale *= powf(10.0f32, time.delta_secs());
-                    } else {
-                        orthographic.scale *= powf(0.1f32, time.delta_secs());
+                        orthographic.scale *= ZOOM_OUT_FACTOR;
+                    } else if ev.y > 0. {
+                        orthographic.scale *= ZOOM_IN_FACTOR;
                     }
                 });
             }

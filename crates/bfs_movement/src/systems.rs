@@ -4,7 +4,7 @@ use std::mem;
 use bevy::prelude::*;
 use bevy::platform::collections::HashSet;
 use bevy_turborand::{DelegatedRng, GlobalRng};
-use bfs_core::{Particle, ParticleMap, ParticlePosition, ParticleRng, ParticleSimulationSet};
+use bfs_core::{Particle, ParticleMap, ParticlePosition, ParticleSimulationSet};
 
 pub(super) struct SystemsPlugin;
 
@@ -60,15 +60,13 @@ fn handle_movement_by_chunks(
 
     unsafe {
         map.iter_chunks_mut().for_each(|mut chunk| {
-            chunk.iter().for_each(|(position, entity)| {
-                if let Some(dirty_rect) = chunk.dirty_rect() {
-                    if dirty_rect.contains(*position) || rng.chance(0.05) {
+            if let Some(dirty_rect) = chunk.dirty_rect() {
+                chunk.iter().for_each(|(position, entity)| {
+                    if dirty_rect.contains(*position) {
                         particle_entities.push(*entity);
                     }
-                } else if rng.chance(0.05) {
-                    particle_entities.push(*entity);
-                }
-            });
+                });
+            }
         });
         rng.shuffle(&mut particle_entities);
         particle_entities.iter().for_each(|entity| {
@@ -216,14 +214,13 @@ fn handle_movement_by_particles(
             )| {
                 if let Some(chunk) = map.chunk(&position.0) {
                     if let Some(dirty_rect) = chunk.dirty_rect() {
-                        if !dirty_rect.contains(position.0) && !rng.chance(0.2) {
-                            return;
-                        }
-                    } else if !rng.chance(0.05) {
+                    if !dirty_rect.contains(position.0) {
+                        return;
+                    }
+                    } else {
                         return;
                     }
                 }
-
                 // Used to determine if we should add the particle to set of visited particles.
                 let mut moved = false;
                 'velocity_loop: for _ in 0..velocity.val {

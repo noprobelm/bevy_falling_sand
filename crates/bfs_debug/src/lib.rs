@@ -11,7 +11,7 @@
 //! chunks, dirty rectangles, and more.
 use bevy::prelude::*;
 
-use bfs_core::{Particle, ParticleMap};
+use bfs_core::{Particle, ParticleMap, ParticleSimulationSet};
 use bfs_movement::Wall;
 
 /// Adds the constructs and systems necessary for debugging the Falling Sand simulation.
@@ -28,9 +28,15 @@ impl Plugin for FallingSandDebugPlugin {
             .add_systems(
                 Update,
                 (
-                    color_active_chunks.run_if(resource_exists::<DebugParticleMap>),
-                    color_dirty_rects.run_if(resource_exists::<DebugDirtyRects>),
+                    color_active_chunks
+                        .after(ParticleSimulationSet)
+                        .run_if(resource_exists::<DebugParticleMap>),
+                    color_dirty_rects
+                        .after(ParticleSimulationSet)
+                        .after(color_active_chunks)
+                        .run_if(resource_exists::<DebugDirtyRects>),
                     (count_dynamic_particles, count_total_particles)
+                        .after(ParticleSimulationSet)
                         .run_if(resource_exists::<DebugParticleCount>),
                 ),
             );
@@ -98,9 +104,10 @@ fn color_dirty_rects(
 ) {
     map.iter_chunks().for_each(|chunk| {
         if let Some(dirty_rect) = chunk.dirty_rect() {
+            let rect = dirty_rect.as_rect();
             chunk_gizmos.rect_2d(
-                dirty_rect.center().as_vec2(),
-                dirty_rect.size().as_vec2() + Vec2::splat(1.),
+                rect.center(),
+                rect.size() + Vec2::splat(1.0),
                 dirty_rect_color.0,
             );
         }

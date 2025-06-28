@@ -16,7 +16,7 @@ impl Plugin for ParticleMapPlugin {
         app.add_event::<ClearParticleMapEvent>()
             .add_event::<ClearParticleTypeChildrenEvent>()
             .add_systems(Startup, setup_particle_map)
-            .add_systems(Update, reset_chunks.after(ParticleSimulationSet))
+            .add_systems(Update, reset_chunks.in_set(ParticleSimulationSet))
             .add_observer(on_remove_particle)
             .add_observer(on_clear_particle_map)
             .add_observer(on_clear_particle_type_children);
@@ -263,14 +263,87 @@ impl ParticleMap {
     }
 
     fn reset_chunks(&mut self) {
-        self.chunks.iter_mut().for_each(|chunk| {
-            if let Some(dirty_rect) = chunk.next_dirty_rect {
-                chunk.dirty_rect = Some(dirty_rect.inflate(5).intersect(chunk.region));
+        let map_size = self.size as isize;
+        let chunk_ptr = self.chunks.as_mut_ptr();
+
+        let mut pending_updates = Vec::new();
+
+        for index in 0..self.chunks.len() {
+            let chunk = unsafe { &mut *chunk_ptr.add(index) };
+
+            if let Some(dirty_rect) = chunk.next_dirty_rect.take() {
+                chunk.dirty_rect = Some(dirty_rect.inflate(1).intersect(chunk.region));
+                let expanded = dirty_rect.inflate(2);
+
+                let overflow_left = expanded.min.x < chunk.region.min.x;
+                let overflow_right = expanded.max.x > chunk.region.max.x;
+                let overflow_down = expanded.min.y < chunk.region.min.y;
+                let overflow_up = expanded.max.y > chunk.region.max.y;
+
+                if overflow_left || overflow_right || overflow_down || overflow_up {
+                    let chunk_row = index as isize / map_size;
+                    let chunk_col = index as isize % map_size;
+
+                    let mut try_neighbor = |n_row: isize, n_col: isize| {
+                        if n_row >= 0 && n_row < map_size && n_col >= 0 && n_col < map_size {
+                            let n_index = (n_row * map_size + n_col) as usize;
+                            let neighbor_region = unsafe { (*chunk_ptr.add(n_index)).region };
+                            let intersection = neighbor_region.intersect(expanded);
+                            if !intersection.is_empty() {
+                                pending_updates.push((n_index, intersection));
+                            }
+                        }
+                    };
+
+                    // Horizontal neighbors
+                    if overflow_left {
+                        try_neighbor(chunk_row, chunk_col - 1);
+                    }
+                    if overflow_right {
+                        try_neighbor(chunk_row, chunk_col + 1);
+                    }
+
+                    // Vertical neighbors
+                    if overflow_up {
+                        try_neighbor(chunk_row - 1, chunk_col);
+                    }
+                    if overflow_down {
+                        try_neighbor(chunk_row + 1, chunk_col);
+                    }
+
+                    // Diagonal neighbors
+                    if overflow_up && overflow_left {
+                        try_neighbor(chunk_row - 1, chunk_col - 1);
+                    }
+                    if overflow_up && overflow_right {
+                        try_neighbor(chunk_row - 1, chunk_col + 1);
+                    }
+                    if overflow_down && overflow_left {
+                        try_neighbor(chunk_row + 1, chunk_col - 1);
+                    }
+                    if overflow_down && overflow_right {
+                        try_neighbor(chunk_row + 1, chunk_col + 1);
+                    }
+                }
             } else {
                 chunk.dirty_rect = None;
             }
-            chunk.next_dirty_rect = None;
-        });
+        }
+
+        // Second pass: apply neighbor updates
+        for (n_index, intersection) in pending_updates {
+            let neighbor_chunk = unsafe { &mut *chunk_ptr.add(n_index) };
+            match &mut neighbor_chunk.dirty_rect {
+                Some(existing) => {
+                    *existing = existing
+                        .union(intersection)
+                        .intersect(neighbor_chunk.region);
+                }
+                None => {
+                    neighbor_chunk.dirty_rect = Some(intersection);
+                }
+            }
+        }
     }
 
     /// Clear the particle map of all entities
