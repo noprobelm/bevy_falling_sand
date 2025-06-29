@@ -23,10 +23,10 @@ fn main() {
                 update_cursor_position,
                 float_rigid_bodies,
                 setup_boundary.run_if(resource_not_exists::<BoundaryReady>),
-                stream_water_particles.run_if(
+                spawn_water_particles.run_if(
                     resource_exists::<BoundaryReady>.and(resource_exists::<SpawnWaterParticles>),
                 ),
-                stream_sand_particles.run_if(
+                spawn_sand_particles.run_if(
                     resource_exists::<BoundaryReady>.and(resource_exists::<SpawnSandParticles>),
                 ),
                 toggle_spawn_sand_particles.run_if(input_just_pressed(KeyCode::F1)),
@@ -114,8 +114,8 @@ fn setup(mut commands: Commands) {
     ));
 
     // The instructions and modes are rendered on the left-hand side in a column.
-    let instructions_text = "F1: Toggle sand stream\n\
-        F2: Toggle water stream\n\
+    let instructions_text = "F1: Toggle sand spawn\n\
+        F2: Toggle water spawn\n\
         Left Mouse: Spawn ball at cursor\"\n\
         R: Reset\n";
     let style = TextFont::default();
@@ -157,7 +157,7 @@ fn setup_boundary(mut commands: Commands, particle_type_map: Res<ParticleTypeMap
     }
 }
 
-fn stream_water_particles(mut commands: Commands) {
+fn spawn_water_particles(mut commands: Commands) {
     let center_x = (BOUNDARY_START_X + BOUNDARY_END_X) / 2;
     let spawn_y = -(BOUNDARY_HEIGHT as f32) - 10.0;
 
@@ -178,7 +178,7 @@ fn stream_water_particles(mut commands: Commands) {
     }
 }
 
-fn stream_sand_particles(mut commands: Commands) {
+fn spawn_sand_particles(mut commands: Commands) {
     let center_x = (BOUNDARY_START_X + BOUNDARY_END_X) / 2;
     let spawn_y = -(BOUNDARY_HEIGHT as f32) - 10.0;
 
