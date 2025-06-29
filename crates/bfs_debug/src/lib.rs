@@ -24,6 +24,9 @@ impl Plugin for FallingSandDebugPlugin {
             .init_resource::<ActiveChunkColor>()
             .init_resource::<InactiveChunkColor>()
             .init_resource::<DirtyRectColor>()
+            .init_resource::<DebugParticleCount>()
+            .init_resource::<DebugParticleMap>()
+            .init_resource::<DebugDirtyRects>()
             .init_gizmo_group::<DebugGizmos>()
             .add_systems(
                 Update,

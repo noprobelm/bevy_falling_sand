@@ -68,9 +68,7 @@ impl bevy::prelude::Plugin for UIPlugin {
             .add_systems(OnEnter(AppState::Ui), show_cursor)
             .add_systems(OnEnter(AppState::Canvas), hide_cursor)
             .add_systems(Update, spawn_ball.run_if(input_pressed(KeyCode::KeyB)))
-            .add_systems(Update, despawn_balls.run_if(input_pressed(KeyCode::KeyV)))
-            .add_observer(on_clear_dynamic_particles)
-            .add_observer(on_clear_wall_particles);
+            .add_systems(Update, despawn_balls.run_if(input_pressed(KeyCode::KeyV)));
     }
 }
 
@@ -169,7 +167,7 @@ impl ParticleControlUI {
             }
 
             if ui.button("Despawn All Wall Particles").clicked() {
-                commands.trigger(ClearWallParticlesEvent)
+                commands.trigger(ClearStaticParticlesEvent);
             }
 
             if ui.button("Despawn All Particles").clicked() {
@@ -704,36 +702,6 @@ pub fn render_search_bar_ui(
     if should_close {
         commands.remove_resource::<ParticleSearchBar>();
     }
-}
-
-#[derive(Event)]
-pub struct ClearDynamicParticlesEvent;
-
-#[derive(Event)]
-pub struct ClearWallParticlesEvent;
-
-pub fn on_clear_dynamic_particles(
-    _trigger: Trigger<ClearDynamicParticlesEvent>,
-    mut commands: Commands,
-    dynamic_particle_types_query: Query<&ParticleType, Without<WallBlueprint>>,
-) {
-    dynamic_particle_types_query
-        .iter()
-        .for_each(|particle_type| {
-            commands.trigger(ClearParticleTypeChildrenEvent(particle_type.name.clone()))
-        });
-}
-
-pub fn on_clear_wall_particles(
-    _trigger: Trigger<ClearWallParticlesEvent>,
-    mut commands: Commands,
-    dynamic_particle_types_query: Query<&ParticleType, With<WallBlueprint>>,
-) {
-    dynamic_particle_types_query
-        .iter()
-        .for_each(|particle_type| {
-            commands.trigger(ClearParticleTypeChildrenEvent(particle_type.name.clone()))
-        });
 }
 
 pub fn update_particle_editor_fields(

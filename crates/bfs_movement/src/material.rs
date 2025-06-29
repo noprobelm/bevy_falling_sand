@@ -1,5 +1,7 @@
 use bevy::prelude::*;
-use bfs_core::{impl_particle_blueprint, ParticleComponent, ParticleType};
+use bfs_core::{
+    impl_particle_blueprint, ClearParticleTypeChildrenEvent, ParticleComponent, ParticleType,
+};
 use serde::{Deserialize, Serialize};
 
 use super::{MovementPriority, MovementPriorityBlueprint};
@@ -8,11 +10,15 @@ pub(super) struct MaterialPlugin;
 
 impl Plugin for MaterialPlugin {
     fn build(&self, app: &mut App) {
-        app.add_observer(on_solid_blueprint_added)
+        app.add_event::<ClearDynamicParticlesEvent>()
+            .add_event::<ClearStaticParticlesEvent>()
+            .add_observer(on_solid_blueprint_added)
             .add_observer(on_movable_solid_blueprint_added)
             .add_observer(on_liquid_blueprint_added)
             .add_observer(on_wall_added)
-            .add_observer(on_gas_blueprint_added);
+            .add_observer(on_gas_blueprint_added)
+            .add_observer(on_clear_dynamic_particles)
+            .add_observer(on_clear_static_particles);
     }
 }
 
@@ -276,6 +282,38 @@ impl Material for Gas {
     Deserialize,
 )]
 pub struct GasBlueprint(pub Gas);
+
+/// Clear all dynamic particles from the world.
+#[derive(Event)]
+pub struct ClearDynamicParticlesEvent;
+
+/// Clear all static particles from the world.
+#[derive(Event)]
+pub struct ClearStaticParticlesEvent;
+
+fn on_clear_dynamic_particles(
+    _trigger: Trigger<ClearDynamicParticlesEvent>,
+    mut commands: Commands,
+    dynamic_particle_types_query: Query<&ParticleType, Without<WallBlueprint>>,
+) {
+    dynamic_particle_types_query
+        .iter()
+        .for_each(|particle_type| {
+            commands.trigger(ClearParticleTypeChildrenEvent(particle_type.name.clone()));
+        });
+}
+
+fn on_clear_static_particles(
+    _trigger: Trigger<ClearStaticParticlesEvent>,
+    mut commands: Commands,
+    dynamic_particle_types_query: Query<&ParticleType, With<WallBlueprint>>,
+) {
+    dynamic_particle_types_query
+        .iter()
+        .for_each(|particle_type| {
+            commands.trigger(ClearParticleTypeChildrenEvent(particle_type.name.clone()));
+        });
+}
 
 #[allow(clippy::needless_pass_by_value)]
 fn on_solid_blueprint_added(
