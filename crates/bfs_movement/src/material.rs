@@ -10,7 +10,8 @@ pub(super) struct MaterialPlugin;
 
 impl Plugin for MaterialPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<ClearDynamicParticlesEvent>()
+        app.add_event::<ParticleMaterialTransitionEvent>()
+            .add_event::<ClearDynamicParticlesEvent>()
             .add_event::<ClearStaticParticlesEvent>()
             .add_observer(on_solid_blueprint_added)
             .add_observer(on_movable_solid_blueprint_added)
@@ -283,6 +284,12 @@ impl Material for Gas {
 )]
 pub struct GasBlueprint(pub Gas);
 
+#[derive(Event)]
+pub struct ParticleMaterialTransitionEvent {
+    pub particle_type: ParticleType,
+    pub new_state: Box<dyn Material + Send + Sync>,
+}
+
 /// Clear all dynamic particles from the world.
 #[derive(Event)]
 pub struct ClearDynamicParticlesEvent;
@@ -290,6 +297,8 @@ pub struct ClearDynamicParticlesEvent;
 /// Clear all static particles from the world.
 #[derive(Event)]
 pub struct ClearStaticParticlesEvent;
+
+fn on_particle_material_transition(trigger: Trigger<ParticleMaterialTransitionEvent>) {}
 
 fn on_clear_dynamic_particles(
     _trigger: Trigger<ClearDynamicParticlesEvent>,

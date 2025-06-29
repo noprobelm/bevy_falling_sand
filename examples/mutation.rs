@@ -1,6 +1,7 @@
 use bevy::{input::common_conditions::input_just_pressed, prelude::*};
 use bevy_falling_sand::prelude::*;
 use bevy_turborand::prelude::*;
+use bfs_internal::prelude::Material;
 
 fn main() {
     App::new()
@@ -11,6 +12,7 @@ fn main() {
             FallingSandColorPlugin,
         ))
         .init_state::<ParticleTypeMutationState>()
+        .init_state::<ParticleStateMutationState>()
         .add_systems(Startup, setup)
         .add_systems(
             Update,
@@ -20,6 +22,10 @@ fn main() {
         .add_systems(
             Update,
             mutate_particle_type.run_if(input_just_pressed(KeyCode::F1)),
+        )
+        .add_systems(
+            Update,
+            mutate_particle_state.run_if(input_just_pressed(KeyCode::F2)),
         )
         .run();
 }
@@ -238,4 +244,36 @@ fn mutate_particle_type(
     for mut particle_type_text in particle_type_text_query.iter_mut() {
         (**particle_type_text).clone_from(&new_text);
     }
+}
+
+fn mutate_particle_state(
+    mut ev_particle_material_transition: EventWriter<ParticleMaterialTransitionEvent>,
+    mut mutate_particle_query: Query<&mut Particle, With<MutationParticle>>,
+    particle_type_mutation_state: Res<State<ParticleTypeMutationState>>,
+    state: Res<State<ParticleStateMutationState>>,
+    mut next_state: ResMut<NextState<ParticleStateMutationState>>,
+    //mut particle_type_text_query: Query<&mut Text, With<ParticleTypeText>>,
+) {
+    let new_state: Box<dyn Material + Send + Sync> = match state.get() {
+        ParticleStateMutationState::Gas => Box::new(MovableSolid),
+        ParticleStateMutationState::MovableSolid => Box::new(Liquid { fluidity: 3 }),
+        ParticleStateMutationState::Liquid => Box::new(Solid),
+        ParticleStateMutationState::Solid => Box::new(Wall),
+        ParticleStateMutationState::Wall => Box::new(Gas { fluidity: 3 }),
+    };
+
+    ev_particle_material_transition.write(ParticleMaterialTransitionEvent {
+        particle_type: ParticleType::new(
+            format!("{}", particle_type_mutation_state.get()).as_str(),
+        ),
+        new_state,
+    });
+    // mutate_particle_query.iter_mut().for_each(|mut particle| {
+    //     particle.name = format!("{new_state}");
+    // });
+    // next_state.set(new_state.clone());
+    // let new_text = format!("Particle Type: {}", new_state.clone());
+    // for mut particle_type_text in particle_type_text_query.iter_mut() {
+    //     (**particle_type_text).clone_from(&new_text);
+    // }
 }
