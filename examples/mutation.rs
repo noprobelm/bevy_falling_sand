@@ -19,7 +19,7 @@ fn main() {
         .add_systems(Update, spawn_particles)
         .add_systems(
             Update,
-            mutate_particle_state.run_if(input_just_pressed(KeyCode::F1)),
+            mutate_particle_type.run_if(input_just_pressed(KeyCode::F1)),
         )
         .run();
 }
@@ -218,7 +218,7 @@ fn spawn_particles(mut commands: Commands, time: Res<Time>, mut rng: ResMut<Glob
     }
 }
 
-fn mutate_particle_state(
+fn mutate_particle_type(
     mut mutate_particle_query: Query<&mut Particle, With<MutationParticle>>,
     state: Res<State<ParticleTypeMutationState>>,
     mut next_state: ResMut<NextState<ParticleTypeMutationState>>,
