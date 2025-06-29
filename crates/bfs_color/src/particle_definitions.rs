@@ -5,15 +5,17 @@ use serde::{Deserialize, Serialize};
 
 use bfs_core::{
     impl_particle_blueprint, impl_particle_rng, Particle, ParticleComponent,
-    ParticleRegistrationEvent, ParticleRng, ParticleType,
+    ParticleRegistrationEvent, ParticleRng, ParticleSimulationSet, ParticleType,
 };
 
 pub(super) struct ParticleDefinitionsPlugin;
 
 impl Plugin for ParticleDefinitionsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<ResetParticleColorEvent>()
-            .add_systems(Update, handle_particle_registration);
+        app.add_event::<ResetParticleColorEvent>().add_systems(
+            Update,
+            handle_particle_registration.before(ParticleSimulationSet),
+        );
     }
 }
 

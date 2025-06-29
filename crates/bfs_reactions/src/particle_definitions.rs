@@ -3,7 +3,7 @@ use bevy_turborand::RngComponent;
 use bfs_color::ColorProfile;
 use bfs_core::{
     impl_particle_blueprint, impl_particle_rng, Particle, ParticleComponent, ParticlePosition,
-    ParticleRegistrationEvent, ParticleRng, ParticleType,
+    ParticleRegistrationEvent, ParticleRng, ParticleSimulationSet, ParticleType,
 };
 use std::time::Duration;
 
@@ -11,7 +11,10 @@ pub(super) struct ParticleDefinitionsPlugin;
 
 impl Plugin for ParticleDefinitionsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, handle_particle_registration);
+        app.add_systems(
+            Update,
+            handle_particle_registration.before(ParticleSimulationSet),
+        );
     }
 }
 

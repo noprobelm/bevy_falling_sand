@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_turborand::RngComponent;
 use bfs_core::{
     impl_particle_blueprint, impl_particle_rng, Particle, ParticleComponent,
-    ParticleRegistrationEvent, ParticleRng, ParticleType,
+    ParticleRegistrationEvent, ParticleRng, ParticleSimulationSet, ParticleType,
 };
 use serde::{Deserialize, Serialize};
 use smallvec::SmallVec;
@@ -22,7 +22,10 @@ impl Plugin for ParticleDefinitionsPlugin {
             .register_type::<Velocity>()
             .register_type::<Momentum>()
             .register_type::<MovementPriority>()
-            .add_systems(Update, handle_particle_registration);
+            .add_systems(
+                Update,
+                handle_particle_registration.before(ParticleSimulationSet),
+            );
     }
 }
 
