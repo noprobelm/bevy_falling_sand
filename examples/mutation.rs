@@ -10,7 +10,6 @@ fn main() {
             FallingSandMovementPlugin,
             FallingSandColorPlugin,
         ))
-        .init_resource::<SpawnParticles>()
         .init_state::<ParticleTypeMutationState>()
         .add_systems(Startup, setup)
         .add_systems(
@@ -36,9 +35,6 @@ fn resource_not_exists<T: Resource>(world: &World) -> bool {
 
 #[derive(Resource)]
 struct BoundaryReady;
-
-#[derive(Default, Resource)]
-struct SpawnParticles;
 
 #[derive(Component)]
 struct MainCamera;
