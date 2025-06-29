@@ -44,7 +44,7 @@ struct SpawnParticles;
 struct MainCamera;
 
 #[derive(Component)]
-struct TotalParticleCountText;
+struct ParticleTypeText;
 
 #[derive(Component)]
 struct MutationParticle;
@@ -56,6 +56,17 @@ pub enum ParticleTypeMutationState {
     Water,
     Sand,
     DirtWall,
+}
+
+impl std::fmt::Display for ParticleTypeMutationState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ParticleTypeMutationState::Smoke => f.write_str("Smoke"),
+            ParticleTypeMutationState::Water => f.write_str("Water"),
+            ParticleTypeMutationState::Sand => f.write_str("Sand"),
+            ParticleTypeMutationState::DirtWall => f.write_str("Dirt Wall"),
+        }
+    }
 }
 
 #[derive(States, Reflect, Default, Debug, Clone, Eq, PartialEq, Hash)]
@@ -127,10 +138,7 @@ fn setup(mut commands: Commands) {
     ));
 
     // The instructions and modes are rendered on the left-hand side in a column.
-    let instructions_text = "F1: Toggle particle spawning\n\
-        F2: Show/Hide particle chunk map\n\
-        F3: Show/Hide \"dirty rectangles\"\n\
-        R: Reset\n";
+    let instructions_text = "F1: Change particle type\n";
     let style = TextFont::default();
 
     commands
@@ -145,8 +153,8 @@ fn setup(mut commands: Commands) {
         .with_children(|parent| {
             parent.spawn((Text::new(instructions_text), style.clone()));
             parent.spawn((
-                TotalParticleCountText,
-                Text::new("Total Particles: "),
+                ParticleTypeText,
+                Text::new("Particle Type: Smoke"),
                 style.clone(),
             ));
         });
@@ -218,31 +226,20 @@ fn mutate_particle_state(
     mut mutate_particle_query: Query<&mut Particle, With<MutationParticle>>,
     state: Res<State<ParticleTypeMutationState>>,
     mut next_state: ResMut<NextState<ParticleTypeMutationState>>,
+    mut particle_type_text_query: Query<&mut Text, With<ParticleTypeText>>,
 ) {
-    match state.get() {
-        ParticleTypeMutationState::Smoke => {
-            mutate_particle_query.iter_mut().for_each(|mut particle| {
-                particle.name = String::from("Water");
-            });
-            next_state.set(ParticleTypeMutationState::Water);
-        }
-        ParticleTypeMutationState::Water => {
-            mutate_particle_query.iter_mut().for_each(|mut particle| {
-                particle.name = String::from("Sand");
-            });
-            next_state.set(ParticleTypeMutationState::Sand);
-        }
-        ParticleTypeMutationState::Sand => {
-            mutate_particle_query.iter_mut().for_each(|mut particle| {
-                particle.name = String::from("Dirt Wall");
-            });
-            next_state.set(ParticleTypeMutationState::DirtWall);
-        }
-        ParticleTypeMutationState::DirtWall => {
-            mutate_particle_query.iter_mut().for_each(|mut particle| {
-                particle.name = String::from("Smoke");
-            });
-            next_state.set(ParticleTypeMutationState::Smoke);
-        }
+    let new_state = match state.get() {
+        ParticleTypeMutationState::Smoke => ParticleTypeMutationState::Water,
+        ParticleTypeMutationState::Water => ParticleTypeMutationState::Sand,
+        ParticleTypeMutationState::Sand => ParticleTypeMutationState::DirtWall,
+        ParticleTypeMutationState::DirtWall => ParticleTypeMutationState::Smoke,
+    };
+    mutate_particle_query.iter_mut().for_each(|mut particle| {
+        particle.name = format!("{new_state}");
+    });
+    next_state.set(new_state.clone());
+    let new_text = format!("Particle Type: {}", new_state.clone());
+    for mut particle_type_text in particle_type_text_query.iter_mut() {
+        (**particle_type_text).clone_from(&new_text);
     }
 }
