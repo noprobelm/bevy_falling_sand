@@ -52,7 +52,7 @@ struct MutationParticle;
 #[derive(States, Reflect, Default, Debug, Clone, Eq, PartialEq, Hash)]
 pub enum ParticleTypeMutationState {
     #[default]
-    Gas,
+    Smoke,
     Water,
     Sand,
     DirtWall,
@@ -114,17 +114,16 @@ fn setup(mut commands: Commands) {
 
     commands.spawn((
         GasBundle::new(
-            ParticleType::new("Gas"),
-            Density(200),
+            ParticleType::new("Smoke"),
+            Density(275),
             Velocity::new(1, 1),
             1,
             ColorProfile::new(vec![
-                Color::Srgba(Srgba::hex("#40621880").unwrap()),
-                Color::Srgba(Srgba::hex("#4A731C80").unwrap()),
+                Color::Srgba(Srgba::hex("#706966").unwrap()),
+                Color::Srgba(Srgba::hex("#858073").unwrap()),
             ]),
         ),
         ChangesColorBlueprint(ChangesColor::new(0.1)),
-        Name::new("Gas"),
     ));
 
     // The instructions and modes are rendered on the left-hand side in a column.
@@ -154,7 +153,7 @@ fn setup(mut commands: Commands) {
 }
 
 fn spawn_boundary(mut commands: Commands, particle_type_map: Res<ParticleTypeMap>) {
-    if particle_type_map.contains("Dirt Wall") && particle_type_map.contains("Gas") {
+    if particle_type_map.contains("Dirt Wall") && particle_type_map.contains("Smoke") {
         for y in BOUNDARY_START_Y - 1..BOUNDARY_END_Y + 1 {
             commands.spawn((
                 Particle::new("Dirt Wall"),
@@ -205,7 +204,7 @@ fn spawn_particles(mut commands: Commands, time: Res<Time>, mut rng: ResMut<Glob
             for y in BOUNDARY_START_Y + 50..BOUNDARY_END_Y - 50 {
                 if rng.chance(0.5) {
                     commands.spawn((
-                        Particle::new("Gas"),
+                        Particle::new("Smoke"),
                         Transform::from_xyz(x as f32, -(y as f32), 0.0),
                         MutationParticle,
                     ));
@@ -221,7 +220,7 @@ fn mutate_particle_state(
     mut next_state: ResMut<NextState<ParticleTypeMutationState>>,
 ) {
     match state.get() {
-        ParticleTypeMutationState::Gas => {
+        ParticleTypeMutationState::Smoke => {
             mutate_particle_query.iter_mut().for_each(|mut particle| {
                 particle.name = String::from("Water");
             });
@@ -241,9 +240,9 @@ fn mutate_particle_state(
         }
         ParticleTypeMutationState::DirtWall => {
             mutate_particle_query.iter_mut().for_each(|mut particle| {
-                particle.name = String::from("Gas");
+                particle.name = String::from("Smoke");
             });
-            next_state.set(ParticleTypeMutationState::Gas);
+            next_state.set(ParticleTypeMutationState::Smoke);
         }
     }
 }
