@@ -6,8 +6,7 @@ pub(super) struct ParticleSetupPlugin;
 
 impl bevy::prelude::Plugin for ParticleSetupPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
-        app.add_systems(Startup, setup_particles)
-            .insert_resource(Gravity(Vec2::NEG_Y * 50.0));
+        app.add_systems(Startup, setup_particles);
     }
 }
 

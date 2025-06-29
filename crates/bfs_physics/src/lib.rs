@@ -21,26 +21,32 @@ pub struct FallingSandPhysicsPlugin {
     /// [`PhysicsLengthUnit`](https://docs.rs/avian2d/latest/avian2d/dynamics/solver/struct.PhysicsLengthUnit.html)
     /// in the avian2d crate.
     pub length_unit: f32,
+    /// The value for [`GravityScale`](https://docs.rs/avian2d/latest/avian2d/dynamics/rigid_body/struct.GravityScale.html)
+    /// in the avian2d crate.
+    pub rigid_body_gravity: Vec2,
 }
 
 impl Plugin for FallingSandPhysicsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(PhysicsPlugins::default().with_length_unit(self.length_unit));
-        app.init_resource::<WallPerimeterPositions>();
-        app.init_resource::<WallTerrainColliders>();
-        app.init_resource::<MovableSolidMeshData>();
-        app.init_resource::<MovableSolidTerrainColliders>();
-        app.init_resource::<SolidMeshData>();
-        app.init_resource::<SolidTerrainColliders>();
-        app.add_systems(Update, map_wall_particles.run_if(condition_walls_changed));
-        app.add_systems(Update, spawn_wall_terrain_colliders);
-        app.add_systems(
-            Update,
-            map_movable_solid_particles.run_if(condition_movable_solids_changed),
-        );
-        app.add_systems(Update, spawn_movable_solid_terrain_colliders);
-        app.add_systems(Update, map_solid_particles.run_if(condition_solids_changed));
-        app.add_systems(Update, spawn_solid_terrain_colliders);
+        app.add_plugins(PhysicsPlugins::default().with_length_unit(self.length_unit))
+            .insert_resource(Gravity(self.rigid_body_gravity))
+            .init_resource::<WallPerimeterPositions>()
+            .init_resource::<WallTerrainColliders>()
+            .init_resource::<MovableSolidMeshData>()
+            .init_resource::<MovableSolidTerrainColliders>()
+            .init_resource::<SolidMeshData>()
+            .init_resource::<SolidTerrainColliders>()
+            .add_systems(
+                Update,
+                (
+                    map_wall_particles.run_if(condition_walls_changed),
+                    spawn_wall_terrain_colliders,
+                    map_movable_solid_particles.run_if(condition_movable_solids_changed),
+                    spawn_movable_solid_terrain_colliders,
+                    map_solid_particles.run_if(condition_solids_changed),
+                    spawn_solid_terrain_colliders,
+                ),
+            );
     }
 }
 
