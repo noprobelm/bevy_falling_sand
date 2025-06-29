@@ -251,7 +251,7 @@ pub fn handle_new_particle_types(
 /// Handles new particles as they are added to the world. If a new particle is being added at the same
 /// coordinate of an existing entity, the new particle is despawned.
 #[allow(clippy::needless_pass_by_value)]
-pub fn handle_new_particles(
+fn handle_new_particles(
     mut commands: Commands,
     parent_query: Query<Entity, With<ParticleType>>,
     particle_query: Query<(&Particle, &Transform, Entity), Changed<Particle>>,
@@ -305,7 +305,7 @@ pub fn handle_new_particles(
 /// For example, [`handle_new_particles`] utilizes [`Particle`] component change detection to send a
 /// `ParticleRegistrationEvent`, which subcrates of *Bevy Falling Sand* rely on to insert or remove
 /// Particle components based on their parent's blueprint data.
-pub fn on_reset_particle(
+fn on_reset_particle(
     trigger: Trigger<ResetParticleEvent>,
     mut particle_query: Query<&mut Particle>,
 ) {

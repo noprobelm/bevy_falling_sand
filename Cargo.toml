@@ -42,6 +42,7 @@ bevy.workspace = true
 
 [dev-dependencies]
 bevy_egui = "0.34.1"
+bevy_turborand = "0.11.0"
 
 [profile.release]
 lto = true

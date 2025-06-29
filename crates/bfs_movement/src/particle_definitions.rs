@@ -10,8 +10,8 @@ use std::iter;
 use std::slice::Iter;
 
 use crate::{
-    Liquid, LiquidBlueprint, MovableSolid, MovableSolidBlueprint, Solid, SolidBlueprint, Wall,
-    WallBlueprint,
+    Gas, GasBlueprint, Liquid, LiquidBlueprint, MovableSolid, MovableSolidBlueprint, Solid,
+    SolidBlueprint, Wall, WallBlueprint,
 };
 
 pub(super) struct ParticleDefinitionsPlugin;
@@ -439,6 +439,7 @@ type BlueprintQuery<'a> = (
     Option<&'a mut MomentumBlueprint>,
     Option<&'a mut WallBlueprint>,
     Option<&'a mut LiquidBlueprint>,
+    Option<&'a mut GasBlueprint>,
     Option<&'a mut MovableSolidBlueprint>,
     Option<&'a mut SolidBlueprint>,
 );
@@ -461,6 +462,7 @@ fn handle_particle_registration(
                     momentum,
                     wall,
                     liquid,
+                    gas,
                     movable_solid,
                     solid,
                 )) = blueprint_query.get(child_of.parent())
@@ -497,6 +499,13 @@ fn handle_particle_registration(
                         commands.entity(*entity).insert(Moved(true));
                     } else {
                         commands.entity(*entity).remove::<Liquid>();
+                        commands.entity(*entity).remove::<Moved>();
+                    }
+                    if let Some(gas) = gas {
+                        commands.entity(*entity).insert(gas.0.clone());
+                        commands.entity(*entity).insert(Moved(true));
+                    } else {
+                        commands.entity(*entity).remove::<Gas>();
                         commands.entity(*entity).remove::<Moved>();
                     }
                     if let Some(movable_solid) = movable_solid {

@@ -750,6 +750,7 @@ version = "0.5.0"
 dependencies = [
  "bevy",
  "bevy_egui",
+ "bevy_turborand",
  "bfs_internal",
 ]
 
