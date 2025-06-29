@@ -11,6 +11,7 @@ fn main() {
             FallingSandDebugPlugin,
         ))
         .init_resource::<TotalParticleCount>()
+        .init_resource::<SpawnParticles>()
         .add_systems(Startup, setup)
         .add_systems(
             Update,
@@ -156,12 +157,12 @@ fn stream_particles(mut commands: Commands) {
 
                 commands.spawn((
                     Particle::new("Sand"),
-                    Transform::from_xyz(base_x - 70.0, y, 0.0),
+                    Transform::from_xyz(base_x - 75.0, y, 0.0),
                 ));
 
                 commands.spawn((
                     Particle::new("Water"),
-                    Transform::from_xyz(base_x + 70.0, y, 0.0),
+                    Transform::from_xyz(base_x + 75.0, y, 0.0),
                 ));
             }
         }
