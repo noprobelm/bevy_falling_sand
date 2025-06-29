@@ -1,7 +1,6 @@
 use bevy::{input::common_conditions::input_just_pressed, prelude::*};
 use bevy_falling_sand::prelude::*;
 use bevy_turborand::prelude::*;
-use bfs_internal::prelude::Material;
 
 fn main() {
     App::new()
@@ -11,8 +10,8 @@ fn main() {
             FallingSandMovementPlugin,
             FallingSandColorPlugin,
         ))
-        .init_state::<ParticleTypeMutationState>()
-        .init_state::<ParticleStateMutationState>()
+        .init_state::<ParticleTypeOneMutationState>()
+        .init_state::<ParticleTypeTwoMutationState>()
         .add_systems(Startup, setup)
         .add_systems(
             Update,
@@ -21,11 +20,11 @@ fn main() {
         .add_systems(Update, spawn_particles)
         .add_systems(
             Update,
-            mutate_particle_type.run_if(input_just_pressed(KeyCode::F1)),
+            mutate_particle_type_one.run_if(input_just_pressed(KeyCode::F1)),
         )
         .add_systems(
             Update,
-            mutate_particle_state.run_if(input_just_pressed(KeyCode::F2)),
+            mutate_particle_type_two.run_if(input_just_pressed(KeyCode::F2)),
         )
         .run();
 }
@@ -46,39 +45,55 @@ struct BoundaryReady;
 struct MainCamera;
 
 #[derive(Component)]
-struct ParticleTypeText;
+struct ParticleTypeOneText;
 
 #[derive(Component)]
-struct MutationParticle;
+struct ParticleTypeTwoText;
+
+#[derive(Component)]
+struct MutationParticleOne;
+
+#[derive(Component)]
+struct MutationParticleTwo;
 
 #[derive(States, Reflect, Default, Debug, Clone, Eq, PartialEq, Hash)]
-pub enum ParticleTypeMutationState {
-    #[default]
+pub enum ParticleTypeOneMutationState {
     Smoke,
+    #[default]
     Water,
     Sand,
     DirtWall,
 }
 
-impl std::fmt::Display for ParticleTypeMutationState {
+impl std::fmt::Display for ParticleTypeOneMutationState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ParticleTypeMutationState::Smoke => f.write_str("Smoke"),
-            ParticleTypeMutationState::Water => f.write_str("Water"),
-            ParticleTypeMutationState::Sand => f.write_str("Sand"),
-            ParticleTypeMutationState::DirtWall => f.write_str("Dirt Wall"),
+            ParticleTypeOneMutationState::Smoke => f.write_str("Smoke"),
+            ParticleTypeOneMutationState::Water => f.write_str("Water"),
+            ParticleTypeOneMutationState::Sand => f.write_str("Sand"),
+            ParticleTypeOneMutationState::DirtWall => f.write_str("Dirt Wall"),
         }
     }
 }
 
 #[derive(States, Reflect, Default, Debug, Clone, Eq, PartialEq, Hash)]
-pub enum ParticleStateMutationState {
+pub enum ParticleTypeTwoMutationState {
+    Smoke,
     #[default]
-    Gas,
-    MovableSolid,
-    Liquid,
-    Solid,
-    Wall,
+    Water,
+    Sand,
+    DirtWall,
+}
+
+impl std::fmt::Display for ParticleTypeTwoMutationState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ParticleTypeTwoMutationState::Smoke => f.write_str("Smoke"),
+            ParticleTypeTwoMutationState::Water => f.write_str("Water"),
+            ParticleTypeTwoMutationState::Sand => f.write_str("Sand"),
+            ParticleTypeTwoMutationState::DirtWall => f.write_str("Dirt Wall"),
+        }
+    }
 }
 
 fn setup(mut commands: Commands) {
@@ -140,7 +155,8 @@ fn setup(mut commands: Commands) {
     ));
 
     // The instructions and modes are rendered on the left-hand side in a column.
-    let instructions_text = "F1: Change particle type\n";
+    let instructions_text = "F1: Change particle type one\n\
+        F2: Change particle type two\n";
     let style = TextFont::default();
 
     commands
@@ -155,8 +171,13 @@ fn setup(mut commands: Commands) {
         .with_children(|parent| {
             parent.spawn((Text::new(instructions_text), style.clone()));
             parent.spawn((
-                ParticleTypeText,
-                Text::new("Particle Type: Smoke"),
+                ParticleTypeOneText,
+                Text::new("Particle Type: Water"),
+                style.clone(),
+            ));
+            parent.spawn((
+                ParticleTypeTwoText,
+                Text::new("Particle Type: Sand"),
                 style.clone(),
             ));
         });
@@ -214,9 +235,15 @@ fn spawn_particles(mut commands: Commands, time: Res<Time>, mut rng: ResMut<Glob
             for y in BOUNDARY_START_Y + 50..BOUNDARY_END_Y - 50 {
                 if rng.chance(0.5) {
                     commands.spawn((
-                        Particle::new("Smoke"),
+                        Particle::new("Water"),
                         Transform::from_xyz(x as f32, -(y as f32), 0.0),
-                        MutationParticle,
+                        MutationParticleOne,
+                    ));
+                } else if rng.chance(0.25) {
+                    commands.spawn((
+                        Particle::new("Sand"),
+                        Transform::from_xyz(x as f32, -(y as f32), 0.0),
+                        MutationParticleTwo,
                     ));
                 }
             }
@@ -224,17 +251,17 @@ fn spawn_particles(mut commands: Commands, time: Res<Time>, mut rng: ResMut<Glob
     }
 }
 
-fn mutate_particle_type(
-    mut mutate_particle_query: Query<&mut Particle, With<MutationParticle>>,
-    state: Res<State<ParticleTypeMutationState>>,
-    mut next_state: ResMut<NextState<ParticleTypeMutationState>>,
-    mut particle_type_text_query: Query<&mut Text, With<ParticleTypeText>>,
+fn mutate_particle_type_one(
+    mut mutate_particle_query: Query<&mut Particle, With<MutationParticleOne>>,
+    state: Res<State<ParticleTypeOneMutationState>>,
+    mut next_state: ResMut<NextState<ParticleTypeOneMutationState>>,
+    mut particle_type_text_query: Query<&mut Text, With<ParticleTypeOneText>>,
 ) {
     let new_state = match state.get() {
-        ParticleTypeMutationState::Smoke => ParticleTypeMutationState::Water,
-        ParticleTypeMutationState::Water => ParticleTypeMutationState::Sand,
-        ParticleTypeMutationState::Sand => ParticleTypeMutationState::DirtWall,
-        ParticleTypeMutationState::DirtWall => ParticleTypeMutationState::Smoke,
+        ParticleTypeOneMutationState::Smoke => ParticleTypeOneMutationState::DirtWall,
+        ParticleTypeOneMutationState::DirtWall => ParticleTypeOneMutationState::Sand,
+        ParticleTypeOneMutationState::Sand => ParticleTypeOneMutationState::Water,
+        ParticleTypeOneMutationState::Water => ParticleTypeOneMutationState::Smoke,
     };
     mutate_particle_query.iter_mut().for_each(|mut particle| {
         particle.name = format!("{new_state}");
@@ -246,34 +273,24 @@ fn mutate_particle_type(
     }
 }
 
-fn mutate_particle_state(
-    mut ev_particle_material_transition: EventWriter<ParticleMaterialTransitionEvent>,
-    mut mutate_particle_query: Query<&mut Particle, With<MutationParticle>>,
-    particle_type_mutation_state: Res<State<ParticleTypeMutationState>>,
-    state: Res<State<ParticleStateMutationState>>,
-    mut next_state: ResMut<NextState<ParticleStateMutationState>>,
-    //mut particle_type_text_query: Query<&mut Text, With<ParticleTypeText>>,
+fn mutate_particle_type_two(
+    mut mutate_particle_query: Query<&mut Particle, With<MutationParticleTwo>>,
+    state: Res<State<ParticleTypeTwoMutationState>>,
+    mut next_state: ResMut<NextState<ParticleTypeTwoMutationState>>,
+    mut particle_type_text_query: Query<&mut Text, With<ParticleTypeTwoText>>,
 ) {
-    let new_state: Box<dyn Material + Send + Sync> = match state.get() {
-        ParticleStateMutationState::Gas => Box::new(MovableSolid),
-        ParticleStateMutationState::MovableSolid => Box::new(Liquid { fluidity: 3 }),
-        ParticleStateMutationState::Liquid => Box::new(Solid),
-        ParticleStateMutationState::Solid => Box::new(Wall),
-        ParticleStateMutationState::Wall => Box::new(Gas { fluidity: 3 }),
+    let new_state = match state.get() {
+        ParticleTypeTwoMutationState::Smoke => ParticleTypeTwoMutationState::DirtWall,
+        ParticleTypeTwoMutationState::DirtWall => ParticleTypeTwoMutationState::Sand,
+        ParticleTypeTwoMutationState::Sand => ParticleTypeTwoMutationState::Water,
+        ParticleTypeTwoMutationState::Water => ParticleTypeTwoMutationState::Smoke,
     };
-
-    ev_particle_material_transition.write(ParticleMaterialTransitionEvent {
-        particle_type: ParticleType::new(
-            format!("{}", particle_type_mutation_state.get()).as_str(),
-        ),
-        new_state,
+    mutate_particle_query.iter_mut().for_each(|mut particle| {
+        particle.name = format!("{new_state}");
     });
-    // mutate_particle_query.iter_mut().for_each(|mut particle| {
-    //     particle.name = format!("{new_state}");
-    // });
-    // next_state.set(new_state.clone());
-    // let new_text = format!("Particle Type: {}", new_state.clone());
-    // for mut particle_type_text in particle_type_text_query.iter_mut() {
-    //     (**particle_type_text).clone_from(&new_text);
-    // }
+    next_state.set(new_state.clone());
+    let new_text = format!("Particle Type: {}", new_state.clone());
+    for mut particle_type_text in particle_type_text_query.iter_mut() {
+        (**particle_type_text).clone_from(&new_text);
+    }
 }
