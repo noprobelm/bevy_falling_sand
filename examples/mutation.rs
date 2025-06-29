@@ -22,7 +22,6 @@ fn main() {
             Update,
             mutate_particle_state.run_if(input_just_pressed(KeyCode::F1)),
         )
-        .add_systems(Update, test_query)
         .run();
 }
 
@@ -247,25 +246,4 @@ fn mutate_particle_state(
             next_state.set(ParticleTypeMutationState::Gas);
         }
     }
-}
-
-type ParticleMovementQuery<'a> = (
-    Entity,
-    &'a Particle,
-    &'a mut ParticlePosition,
-    &'a mut Transform,
-    &'a mut MovementRng,
-    &'a mut Velocity,
-    Option<&'a mut Momentum>,
-    &'a Density,
-    &'a mut MovementPriority,
-    &'a mut Moved,
-);
-
-fn test_query(query: Query<ParticleMovementQuery>) {
-    query
-        .iter()
-        .for_each(|(entity, particle, _, _, _, _, _, _, _, _)| {
-            println!("{:?}", particle);
-        });
 }
