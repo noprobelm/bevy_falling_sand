@@ -1,4 +1,7 @@
-use bevy::{input::common_conditions::input_just_pressed, prelude::*};
+use bevy::{
+    input::{common_conditions::input_just_pressed, mouse::MouseWheel},
+    prelude::*,
+};
 use bevy_falling_sand::prelude::*;
 use bevy_turborand::prelude::*;
 
@@ -13,6 +16,7 @@ fn main() {
         .init_state::<ParticleTypeOneMutationState>()
         .init_state::<ParticleTypeTwoMutationState>()
         .add_systems(Startup, setup)
+        .add_systems(Update, zoom_camera)
         .add_systems(
             Update,
             (spawn_boundary.run_if(resource_not_exists::<BoundaryReady>),),
@@ -29,10 +33,10 @@ fn main() {
         .run();
 }
 
-const BOUNDARY_START_X: i32 = -100;
-const BOUNDARY_END_X: i32 = 100;
-const BOUNDARY_START_Y: i32 = -100;
-const BOUNDARY_END_Y: i32 = 100;
+const BOUNDARY_START_X: i32 = -150;
+const BOUNDARY_END_X: i32 = 150;
+const BOUNDARY_START_Y: i32 = -150;
+const BOUNDARY_END_Y: i32 = 150;
 
 fn resource_not_exists<T: Resource>(world: &World) -> bool {
     !world.contains_resource::<T>()
@@ -101,7 +105,7 @@ fn setup(mut commands: Commands) {
         Camera2d,
         Projection::Orthographic(OrthographicProjection {
             near: -1000.0,
-            scale: 0.11,
+            scale: 0.2,
             ..OrthographicProjection::default_2d()
         }),
         MainCamera,
@@ -231,15 +235,18 @@ fn spawn_boundary(mut commands: Commands, particle_type_map: Res<ParticleTypeMap
 
 fn spawn_particles(mut commands: Commands, time: Res<Time>, mut rng: ResMut<GlobalRng>) {
     if time.elapsed_secs() < 0.5 {
-        for x in BOUNDARY_START_X + 50..BOUNDARY_END_X - 50 {
-            for y in BOUNDARY_START_Y + 50..BOUNDARY_END_Y - 50 {
+        let x_range = ((BOUNDARY_END_X - BOUNDARY_START_X) as f32 * 0.5) as i32;
+        let y_range = ((BOUNDARY_END_Y - BOUNDARY_START_Y) as f32 * 0.5) as i32;
+
+        for x in BOUNDARY_START_X + 50..BOUNDARY_START_X + 50 + x_range {
+            for y in BOUNDARY_START_Y + 50..BOUNDARY_START_Y + 50 + y_range {
                 if rng.chance(0.5) {
                     commands.spawn((
                         Particle::new("Water"),
                         Transform::from_xyz(x as f32, -(y as f32), 0.0),
                         MutationParticleOne,
                     ));
-                } else if rng.chance(0.25) {
+                } else if rng.chance(0.5) {
                     commands.spawn((
                         Particle::new("Sand"),
                         Transform::from_xyz(x as f32, -(y as f32), 0.0),
@@ -293,4 +300,29 @@ fn mutate_particle_type_two(
     for mut particle_type_text in particle_type_text_query.iter_mut() {
         (**particle_type_text).clone_from(&new_text);
     }
+}
+
+fn zoom_camera(
+    mut ev_scroll: EventReader<MouseWheel>,
+    mut camera_query: Query<&mut Projection, With<MainCamera>>,
+) {
+    const ZOOM_IN_FACTOR: f32 = 0.9;
+    const ZOOM_OUT_FACTOR: f32 = 1.1;
+
+    if !ev_scroll.is_empty() {
+        let mut projection = match camera_query.single_mut() {
+            Ok(p) => p,
+            Err(_) => return,
+        };
+        let Projection::Orthographic(orthographic) = projection.as_mut() else {
+            return;
+        };
+        ev_scroll.read().for_each(|ev| {
+            if ev.y < 0. {
+                orthographic.scale *= ZOOM_OUT_FACTOR;
+            } else if ev.y > 0. {
+                orthographic.scale *= ZOOM_IN_FACTOR;
+            }
+        });
+    };
 }
