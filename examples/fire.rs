@@ -1,7 +1,10 @@
 use std::time::Duration;
 
 use bevy::{
-    input::common_conditions::{input_just_pressed, input_pressed},
+    input::{
+        common_conditions::{input_just_pressed, input_pressed},
+        mouse::MouseWheel,
+    },
     prelude::*,
     window::PrimaryWindow,
 };
@@ -16,6 +19,7 @@ fn main() {
         .init_resource::<SpawnFlammableGasParticles>()
         .init_resource::<CursorPosition>()
         .add_systems(Startup, setup)
+        .add_systems(Update, zoom_camera)
         .add_systems(
             Update,
             (
@@ -32,10 +36,10 @@ fn main() {
         .run();
 }
 
-const BOUNDARY_START_X: i32 = -100;
-const BOUNDARY_END_X: i32 = 100;
-const BOUNDARY_START_Y: i32 = -100;
-const BOUNDARY_END_Y: i32 = 100;
+const BOUNDARY_START_X: i32 = -150;
+const BOUNDARY_END_X: i32 = 150;
+const BOUNDARY_START_Y: i32 = -150;
+const BOUNDARY_END_Y: i32 = 150;
 
 fn resource_not_exists<T: Resource>(world: &World) -> bool {
     !world.contains_resource::<T>()
@@ -60,7 +64,7 @@ fn setup(mut commands: Commands) {
         Camera2d,
         Projection::Orthographic(OrthographicProjection {
             near: -1000.0,
-            scale: 0.11,
+            scale: 0.2,
             ..OrthographicProjection::default_2d()
         }),
         MainCamera,
@@ -143,7 +147,7 @@ fn setup(mut commands: Commands) {
 
     // The instructions and modes are rendered on the left-hand side in a column.
     let instructions_text = "F1: Toggle flammable gas stream\n\
-        Left Mouse: Spawn fire at cursor\"\n\
+        Left Mouse: Spawn fire at cursor\n\
         R: Reset\n";
     let style = TextFont::default();
 
@@ -273,4 +277,29 @@ fn update_cursor_position(
         cursor_position.current = world_position;
     }
     Ok(())
+}
+
+fn zoom_camera(
+    mut ev_scroll: EventReader<MouseWheel>,
+    mut camera_query: Query<&mut Projection, With<MainCamera>>,
+) {
+    const ZOOM_IN_FACTOR: f32 = 0.9;
+    const ZOOM_OUT_FACTOR: f32 = 1.1;
+
+    if !ev_scroll.is_empty() {
+        let mut projection = match camera_query.single_mut() {
+            Ok(p) => p,
+            Err(_) => return,
+        };
+        let Projection::Orthographic(orthographic) = projection.as_mut() else {
+            return;
+        };
+        ev_scroll.read().for_each(|ev| {
+            if ev.y < 0. {
+                orthographic.scale *= ZOOM_OUT_FACTOR;
+            } else if ev.y > 0. {
+                orthographic.scale *= ZOOM_IN_FACTOR;
+            }
+        });
+    };
 }
