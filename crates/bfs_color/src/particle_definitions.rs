@@ -12,10 +12,16 @@ pub(super) struct ParticleDefinitionsPlugin;
 
 impl Plugin for ParticleDefinitionsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<ResetParticleColorEvent>().add_systems(
-            Update,
-            handle_particle_registration.before(ParticleSimulationSet),
-        );
+        app.register_type::<ColorRng>()
+            .register_type::<ColorProfileBlueprint>()
+            .register_type::<ColorProfile>()
+            .register_type::<ChangesColorBlueprint>()
+            .register_type::<ChangesColor>()
+            .add_event::<ResetParticleColorEvent>()
+            .add_systems(
+                Update,
+                handle_particle_registration.before(ParticleSimulationSet),
+            );
     }
 }
 
@@ -24,7 +30,8 @@ impl_particle_blueprint!(ChangesColorBlueprint, ChangesColor);
 impl_particle_rng!(ColorRng, RngComponent);
 
 /// Provides rng for coloring particles.
-#[derive(Clone, PartialEq, Debug, Default, Component)]
+#[derive(Clone, PartialEq, Debug, Default, Component, Reflect)]
+#[reflect(Component)]
 pub struct ColorRng(pub RngComponent);
 
 /// Provides a color profile for particles, which can be used to set the color of particles from a
