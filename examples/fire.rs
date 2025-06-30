@@ -19,7 +19,7 @@ fn main() {
         .init_resource::<SpawnFlammableGasParticles>()
         .init_resource::<CursorPosition>()
         .add_systems(Startup, setup)
-        .add_systems(Update, zoom_camera)
+        .add_systems(Update, (zoom_camera, pan_camera))
         .add_systems(
             Update,
             (
@@ -92,7 +92,7 @@ fn setup(mut commands: Commands) {
         ChangesColorBlueprint(ChangesColor::new(0.1)),
         BurnsBlueprint(Burns::new(
             Duration::from_secs(1),
-            Duration::from_millis(100),
+            Duration::from_millis(50),
             Some(0.5),
             None,
             Some(ColorProfile::new(vec![
@@ -103,7 +103,7 @@ fn setup(mut commands: Commands) {
                 Color::Srgba(Srgba::hex("#FFE808").unwrap()),
             ])),
             Some(Fire {
-                burn_radius: 2.,
+                burn_radius: 3.,
                 chance_to_spread: 1.,
                 destroys_on_spread: true,
             }),
@@ -283,8 +283,8 @@ fn zoom_camera(
     mut ev_scroll: EventReader<MouseWheel>,
     mut camera_query: Query<&mut Projection, With<MainCamera>>,
 ) {
-    const ZOOM_IN_FACTOR: f32 = 0.9;
-    const ZOOM_OUT_FACTOR: f32 = 1.1;
+    const ZOOM_IN_FACTOR: f32 = 0.98;
+    const ZOOM_OUT_FACTOR: f32 = 1.02;
 
     if !ev_scroll.is_empty() {
         let mut projection = match camera_query.single_mut() {
@@ -302,4 +302,27 @@ fn zoom_camera(
             }
         });
     };
+}
+
+fn pan_camera(
+    mut camera_query: Query<&mut Transform, With<MainCamera>>,
+    keys: Res<ButtonInput<KeyCode>>,
+) -> Result {
+    let mut transform = camera_query.single_mut()?;
+    if keys.pressed(KeyCode::KeyW) {
+        transform.translation.y += 2.;
+    }
+
+    if keys.pressed(KeyCode::KeyA) {
+        transform.translation.x -= 2.;
+    }
+
+    if keys.pressed(KeyCode::KeyS) {
+        transform.translation.y -= 2.;
+    }
+
+    if keys.pressed(KeyCode::KeyD) {
+        transform.translation.x += 2.;
+    }
+    Ok(())
 }

@@ -1,6 +1,10 @@
 use std::time::Duration;
 
-use bevy::{input::common_conditions::input_just_pressed, prelude::*, window::PrimaryWindow};
+use bevy::{
+    input::{common_conditions::input_just_pressed, mouse::MouseWheel},
+    prelude::*,
+    window::PrimaryWindow,
+};
 use bevy_falling_sand::prelude::*;
 
 fn main() {
@@ -20,6 +24,8 @@ fn main() {
         .add_systems(
             Update,
             (
+                pan_camera,
+                zoom_camera,
                 update_cursor_position,
                 float_rigid_bodies,
                 setup_boundary.run_if(resource_not_exists::<BoundaryReady>),
@@ -38,9 +44,9 @@ fn main() {
         .run();
 }
 
-const BOUNDARY_START_X: i32 = -100;
-const BOUNDARY_END_X: i32 = 100;
-const BOUNDARY_HEIGHT: i32 = 100;
+const BOUNDARY_START_X: i32 = -150;
+const BOUNDARY_END_X: i32 = 150;
+const BOUNDARY_END_Y: i32 = 150;
 const RIGID_BODY_SIZE: f32 = 2.5;
 
 fn resource_not_exists<T: Resource>(world: &World) -> bool {
@@ -74,7 +80,7 @@ fn setup(mut commands: Commands) {
         Camera2d,
         Projection::Orthographic(OrthographicProjection {
             near: -1000.0,
-            scale: 0.11,
+            scale: 0.2,
             ..OrthographicProjection::default_2d()
         }),
         MainCamera,
@@ -136,7 +142,7 @@ fn setup(mut commands: Commands) {
 
 fn setup_boundary(mut commands: Commands, particle_type_map: Res<ParticleTypeMap>) {
     if particle_type_map.contains("Dirt Wall") {
-        for y in 0..BOUNDARY_HEIGHT {
+        for y in 0..BOUNDARY_END_Y {
             commands.spawn((
                 Particle::new("Dirt Wall"),
                 Transform::from_xyz(BOUNDARY_START_X as f32, -(y as f32), 0.0),
@@ -150,7 +156,7 @@ fn setup_boundary(mut commands: Commands, particle_type_map: Res<ParticleTypeMap
         for x in BOUNDARY_START_X..=BOUNDARY_END_X {
             commands.spawn((
                 Particle::new("Dirt Wall"),
-                Transform::from_xyz(x as f32, -(BOUNDARY_HEIGHT as f32), 0.0),
+                Transform::from_xyz(x as f32, -(BOUNDARY_END_Y as f32), 0.0),
             ));
         }
         commands.insert_resource(BoundaryReady);
@@ -159,7 +165,7 @@ fn setup_boundary(mut commands: Commands, particle_type_map: Res<ParticleTypeMap
 
 fn spawn_water_particles(mut commands: Commands) {
     let center_x = (BOUNDARY_START_X + BOUNDARY_END_X) / 2;
-    let spawn_y = -(BOUNDARY_HEIGHT as f32) - 10.0;
+    let spawn_y = -(BOUNDARY_END_Y as f32) - 10.0;
 
     let radius = 3;
 
@@ -180,7 +186,7 @@ fn spawn_water_particles(mut commands: Commands) {
 
 fn spawn_sand_particles(mut commands: Commands) {
     let center_x = (BOUNDARY_START_X + BOUNDARY_END_X) / 2;
-    let spawn_y = -(BOUNDARY_HEIGHT as f32) - 10.0;
+    let spawn_y = -(BOUNDARY_END_Y as f32) - 10.0;
 
     let radius = 3;
 
@@ -295,4 +301,52 @@ fn float_rigid_bodies(
             }
         },
     );
+}
+
+fn zoom_camera(
+    mut ev_scroll: EventReader<MouseWheel>,
+    mut camera_query: Query<&mut Projection, With<MainCamera>>,
+) {
+    const ZOOM_IN_FACTOR: f32 = 0.98;
+    const ZOOM_OUT_FACTOR: f32 = 1.02;
+
+    if !ev_scroll.is_empty() {
+        let mut projection = match camera_query.single_mut() {
+            Ok(p) => p,
+            Err(_) => return,
+        };
+        let Projection::Orthographic(orthographic) = projection.as_mut() else {
+            return;
+        };
+        ev_scroll.read().for_each(|ev| {
+            if ev.y < 0. {
+                orthographic.scale *= ZOOM_OUT_FACTOR;
+            } else if ev.y > 0. {
+                orthographic.scale *= ZOOM_IN_FACTOR;
+            }
+        });
+    };
+}
+
+fn pan_camera(
+    mut camera_query: Query<&mut Transform, With<MainCamera>>,
+    keys: Res<ButtonInput<KeyCode>>,
+) -> Result {
+    let mut transform = camera_query.single_mut()?;
+    if keys.pressed(KeyCode::KeyW) {
+        transform.translation.y += 2.;
+    }
+
+    if keys.pressed(KeyCode::KeyA) {
+        transform.translation.x -= 2.;
+    }
+
+    if keys.pressed(KeyCode::KeyS) {
+        transform.translation.y -= 2.;
+    }
+
+    if keys.pressed(KeyCode::KeyD) {
+        transform.translation.x += 2.;
+    }
+    Ok(())
 }

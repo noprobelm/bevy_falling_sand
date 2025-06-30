@@ -16,8 +16,7 @@ fn main() {
         .init_resource::<TotalParticleCount>()
         .init_resource::<SpawnParticles>()
         .add_systems(Startup, setup)
-        .add_systems(Update, zoom_camera)
-        .add_systems(Update, pan_camera)
+        .add_systems(Update, (zoom_camera, pan_camera))
         .add_systems(
             Update,
             (
@@ -37,7 +36,6 @@ fn main() {
 
 const BOUNDARY_START_X: i32 = -150;
 const BOUNDARY_END_X: i32 = 150;
-const BOUNDARY_START_Y: i32 = -150;
 const BOUNDARY_END_Y: i32 = 150;
 
 fn resource_not_exists<T: Resource>(world: &World) -> bool {
@@ -221,8 +219,8 @@ fn zoom_camera(
     mut ev_scroll: EventReader<MouseWheel>,
     mut camera_query: Query<&mut Projection, With<MainCamera>>,
 ) {
-    const ZOOM_IN_FACTOR: f32 = 0.9;
-    const ZOOM_OUT_FACTOR: f32 = 1.1;
+    const ZOOM_IN_FACTOR: f32 = 0.98;
+    const ZOOM_OUT_FACTOR: f32 = 1.02;
 
     if !ev_scroll.is_empty() {
         let mut projection = match camera_query.single_mut() {
@@ -242,7 +240,7 @@ fn zoom_camera(
     };
 }
 
-pub fn pan_camera(
+fn pan_camera(
     mut camera_query: Query<&mut Transform, With<MainCamera>>,
     keys: Res<ButtonInput<KeyCode>>,
 ) -> Result {
