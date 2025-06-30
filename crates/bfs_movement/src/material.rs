@@ -10,7 +10,17 @@ pub(super) struct MaterialPlugin;
 
 impl Plugin for MaterialPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<ClearDynamicParticlesEvent>()
+        app.register_type::<WallBlueprint>()
+            .register_type::<Wall>()
+            .register_type::<SolidBlueprint>()
+            .register_type::<Solid>()
+            .register_type::<MovableSolidBlueprint>()
+            .register_type::<MovableSolid>()
+            .register_type::<LiquidBlueprint>()
+            .register_type::<Liquid>()
+            .register_type::<GasBlueprint>()
+            .register_type::<Gas>()
+            .add_event::<ClearDynamicParticlesEvent>()
             .add_event::<ClearStaticParticlesEvent>()
             .add_observer(on_solid_blueprint_added)
             .add_observer(on_movable_solid_blueprint_added)
@@ -38,11 +48,13 @@ pub trait Material {
 }
 
 /// A simple wall, which has no movement to it.
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Component)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Component, Reflect)]
+#[reflect(Component)]
 pub struct Wall;
 
 /// Blueprint for a [`Wall`]
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Component)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Component, Reflect)]
+#[reflect(Component)]
 pub struct WallBlueprint(pub Wall);
 
 impl Wall {
@@ -70,6 +82,7 @@ impl Material for Wall {}
     Serialize,
     Deserialize,
 )]
+#[reflect(Component)]
 pub struct Solid;
 
 impl Solid {
@@ -101,6 +114,7 @@ impl Material for Solid {
     Serialize,
     Deserialize,
 )]
+#[reflect(Component)]
 pub struct SolidBlueprint(pub Solid);
 
 /// A movable solid particle, which can move downwards and diagonally.
@@ -118,6 +132,7 @@ pub struct SolidBlueprint(pub Solid);
     Serialize,
     Deserialize,
 )]
+#[reflect(Component)]
 pub struct MovableSolid;
 
 impl MovableSolid {
@@ -152,6 +167,7 @@ impl Material for MovableSolid {
     Serialize,
     Deserialize,
 )]
+#[reflect(Component)]
 pub struct MovableSolidBlueprint(pub MovableSolid);
 
 /// A liquid particle, which can move downwards, diagonally, and horizontally.
@@ -173,6 +189,7 @@ pub struct MovableSolidBlueprint(pub MovableSolid);
     Serialize,
     Deserialize,
 )]
+#[reflect(Component)]
 pub struct Liquid {
     /// The fluidity of a liquid. Higher values equate to more fluid-like behavior.
     pub fluidity: usize,
@@ -220,6 +237,7 @@ impl Material for Liquid {
     Serialize,
     Deserialize,
 )]
+#[reflect(Component)]
 pub struct LiquidBlueprint(pub Liquid);
 
 /// A gas particle, which can move upwards, upwards diagonally, and horizontally.
@@ -237,6 +255,7 @@ pub struct LiquidBlueprint(pub Liquid);
     Serialize,
     Deserialize,
 )]
+#[reflect(Component)]
 pub struct Gas {
     /// The fluidity of the gas. Higher values equate to more fluid-like behavior.
     pub fluidity: usize,
@@ -281,6 +300,7 @@ impl Material for Gas {
     Serialize,
     Deserialize,
 )]
+#[reflect(Component)]
 pub struct GasBlueprint(pub Gas);
 
 /// Clear all dynamic particles from the world.

@@ -11,10 +11,17 @@ pub(super) struct ParticleDefinitionsPlugin;
 
 impl Plugin for ParticleDefinitionsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            Update,
-            handle_particle_registration.before(ParticleSimulationSet),
-        );
+        app.register_type::<ReactionRng>()
+            .register_type::<FireBlueprint>()
+            .register_type::<Fire>()
+            .register_type::<BurningBlueprint>()
+            .register_type::<Burning>()
+            .register_type::<BurnsBlueprint>()
+            .register_type::<Burns>()
+            .add_systems(
+                Update,
+                handle_particle_registration.before(ParticleSimulationSet),
+            );
     }
 }
 
@@ -29,7 +36,8 @@ impl_particle_blueprint!(BurningBlueprint, Burning);
 pub struct ReactionRng(pub RngComponent);
 
 /// Component which indicates an entity is emitting fire.
-#[derive(Copy, Clone, PartialEq, PartialOrd, Debug, Default, Component)]
+#[derive(Copy, Clone, PartialEq, PartialOrd, Debug, Default, Component, Reflect)]
+#[reflect(Component)]
 pub struct Fire {
     /// The radius of the fire, which determines hwo far it can spread.
     pub burn_radius: f32,
@@ -40,11 +48,13 @@ pub struct Fire {
 }
 
 /// Blueprint for a [`Fire`].
-#[derive(Copy, Clone, PartialEq, PartialOrd, Debug, Default, Component)]
+#[derive(Copy, Clone, PartialEq, PartialOrd, Debug, Default, Component, Reflect)]
+#[reflect(Component)]
 pub struct FireBlueprint(pub Fire);
 
 /// Component which indicates an entity has the capacity to burn.
-#[derive(Clone, PartialEq, Debug, Default, Component)]
+#[derive(Clone, PartialEq, Debug, Default, Component, Reflect)]
+#[reflect(Component)]
 pub struct Burns {
     /// The duration the entity will burn for.
     pub duration: Duration,
@@ -89,11 +99,13 @@ impl Burns {
 }
 
 /// Blueprint for a [`Burns`]
-#[derive(Clone, PartialEq, Debug, Default, Component)]
+#[derive(Clone, PartialEq, Debug, Default, Component, Reflect)]
+#[reflect(Component)]
 pub struct BurnsBlueprint(pub Burns);
 
 /// Component which indicates an entity is actively burning.
 #[derive(Clone, Eq, PartialEq, Debug, Default, Component, Reflect)]
+#[reflect(Component)]
 pub struct Burning {
     /// The duration the entity will burn for.
     pub timer: Timer,
@@ -135,10 +147,12 @@ impl Burning {
 
 /// Blueprint for a [`Burning`]
 #[derive(Clone, Eq, PartialEq, Debug, Default, Component, Reflect)]
+#[reflect(Component)]
 pub struct BurningBlueprint(pub Burning);
 
 /// Component indicating a particle entity is undergoing a reaction.
-#[derive(Clone, PartialEq, Debug, Component)]
+#[derive(Clone, PartialEq, Debug, Component, Reflect)]
+#[reflect(Component)]
 pub struct Reacting {
     /// What the particle will produce when the reaction occurs.
     pub produces: Particle,

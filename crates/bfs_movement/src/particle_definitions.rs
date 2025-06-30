@@ -18,9 +18,15 @@ pub(super) struct ParticleDefinitionsPlugin;
 
 impl Plugin for ParticleDefinitionsPlugin {
     fn build(&self, app: &mut App) {
-        app.register_type::<Density>()
+        app.register_type::<Moved>()
+            .register_type::<MovementRng>()
+            .register_type::<DensityBlueprint>()
+            .register_type::<Density>()
+            .register_type::<VelocityBlueprint>()
             .register_type::<Velocity>()
+            .register_type::<MomentumBlueprint>()
             .register_type::<Momentum>()
+            .register_type::<MovementPriorityBlueprint>()
             .register_type::<MovementPriority>()
             .add_systems(
                 Update,
@@ -55,7 +61,7 @@ pub struct MovementRng(pub RngComponent);
     Serialize,
     Deserialize,
 )]
-#[reflect(Component, Debug)]
+#[reflect(Component)]
 pub struct Moved(pub bool);
 
 /// Stores the density of a particle
