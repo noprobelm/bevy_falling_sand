@@ -298,13 +298,15 @@ fn handle_new_particles(
 }
 
 /// Observer which listens for [`ResetParticleEvent`] and subsequently triggers the associated
-/// [`Particle`] component of an entity (if it exists) as
-/// [`Changed`](https://docs.rs/bevy/latest/bevy/ecs/prelude/struct.Changed.html). Systems which
-/// act on [`Particle`] change detection can then perform their actions accordingly.
+/// [`Particle`] component of an entity (if it exists) for change detection
+/// ([`Changed`](https://docs.rs/bevy/latest/bevy/ecs/prelude/struct.Changed.html)). Systems which
+/// act on [`Particle`] change detection can then perform corresponding actions, such as resetting
+/// blueprint data.
 ///
 /// For example, [`handle_new_particles`] utilizes [`Particle`] component change detection to send a
 /// `ParticleRegistrationEvent`, which subcrates of *Bevy Falling Sand* rely on to insert or remove
 /// Particle components based on their parent's blueprint data.
+#[allow(clippy::needless_pass_by_value)]
 fn on_reset_particle(
     trigger: Trigger<ResetParticleEvent>,
     mut particle_query: Query<&mut Particle>,
