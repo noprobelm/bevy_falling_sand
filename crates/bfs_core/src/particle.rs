@@ -13,7 +13,10 @@ pub(super) struct ParticleCorePlugin;
 
 impl Plugin for ParticleCorePlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<ParticleSimulationRun>()
+        app.register_type::<Particle>()
+            .register_type::<ParticleType>()
+            .register_type::<ParticlePosition>()
+            .init_resource::<ParticleSimulationRun>()
             .configure_sets(
                 Update,
                 ParticleSimulationSet.run_if(
@@ -120,8 +123,20 @@ pub struct ParticleSimulationSet;
 
 /// Unique identifer for a particle type. No two particle types with the same name can exist.
 #[derive(
-    Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Component, Serialize, Deserialize,
+    Clone,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Hash,
+    Debug,
+    Default,
+    Component,
+    Reflect,
+    Serialize,
+    Deserialize,
 )]
+#[reflect(Component)]
 pub struct ParticleType {
     /// The particle type's name.
     pub name: String,
@@ -172,7 +187,8 @@ impl ParticleTypeMap {
 }
 
 /// Marker component for a Particle entity.
-#[derive(Component, Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Component, Clone, Debug, Eq, PartialEq, Reflect, Serialize, Deserialize)]
+#[reflect(Component)]
 pub struct Particle {
     /// The name of the particle, which corresponds to its [`ParticleType`] and can be used as an
     /// index in the  [`ParticleTypeMap`] resource.
@@ -190,7 +206,10 @@ impl Particle {
 }
 
 /// Holds the position of a particle in the simulation
-#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, Default, Component, Serialize, Deserialize)]
+#[derive(
+    Copy, Clone, Eq, PartialEq, Hash, Debug, Default, Component, Reflect, Serialize, Deserialize,
+)]
+#[reflect(Component)]
 pub struct ParticlePosition(pub IVec2);
 
 /// Event which is used to trigger the simulation to step forward by one tick.
