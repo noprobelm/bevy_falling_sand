@@ -117,6 +117,46 @@ impl ColorProfile {
         }
         self.color = self.palette[self.index];
     }
+
+    /// Adds a color to the palette, does not change current color.
+    pub fn add_color(&mut self, color: Color) {
+        self.palette.push(color);
+    }
+
+    /// Removes the color at the given index.
+    /// Adjusts index and color so [`ColorProfile`] remains valid.
+    /// Returns true if successful, false if trying to remove last color.
+    pub fn remove_color(&mut self, index: usize) -> bool {
+        if self.palette.len() <= 1 {
+            return false; // prevent removing last color
+        }
+        self.palette.remove(index);
+        if self.index >= self.palette.len() {
+            self.index = self.palette.len() - 1;
+        }
+        self.color = self.palette[self.index];
+        true
+    }
+
+    /// Edits the color at the given index and updates current color if needed.
+    pub fn edit_color(&mut self, index: usize, new_color: Color) {
+        self.palette[index] = new_color;
+        if index == self.index {
+            self.color = new_color;
+        }
+    }
+
+    /// Returns the number of colors in the palette.
+    #[must_use]
+    pub fn len(&self) -> usize {
+        self.palette.len()
+    }
+
+    /// Returns true if the palette is empty
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.palette.is_empty()
+    }
 }
 
 impl Default for ColorProfile {
