@@ -68,6 +68,8 @@ pub struct Burns {
     pub color: Option<ColorProfile>,
     /// Indicates whether the burning entity can spread fire to adjacent entities.
     pub spreads: Option<Fire>,
+    /// Indicates whether the burning entity should ignite upon being spawned.
+    pub ignites_on_spawn: bool,
 }
 
 impl Burns {
@@ -80,6 +82,7 @@ impl Burns {
         reaction: Option<Reacting>,
         color: Option<ColorProfile>,
         spreads: Option<Fire>,
+        ignites_on_spawn: bool,
     ) -> Self {
         Self {
             duration,
@@ -88,6 +91,7 @@ impl Burns {
             reaction,
             color,
             spreads,
+            ignites_on_spawn,
         }
     }
 
@@ -123,7 +127,7 @@ impl Burning {
     #[must_use]
     pub fn new(duration: Duration, tick_rate: Duration) -> Self {
         assert!(
-            duration > tick_rate,
+            duration >= tick_rate,
             "Burning duration must be greater than tick rate"
         );
         Self {
@@ -211,15 +215,23 @@ fn handle_particle_components(
                 } else {
                     commands.entity(*entity).remove::<Fire>();
                 }
-                if let Some(burns) = burns {
-                    commands.entity(*entity).insert(burns.0.clone());
-                } else {
-                    commands.entity(*entity).remove::<Burns>();
-                }
                 if let Some(burning) = burning {
                     commands.entity(*entity).insert(burning.0.clone());
                 } else {
                     commands.entity(*entity).remove::<Burning>();
+                }
+                if let Some(burns) = burns {
+                    commands.entity(*entity).insert(burns.0.clone());
+                    if burns.component().ignites_on_spawn {
+                        commands
+                            .entity(*entity)
+                            .insert(burns.component().to_burning());
+                        if let Some(fire) = burns.component().spreads {
+                            commands.entity(*entity).insert(fire);
+                        }
+                    }
+                } else {
+                    commands.entity(*entity).remove::<Burns>();
                 }
             }
         }
@@ -236,3 +248,4 @@ fn handle_particle_registration(
         handle_particle_components(&mut commands, &parent_query, &particle_query, &ev.entities);
     });
 }
+
