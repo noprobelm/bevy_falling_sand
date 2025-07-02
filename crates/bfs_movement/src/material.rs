@@ -48,12 +48,38 @@ pub trait Material {
 }
 
 /// A simple wall, which has no movement to it.
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Component, Reflect)]
+#[derive(
+    Clone,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Hash,
+    Debug,
+    Default,
+    Component,
+    Reflect,
+    Serialize,
+    Deserialize,
+)]
 #[reflect(Component)]
 pub struct Wall;
 
 /// Blueprint for a [`Wall`]
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Component, Reflect)]
+#[derive(
+    Clone,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Hash,
+    Debug,
+    Default,
+    Component,
+    Reflect,
+    Serialize,
+    Deserialize,
+)]
 #[reflect(Component)]
 pub struct WallBlueprint(pub Wall);
 

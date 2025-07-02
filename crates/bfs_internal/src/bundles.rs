@@ -131,7 +131,7 @@ impl LiquidBundle {
     }
 }
 
-#[derive(Asset, TypePath, Bundle, Serialize, Deserialize)]
+#[derive(Clone, Asset, TypePath, Bundle, Serialize, Deserialize)]
 /// A bundle to quickly create a gas particle.
 pub struct GasBundle {
     /// The particle type designator.
@@ -149,7 +149,7 @@ pub struct GasBundle {
 impl GasBundle {
     /// Create a new instance of gas bundle.
     #[must_use]
-    pub fn new(
+    pub const fn new(
         particle_type: ParticleType,
         density: Density,
         velocity: Velocity,
@@ -166,7 +166,7 @@ impl GasBundle {
     }
 }
 
-#[derive(Asset, TypePath, Bundle)]
+#[derive(Clone, Asset, TypePath, Bundle, Serialize, Deserialize)]
 /// A bundle to quickly create a wall particle.
 pub struct WallBundle {
     /// The particle type designator.
