@@ -470,7 +470,7 @@ fn render_fire_settings_gui(
 
             let mut burns_duration = burns.duration.as_secs_f32();
             if ui
-                .add(egui::Slider::new(&mut burns_duration, 0.0..=60.0).text("Burn Duration"))
+                .add(egui::Slider::new(&mut burns_duration, 0.1..=60.0).text("Burn Duration (s)"))
                 .drag_stopped()
             {
                 burns.duration = Duration::from_secs_f32(burns_duration);
@@ -584,7 +584,7 @@ fn render_fire_settings_gui(
 
             let mut burns_duration = burns.duration.as_secs_f32();
             if ui
-                .add(egui::Slider::new(&mut burns_duration, 0.0..=60.0).text("Burn Duration"))
+                .add(egui::Slider::new(&mut burns_duration, 0.1..=60.0).text("Burn Duration (s)"))
                 .drag_stopped()
             {
                 burns.duration = Duration::from_secs_f32(burns_duration);
