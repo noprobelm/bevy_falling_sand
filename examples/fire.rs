@@ -510,10 +510,18 @@ fn render_fire_settings_gui(
 
             ui.add_space(8.0);
 
-            // Smoke
             let mut smokes_enabled = burns.reaction.is_some();
-            if ui.checkbox(&mut smokes_enabled, "Smokes").changed() && !smokes_enabled {
-                burns.reaction = None;
+            if ui.checkbox(&mut smokes_enabled, "Smokes").changed() {
+                if smokes_enabled {
+                    // Checkbox changed to enabled: insert Reacting with default chance
+                    burns.reaction = Some(Reacting {
+                        produces: Particle::new("Smoke"),
+                        chance_to_produce: 0.5, // or your preferred default
+                    });
+                } else {
+                    // Checkbox changed to disabled: remove reaction
+                    burns.reaction = None;
+                }
             }
 
             if smokes_enabled {
