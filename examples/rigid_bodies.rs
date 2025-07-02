@@ -119,7 +119,6 @@ fn setup(mut commands: Commands) {
         MomentumBlueprint::default(),
     ));
 
-    // The instructions and modes are rendered on the left-hand side in a column.
     let instructions_text = "F1: Toggle sand spawn\n\
         F2: Toggle water spawn\n\
         Left Mouse: Spawn ball at cursor\"\n\

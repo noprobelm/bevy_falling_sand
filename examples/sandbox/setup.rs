@@ -37,6 +37,7 @@ pub fn setup_particles(mut commands: Commands) {
             Some(Reacting::new(Particle::new("Water"), 0.2)),
             None,
             None,
+            false,
         )),
         Name::new("Ice Wall"),
     ));
@@ -170,6 +171,7 @@ pub fn setup_particles(mut commands: Commands) {
                 chance_to_spread: 0.2,
                 destroys_on_spread: false,
             }),
+            false,
         )),
         Name::new("Oil"),
     ));
@@ -238,6 +240,7 @@ pub fn setup_particles(mut commands: Commands) {
             Some(Reacting::new(Particle::new("Water"), 1.)),
             None,
             None,
+            false,
         )),
         Name::new("Steam"),
     ));
@@ -286,6 +289,7 @@ pub fn setup_particles(mut commands: Commands) {
                 chance_to_spread: 1.,
                 destroys_on_spread: true,
             }),
+            false,
         )),
         Name::new("Flammable Gas"),
     ));
@@ -304,22 +308,18 @@ pub fn setup_particles(mut commands: Commands) {
             ]),
         ),
         ChangesColorBlueprint(ChangesColor::new(0.1)),
-        FireBlueprint(Fire {
-            burn_radius: 1.5,
-            chance_to_spread: 0.01,
-            destroys_on_spread: false,
-        }),
         BurnsBlueprint(Burns::new(
             Duration::from_secs(1),
             Duration::from_millis(100),
             Some(0.5),
             None,
             None,
-            None,
-        )),
-        BurningBlueprint(Burning::new(
-            Duration::from_secs(1),
-            Duration::from_millis(100),
+            Some(Fire {
+                burn_radius: 1.5,
+                chance_to_spread: 0.01,
+                destroys_on_spread: false,
+            }),
+            true,
         )),
         Name::new("FIRE"),
     ));
@@ -387,6 +387,7 @@ pub fn setup_particles(mut commands: Commands) {
                 chance_to_spread: 1.,
                 destroys_on_spread: false,
             }),
+            false,
         )),
         Name::new("Grass Wall"),
     ));
@@ -413,6 +414,7 @@ pub fn setup_particles(mut commands: Commands) {
                 chance_to_spread: 0.005,
                 destroys_on_spread: false,
             }),
+            false,
         )),
         Name::new("Wood Wall"),
     ));

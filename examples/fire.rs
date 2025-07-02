@@ -8,29 +8,49 @@ use bevy::{
     prelude::*,
     window::PrimaryWindow,
 };
+use bevy_egui::{egui, EguiContextPass, EguiContexts, EguiPlugin};
 use bevy_falling_sand::prelude::*;
 
 fn main() {
     App::new()
         .add_plugins((
             DefaultPlugins,
-            FallingSandPlugin::default().with_spatial_refresh_frequency(Duration::from_millis(50)),
+            FallingSandPlugin::default().with_spatial_refresh_frequency(Duration::from_millis(40)),
+            EguiPlugin {
+                enable_multipass_for_primary_context: false,
+            },
         ))
+        .init_state::<AppState>()
         .init_resource::<SpawnFlammableGasParticles>()
         .init_resource::<CursorPosition>()
+        .init_resource::<DefaultFire>()
+        .init_resource::<DefaultFlammableGas>()
         .add_systems(Startup, setup)
         .add_systems(Update, (zoom_camera, pan_camera))
         .add_systems(
+            EguiContextPass,
+            render_fire_settings_gui.run_if(resource_exists::<RenderGUI>),
+        )
+        .add_systems(
             Update,
             (
+                update_app_state,
                 update_cursor_position,
                 spawn_boundary.run_if(resource_not_exists::<BoundaryReady>),
-                spawn_fire.run_if(input_pressed(MouseButton::Left)),
+                spawn_fire
+                    .run_if(input_pressed(MouseButton::Left))
+                    .run_if(in_state(AppState::Canvas)),
                 spawn_flammable_gas_particles.run_if(
                     resource_exists::<BoundaryReady>
                         .and(resource_exists::<SpawnFlammableGasParticles>),
                 ),
-                toggle_spawn_flamable_gas_particles.run_if(input_just_pressed(KeyCode::F1)),
+                toggle_spawn_flamable_gas_particles
+                    .run_if(input_just_pressed(KeyCode::F1))
+                    .run_if(in_state(AppState::Canvas)),
+                toggle_render_gui.run_if(input_just_pressed(KeyCode::KeyH)),
+                reset
+                    .run_if(input_just_pressed(KeyCode::KeyR))
+                    .run_if(in_state(AppState::Canvas)),
             ),
         )
         .run();
@@ -45,11 +65,96 @@ fn resource_not_exists<T: Resource>(world: &World) -> bool {
     !world.contains_resource::<T>()
 }
 
+#[derive(States, Reflect, Default, Debug, Clone, Eq, PartialEq, Hash)]
+pub enum AppState {
+    #[default]
+    Canvas,
+    Ui,
+}
+
+#[derive(Clone, Resource)]
+struct DefaultFire(GasBundle, ChangesColorBlueprint, BurnsBlueprint, Name);
+
+impl Default for DefaultFire {
+    fn default() -> Self {
+        DefaultFire(
+            GasBundle::new(
+                ParticleType::new("FIRE"),
+                Density(450),
+                Velocity::new(1, 3),
+                1,
+                ColorProfile::new(vec![
+                    Color::Srgba(Srgba::hex("#FF5900FF").unwrap()),
+                    Color::Srgba(Srgba::hex("#FF9100FF").unwrap()),
+                    Color::Srgba(Srgba::hex("#FFCF00FF").unwrap()),
+                    Color::Srgba(Srgba::hex("#C74A05FF").unwrap()),
+                ]),
+            ),
+            ChangesColorBlueprint(ChangesColor::new(0.1)),
+            BurnsBlueprint(Burns::new(
+                Duration::from_secs(1),
+                Duration::from_millis(100),
+                Some(0.5),
+                None,
+                None,
+                Some(Fire {
+                    burn_radius: 1.5,
+                    chance_to_spread: 0.01,
+                    destroys_on_spread: false,
+                }),
+                true,
+            )),
+            Name::new("FIRE"),
+        )
+    }
+}
+
+#[derive(Resource)]
+struct DefaultFlammableGas(GasBundle, ChangesColorBlueprint, BurnsBlueprint, Name);
+
+impl Default for DefaultFlammableGas {
+    fn default() -> Self {
+        DefaultFlammableGas(
+            GasBundle::new(
+                ParticleType::new("Flammable Gas"),
+                Density(200),
+                Velocity::new(1, 1),
+                1,
+                ColorProfile::new(vec![
+                    Color::Srgba(Srgba::hex("#40621880").unwrap()),
+                    Color::Srgba(Srgba::hex("#4A731C80").unwrap()),
+                ]),
+            ),
+            ChangesColorBlueprint(ChangesColor::new(0.1)),
+            BurnsBlueprint(Burns::new(
+                Duration::from_secs(1),
+                Duration::from_millis(50),
+                Some(0.5),
+                None,
+                Some(ColorProfile::new(vec![
+                    Color::Srgba(Srgba::hex("#FF5900").unwrap()),
+                    Color::Srgba(Srgba::hex("#FF0000").unwrap()),
+                    Color::Srgba(Srgba::hex("#FF9900").unwrap()),
+                    Color::Srgba(Srgba::hex("#FFCF00").unwrap()),
+                    Color::Srgba(Srgba::hex("#FFE808").unwrap()),
+                ])),
+                Some(Fire {
+                    burn_radius: 3.,
+                    chance_to_spread: 1.,
+                    destroys_on_spread: true,
+                }),
+                false,
+            )),
+            Name::new("Flammable Gas"),
+        )
+    }
+}
+
 #[derive(Resource)]
 struct BoundaryReady;
 
-#[derive(Component)]
-struct MainCamera;
+#[derive(Default, Resource)]
+struct RenderGUI;
 
 #[derive(Default, Resource)]
 struct SpawnFlammableGasParticles;
@@ -59,7 +164,14 @@ pub struct CursorPosition {
     pub current: Vec2,
 }
 
-fn setup(mut commands: Commands) {
+#[derive(Component)]
+struct MainCamera;
+
+fn setup(
+    mut commands: Commands,
+    default_flammable_gas: Res<DefaultFlammableGas>,
+    default_fire: Res<DefaultFire>,
+) {
     commands.spawn((
         Camera2d,
         Projection::Orthographic(OrthographicProjection {
@@ -80,75 +192,37 @@ fn setup(mut commands: Commands) {
 
     commands.spawn((
         GasBundle::new(
-            ParticleType::new("Flammable Gas"),
-            Density(200),
+            ParticleType::new("Smoke"),
+            Density(275),
             Velocity::new(1, 1),
             1,
             ColorProfile::new(vec![
-                Color::Srgba(Srgba::hex("#40621880").unwrap()),
-                Color::Srgba(Srgba::hex("#4A731C80").unwrap()),
+                Color::Srgba(Srgba::hex("#706966").unwrap()),
+                Color::Srgba(Srgba::hex("#858073").unwrap()),
             ]),
         ),
         ChangesColorBlueprint(ChangesColor::new(0.1)),
-        BurnsBlueprint(Burns::new(
-            Duration::from_secs(1),
-            Duration::from_millis(50),
-            Some(0.5),
-            None,
-            Some(ColorProfile::new(vec![
-                Color::Srgba(Srgba::hex("#FF5900").unwrap()),
-                Color::Srgba(Srgba::hex("#FF0000").unwrap()),
-                Color::Srgba(Srgba::hex("#FF9900").unwrap()),
-                Color::Srgba(Srgba::hex("#FFCF00").unwrap()),
-                Color::Srgba(Srgba::hex("#FFE808").unwrap()),
-            ])),
-            Some(Fire {
-                burn_radius: 3.,
-                chance_to_spread: 1.,
-                destroys_on_spread: true,
-            }),
-        )),
-        Name::new("Flammable Gas"),
+        Name::new("Smoke"),
     ));
 
     commands.spawn((
-        GasBundle::new(
-            ParticleType::new("FIRE"),
-            Density(450),
-            Velocity::new(1, 3),
-            1,
-            ColorProfile::new(vec![
-                Color::Srgba(Srgba::hex("#FF5900FF").unwrap()),
-                Color::Srgba(Srgba::hex("#FF9100FF").unwrap()),
-                Color::Srgba(Srgba::hex("#FFCF00FF").unwrap()),
-                Color::Srgba(Srgba::hex("#C74A05FF").unwrap()),
-            ]),
-        ),
-        ChangesColorBlueprint(ChangesColor::new(0.1)),
-        FireBlueprint(Fire {
-            burn_radius: 1.5,
-            chance_to_spread: 0.01,
-            destroys_on_spread: false,
-        }),
-        BurnsBlueprint(Burns::new(
-            Duration::from_secs(1),
-            Duration::from_millis(100),
-            Some(0.5),
-            None,
-            None,
-            None,
-        )),
-        BurningBlueprint(Burning::new(
-            Duration::from_secs(1),
-            Duration::from_millis(100),
-        )),
-        Name::new("FIRE"),
+        default_flammable_gas.0.clone(),
+        default_flammable_gas.1,
+        default_flammable_gas.2.clone(),
+        default_flammable_gas.3.clone(),
     ));
 
-    // The instructions and modes are rendered on the left-hand side in a column.
+    commands.spawn((
+        default_fire.0.clone(),
+        default_fire.1,
+        default_fire.2.clone(),
+        default_fire.3.clone(),
+    ));
+
     let instructions_text = "F1: Toggle flammable gas stream\n\
         Left Mouse: Spawn fire at cursor\n\
-        R: Reset\n";
+        H: Show/hide settings GUI\n\
+        R: Reset";
     let style = TextFont::default();
 
     commands
@@ -250,6 +324,7 @@ fn spawn_fire(mut commands: Commands, cursor_position: Res<CursorPosition>) {
         }
     }
 }
+
 fn toggle_spawn_flamable_gas_particles(
     mut commands: Commands,
     debug_map: Option<Res<SpawnFlammableGasParticles>>,
@@ -258,6 +333,14 @@ fn toggle_spawn_flamable_gas_particles(
         commands.remove_resource::<SpawnFlammableGasParticles>();
     } else {
         commands.init_resource::<SpawnFlammableGasParticles>();
+    }
+}
+
+fn toggle_render_gui(mut commands: Commands, render_gui: Option<Res<RenderGUI>>) {
+    if render_gui.is_some() {
+        commands.remove_resource::<RenderGUI>();
+    } else {
+        commands.init_resource::<RenderGUI>();
     }
 }
 
@@ -325,4 +408,285 @@ fn pan_camera(
         transform.translation.x += 2.;
     }
     Ok(())
+}
+
+pub fn update_app_state(
+    mut contexts: EguiContexts,
+    app_state: Res<State<AppState>>,
+    mut next_app_state: ResMut<NextState<AppState>>,
+) {
+    match app_state.get() {
+        AppState::Ui => {
+            let ctx = contexts.ctx_mut();
+            if !ctx.is_pointer_over_area() {
+                next_app_state.set(AppState::Canvas);
+            }
+        }
+        AppState::Canvas => {
+            let ctx = contexts.ctx_mut();
+            if ctx.is_pointer_over_area() {
+                next_app_state.set(AppState::Ui);
+            }
+        }
+    }
+}
+
+fn reset(mut commands: Commands) {
+    commands.trigger(ClearDynamicParticlesEvent);
+}
+
+fn render_fire_settings_gui(
+    mut contexts: EguiContexts,
+    particle_type_map: Res<ParticleTypeMap>,
+    mut burns_query: Query<&mut BurnsBlueprint>,
+    mut color_profile_query: Query<&mut ColorProfileBlueprint>,
+    mut commands: Commands,
+    default_fire: Res<DefaultFire>,
+    default_flammable_gas: Res<DefaultFlammableGas>,
+) {
+    let fire_entity = *particle_type_map.get(&"FIRE".to_string()).unwrap();
+    let flammable_gas_entity = *particle_type_map.get(&"Flammable Gas".to_string()).unwrap();
+
+    egui::Window::new("Particle Properties").show(contexts.ctx_mut(), |ui| {
+        // --- Fire section ---
+        {
+            ui.heading("🔥 Fire Settings");
+            ui.separator();
+            ui.add_space(4.0);
+
+            let mut fire_burns_bp = burns_query.get_mut(fire_entity).unwrap();
+            let mut fire_color_bp = color_profile_query.get_mut(fire_entity).unwrap();
+            let burns = fire_burns_bp.component_mut();
+
+            // Spread controls
+            if let Some(fire) = burns.spreads.as_mut() {
+                ui.add(
+                    egui::Slider::new(&mut fire.burn_radius, 0.0..=50.0).text("Fire Burn Radius"),
+                );
+                ui.add(
+                    egui::Slider::new(&mut fire.chance_to_spread, 0.0..=1.0)
+                        .text("Chance to spread (per frame)"),
+                );
+                ui.checkbox(&mut fire.destroys_on_spread, "Destroy on Spread");
+            }
+
+            ui.add_space(8.0);
+
+            // Duration
+            let mut burns_duration = burns.duration.as_secs_f32();
+            if ui
+                .add(egui::Slider::new(&mut burns_duration, 0.0..=60.0).text("Fire Duration"))
+                .drag_stopped()
+            {
+                burns.duration = Duration::from_secs_f32(burns_duration);
+            }
+
+            // Tick rate
+            let mut tick_rate = burns.tick_rate.as_secs_f32();
+            if ui
+                .add(egui::Slider::new(&mut tick_rate, 0.0..=60.0).text("Fire Tick Rate"))
+                .drag_stopped()
+            {
+                burns.tick_rate = Duration::from_secs_f32(tick_rate.min(60.0));
+            }
+
+            ui.add_space(8.0);
+
+            // Chance destroy per tick
+            let mut chance_destroy = burns.chance_destroy_per_tick.unwrap_or(0.0);
+            if ui
+                .add(
+                    egui::Slider::new(&mut chance_destroy, 0.0..=1.0)
+                        .text("Chance Destroy per Tick"),
+                )
+                .drag_stopped()
+            {
+                if chance_destroy > 0.0 {
+                    burns.chance_destroy_per_tick = Some(chance_destroy);
+                } else {
+                    burns.chance_destroy_per_tick = None;
+                }
+            }
+
+            ui.add_space(8.0);
+
+            // Smoke
+            let mut smokes_enabled = burns.reaction.is_some();
+            if ui.checkbox(&mut smokes_enabled, "Smokes").changed() && !smokes_enabled {
+                burns.reaction = None;
+            }
+
+            if smokes_enabled {
+                let chance = burns
+                    .reaction
+                    .as_ref()
+                    .map(|r| r.chance_to_produce)
+                    .unwrap_or(0.5);
+
+                let mut chance_to_produce = chance;
+
+                if ui
+                    .add(
+                        egui::Slider::new(&mut chance_to_produce, 0.0..=1.0)
+                            .text("Chance to produce smoke (per frame)"),
+                    )
+                    .drag_stopped()
+                {
+                    burns.reaction = Some(Reacting {
+                        produces: Particle::new("Smoke"),
+                        chance_to_produce,
+                    });
+                }
+            }
+
+            ui.add_space(8.0);
+
+            // Colors
+            render_color_profile_editor(ui, "Fire Colors", &mut fire_color_bp);
+
+            ui.add_space(8.0);
+
+            // Reset button
+            if ui.button("🔄 Reset Fire to Default").clicked() {
+                commands.spawn((
+                    default_fire.0.clone(),
+                    default_fire.1,
+                    default_fire.2.clone(),
+                    default_fire.3.clone(),
+                ));
+            }
+        }
+
+        ui.add_space(16.0);
+        ui.separator();
+        ui.add_space(8.0);
+
+        // --- Flammable Gas section ---
+        {
+            ui.heading("💨 Flammable Gas Settings");
+            ui.separator();
+            ui.add_space(4.0);
+
+            let mut flammable_burns_bp = burns_query.get_mut(flammable_gas_entity).unwrap();
+            let burns = flammable_burns_bp.component_mut();
+
+            // Spread controls
+            if let Some(fire) = burns.spreads.as_mut() {
+                ui.add(
+                    egui::Slider::new(&mut fire.burn_radius, 0.0..=50.0).text("Gas Burn Radius"),
+                );
+                ui.add(
+                    egui::Slider::new(&mut fire.chance_to_spread, 0.0..=1.0)
+                        .text("Chance to spread (per frame)"),
+                );
+                ui.checkbox(&mut fire.destroys_on_spread, "Destroy on Spread");
+            }
+
+            ui.add_space(8.0);
+
+            // Duration
+            let mut burns_duration = burns.duration.as_secs_f32();
+            if ui
+                .add(egui::Slider::new(&mut burns_duration, 0.0..=60.0).text("Gas Burn Duration"))
+                .drag_stopped()
+            {
+                burns.duration = Duration::from_secs_f32(burns_duration);
+            }
+
+            // Tick rate
+            let mut tick_rate = burns.tick_rate.as_secs_f32();
+            if ui
+                .add(egui::Slider::new(&mut tick_rate, 0.0..=60.0).text("Gas Tick Rate"))
+                .drag_stopped()
+            {
+                burns.tick_rate = Duration::from_secs_f32(tick_rate.min(60.0));
+            }
+
+            ui.add_space(8.0);
+
+            // Chance destroy per tick
+            let mut chance_destroy = burns.chance_destroy_per_tick.unwrap_or(0.0);
+            if ui
+                .add(
+                    egui::Slider::new(&mut chance_destroy, 0.0..=1.0)
+                        .text("Chance Destroy per Tick"),
+                )
+                .drag_stopped()
+            {
+                if chance_destroy > 0.0 {
+                    burns.chance_destroy_per_tick = Some(chance_destroy);
+                } else {
+                    burns.chance_destroy_per_tick = None;
+                }
+            }
+
+            ui.add_space(8.0);
+
+            // Reset button
+            if ui.button("🔄 Reset Flammable Gas to Default").clicked() {
+                commands.spawn((
+                    default_flammable_gas.0.clone(),
+                    default_flammable_gas.1,
+                    default_flammable_gas.2.clone(),
+                    default_flammable_gas.3.clone(),
+                ));
+            }
+        }
+    });
+}
+
+fn render_color_profile_editor(
+    ui: &mut egui::Ui,
+    label: &str,
+    color_bp: &mut ColorProfileBlueprint,
+) {
+    ui.horizontal(|ui| {
+        ui.label(label);
+        if ui.button("➕").clicked() {
+            color_bp
+                .component_mut()
+                .add_color(Color::srgba_u8(255, 255, 255, 255));
+        }
+    });
+
+    let palette_snapshot = color_bp.component().palette.clone();
+    let palette_len = palette_snapshot.len();
+
+    let mut to_remove: Option<usize> = None;
+    let mut to_change: Option<(usize, Color)> = None;
+
+    for (i, color) in palette_snapshot.iter().enumerate() {
+        let srgba = color.to_srgba();
+        let (r, g, b, a) = (
+            (srgba.red * 255.) as u8,
+            (srgba.green * 255.) as u8,
+            (srgba.blue * 255.) as u8,
+            (srgba.alpha * 255.) as u8,
+        );
+
+        let mut color32 = egui::Color32::from_rgba_unmultiplied(r, g, b, a);
+
+        ui.horizontal(|ui| {
+            if ui.color_edit_button_srgba(&mut color32).changed() {
+                to_change = Some((
+                    i,
+                    Color::srgba_u8(color32.r(), color32.g(), color32.b(), color32.a()),
+                ));
+            }
+            let can_remove = palette_len > 1;
+            if ui
+                .add_enabled(can_remove, egui::Button::new("❌"))
+                .clicked()
+            {
+                to_remove = Some(i);
+            }
+        });
+    }
+
+    if let Some((index, new_color)) = to_change {
+        color_bp.component_mut().edit_color(index, new_color);
+    }
+    if let Some(index) = to_remove {
+        color_bp.component_mut().remove_color(index);
+    }
 }

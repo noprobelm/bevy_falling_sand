@@ -158,7 +158,6 @@ fn setup(mut commands: Commands) {
         ChangesColorBlueprint(ChangesColor::new(0.1)),
     ));
 
-    // The instructions and modes are rendered on the left-hand side in a column.
     let instructions_text = "F1: Change particle type one\n\
         F2: Change particle type two\n";
     let style = TextFont::default();
