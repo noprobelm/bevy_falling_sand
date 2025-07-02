@@ -139,8 +139,8 @@ impl Default for DefaultFlammableGas {
                     Color::Srgba(Srgba::hex("#FFE808").unwrap()),
                 ])),
                 Some(Fire {
-                    burn_radius: 3.,
-                    chance_to_spread: 1.,
+                    burn_radius: 4.,
+                    chance_to_spread: 0.175,
                     destroys_on_spread: true,
                 }),
                 false,
@@ -448,7 +448,6 @@ fn render_fire_settings_gui(
     let flammable_gas_entity = *particle_type_map.get(&"Flammable Gas".to_string()).unwrap();
 
     egui::Window::new("Particle Properties").show(contexts.ctx_mut(), |ui| {
-        // --- Fire section ---
         {
             ui.heading("🔥 Fire Settings");
             ui.separator();
@@ -458,11 +457,8 @@ fn render_fire_settings_gui(
             let mut fire_color_bp = color_profile_query.get_mut(fire_entity).unwrap();
             let burns = fire_burns_bp.component_mut();
 
-            // Spread controls
             if let Some(fire) = burns.spreads.as_mut() {
-                ui.add(
-                    egui::Slider::new(&mut fire.burn_radius, 0.0..=50.0).text("Fire Burn Radius"),
-                );
+                ui.add(egui::Slider::new(&mut fire.burn_radius, 0.0..=50.0).text("Fire Radius"));
                 ui.add(
                     egui::Slider::new(&mut fire.chance_to_spread, 0.0..=1.0)
                         .text("Chance to spread (per frame)"),
@@ -472,31 +468,31 @@ fn render_fire_settings_gui(
 
             ui.add_space(8.0);
 
-            // Duration
             let mut burns_duration = burns.duration.as_secs_f32();
             if ui
-                .add(egui::Slider::new(&mut burns_duration, 0.0..=60.0).text("Fire Duration"))
+                .add(egui::Slider::new(&mut burns_duration, 0.0..=60.0).text("Burn Duration"))
                 .drag_stopped()
             {
                 burns.duration = Duration::from_secs_f32(burns_duration);
             }
 
-            // Tick rate
-            let mut tick_rate = burns.tick_rate.as_secs_f32();
+            let max_tick_ms = burns.duration.as_millis().max(1) as f32;
+            let mut tick_rate_ms = burns.tick_rate.as_millis() as f32;
             if ui
-                .add(egui::Slider::new(&mut tick_rate, 0.0..=60.0).text("Fire Tick Rate"))
+                .add(egui::Slider::new(&mut tick_rate_ms, 0.0..=max_tick_ms).text("Tick Rate (ms)"))
                 .drag_stopped()
             {
-                burns.tick_rate = Duration::from_secs_f32(tick_rate.min(60.0));
+                burns.tick_rate =
+                    Duration::from_millis(tick_rate_ms.clamp(0.0, max_tick_ms) as u64);
             }
+            ui.add_space(8.0);
 
             ui.add_space(8.0);
 
-            // Chance destroy per tick
             let mut chance_destroy = burns.chance_destroy_per_tick.unwrap_or(0.0);
             if ui
                 .add(
-                    egui::Slider::new(&mut chance_destroy, 0.0..=1.0)
+                    egui::Slider::new(&mut chance_destroy, 0.1..=1.0)
                         .text("Chance Destroy per Tick"),
                 )
                 .drag_stopped()
@@ -510,21 +506,19 @@ fn render_fire_settings_gui(
 
             ui.add_space(8.0);
 
-            let mut smokes_enabled = burns.reaction.is_some();
-            if ui.checkbox(&mut smokes_enabled, "Smokes").changed() {
-                if smokes_enabled {
-                    // Checkbox changed to enabled: insert Reacting with default chance
+            let mut smoke_enabled = burns.reaction.is_some();
+            if ui.checkbox(&mut smoke_enabled, "Smoke").changed() {
+                if smoke_enabled {
                     burns.reaction = Some(Reacting {
                         produces: Particle::new("Smoke"),
-                        chance_to_produce: 0.5, // or your preferred default
+                        chance_to_produce: 0.5,
                     });
                 } else {
-                    // Checkbox changed to disabled: remove reaction
                     burns.reaction = None;
                 }
             }
 
-            if smokes_enabled {
+            if smoke_enabled {
                 let chance = burns
                     .reaction
                     .as_ref()
@@ -549,12 +543,10 @@ fn render_fire_settings_gui(
 
             ui.add_space(8.0);
 
-            // Colors
-            render_color_profile_editor(ui, "Fire Colors", &mut fire_color_bp);
+            render_color_profile_editor(ui, "Fire Colors", fire_color_bp.component_mut());
 
             ui.add_space(8.0);
 
-            // Reset button
             if ui.button("🔄 Reset Fire to Default").clicked() {
                 commands.spawn((
                     default_fire.0.clone(),
@@ -569,7 +561,6 @@ fn render_fire_settings_gui(
         ui.separator();
         ui.add_space(8.0);
 
-        // --- Flammable Gas section ---
         {
             ui.heading("💨 Flammable Gas Settings");
             ui.separator();
@@ -578,10 +569,9 @@ fn render_fire_settings_gui(
             let mut flammable_burns_bp = burns_query.get_mut(flammable_gas_entity).unwrap();
             let burns = flammable_burns_bp.component_mut();
 
-            // Spread controls
             if let Some(fire) = burns.spreads.as_mut() {
                 ui.add(
-                    egui::Slider::new(&mut fire.burn_radius, 0.0..=50.0).text("Gas Burn Radius"),
+                    egui::Slider::new(&mut fire.burn_radius, 0.0..=50.0).text("Gas Fire Radius"),
                 );
                 ui.add(
                     egui::Slider::new(&mut fire.chance_to_spread, 0.0..=1.0)
@@ -592,27 +582,25 @@ fn render_fire_settings_gui(
 
             ui.add_space(8.0);
 
-            // Duration
             let mut burns_duration = burns.duration.as_secs_f32();
             if ui
-                .add(egui::Slider::new(&mut burns_duration, 0.0..=60.0).text("Gas Burn Duration"))
+                .add(egui::Slider::new(&mut burns_duration, 0.0..=60.0).text("Burn Duration"))
                 .drag_stopped()
             {
                 burns.duration = Duration::from_secs_f32(burns_duration);
             }
 
-            // Tick rate
-            let mut tick_rate = burns.tick_rate.as_secs_f32();
+            let max_tick_ms = burns.duration.as_millis().max(1) as f32;
+            let mut tick_rate_ms = burns.tick_rate.as_millis() as f32;
             if ui
-                .add(egui::Slider::new(&mut tick_rate, 0.0..=60.0).text("Gas Tick Rate"))
+                .add(egui::Slider::new(&mut tick_rate_ms, 0.0..=max_tick_ms).text("Tick Rate (ms)"))
                 .drag_stopped()
             {
-                burns.tick_rate = Duration::from_secs_f32(tick_rate.min(60.0));
+                burns.tick_rate =
+                    Duration::from_millis(tick_rate_ms.clamp(0.0, max_tick_ms) as u64);
             }
-
             ui.add_space(8.0);
 
-            // Chance destroy per tick
             let mut chance_destroy = burns.chance_destroy_per_tick.unwrap_or(0.0);
             if ui
                 .add(
@@ -628,9 +616,10 @@ fn render_fire_settings_gui(
                 }
             }
 
+            render_color_profile_editor(ui, "Fire Colors", burns.color.as_mut().unwrap());
+
             ui.add_space(8.0);
 
-            // Reset button
             if ui.button("🔄 Reset Flammable Gas to Default").clicked() {
                 commands.spawn((
                     default_flammable_gas.0.clone(),
@@ -643,58 +632,66 @@ fn render_fire_settings_gui(
     });
 }
 
-fn render_color_profile_editor(
+pub fn render_color_profile_editor(
     ui: &mut egui::Ui,
     label: &str,
-    color_bp: &mut ColorProfileBlueprint,
+    color_profile: &mut ColorProfile,
 ) {
     ui.horizontal(|ui| {
         ui.label(label);
         if ui.button("➕").clicked() {
-            color_bp
-                .component_mut()
-                .add_color(Color::srgba_u8(255, 255, 255, 255));
+            color_profile.add_color(Color::srgba_u8(255, 255, 255, 255));
         }
     });
 
-    let palette_snapshot = color_bp.component().palette.clone();
+    let palette_snapshot = color_profile.palette.clone();
     let palette_len = palette_snapshot.len();
 
     let mut to_remove: Option<usize> = None;
     let mut to_change: Option<(usize, Color)> = None;
 
-    for (i, color) in palette_snapshot.iter().enumerate() {
-        let srgba = color.to_srgba();
-        let (r, g, b, a) = (
-            (srgba.red * 255.) as u8,
-            (srgba.green * 255.) as u8,
-            (srgba.blue * 255.) as u8,
-            (srgba.alpha * 255.) as u8,
-        );
+    let widgets_per_row = 4;
 
-        let mut color32 = egui::Color32::from_rgba_unmultiplied(r, g, b, a);
+    ui.vertical(|ui| {
+        for chunk in palette_snapshot.chunks(widgets_per_row) {
+            ui.horizontal(|ui| {
+                for color in chunk {
+                    let color_index = palette_snapshot.iter().position(|c| c == color).unwrap();
 
-        ui.horizontal(|ui| {
-            if ui.color_edit_button_srgba(&mut color32).changed() {
-                to_change = Some((
-                    i,
-                    Color::srgba_u8(color32.r(), color32.g(), color32.b(), color32.a()),
-                ));
-            }
-            let can_remove = palette_len > 1;
-            if ui
-                .add_enabled(can_remove, egui::Button::new("❌"))
-                .clicked()
-            {
-                to_remove = Some(i);
-            }
-        });
-    }
+                    let srgba = color.to_srgba();
+                    let (r, g, b, a) = (
+                        (srgba.red * 255.) as u8,
+                        (srgba.green * 255.) as u8,
+                        (srgba.blue * 255.) as u8,
+                        (srgba.alpha * 255.) as u8,
+                    );
+
+                    let mut color32 = egui::Color32::from_rgba_unmultiplied(r, g, b, a);
+
+                    ui.horizontal(|ui| {
+                        if ui.color_edit_button_srgba(&mut color32).changed() {
+                            to_change = Some((
+                                color_index,
+                                Color::srgba_u8(color32.r(), color32.g(), color32.b(), color32.a()),
+                            ));
+                        }
+                        let can_remove = palette_len > 1;
+                        if ui
+                            .add_enabled(can_remove, egui::Button::new("❌"))
+                            .clicked()
+                        {
+                            to_remove = Some(color_index);
+                        }
+                    });
+                }
+            });
+        }
+    });
 
     if let Some((index, new_color)) = to_change {
-        color_bp.component_mut().edit_color(index, new_color);
+        color_profile.edit_color(index, new_color);
     }
     if let Some(index) = to_remove {
-        color_bp.component_mut().remove_color(index);
+        color_profile.remove_color(index);
     }
 }
