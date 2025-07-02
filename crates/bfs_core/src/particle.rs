@@ -46,10 +46,12 @@ pub trait ParticleComponent: Component {
     /// The data held by the blueprint
     type Data: Component;
 
-    /// The immutable component
+    /// The immutable component.
     fn component(&self) -> &Self::Data;
-    /// The mutable component
+    /// The mutable component.
     fn component_mut(&mut self) -> &mut Self::Data;
+    /// Set the inner component.
+    fn set_component(&mut self, new: Self::Data);
 }
 
 #[macro_export]
@@ -62,9 +64,11 @@ macro_rules! impl_particle_blueprint {
             fn component(&self) -> &Self::Data {
                 &self.0
             }
-
             fn component_mut(&mut self) -> &mut Self::Data {
                 &mut self.0
+            }
+            fn set_component(&mut self, new: Self::Data) {
+                self.0 = new;
             }
         }
     };
