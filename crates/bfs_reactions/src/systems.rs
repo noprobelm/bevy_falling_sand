@@ -66,7 +66,6 @@ fn handle_burning(
     mut commands: Commands,
     mut burning_query: Query<(
         Entity,
-        &mut Particle,
         &mut Burns,
         &mut Burning,
         &mut ReactionRng,
@@ -76,8 +75,9 @@ fn handle_burning(
     mut ev_reset_particle_color: EventWriter<ResetParticleColorEvent>,
 ) {
     let mut entities: Vec<Entity> = vec![];
-    burning_query.iter_mut().for_each(
-        |(entity, particle, mut burns, mut burning, mut rng, position)| {
+    burning_query
+        .iter_mut()
+        .for_each(|(entity, mut burns, mut burning, mut rng, position)| {
             if burning.timer.tick(time.delta()).finished() {
                 if burns.chance_destroy_per_tick.is_some() {
                     commands.trigger(RemoveParticleEvent {
@@ -87,7 +87,6 @@ fn handle_burning(
                 } else {
                     commands.entity(entity).remove::<Burning>();
                     entities.push(entity);
-                    particle.into_inner();
                 }
                 return;
             }
@@ -104,7 +103,6 @@ fn handle_burning(
                     }
                 }
             }
-        },
-    );
+        });
     ev_reset_particle_color.write(ResetParticleColorEvent { entities });
 }
