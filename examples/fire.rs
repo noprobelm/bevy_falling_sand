@@ -440,6 +440,7 @@ fn render_fire_settings_gui(
     particle_type_map: Res<ParticleTypeMap>,
     mut burns_query: Query<&mut BurnsBlueprint>,
     mut color_profile_query: Query<&mut ColorProfileBlueprint>,
+    mut ev_reset_particle_children: EventWriter<ResetParticleChildrenEvent>,
     mut commands: Commands,
     default_fire: Res<DefaultFire>,
     default_flammable_gas: Res<DefaultFlammableGas>,
@@ -456,14 +457,31 @@ fn render_fire_settings_gui(
             let mut fire_burns_bp = burns_query.get_mut(fire_entity).unwrap();
             let mut fire_color_bp = color_profile_query.get_mut(fire_entity).unwrap();
             let burns = fire_burns_bp.component_mut();
+            let mut fire_updated = false;
 
             if let Some(fire) = burns.spreads.as_mut() {
-                ui.add(egui::Slider::new(&mut fire.burn_radius, 0.0..=50.0).text("Fire Radius"));
-                ui.add(
-                    egui::Slider::new(&mut fire.chance_to_spread, 0.0..=1.0)
+                let mut slider_value = fire.burn_radius;
+                let response =
+                    ui.add(egui::Slider::new(&mut slider_value, 0.0..=50.0).text("Fire Radius"));
+                if response.drag_stopped() {
+                    fire.burn_radius = slider_value;
+                    fire_updated = true;
+                }
+                let mut slider_value = fire.chance_to_spread;
+                let response = ui.add(
+                    egui::Slider::new(&mut slider_value, 0.0..=1.0)
                         .text("Chance to spread (per frame)"),
                 );
-                ui.checkbox(&mut fire.destroys_on_spread, "Destroy on Spread");
+                if response.drag_stopped() {
+                    fire.chance_to_spread = slider_value;
+                    fire_updated = true;
+                }
+                let mut checkbox_enabled = fire.destroys_on_spread;
+                let response = ui.checkbox(&mut checkbox_enabled, "Destroy on Spread");
+                if response.changed() {
+                    fire.destroys_on_spread = checkbox_enabled;
+                    fire_updated = true;
+                }
             }
 
             ui.add_space(8.0);
@@ -474,6 +492,7 @@ fn render_fire_settings_gui(
                 .drag_stopped()
             {
                 burns.duration = Duration::from_secs_f32(burns_duration);
+                fire_updated = true;
             }
 
             let max_tick_ms = burns.duration.as_millis().max(1) as f32;
@@ -484,6 +503,7 @@ fn render_fire_settings_gui(
             {
                 burns.tick_rate =
                     Duration::from_millis(tick_rate_ms.clamp(0.0, max_tick_ms) as u64);
+                fire_updated = true;
             }
             ui.add_space(8.0);
 
@@ -502,6 +522,7 @@ fn render_fire_settings_gui(
                 } else {
                     burns.chance_destroy_per_tick = None;
                 }
+                fire_updated = true;
             }
 
             ui.add_space(8.0);
@@ -516,6 +537,7 @@ fn render_fire_settings_gui(
                 } else {
                     burns.reaction = None;
                 }
+                fire_updated = true;
             }
 
             if smoke_enabled {
@@ -538,12 +560,18 @@ fn render_fire_settings_gui(
                         produces: Particle::new("Smoke"),
                         chance_to_produce,
                     });
+                    fire_updated = true;
                 }
             }
 
             ui.add_space(8.0);
 
-            render_color_profile_editor(ui, "Fire Colors", fire_color_bp.component_mut());
+            render_color_profile_editor(
+                ui,
+                "Fire Colors",
+                fire_color_bp.component_mut(),
+                &mut fire_updated,
+            );
 
             ui.add_space(8.0);
 
@@ -554,6 +582,12 @@ fn render_fire_settings_gui(
                     default_fire.2.clone(),
                     default_fire.3.clone(),
                 ));
+            }
+
+            if fire_updated {
+                commands.trigger(ResetParticleChildrenEvent {
+                    entity: fire_entity,
+                });
             }
         }
 
@@ -568,16 +602,31 @@ fn render_fire_settings_gui(
 
             let mut flammable_burns_bp = burns_query.get_mut(flammable_gas_entity).unwrap();
             let burns = flammable_burns_bp.component_mut();
+            let mut flammable_gas_updated = false;
 
             if let Some(fire) = burns.spreads.as_mut() {
-                ui.add(
-                    egui::Slider::new(&mut fire.burn_radius, 0.0..=50.0).text("Gas Fire Radius"),
-                );
-                ui.add(
-                    egui::Slider::new(&mut fire.chance_to_spread, 0.0..=1.0)
+                let mut slider_value = fire.burn_radius;
+                let response = ui
+                    .add(egui::Slider::new(&mut slider_value, 0.0..=50.0).text("Gas Fire Radius"));
+                if response.drag_stopped() {
+                    fire.burn_radius = slider_value;
+                    flammable_gas_updated = true;
+                }
+                let mut slider_value = fire.chance_to_spread;
+                let response = ui.add(
+                    egui::Slider::new(&mut slider_value, 0.0..=1.0)
                         .text("Chance to spread (per frame)"),
                 );
-                ui.checkbox(&mut fire.destroys_on_spread, "Destroy on Spread");
+                if response.changed() {
+                    fire.chance_to_spread = slider_value;
+                    flammable_gas_updated = true;
+                }
+                let mut checkbox_enabled = fire.destroys_on_spread;
+                let response = ui.checkbox(&mut checkbox_enabled, "Destroy on Spread");
+                if response.changed() {
+                    fire.destroys_on_spread = checkbox_enabled;
+                    flammable_gas_updated = true;
+                }
             }
 
             ui.add_space(8.0);
@@ -588,6 +637,7 @@ fn render_fire_settings_gui(
                 .drag_stopped()
             {
                 burns.duration = Duration::from_secs_f32(burns_duration);
+                flammable_gas_updated = true;
             }
 
             let max_tick_ms = burns.duration.as_millis().max(1) as f32;
@@ -598,6 +648,7 @@ fn render_fire_settings_gui(
             {
                 burns.tick_rate =
                     Duration::from_millis(tick_rate_ms.clamp(0.0, max_tick_ms) as u64);
+                flammable_gas_updated = true;
             }
             ui.add_space(8.0);
 
@@ -614,9 +665,15 @@ fn render_fire_settings_gui(
                 } else {
                     burns.chance_destroy_per_tick = None;
                 }
+                flammable_gas_updated = true;
             }
 
-            render_color_profile_editor(ui, "Fire Colors", burns.color.as_mut().unwrap());
+            render_color_profile_editor(
+                ui,
+                "Fire Colors",
+                burns.color.as_mut().unwrap(),
+                &mut flammable_gas_updated,
+            );
 
             ui.add_space(8.0);
 
@@ -628,6 +685,12 @@ fn render_fire_settings_gui(
                     default_flammable_gas.3.clone(),
                 ));
             }
+
+            if flammable_gas_updated {
+                commands.trigger(ResetParticleChildrenEvent {
+                    entity: flammable_gas_entity,
+                });
+            }
         }
     });
 }
@@ -636,11 +699,13 @@ pub fn render_color_profile_editor(
     ui: &mut egui::Ui,
     label: &str,
     color_profile: &mut ColorProfile,
+    updated: &mut bool,
 ) {
     ui.horizontal(|ui| {
         ui.label(label);
         if ui.button("➕").clicked() {
             color_profile.add_color(Color::srgba_u8(255, 255, 255, 255));
+            *updated = true;
         }
     });
 
@@ -690,8 +755,10 @@ pub fn render_color_profile_editor(
 
     if let Some((index, new_color)) = to_change {
         color_profile.edit_color(index, new_color);
+        *updated = true;
     }
     if let Some(index) = to_remove {
         color_profile.remove_color(index);
+        *updated = true;
     }
 }

@@ -27,6 +27,7 @@ impl Plugin for ParticleCorePlugin {
             .init_resource::<ParticleTypeMap>()
             .add_event::<SimulationStepEvent>()
             .add_event::<ParticleRegistrationEvent>()
+            .add_event::<ResetParticleChildrenEvent>()
             .add_event::<ResetParticleEvent>()
             .add_event::<RemoveParticleEvent>()
             .add_systems(
@@ -34,6 +35,7 @@ impl Plugin for ParticleCorePlugin {
                 handle_new_particles.before(ParticleSimulationSet),
             )
             .add_systems(Update, handle_new_particle_types)
+            .add_observer(on_reset_particle_children)
             .add_observer(on_reset_particle);
     }
 }
@@ -238,6 +240,13 @@ pub struct RemoveParticleEvent {
 }
 
 #[derive(Event)]
+/// Triggers a [`ParticleType`] to reset all of its children's data.
+pub struct ResetParticleChildrenEvent {
+    /// The particle type entity to reset children for.
+    pub entity: Entity,
+}
+
+#[derive(Event)]
 /// Triggers a particle to reset itself to its parent's blueprint data.
 pub struct ResetParticleEvent {
     /// The entity to reset particle blueprint data for.
@@ -338,4 +347,21 @@ fn on_reset_particle(
         .get_mut(trigger.event().entity)
         .unwrap()
         .into_inner();
+}
+
+#[allow(clippy::needless_pass_by_value)]
+pub fn on_reset_particle_children(
+    trigger: Trigger<ResetParticleChildrenEvent>,
+    particle_type_query: Query<Option<&Children>, With<ParticleType>>,
+    mut ev_reset_particle_event: EventWriter<ResetParticleEvent>,
+) {
+    if let Ok(children) = particle_type_query.get(trigger.event().entity) {
+        if let Some(children) = children {
+            children.iter().for_each(|child| {
+                ev_reset_particle_event.write(ResetParticleEvent { entity: child });
+            });
+        } else {
+            warn!("ResetParticleEvent: No corresponding particle type entity found!");
+        }
+    }
 }
