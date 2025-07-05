@@ -511,7 +511,7 @@ fn render_fire_settings_gui(
             let mut chance_destroy = burns.chance_destroy_per_tick.unwrap_or(0.0);
             if ui
                 .add(
-                    egui::Slider::new(&mut chance_destroy, 0.1..=1.0)
+                    egui::Slider::new(&mut chance_destroy, 0.0..=1.0)
                         .text("Chance Destroy per Tick"),
                 )
                 .drag_stopped()
