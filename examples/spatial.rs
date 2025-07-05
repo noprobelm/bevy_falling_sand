@@ -1,8 +1,5 @@
 use bevy::{
-    input::{
-        common_conditions::{input_just_pressed, input_pressed},
-        mouse::MouseWheel,
-    },
+    input::{common_conditions::input_just_pressed, mouse::MouseWheel},
     prelude::*,
     window::PrimaryWindow,
 };
@@ -16,6 +13,7 @@ fn main() {
             FallingSandPlugin::default().with_spatial_refresh_frequency(Duration::from_millis(40)),
         ))
         .init_resource::<CursorPosition>()
+        .init_resource::<SpatialQueryRadius>()
         .add_systems(Startup, setup)
         .add_systems(Update, (zoom_camera, pan_camera))
         .add_systems(
@@ -24,6 +22,7 @@ fn main() {
                 update_cursor_position,
                 spawn_boundary.run_if(resource_not_exists::<BoundaryReady>),
                 spawn_particles,
+                draw_spatial_radius,
                 mutate_particles.run_if(input_just_pressed(MouseButton::Left)),
                 reset.run_if(input_just_pressed(KeyCode::KeyR)),
             ),
@@ -48,10 +47,27 @@ pub struct CursorPosition {
     pub current: Vec2,
 }
 
+#[derive(Resource, Clone, Debug)]
+pub struct SpatialQueryRadius {
+    radius: f32,
+}
+
+impl Default for SpatialQueryRadius {
+    fn default() -> Self {
+        Self { radius: 10.0 }
+    }
+}
+
 #[derive(Component)]
 struct MainCamera;
 
-fn setup(mut commands: Commands) {
+fn setup(
+    mut commands: Commands,
+    mut primary_window: Query<&mut Window, With<PrimaryWindow>>,
+) -> Result {
+    let mut window = primary_window.single_mut()?;
+    window.cursor_options.visible = false;
+
     commands.spawn((
         Camera2d,
         Projection::Orthographic(OrthographicProjection {
@@ -95,7 +111,7 @@ fn setup(mut commands: Commands) {
         MomentumBlueprint::default(),
     ));
 
-    let instructions_text = "Left Mouse: Mutate water into sand within a radius of 10\n\
+    let instructions_text = "Left Mouse: Mutate water into sand within radius\n\
         R: Reset";
     let style = TextFont::default();
 
@@ -111,6 +127,7 @@ fn setup(mut commands: Commands) {
         .with_children(|parent| {
             parent.spawn((Text::new(instructions_text), style.clone()));
         });
+    Ok(())
 }
 
 fn spawn_boundary(mut commands: Commands, particle_type_map: Res<ParticleTypeMap>) {
@@ -179,20 +196,34 @@ fn spawn_particles(mut commands: Commands, time: Res<Time>) {
 
 fn mutate_particles(
     cursor_position: Res<CursorPosition>,
+    spatial_query_radius: Res<SpatialQueryRadius>,
     mut particle_query: Query<&mut Particle>,
     particle_tree: Res<ParticleTree>,
 ) {
     particle_tree
-        .within_distance(cursor_position.current, 10.0)
+        .within_distance(cursor_position.current, spatial_query_radius.radius)
         .iter()
         .for_each(|(_, entity)| {
             if let Some(entity) = entity {
                 if let Ok(mut particle) = particle_query.get_mut(*entity) {
-                    // Example mutation: Change the particle type to "Sand" when clicked
-                    *particle = Particle::new("Sand");
+                    if particle.name == "Water" {
+                        particle.name = String::from("Sand");
+                    }
                 }
             }
         });
+}
+
+fn draw_spatial_radius(
+    cursor_position: Res<CursorPosition>,
+    spatial_query_radius: Res<SpatialQueryRadius>,
+    mut gizmos: Gizmos,
+) {
+    gizmos.circle_2d(
+        cursor_position.current,
+        spatial_query_radius.radius,
+        Color::WHITE,
+    );
 }
 
 fn update_cursor_position(
