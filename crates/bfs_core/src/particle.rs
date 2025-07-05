@@ -363,8 +363,6 @@ fn on_reset_particle_children(
             children.iter().for_each(|child| {
                 commands.trigger(ResetParticleEvent { entity: child });
             });
-        } else {
-            warn!("ResetParticleEvent: No corresponding particle type entity found!");
         }
     }
 }
