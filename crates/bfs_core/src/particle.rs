@@ -349,16 +349,19 @@ fn on_reset_particle(
         .into_inner();
 }
 
+/// Observer which listens for [`ResetParticleChildrenEvent`] and subsequently triggers a reset for
+/// all children of a particle type entity. This is useful for resetting all particles of a
+/// specified type to their parent's blueprint data, allowing for batch resets of particle.
 #[allow(clippy::needless_pass_by_value)]
-pub fn on_reset_particle_children(
+fn on_reset_particle_children(
     trigger: Trigger<ResetParticleChildrenEvent>,
+    mut commands: Commands,
     particle_type_query: Query<Option<&Children>, With<ParticleType>>,
-    mut ev_reset_particle_event: EventWriter<ResetParticleEvent>,
 ) {
     if let Ok(children) = particle_type_query.get(trigger.event().entity) {
         if let Some(children) = children {
             children.iter().for_each(|child| {
-                ev_reset_particle_event.write(ResetParticleEvent { entity: child });
+                commands.trigger(ResetParticleEvent { entity: child });
             });
         } else {
             warn!("ResetParticleEvent: No corresponding particle type entity found!");

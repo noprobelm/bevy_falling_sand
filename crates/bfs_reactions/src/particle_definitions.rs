@@ -248,4 +248,3 @@ fn handle_particle_registration(
         handle_particle_components(&mut commands, &parent_query, &particle_query, &ev.entities);
     });
 }
-

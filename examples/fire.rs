@@ -440,7 +440,6 @@ fn render_fire_settings_gui(
     particle_type_map: Res<ParticleTypeMap>,
     mut burns_query: Query<&mut BurnsBlueprint>,
     mut color_profile_query: Query<&mut ColorProfileBlueprint>,
-    mut ev_reset_particle_children: EventWriter<ResetParticleChildrenEvent>,
     mut commands: Commands,
     default_fire: Res<DefaultFire>,
     default_flammable_gas: Res<DefaultFlammableGas>,
