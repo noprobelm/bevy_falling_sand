@@ -103,8 +103,28 @@ fn setup(
         DensityBlueprint(Density(100)),
         VelocityBlueprint(Velocity::new(1, 3)),
         ColorProfileBlueprint(ColorProfile::new(vec![
-            Color::Srgba(Srgba::hex("#706966").unwrap()),
-            Color::Srgba(Srgba::hex("#858073").unwrap()),
+            Color::srgba(0.22, 0.11, 0.16, 1.0),
+            Color::srgba(0.24, 0.41, 0.56, 1.0),
+            Color::srgba(0.67, 0.74, 0.55, 1.0),
+            Color::srgba(0.91, 0.89, 0.71, 1.0),
+            Color::srgba(0.95, 0.61, 0.43, 1.0),
+        ])),
+    ));
+
+    commands.spawn((
+        ParticleType::new("Moore Neighborhood Particle (with momentum)"),
+        MovementPriorityBlueprint(MovementPriority::from(vec![vec![
+            IVec2::new(-1, -1),
+            IVec2::new(1, -1),
+        ]])),
+        DensityBlueprint(Density(100)),
+        VelocityBlueprint(Velocity::new(1, 3)),
+        ColorProfileBlueprint(ColorProfile::new(vec![
+            Color::srgba(0.22, 0.11, 0.16, 1.0),
+            Color::srgba(0.24, 0.41, 0.56, 1.0),
+            Color::srgba(0.67, 0.74, 0.55, 1.0),
+            Color::srgba(0.91, 0.89, 0.71, 1.0),
+            Color::srgba(0.95, 0.61, 0.43, 1.0),
         ])),
         MomentumBlueprint::default(),
     ));
@@ -188,7 +208,7 @@ fn spawn_particles(
                 let spawn_y = center.y + dy as f32;
 
                 commands.spawn((
-                    Particle::new("Moore Neighborhood Particle (no momentum)"),
+                    Particle::new("Moore Neighborhood Particle (with momentum)"),
                     Transform::from_xyz(spawn_x, spawn_y, 0.0),
                 ));
             }
