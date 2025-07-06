@@ -17,6 +17,7 @@ fn main() {
         ))
         .init_resource::<CursorPosition>()
         .init_resource::<BrushRadius>()
+        .init_state::<ParticleMovementSelectionState>()
         .add_systems(Startup, setup)
         .add_systems(Update, (zoom_camera, pan_camera))
         .add_systems(
@@ -26,6 +27,7 @@ fn main() {
                 spawn_boundary.run_if(resource_not_exists::<BoundaryReady>),
                 draw_brush,
                 spawn_particles.run_if(input_pressed(MouseButton::Left)),
+                cycle_selected_movement_state.run_if(input_just_pressed(KeyCode::F1)),
                 reset.run_if(input_just_pressed(KeyCode::KeyR)),
             ),
         )
@@ -45,18 +47,57 @@ fn resource_not_exists<T: Resource>(world: &World) -> bool {
 struct BoundaryReady;
 
 #[derive(Default, Resource, Clone, Debug)]
-pub struct CursorPosition {
+struct CursorPosition {
     pub current: Vec2,
 }
 
 #[derive(Resource, Clone, Debug)]
-pub struct BrushRadius {
+struct BrushRadius {
     radius: f32,
 }
 
 impl Default for BrushRadius {
     fn default() -> Self {
         Self { radius: 5.0 }
+    }
+}
+
+#[derive(Component, Clone, Debug)]
+struct ParticleMovementSelectionText;
+
+#[derive(States, Reflect, Default, Debug, Clone, Eq, PartialEq, Hash)]
+pub enum ParticleMovementSelectionState {
+    #[default]
+    MooreNoMomentum,
+    MooreMomentum,
+    NeumannNoMomentum,
+    NeumannMomentum,
+    DownwardDiagonalNoMomentum,
+    DownwardDiagonalMomentum,
+}
+
+impl std::fmt::Display for ParticleMovementSelectionState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ParticleMovementSelectionState::MooreNoMomentum => {
+                f.write_str("Moore Neighborhood Particle (no momentum)")
+            }
+            ParticleMovementSelectionState::MooreMomentum => {
+                f.write_str("Moore Neighborhood Particle (with momentum)")
+            }
+            ParticleMovementSelectionState::NeumannNoMomentum => {
+                f.write_str("Neumann Neighborhood Particle (no momentum)")
+            }
+            ParticleMovementSelectionState::NeumannMomentum => {
+                f.write_str("Neumann Neighborhood Particle (with momentum)")
+            }
+            ParticleMovementSelectionState::DownwardDiagonalNoMomentum => {
+                f.write_str("Downward diagonal (no momentum)")
+            }
+            ParticleMovementSelectionState::DownwardDiagonalMomentum => {
+                f.write_str("Downward diagonal (with momentum)")
+            }
+        }
     }
 }
 
@@ -80,6 +121,16 @@ fn setup(
         MainCamera,
     ));
 
+    let color_profile_bp = ColorProfileBlueprint(ColorProfile::new(vec![
+        Color::srgba(0.22, 0.11, 0.16, 1.0),
+        Color::srgba(0.24, 0.41, 0.56, 1.0),
+        Color::srgba(0.67, 0.74, 0.55, 1.0),
+        Color::srgba(0.91, 0.89, 0.71, 1.0),
+        Color::srgba(0.95, 0.61, 0.43, 1.0),
+    ]));
+    let density_bp = DensityBlueprint(Density(100));
+    let velocity_bp = VelocityBlueprint(Velocity::new(1, 1));
+
     commands.spawn((WallBundle::new(
         ParticleType::new("Dirt Wall"),
         ColorProfile::new(vec![
@@ -100,36 +151,75 @@ fn setup(
             IVec2::new(0, 1),
             IVec2::new(1, 1),
         ]])),
-        DensityBlueprint(Density(100)),
-        VelocityBlueprint(Velocity::new(1, 3)),
-        ColorProfileBlueprint(ColorProfile::new(vec![
-            Color::srgba(0.22, 0.11, 0.16, 1.0),
-            Color::srgba(0.24, 0.41, 0.56, 1.0),
-            Color::srgba(0.67, 0.74, 0.55, 1.0),
-            Color::srgba(0.91, 0.89, 0.71, 1.0),
-            Color::srgba(0.95, 0.61, 0.43, 1.0),
-        ])),
+        density_bp,
+        velocity_bp,
+        color_profile_bp.clone(),
     ));
-
     commands.spawn((
         ParticleType::new("Moore Neighborhood Particle (with momentum)"),
         MovementPriorityBlueprint(MovementPriority::from(vec![vec![
             IVec2::new(-1, -1),
+            IVec2::new(0, -1),
+            IVec2::new(1, -1),
+            IVec2::new(-1, 0),
+            IVec2::new(1, 0),
+            IVec2::new(-1, 1),
+            IVec2::new(0, 1),
+            IVec2::new(1, 1),
+        ]])),
+        density_bp,
+        velocity_bp,
+        color_profile_bp.clone(),
+        MomentumBlueprint::default(),
+    ));
+    commands.spawn((
+        ParticleType::new("Neumann Neighborhood Particle (no momentum)"),
+        MovementPriorityBlueprint(MovementPriority::from(vec![vec![
+            IVec2::new(0, -1),
+            IVec2::new(-1, 0),
+            IVec2::new(1, 0),
+            IVec2::new(0, 1),
+        ]])),
+        density_bp,
+        velocity_bp,
+        color_profile_bp.clone(),
+    ));
+    commands.spawn((
+        ParticleType::new("Neumann Neighborhood Particle (with momentum)"),
+        MovementPriorityBlueprint(MovementPriority::from(vec![vec![
+            IVec2::new(0, -1),
+            IVec2::new(-1, 0),
+            IVec2::new(1, 0),
+            IVec2::new(0, 1),
+        ]])),
+        density_bp,
+        velocity_bp,
+        color_profile_bp.clone(),
+        MomentumBlueprint::default(),
+    ));
+    commands.spawn((
+        ParticleType::new("Downward diagonal (no momentum)"),
+        MovementPriorityBlueprint(MovementPriority::from(vec![vec![
+            IVec2::new(-1, -1),
             IVec2::new(1, -1),
         ]])),
-        DensityBlueprint(Density(100)),
-        VelocityBlueprint(Velocity::new(1, 3)),
-        ColorProfileBlueprint(ColorProfile::new(vec![
-            Color::srgba(0.22, 0.11, 0.16, 1.0),
-            Color::srgba(0.24, 0.41, 0.56, 1.0),
-            Color::srgba(0.67, 0.74, 0.55, 1.0),
-            Color::srgba(0.91, 0.89, 0.71, 1.0),
-            Color::srgba(0.95, 0.61, 0.43, 1.0),
-        ])),
+        density_bp,
+        velocity_bp,
+        color_profile_bp.clone(),
+    ));
+    commands.spawn((
+        ParticleType::new("Downward diagonal (with momentum)"),
+        MovementPriorityBlueprint(MovementPriority::from(vec![vec![
+            IVec2::new(-1, -1),
+            IVec2::new(1, -1),
+        ]])),
+        density_bp,
+        velocity_bp,
+        color_profile_bp.clone(),
         MomentumBlueprint::default(),
     ));
 
-    let instructions_text = "Left Mouse: Mutate water into sand within radius\n\
+    let instructions_text = "F1: Cycle particle movement rules\n\
         R: Reset";
     let style = TextFont::default();
 
@@ -144,6 +234,10 @@ fn setup(
         })
         .with_children(|parent| {
             parent.spawn((Text::new(instructions_text), style.clone()));
+            parent.spawn((
+                ParticleMovementSelectionText,
+                Text::new("Selected Movement Type: Moore Neighborhood Particle (no momentum)"),
+            ));
         });
     Ok(())
 }
@@ -198,7 +292,9 @@ fn spawn_particles(
     mut commands: Commands,
     cursor_position: Res<CursorPosition>,
     brush_radius: Res<BrushRadius>,
+    particle_movement_selection_state: Res<State<ParticleMovementSelectionState>>,
 ) {
+    let name = particle_movement_selection_state.get().to_string();
     let center = cursor_position.current;
     let radius = brush_radius.radius as i32;
     for dx in -radius..=radius {
@@ -208,7 +304,7 @@ fn spawn_particles(
                 let spawn_y = center.y + dy as f32;
 
                 commands.spawn((
-                    Particle::new("Moore Neighborhood Particle (with momentum)"),
+                    Particle::new(name.as_str()),
                     Transform::from_xyz(spawn_x, spawn_y, 0.0),
                 ));
             }
@@ -294,4 +390,37 @@ fn pan_camera(
     Ok(())
 }
 
-fn reset(mut particle_query: Query<&mut Particle>) {}
+fn cycle_selected_movement_state(
+    particle_movement_selection_state: Res<State<ParticleMovementSelectionState>>,
+    mut next_particle_movement_selection_state: ResMut<NextState<ParticleMovementSelectionState>>,
+    mut particle_movement_selection_text: Query<&mut Text, With<ParticleMovementSelectionText>>,
+) {
+    let new_state = match particle_movement_selection_state.get() {
+        ParticleMovementSelectionState::MooreNoMomentum => {
+            ParticleMovementSelectionState::MooreMomentum
+        }
+        ParticleMovementSelectionState::MooreMomentum => {
+            ParticleMovementSelectionState::NeumannNoMomentum
+        }
+        ParticleMovementSelectionState::NeumannNoMomentum => {
+            ParticleMovementSelectionState::NeumannMomentum
+        }
+        ParticleMovementSelectionState::NeumannMomentum => {
+            ParticleMovementSelectionState::DownwardDiagonalNoMomentum
+        }
+        ParticleMovementSelectionState::DownwardDiagonalNoMomentum => {
+            ParticleMovementSelectionState::DownwardDiagonalMomentum
+        }
+        ParticleMovementSelectionState::DownwardDiagonalMomentum => {
+            ParticleMovementSelectionState::MooreNoMomentum
+        }
+    };
+    let new_text = format!("Selected Movement Type: {new_state}");
+    for mut particle_movement_selection_text in particle_movement_selection_text.iter_mut() {
+        (**particle_movement_selection_text).clone_from(&new_text);
+    }
+    next_particle_movement_selection_state.set(new_state);
+}
+fn reset(mut commands: Commands) {
+    commands.trigger(ClearDynamicParticlesEvent);
+}
