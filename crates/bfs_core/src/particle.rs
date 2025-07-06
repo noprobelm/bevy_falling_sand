@@ -34,9 +34,8 @@ impl Plugin for ParticleCorePlugin {
                 PreUpdate,
                 handle_new_particles.before(ParticleSimulationSet),
             )
-            .add_systems(Update, handle_new_particle_types)
-            .add_observer(on_reset_particle_children)
-            .add_observer(on_reset_particle);
+            .add_systems(Update, (handle_new_particle_types, ev_reset_particle))
+            .add_observer(on_reset_particle_children);
     }
 }
 
@@ -303,14 +302,17 @@ fn handle_new_particles(
 /// `ParticleRegistrationEvent`, which subcrates of *Bevy Falling Sand* rely on to insert or remove
 /// Particle components based on their parent's blueprint data.
 #[allow(clippy::needless_pass_by_value)]
-fn on_reset_particle(
-    trigger: Trigger<ResetParticleEvent>,
+fn ev_reset_particle(
+    mut ev_reset_particle: EventReader<ResetParticleEvent>,
     mut particle_query: Query<&mut Particle>,
 ) {
-    particle_query
-        .get_mut(trigger.event().entity)
-        .unwrap()
-        .into_inner();
+    ev_reset_particle.read().for_each(|ev| {
+        if let Ok(particle) = particle_query.get_mut(ev.entity) {
+            particle.into_inner();
+        } else {
+            warn!("No Particle component found for entity {:?}", ev.entity);
+        }
+    })
 }
 
 /// Observer which listens for [`ResetParticleChildrenEvent`] and subsequently triggers a reset for

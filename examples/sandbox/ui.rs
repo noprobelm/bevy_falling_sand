@@ -1652,6 +1652,7 @@ fn particle_editor_save(
         Res<ParticleEditorLiquid>,
         Res<ParticleEditorGas>,
     ),
+    mut ev_reset_particle: EventWriter<ResetParticleEvent>,
 ) {
     ev_particle_editor_save.read().for_each(|_| {
         let entity = particle_type_map
@@ -1798,9 +1799,9 @@ fn particle_editor_save(
         }
         if let Ok(children) = particle_type_query.get(entity) {
             if let Some(children) = children {
-                children
-                    .iter()
-                    .for_each(|child| commands.trigger(ResetParticleEvent { entity: child }));
+                children.iter().for_each(|child| {
+                    ev_reset_particle.write(ResetParticleEvent { entity: child });
+                });
             }
         }
     })
