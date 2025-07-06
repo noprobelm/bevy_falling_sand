@@ -407,6 +407,7 @@ fn pan_camera(
 }
 
 fn cycle_selected_movement_state(
+    mut particle_query: Query<&mut Particle, Without<Wall>>,
     particle_movement_selection_state: Res<State<ParticleMovementSelectionState>>,
     mut next_particle_movement_selection_state: ResMut<NextState<ParticleMovementSelectionState>>,
     mut particle_movement_selection_text: Query<&mut Text, With<ParticleMovementSelectionText>>,
@@ -435,11 +436,15 @@ fn cycle_selected_movement_state(
     for mut particle_movement_selection_text in particle_movement_selection_text.iter_mut() {
         (**particle_movement_selection_text).clone_from(&new_text);
     }
-    next_particle_movement_selection_state.set(new_state);
+    next_particle_movement_selection_state.set(new_state.clone());
+    particle_query
+        .iter_mut()
+        .for_each(|mut particle| particle.name = format!("{new_state}"));
 }
 
 fn bump_velocity(
-    mut particle_type_query: Query<&mut VelocityBlueprint>,
+    mut commands: Commands,
+    mut particle_type_query: Query<(Entity, &mut VelocityBlueprint)>,
     mut velocity_selection: ResMut<MaxVelocitySelection>,
     mut velocity_selection_text: Query<&mut Text, With<MaxVelocitySelectionText>>,
 ) {
@@ -448,9 +453,12 @@ fn bump_velocity(
     } else {
         velocity_selection.0 = 1;
     }
-    particle_type_query.iter_mut().for_each(|mut velocity_bp| {
-        velocity_bp.component_mut().max = velocity_selection.0;
-    });
+    particle_type_query
+        .iter_mut()
+        .for_each(|(entity, mut velocity_bp)| {
+            velocity_bp.component_mut().max = velocity_selection.0;
+            commands.trigger(ResetParticleChildrenEvent { entity });
+        });
     for mut velocity_selection_text in velocity_selection_text.iter_mut() {
         (**velocity_selection_text)
             .clone_from(&format!("Maximum velocity: {}", velocity_selection.0));
