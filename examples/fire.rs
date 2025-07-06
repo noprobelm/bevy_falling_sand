@@ -437,6 +437,7 @@ fn reset(mut commands: Commands) {
 
 fn render_fire_settings_gui(
     mut contexts: EguiContexts,
+    mut ev_reset_particle_children: EventWriter<ResetParticleChildrenEvent>,
     particle_type_map: Res<ParticleTypeMap>,
     mut burns_query: Query<&mut Burns, With<ParticleType>>,
     mut color_profile_query: Query<&mut ColorProfile, With<ParticleType>>,
@@ -578,7 +579,7 @@ fn render_fire_settings_gui(
             }
 
             if fire_updated {
-                commands.trigger(ResetParticleChildrenEvent {
+                ev_reset_particle_children.write(ResetParticleChildrenEvent {
                     entity: fire_entity,
                 });
             }
@@ -679,7 +680,7 @@ fn render_fire_settings_gui(
             }
 
             if flammable_gas_updated {
-                commands.trigger(ResetParticleChildrenEvent {
+                ev_reset_particle_children.write(ResetParticleChildrenEvent {
                     entity: flammable_gas_entity,
                 });
             }

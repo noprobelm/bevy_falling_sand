@@ -34,8 +34,14 @@ impl Plugin for ParticleCorePlugin {
                 PreUpdate,
                 handle_new_particles.before(ParticleSimulationSet),
             )
-            .add_systems(Update, (handle_new_particle_types, ev_reset_particle))
-            .add_observer(on_reset_particle_children);
+            .add_systems(
+                Update,
+                (
+                    handle_new_particle_types,
+                    ev_reset_particle,
+                    ev_reset_particle_children,
+                ),
+            );
     }
 }
 
@@ -319,16 +325,18 @@ fn ev_reset_particle(
 /// all children of a particle type entity. This is useful for resetting all particles of a
 /// specified type to their parent's blueprint data, allowing for batch resets of particle.
 #[allow(clippy::needless_pass_by_value)]
-fn on_reset_particle_children(
-    trigger: Trigger<ResetParticleChildrenEvent>,
-    mut commands: Commands,
+fn ev_reset_particle_children(
+    mut ev_reset_particle_children: EventReader<ResetParticleChildrenEvent>,
+    mut ev_reset_particle: EventWriter<ResetParticleEvent>,
     particle_type_query: Query<Option<&Children>, With<ParticleType>>,
 ) {
-    if let Ok(children) = particle_type_query.get(trigger.event().entity) {
-        if let Some(children) = children {
-            children.iter().for_each(|child| {
-                commands.trigger(ResetParticleEvent { entity: child });
-            });
+    ev_reset_particle_children.read().for_each(|ev| {
+        if let Ok(children) = particle_type_query.get(ev.entity) {
+            if let Some(children) = children {
+                children.iter().for_each(|entity| {
+                    ev_reset_particle.write(ResetParticleEvent { entity });
+                });
+            }
         }
-    }
+    });
 }

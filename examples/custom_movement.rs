@@ -437,7 +437,7 @@ fn cycle_selected_movement_state(
 }
 
 fn bump_velocity(
-    mut commands: Commands,
+    mut ev_reset_particle_chidlren: EventWriter<ResetParticleChildrenEvent>,
     mut particle_type_query: Query<(Entity, &mut Velocity), With<ParticleType>>,
     mut velocity_selection: ResMut<MaxVelocitySelection>,
     mut velocity_selection_text: Query<&mut Text, With<MaxVelocitySelectionText>>,
@@ -451,7 +451,7 @@ fn bump_velocity(
         .iter_mut()
         .for_each(|(entity, mut velocity_bp)| {
             velocity_bp.max = velocity_selection.0;
-            commands.trigger(ResetParticleChildrenEvent { entity });
+            ev_reset_particle_chidlren.write(ResetParticleChildrenEvent { entity });
         });
     for mut velocity_selection_text in velocity_selection_text.iter_mut() {
         (**velocity_selection_text)
