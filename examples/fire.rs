@@ -73,7 +73,7 @@ pub enum AppState {
 }
 
 #[derive(Clone, Resource)]
-struct DefaultFire(GasBundle, ChangesColorBlueprint, BurnsBlueprint, Name);
+struct DefaultFire(GasBundle, ChangesColor, Burns, Name);
 
 impl Default for DefaultFire {
     fn default() -> Self {
@@ -90,8 +90,8 @@ impl Default for DefaultFire {
                     Color::Srgba(Srgba::hex("#C74A05FF").unwrap()),
                 ]),
             ),
-            ChangesColorBlueprint(ChangesColor::new(0.1)),
-            BurnsBlueprint(Burns::new(
+            ChangesColor::new(0.1),
+            Burns::new(
                 Duration::from_secs(1),
                 Duration::from_millis(100),
                 Some(0.5),
@@ -103,14 +103,14 @@ impl Default for DefaultFire {
                     destroys_on_spread: false,
                 }),
                 true,
-            )),
+            ),
             Name::new("FIRE"),
         )
     }
 }
 
 #[derive(Resource)]
-struct DefaultFlammableGas(GasBundle, ChangesColorBlueprint, BurnsBlueprint, Name);
+struct DefaultFlammableGas(GasBundle, ChangesColor, Burns, Name);
 
 impl Default for DefaultFlammableGas {
     fn default() -> Self {
@@ -125,8 +125,8 @@ impl Default for DefaultFlammableGas {
                     Color::Srgba(Srgba::hex("#4A731C80").unwrap()),
                 ]),
             ),
-            ChangesColorBlueprint(ChangesColor::new(0.1)),
-            BurnsBlueprint(Burns::new(
+            ChangesColor::new(0.1),
+            Burns::new(
                 Duration::from_secs(1),
                 Duration::from_millis(50),
                 Some(0.5),
@@ -144,7 +144,7 @@ impl Default for DefaultFlammableGas {
                     destroys_on_spread: true,
                 }),
                 false,
-            )),
+            ),
             Name::new("Flammable Gas"),
         )
     }
@@ -201,7 +201,7 @@ fn setup(
                 Color::Srgba(Srgba::hex("#858073").unwrap()),
             ]),
         ),
-        ChangesColorBlueprint(ChangesColor::new(0.1)),
+        ChangesColor::new(0.1),
         Name::new("Smoke"),
     ));
 
@@ -438,8 +438,8 @@ fn reset(mut commands: Commands) {
 fn render_fire_settings_gui(
     mut contexts: EguiContexts,
     particle_type_map: Res<ParticleTypeMap>,
-    mut burns_query: Query<&mut BurnsBlueprint>,
-    mut color_profile_query: Query<&mut ColorProfileBlueprint>,
+    mut burns_query: Query<&mut Burns, With<ParticleType>>,
+    mut color_profile_query: Query<&mut ColorProfile, With<ParticleType>>,
     mut commands: Commands,
     default_fire: Res<DefaultFire>,
     default_flammable_gas: Res<DefaultFlammableGas>,
@@ -453,9 +453,8 @@ fn render_fire_settings_gui(
             ui.separator();
             ui.add_space(4.0);
 
-            let mut fire_burns_bp = burns_query.get_mut(fire_entity).unwrap();
-            let mut fire_color_bp = color_profile_query.get_mut(fire_entity).unwrap();
-            let burns = fire_burns_bp.component_mut();
+            let mut burns = burns_query.get_mut(fire_entity).unwrap();
+            let mut fire_color = color_profile_query.get_mut(fire_entity).unwrap();
             let mut fire_updated = false;
 
             if let Some(fire) = burns.spreads.as_mut() {
@@ -565,12 +564,7 @@ fn render_fire_settings_gui(
 
             ui.add_space(8.0);
 
-            render_color_profile_editor(
-                ui,
-                "Fire Colors",
-                fire_color_bp.component_mut(),
-                &mut fire_updated,
-            );
+            render_color_profile_editor(ui, "Fire Colors", &mut fire_color, &mut fire_updated);
 
             ui.add_space(8.0);
 
@@ -599,11 +593,10 @@ fn render_fire_settings_gui(
             ui.separator();
             ui.add_space(4.0);
 
-            let mut flammable_burns_bp = burns_query.get_mut(flammable_gas_entity).unwrap();
-            let burns = flammable_burns_bp.component_mut();
+            let mut flammable_gas_burns = burns_query.get_mut(flammable_gas_entity).unwrap();
             let mut flammable_gas_updated = false;
 
-            if let Some(fire) = burns.spreads.as_mut() {
+            if let Some(fire) = flammable_gas_burns.spreads.as_mut() {
                 let mut slider_value = fire.burn_radius;
                 let response = ui
                     .add(egui::Slider::new(&mut slider_value, 0.0..=50.0).text("Gas Fire Radius"));
@@ -630,28 +623,28 @@ fn render_fire_settings_gui(
 
             ui.add_space(8.0);
 
-            let mut burns_duration = burns.duration.as_secs_f32();
+            let mut burns_duration = flammable_gas_burns.duration.as_secs_f32();
             if ui
                 .add(egui::Slider::new(&mut burns_duration, 0.1..=60.0).text("Burn Duration (s)"))
                 .drag_stopped()
             {
-                burns.duration = Duration::from_secs_f32(burns_duration);
+                flammable_gas_burns.duration = Duration::from_secs_f32(burns_duration);
                 flammable_gas_updated = true;
             }
 
-            let max_tick_ms = burns.duration.as_millis().max(1) as f32;
-            let mut tick_rate_ms = burns.tick_rate.as_millis() as f32;
+            let max_tick_ms = flammable_gas_burns.duration.as_millis().max(1) as f32;
+            let mut tick_rate_ms = flammable_gas_burns.tick_rate.as_millis() as f32;
             if ui
                 .add(egui::Slider::new(&mut tick_rate_ms, 0.0..=max_tick_ms).text("Tick Rate (ms)"))
                 .drag_stopped()
             {
-                burns.tick_rate =
+                flammable_gas_burns.tick_rate =
                     Duration::from_millis(tick_rate_ms.clamp(0.0, max_tick_ms) as u64);
                 flammable_gas_updated = true;
             }
             ui.add_space(8.0);
 
-            let mut chance_destroy = burns.chance_destroy_per_tick.unwrap_or(0.0);
+            let mut chance_destroy = flammable_gas_burns.chance_destroy_per_tick.unwrap_or(0.0);
             if ui
                 .add(
                     egui::Slider::new(&mut chance_destroy, 0.0..=1.0)
@@ -660,9 +653,9 @@ fn render_fire_settings_gui(
                 .drag_stopped()
             {
                 if chance_destroy > 0.0 {
-                    burns.chance_destroy_per_tick = Some(chance_destroy);
+                    flammable_gas_burns.chance_destroy_per_tick = Some(chance_destroy);
                 } else {
-                    burns.chance_destroy_per_tick = None;
+                    flammable_gas_burns.chance_destroy_per_tick = None;
                 }
                 flammable_gas_updated = true;
             }
@@ -670,7 +663,7 @@ fn render_fire_settings_gui(
             render_color_profile_editor(
                 ui,
                 "Fire Colors",
-                burns.color.as_mut().unwrap(),
+                flammable_gas_burns.color.as_mut().unwrap(),
                 &mut flammable_gas_updated,
             );
 

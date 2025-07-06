@@ -82,7 +82,7 @@ fn setup(mut commands: Commands) {
             ColorProfile::new(vec![Color::Srgba(Srgba::hex("#0B80AB80").unwrap())]),
         ),
         // If momentum effects are desired, insert the marker component.
-        MomentumBlueprint::default(),
+        Momentum::default(),
     ));
 
     commands.spawn((
@@ -95,7 +95,7 @@ fn setup(mut commands: Commands) {
                 Color::Srgba(Srgba::hex("#F2E06B").unwrap()),
             ]),
         ),
-        MomentumBlueprint::default(),
+        Momentum::default(),
     ));
 
     let instructions_text = "F1: Toggle particle spawning\n\

@@ -2,8 +2,8 @@ use bevy::prelude::*;
 use bevy_turborand::RngComponent;
 use bfs_color::ColorProfile;
 use bfs_core::{
-    impl_particle_blueprint, impl_particle_rng, Particle, ParticleComponent, ParticlePosition,
-    ParticleRegistrationEvent, ParticleRng, ParticleSimulationSet, ParticleType,
+    impl_particle_rng, Particle, ParticlePosition, ParticleRegistrationEvent, ParticleRng,
+    ParticleSimulationSet, ParticleType,
 };
 use std::time::Duration;
 
@@ -12,11 +12,8 @@ pub(super) struct ParticleDefinitionsPlugin;
 impl Plugin for ParticleDefinitionsPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<ReactionRng>()
-            .register_type::<FireBlueprint>()
             .register_type::<Fire>()
-            .register_type::<BurningBlueprint>()
             .register_type::<Burning>()
-            .register_type::<BurnsBlueprint>()
             .register_type::<Burns>()
             .add_systems(
                 Update,
@@ -26,9 +23,6 @@ impl Plugin for ParticleDefinitionsPlugin {
 }
 
 impl_particle_rng!(ReactionRng, RngComponent);
-impl_particle_blueprint!(FireBlueprint, Fire);
-impl_particle_blueprint!(BurnsBlueprint, Burns);
-impl_particle_blueprint!(BurningBlueprint, Burning);
 
 /// Provides rng for particle reaction systems.
 #[derive(Clone, PartialEq, Debug, Default, Component, Reflect)]
@@ -46,11 +40,6 @@ pub struct Fire {
     /// The entity will be destroyed upon spreading to another particle.
     pub destroys_on_spread: bool,
 }
-
-/// Blueprint for a [`Fire`].
-#[derive(Copy, Clone, PartialEq, PartialOrd, Debug, Default, Component, Reflect)]
-#[reflect(Component)]
-pub struct FireBlueprint(pub Fire);
 
 /// Component which indicates an entity has the capacity to burn.
 #[derive(Clone, PartialEq, Debug, Default, Component, Reflect)]
@@ -102,11 +91,6 @@ impl Burns {
     }
 }
 
-/// Blueprint for a [`Burns`]
-#[derive(Clone, PartialEq, Debug, Default, Component, Reflect)]
-#[reflect(Component)]
-pub struct BurnsBlueprint(pub Burns);
-
 /// Component which indicates an entity is actively burning.
 #[derive(Clone, Eq, PartialEq, Debug, Default, Component, Reflect)]
 #[reflect(Component)]
@@ -149,11 +133,6 @@ impl Burning {
     }
 }
 
-/// Blueprint for a [`Burning`]
-#[derive(Clone, Eq, PartialEq, Debug, Default, Component, Reflect)]
-#[reflect(Component)]
-pub struct BurningBlueprint(pub Burning);
-
 /// Component indicating a particle entity is undergoing a reaction.
 #[derive(Clone, PartialEq, Debug, Component, Reflect)]
 #[reflect(Component)]
@@ -194,15 +173,11 @@ impl Reacting {
     }
 }
 
-type ParticleParentQuery<'a> = (
-    Option<&'a FireBlueprint>,
-    Option<&'a BurnsBlueprint>,
-    Option<&'a BurningBlueprint>,
-);
+type ReactionsQuery<'a> = (Option<&'a Fire>, Option<&'a Burns>, Option<&'a Burning>);
 
 fn handle_particle_components(
     commands: &mut Commands,
-    parent_query: &Query<ParticleParentQuery, With<ParticleType>>,
+    parent_query: &Query<ReactionsQuery, With<ParticleType>>,
     particle_query: &Query<&ChildOf, With<Particle>>,
     entities: &[Entity],
 ) {
@@ -211,22 +186,20 @@ fn handle_particle_components(
             if let Ok((fire, burns, burning)) = parent_query.get(child_of.parent()) {
                 commands.entity(*entity).insert(ReactionRng::default());
                 if let Some(fire) = fire {
-                    commands.entity(*entity).insert(fire.0);
+                    commands.entity(*entity).insert(*fire);
                 } else {
                     commands.entity(*entity).remove::<Fire>();
                 }
                 if let Some(burning) = burning {
-                    commands.entity(*entity).insert(burning.0.clone());
+                    commands.entity(*entity).insert(burning.clone());
                 } else {
                     commands.entity(*entity).remove::<Burning>();
                 }
                 if let Some(burns) = burns {
-                    commands.entity(*entity).insert(burns.0.clone());
-                    if burns.component().ignites_on_spawn {
-                        commands
-                            .entity(*entity)
-                            .insert(burns.component().to_burning());
-                        if let Some(fire) = burns.component().spreads {
+                    commands.entity(*entity).insert(burns.clone());
+                    if burns.ignites_on_spawn {
+                        commands.entity(*entity).insert(burns.to_burning());
+                        if let Some(fire) = burns.spreads {
                             commands.entity(*entity).insert(fire);
                         }
                     }
@@ -240,7 +213,7 @@ fn handle_particle_components(
 
 fn handle_particle_registration(
     mut commands: Commands,
-    parent_query: Query<ParticleParentQuery, With<ParticleType>>,
+    parent_query: Query<ReactionsQuery, With<ParticleType>>,
     particle_query: Query<&ChildOf, With<Particle>>,
     mut ev_particle_registered: EventReader<ParticleRegistrationEvent>,
 ) {

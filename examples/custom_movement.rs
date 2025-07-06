@@ -135,15 +135,15 @@ fn setup(
         MainCamera,
     ));
 
-    let color_profile_bp = ColorProfileBlueprint(ColorProfile::new(vec![
+    let color_profile = ColorProfile::new(vec![
         Color::srgba(0.22, 0.11, 0.16, 1.0),
         Color::srgba(0.24, 0.41, 0.56, 1.0),
         Color::srgba(0.67, 0.74, 0.55, 1.0),
         Color::srgba(0.91, 0.89, 0.71, 1.0),
         Color::srgba(0.95, 0.61, 0.43, 1.0),
-    ]));
-    let density_bp = DensityBlueprint(Density(100));
-    let velocity_bp = VelocityBlueprint(Velocity::new(1, 1));
+    ]);
+    let density = Density(100);
+    let velocity = Velocity::new(1, 1);
 
     commands.spawn((WallBundle::new(
         ParticleType::new("Dirt Wall"),
@@ -155,7 +155,7 @@ fn setup(
 
     commands.spawn((
         ParticleType::new("Moore Neighborhood Particle (no momentum)"),
-        MovementPriorityBlueprint(MovementPriority::from(vec![vec![
+        MovementPriority::from(vec![vec![
             IVec2::new(-1, -1),
             IVec2::new(0, -1),
             IVec2::new(1, -1),
@@ -164,14 +164,14 @@ fn setup(
             IVec2::new(-1, 1),
             IVec2::new(0, 1),
             IVec2::new(1, 1),
-        ]])),
-        density_bp,
-        velocity_bp,
-        color_profile_bp.clone(),
+        ]]),
+        density,
+        velocity,
+        color_profile.clone(),
     ));
     commands.spawn((
         ParticleType::new("Moore Neighborhood Particle (with momentum)"),
-        MovementPriorityBlueprint(MovementPriority::from(vec![vec![
+        MovementPriority::from(vec![vec![
             IVec2::new(-1, -1),
             IVec2::new(0, -1),
             IVec2::new(1, -1),
@@ -180,57 +180,51 @@ fn setup(
             IVec2::new(-1, 1),
             IVec2::new(0, 1),
             IVec2::new(1, 1),
-        ]])),
-        density_bp,
-        velocity_bp,
-        color_profile_bp.clone(),
-        MomentumBlueprint::default(),
+        ]]),
+        density,
+        velocity,
+        color_profile.clone(),
+        Momentum::default(),
     ));
     commands.spawn((
         ParticleType::new("Neumann Neighborhood Particle (no momentum)"),
-        MovementPriorityBlueprint(MovementPriority::from(vec![vec![
+        MovementPriority::from(vec![vec![
             IVec2::new(0, -1),
             IVec2::new(-1, 0),
             IVec2::new(1, 0),
             IVec2::new(0, 1),
-        ]])),
-        density_bp,
-        velocity_bp,
-        color_profile_bp.clone(),
+        ]]),
+        density,
+        velocity,
+        color_profile.clone(),
     ));
     commands.spawn((
         ParticleType::new("Neumann Neighborhood Particle (with momentum)"),
-        MovementPriorityBlueprint(MovementPriority::from(vec![vec![
+        MovementPriority::from(vec![vec![
             IVec2::new(0, -1),
             IVec2::new(-1, 0),
             IVec2::new(1, 0),
             IVec2::new(0, 1),
-        ]])),
-        density_bp,
-        velocity_bp,
-        color_profile_bp.clone(),
-        MomentumBlueprint::default(),
+        ]]),
+        density,
+        velocity,
+        color_profile.clone(),
+        Momentum::default(),
     ));
     commands.spawn((
         ParticleType::new("Downward diagonal (no momentum)"),
-        MovementPriorityBlueprint(MovementPriority::from(vec![vec![
-            IVec2::new(-1, -1),
-            IVec2::new(1, -1),
-        ]])),
-        density_bp,
-        velocity_bp,
-        color_profile_bp.clone(),
+        MovementPriority::from(vec![vec![IVec2::new(-1, -1), IVec2::new(1, -1)]]),
+        density,
+        velocity,
+        color_profile.clone(),
     ));
     commands.spawn((
         ParticleType::new("Downward diagonal (with momentum)"),
-        MovementPriorityBlueprint(MovementPriority::from(vec![vec![
-            IVec2::new(-1, -1),
-            IVec2::new(1, -1),
-        ]])),
-        density_bp,
-        velocity_bp,
-        color_profile_bp.clone(),
-        MomentumBlueprint::default(),
+        MovementPriority::from(vec![vec![IVec2::new(-1, -1), IVec2::new(1, -1)]]),
+        density,
+        velocity,
+        color_profile.clone(),
+        Momentum::default(),
     ));
 
     let instructions_text = "F1: Cycle particle movement rules\n\
@@ -444,7 +438,7 @@ fn cycle_selected_movement_state(
 
 fn bump_velocity(
     mut commands: Commands,
-    mut particle_type_query: Query<(Entity, &mut VelocityBlueprint)>,
+    mut particle_type_query: Query<(Entity, &mut Velocity), With<ParticleType>>,
     mut velocity_selection: ResMut<MaxVelocitySelection>,
     mut velocity_selection_text: Query<&mut Text, With<MaxVelocitySelectionText>>,
 ) {
@@ -456,7 +450,7 @@ fn bump_velocity(
     particle_type_query
         .iter_mut()
         .for_each(|(entity, mut velocity_bp)| {
-            velocity_bp.component_mut().max = velocity_selection.0;
+            velocity_bp.max = velocity_selection.0;
             commands.trigger(ResetParticleChildrenEvent { entity });
         });
     for mut velocity_selection_text in velocity_selection_text.iter_mut() {

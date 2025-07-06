@@ -1,10 +1,8 @@
 use bevy::prelude::*;
-use bfs_color::{ChangesColor, ColorProfile, ColorProfileBlueprint};
+use bfs_color::{ChangesColor, ColorProfile};
 use bfs_core::ParticleType;
 use bfs_movement::{
-    Density, DensityBlueprint, Gas, GasBlueprint, Liquid, LiquidBlueprint, Momentum, MovableSolid,
-    MovableSolidBlueprint, MovementPriority, Solid, SolidBlueprint, Velocity, VelocityBlueprint,
-    Wall, WallBlueprint,
+    Density, Gas, Liquid, Momentum, MovableSolid, MovementPriority, Solid, Velocity, Wall,
 };
 use bfs_reactions::{Burning, Burns};
 use serde::{Deserialize, Serialize};
@@ -34,19 +32,19 @@ pub struct MovableSolidBundle {
     /// The particle type designator.
     pub particle_type: ParticleType,
     /// The Density of the particle.
-    pub density: DensityBlueprint,
+    pub density: Density,
     /// The maximum Velocity of the particle.
-    pub velocity: VelocityBlueprint,
+    pub velocity: Velocity,
     /// The color profile of the particle.
-    pub colors: ColorProfileBlueprint,
+    pub colors: ColorProfile,
     /// The movable solid component.
-    pub movable_solid: MovableSolidBlueprint,
+    pub movable_solid: MovableSolid,
 }
 
 impl MovableSolidBundle {
     /// Create a new instance of movable solid bundle.
     #[must_use]
-    pub fn new(
+    pub const fn new(
         particle_type: ParticleType,
         density: Density,
         velocity: Velocity,
@@ -54,10 +52,10 @@ impl MovableSolidBundle {
     ) -> Self {
         Self {
             particle_type,
-            density: DensityBlueprint(density),
-            velocity: VelocityBlueprint(velocity),
-            colors: ColorProfileBlueprint(colors),
-            movable_solid: MovableSolidBlueprint(MovableSolid::new()),
+            density,
+            velocity,
+            colors,
+            movable_solid: MovableSolid::new(),
         }
     }
 }
@@ -68,19 +66,19 @@ pub struct SolidBundle {
     /// The particle type designator.
     pub particle_type: ParticleType,
     /// The Density of the particle.
-    pub density: DensityBlueprint,
+    pub density: Density,
     /// The maximum Velocity of the particle.
-    pub velocity: VelocityBlueprint,
+    pub velocity: Velocity,
     /// The color profile of the particle.
-    pub colors: ColorProfileBlueprint,
+    pub colors: ColorProfile,
     /// The solid component.
-    pub solid: SolidBlueprint,
+    pub solid: Solid,
 }
 
 impl SolidBundle {
     /// Create a new instance of solid bundle.
     #[must_use]
-    pub fn new(
+    pub const fn new(
         particle_type: ParticleType,
         density: Density,
         velocity: Velocity,
@@ -88,10 +86,10 @@ impl SolidBundle {
     ) -> Self {
         Self {
             particle_type,
-            density: DensityBlueprint(density),
-            velocity: VelocityBlueprint(velocity),
-            colors: ColorProfileBlueprint(colors),
-            solid: SolidBlueprint(Solid::new()),
+            density,
+            velocity,
+            colors,
+            solid: Solid::new(),
         }
     }
 }
@@ -102,19 +100,19 @@ pub struct LiquidBundle {
     /// The particle type designator.
     pub particle_type: ParticleType,
     /// The Density of the particle.
-    pub density: DensityBlueprint,
+    pub density: Density,
     /// The maximum Velocity of the particle.
-    pub velocity: VelocityBlueprint,
+    pub velocity: Velocity,
     /// The color profile of the particle.
-    pub colors: ColorProfileBlueprint,
+    pub colors: ColorProfile,
     /// The liquid component.
-    pub liquid: LiquidBlueprint,
+    pub liquid: Liquid,
 }
 
 impl LiquidBundle {
     /// Create a new instance of liquid bundle.
     #[must_use]
-    pub fn new(
+    pub const fn new(
         particle_type: ParticleType,
         density: Density,
         velocity: Velocity,
@@ -123,10 +121,10 @@ impl LiquidBundle {
     ) -> Self {
         Self {
             particle_type,
-            density: DensityBlueprint(density),
-            velocity: VelocityBlueprint(velocity),
-            colors: ColorProfileBlueprint(colors),
-            liquid: LiquidBlueprint(Liquid::new(fluidity)),
+            density,
+            velocity,
+            colors,
+            liquid: Liquid::new(fluidity),
         }
     }
 }
@@ -137,13 +135,13 @@ pub struct GasBundle {
     /// The particle type designator.
     pub particle_type: ParticleType,
     /// The Density of the particle.
-    pub density: DensityBlueprint,
+    pub density: Density,
     /// The maximum Velocity of the particle.
-    pub velocity: VelocityBlueprint,
+    pub velocity: Velocity,
     /// The color profile of the particle.
-    pub colors: ColorProfileBlueprint,
+    pub colors: ColorProfile,
     /// The gas component.
-    pub gas: GasBlueprint,
+    pub gas: Gas,
 }
 
 impl GasBundle {
@@ -158,10 +156,10 @@ impl GasBundle {
     ) -> Self {
         Self {
             particle_type,
-            density: DensityBlueprint(density),
-            velocity: VelocityBlueprint(velocity),
-            colors: ColorProfileBlueprint(colors),
-            gas: GasBlueprint(Gas::new(fluidity)),
+            density,
+            velocity,
+            colors,
+            gas: Gas::new(fluidity),
         }
     }
 }
@@ -172,9 +170,9 @@ pub struct WallBundle {
     /// The particle type designator.
     pub particle_type: ParticleType,
     /// The color profile of the particle.
-    pub colors: ColorProfileBlueprint,
+    pub colors: ColorProfile,
     /// The wall component.
-    pub wall: WallBlueprint,
+    pub wall: Wall,
 }
 
 impl WallBundle {
@@ -183,8 +181,8 @@ impl WallBundle {
     pub const fn new(particle_type: ParticleType, colors: ColorProfile) -> Self {
         Self {
             particle_type,
-            colors: ColorProfileBlueprint(colors),
-            wall: WallBlueprint(Wall),
+            colors,
+            wall: Wall,
         }
     }
 }

@@ -464,11 +464,11 @@ pub fn update_particle_list(
     new_particle_query: Query<
         (
             &ParticleType,
-            Option<&WallBlueprint>,
-            Option<&MovableSolidBlueprint>,
-            Option<&SolidBlueprint>,
-            Option<&LiquidBlueprint>,
-            Option<&GasBlueprint>,
+            Option<&Wall>,
+            Option<&MovableSolid>,
+            Option<&Solid>,
+            Option<&Liquid>,
+            Option<&Gas>,
         ),
         Added<ParticleType>,
     >,
@@ -711,16 +711,16 @@ pub fn update_particle_editor_fields(
     particle_type_map: Res<ParticleTypeMap>,
     particle_query: Query<
         (
-            Option<&DensityBlueprint>,
-            Option<&VelocityBlueprint>,
-            Option<&MomentumBlueprint>,
-            Option<&ColorProfileBlueprint>,
-            Option<&BurnsBlueprint>,
-            Option<&WallBlueprint>,
-            Option<&LiquidBlueprint>,
-            Option<&SolidBlueprint>,
-            Option<&MovableSolidBlueprint>,
-            Option<&GasBlueprint>,
+            Option<&Density>,
+            Option<&Velocity>,
+            Option<&Momentum>,
+            Option<&ColorProfile>,
+            Option<&Burns>,
+            Option<&Wall>,
+            Option<&Liquid>,
+            Option<&Solid>,
+            Option<&MovableSolid>,
+            Option<&Gas>,
         ),
         With<ParticleType>,
     >,
@@ -763,17 +763,14 @@ pub fn update_particle_editor_fields(
                 }
                 if let Some(burns) = burns {
                     particle_editor_burns_field.enable = true;
-                    particle_editor_burns_field.chance_destroy_enable = burns
-                        .0
-                        .chance_destroy_per_tick
-                        .map(|_| true)
-                        .unwrap_or(false);
+                    particle_editor_burns_field.chance_destroy_enable =
+                        burns.chance_destroy_per_tick.map(|_| true).unwrap_or(false);
                     particle_editor_burns_field.reaction_enable =
-                        burns.0.reaction.as_ref().map(|_| true).unwrap_or(false);
+                        burns.reaction.as_ref().map(|_| true).unwrap_or(false);
                     particle_editor_burns_field.color_enable =
-                        burns.0.color.as_ref().map(|_| true).unwrap_or(false);
+                        burns.color.as_ref().map(|_| true).unwrap_or(false);
                     particle_editor_burns_field.spreads_enable =
-                        burns.0.spreads.as_ref().map(|_| true).unwrap_or(false);
+                        burns.spreads.as_ref().map(|_| true).unwrap_or(false);
                     particle_editor_burns_field.blueprint = burns.clone();
                 } else {
                     (
@@ -1101,13 +1098,7 @@ fn render_density_field(
 ) {
     ui.horizontal(|ui| {
         ui.label("Density: ");
-        ui.add(
-            egui::Slider::new(
-                &mut particle_density_field.blueprint.component_mut().0,
-                1..=1000,
-            )
-            .step_by(1.),
-        );
+        ui.add(egui::Slider::new(&mut particle_density_field.blueprint.0, 1..=1000).step_by(1.));
     });
 }
 
@@ -1118,11 +1109,7 @@ fn render_max_velocity_field(
     ui.horizontal(|ui| {
         ui.label("Max Velocity: ");
         ui.add(
-            egui::Slider::new(
-                &mut particle_max_velocity_field.blueprint.component_mut().max,
-                1..=5,
-            )
-            .step_by(1.),
+            egui::Slider::new(&mut particle_max_velocity_field.blueprint.max, 1..=5).step_by(1.),
         );
     });
 }
@@ -1147,20 +1134,13 @@ fn render_colors_field(
         if ui.button("➕").clicked() {
             particle_colors_field
                 .blueprint
-                .0
                 .palette
                 .push(Color::srgba_u8(255, 255, 255, 255))
         };
     });
     let mut to_remove: Option<usize> = None;
     let mut to_change: Option<(usize, Color)> = None;
-    for (i, color) in particle_colors_field
-        .blueprint
-        .component()
-        .palette
-        .iter()
-        .enumerate()
-    {
+    for (i, color) in particle_colors_field.blueprint.palette.iter().enumerate() {
         let srgba = color.to_srgba();
         let (red, green, blue, alpha) = (
             srgba.red * 255.,
@@ -1187,14 +1167,10 @@ fn render_colors_field(
         });
     }
     if let Some(to_remove) = to_remove {
-        particle_colors_field
-            .blueprint
-            .component_mut()
-            .palette
-            .remove(to_remove);
+        particle_colors_field.blueprint.palette.remove(to_remove);
     }
     if let Some((to_change, color)) = to_change {
-        particle_colors_field.blueprint.component_mut().palette[to_change] = color;
+        particle_colors_field.blueprint.palette[to_change] = color;
     }
 }
 
@@ -1210,7 +1186,7 @@ fn render_flows_color_field(
         ui.horizontal(|ui| {
             ui.label("Rate: ");
             ui.add(egui::Slider::new(
-                &mut particle_flows_color_field.blueprint.component_mut().chance,
+                &mut particle_flows_color_field.blueprint.chance,
                 0.0..=1.0,
             ));
         });
@@ -1226,7 +1202,6 @@ fn render_movement_priority_field(
         if ui.button("➕").clicked() {
             particle_movement_priority_field
                 .blueprint
-                .0
                 .push_outer(NeighborGroup::empty());
         };
     });
@@ -1240,7 +1215,6 @@ fn render_movement_priority_field(
 
     for (i, neighbor_group) in particle_movement_priority_field
         .blueprint
-        .0
         .iter()
         .enumerate()
     {
@@ -1252,8 +1226,7 @@ fn render_movement_priority_field(
             if ui.button("^").clicked() && i > 0 {
                 outer_to_swap = Some((i, i - 1));
             }
-            if ui.button("v").clicked()
-                && i < particle_movement_priority_field.blueprint.component().len() - 1
+            if ui.button("v").clicked() && i < particle_movement_priority_field.blueprint.len() - 1
             {
                 outer_to_swap = Some((i, i + 1));
             }
@@ -1298,51 +1271,31 @@ fn render_movement_priority_field(
         }
     }
     if let Some((i, j)) = inner_to_remove {
-        if let Some(group) = particle_movement_priority_field
-            .blueprint
-            .component_mut()
-            .get_mut(i)
-        {
+        if let Some(group) = particle_movement_priority_field.blueprint.get_mut(i) {
             group.neighbor_group.remove(j);
         }
     }
     if let Some((i, j1, j2)) = inner_to_swap {
-        if let Some(group) = particle_movement_priority_field
-            .blueprint
-            .component_mut()
-            .get_mut(i)
-        {
+        if let Some(group) = particle_movement_priority_field.blueprint.get_mut(i) {
             group.swap(j1, j2).unwrap_or_else(|err| error!("{}", err));
         }
     }
     if let Some((i, j)) = outer_to_swap {
         particle_movement_priority_field
             .blueprint
-            .0
             .swap_outer(i, j)
             .unwrap_or_else(|err| error!("{}", err));
     }
     if let Some(i) = outer_to_add {
-        if let Some(group) = particle_movement_priority_field
-            .blueprint
-            .component_mut()
-            .get_mut(i)
-        {
+        if let Some(group) = particle_movement_priority_field.blueprint.get_mut(i) {
             group.push(IVec2::ZERO);
         }
     }
     if let Some(i) = outer_to_remove {
-        particle_movement_priority_field
-            .blueprint
-            .component_mut()
-            .remove(i);
+        particle_movement_priority_field.blueprint.remove(i);
     }
     if let Some(((i, j), new_ivec)) = to_change {
-        if let Some(group) = particle_movement_priority_field
-            .blueprint
-            .component_mut()
-            .get_mut(i)
-        {
+        if let Some(group) = particle_movement_priority_field.blueprint.get_mut(i) {
             if let Some(neighbor) = group.neighbor_group.get_mut(j) {
                 *neighbor = new_ivec;
             }
@@ -1368,20 +1321,16 @@ fn render_burns_field(
             );
             if edit_duration.lost_focus() {
                 if let Ok(new_duration) = particle_burns_field.duration_str.parse::<u64>() {
-                    particle_burns_field.blueprint.component_mut().duration =
-                        Duration::from_millis(new_duration);
+                    particle_burns_field.blueprint.duration = Duration::from_millis(new_duration);
                     particle_burns_field.duration_str = particle_burns_field
                         .blueprint
-                        .0
                         .duration
                         .as_millis()
                         .to_string();
                 } else {
-                    particle_burns_field.blueprint.component_mut().duration =
-                        Duration::from_millis(0);
+                    particle_burns_field.blueprint.duration = Duration::from_millis(0);
                     particle_burns_field.duration_str = particle_burns_field
                         .blueprint
-                        .0
                         .duration
                         .as_millis()
                         .to_string();
@@ -1397,20 +1346,16 @@ fn render_burns_field(
             );
             if edit_duration.lost_focus() {
                 if let Ok(new_duration) = particle_burns_field.tick_rate_str.parse::<u64>() {
-                    particle_burns_field.blueprint.component_mut().tick_rate =
-                        Duration::from_millis(new_duration);
+                    particle_burns_field.blueprint.tick_rate = Duration::from_millis(new_duration);
                     particle_burns_field.tick_rate_str = particle_burns_field
                         .blueprint
-                        .0
                         .duration
                         .as_millis()
                         .to_string();
                 } else {
-                    particle_burns_field.blueprint.component_mut().tick_rate =
-                        Duration::from_millis(0);
+                    particle_burns_field.blueprint.tick_rate = Duration::from_millis(0);
                     particle_burns_field.tick_rate_str = particle_burns_field
                         .blueprint
-                        .0
                         .duration
                         .as_millis()
                         .to_string();
@@ -1425,9 +1370,9 @@ fn render_burns_field(
             .clicked()
         {
             if particle_burns_field.color_enable {
-                particle_burns_field.blueprint.component_mut().color = Some(ColorProfile::default())
+                particle_burns_field.blueprint.color = Some(ColorProfile::default())
             } else {
-                particle_burns_field.blueprint.component_mut().color = None;
+                particle_burns_field.blueprint.color = None;
             }
         }
 
@@ -1437,7 +1382,6 @@ fn render_burns_field(
                 if ui.button("➕").clicked() {
                     particle_burns_field
                         .blueprint
-                        .0
                         .color
                         .as_mut()
                         .unwrap()
@@ -1449,7 +1393,6 @@ fn render_burns_field(
             let mut to_change: Option<(usize, Color)> = None;
             for (i, color) in particle_burns_field
                 .blueprint
-                .0
                 .color
                 .clone()
                 .unwrap()
@@ -1489,7 +1432,6 @@ fn render_burns_field(
             if let Some(to_remove) = to_remove {
                 particle_burns_field
                     .blueprint
-                    .0
                     .color
                     .as_mut()
                     .unwrap()
@@ -1499,7 +1441,6 @@ fn render_burns_field(
             if let Some((to_change, color)) = to_change {
                 particle_burns_field
                     .blueprint
-                    .0
                     .color
                     .as_mut()
                     .unwrap()
@@ -1514,15 +1455,9 @@ fn render_burns_field(
             .clicked()
         {
             if particle_burns_field.chance_destroy_enable {
-                particle_burns_field
-                    .blueprint
-                    .component_mut()
-                    .chance_destroy_per_tick = Some(0.);
+                particle_burns_field.blueprint.chance_destroy_per_tick = Some(0.);
             } else {
-                particle_burns_field
-                    .blueprint
-                    .component_mut()
-                    .chance_destroy_per_tick = None;
+                particle_burns_field.blueprint.chance_destroy_per_tick = None;
             }
         };
         if particle_burns_field.chance_destroy_enable {
@@ -1531,7 +1466,6 @@ fn render_burns_field(
                 ui.add(egui::Slider::new(
                     &mut particle_burns_field
                         .blueprint
-                        .0
                         .chance_destroy_per_tick
                         .unwrap(),
                     0.0..=1.0,
@@ -1546,10 +1480,10 @@ fn render_burns_field(
             .clicked()
         {
             if particle_burns_field.reaction_enable {
-                particle_burns_field.blueprint.component_mut().reaction =
+                particle_burns_field.blueprint.reaction =
                     Some(Reacting::new(Particle::new("Water"), 0.1));
             } else {
-                particle_burns_field.blueprint.component_mut().reaction = None;
+                particle_burns_field.blueprint.reaction = None;
             }
         }
         if particle_burns_field.reaction_enable {
@@ -1559,7 +1493,6 @@ fn render_burns_field(
                     .selected_text(
                         particle_burns_field
                             .blueprint
-                            .0
                             .reaction
                             .clone()
                             .unwrap()
@@ -1573,7 +1506,6 @@ fn render_burns_field(
                                 .selectable_value(
                                     &mut particle_burns_field
                                         .blueprint
-                                        .0
                                         .reaction
                                         .as_mut()
                                         .unwrap()
@@ -1592,7 +1524,6 @@ fn render_burns_field(
                 ui.add(egui::Slider::new(
                     &mut particle_burns_field
                         .blueprint
-                        .0
                         .reaction
                         .as_mut()
                         .unwrap()
@@ -1609,13 +1540,13 @@ fn render_burns_field(
             .clicked()
         {
             if particle_burns_field.spreads_enable {
-                particle_burns_field.blueprint.component_mut().spreads = Some(Fire {
+                particle_burns_field.blueprint.spreads = Some(Fire {
                     burn_radius: 2.,
                     chance_to_spread: 0.01,
                     destroys_on_spread: false,
                 });
             } else {
-                particle_burns_field.blueprint.component_mut().spreads = None;
+                particle_burns_field.blueprint.spreads = None;
             }
         }
         if particle_burns_field.spreads_enable {
@@ -1624,7 +1555,6 @@ fn render_burns_field(
                 ui.add(egui::Slider::new(
                     &mut particle_burns_field
                         .blueprint
-                        .0
                         .spreads
                         .as_mut()
                         .unwrap()
@@ -1637,7 +1567,6 @@ fn render_burns_field(
                 ui.add(egui::Slider::new(
                     &mut particle_burns_field
                         .blueprint
-                        .0
                         .spreads
                         .as_mut()
                         .unwrap()
@@ -1648,7 +1577,6 @@ fn render_burns_field(
             ui.add(egui::Checkbox::new(
                 &mut particle_burns_field
                     .blueprint
-                    .0
                     .spreads
                     .as_mut()
                     .unwrap()
@@ -1674,20 +1602,14 @@ pub fn render_fluidity_field(
         match current_particle_category_field.get() {
             ParticleEditorCategoryState::Liquid => {
                 ui.add(
-                    egui::Slider::new(
-                        &mut particle_liquid_field.blueprint.component_mut().fluidity,
-                        1..=5,
-                    )
-                    .step_by(1.),
+                    egui::Slider::new(&mut particle_liquid_field.blueprint.fluidity, 1..=5)
+                        .step_by(1.),
                 );
             }
             ParticleEditorCategoryState::Gas => {
                 ui.add(
-                    egui::Slider::new(
-                        &mut particle_gas_field.blueprint.component_mut().fluidity,
-                        1..=5,
-                    )
-                    .step_by(1.),
+                    egui::Slider::new(&mut particle_gas_field.blueprint.fluidity, 1..=5)
+                        .step_by(1.),
                 );
             }
             _ => {}
@@ -1752,12 +1674,9 @@ fn particle_editor_save(
                         .entity(entity)
                         .insert(particle_editor_burns_field.blueprint.clone());
                     if particle_editor_burns_field.spawns_on_fire {
-                        commands.entity(entity).insert(
-                            particle_editor_burns_field
-                                .blueprint
-                                .component()
-                                .to_burning(),
-                        );
+                        commands
+                            .entity(entity)
+                            .insert(particle_editor_burns_field.blueprint.to_burning());
                     }
                 }
             }
@@ -1773,12 +1692,9 @@ fn particle_editor_save(
                         .entity(entity)
                         .insert(particle_editor_burns_field.blueprint.clone());
                     if particle_editor_burns_field.spawns_on_fire {
-                        commands.entity(entity).insert(
-                            particle_editor_burns_field
-                                .blueprint
-                                .component()
-                                .to_burning(),
-                        );
+                        commands
+                            .entity(entity)
+                            .insert(particle_editor_burns_field.blueprint.to_burning());
                     }
                 }
             }
@@ -1799,12 +1715,9 @@ fn particle_editor_save(
                         .entity(entity)
                         .insert(particle_editor_burns_field.blueprint.clone());
                     if particle_editor_burns_field.spawns_on_fire {
-                        commands.entity(entity).insert(
-                            particle_editor_burns_field
-                                .blueprint
-                                .component()
-                                .to_burning(),
-                        );
+                        commands
+                            .entity(entity)
+                            .insert(particle_editor_burns_field.blueprint.to_burning());
                     }
                 }
             }
@@ -1830,12 +1743,9 @@ fn particle_editor_save(
                         .entity(entity)
                         .insert(particle_editor_burns_field.blueprint.clone());
                     if particle_editor_burns_field.spawns_on_fire {
-                        commands.entity(entity).insert(
-                            particle_editor_burns_field
-                                .blueprint
-                                .component()
-                                .to_burning(),
-                        );
+                        commands
+                            .entity(entity)
+                            .insert(particle_editor_burns_field.blueprint.to_burning());
                     }
                 }
             }
@@ -1856,12 +1766,9 @@ fn particle_editor_save(
                         .entity(entity)
                         .insert(particle_editor_burns_field.blueprint.clone());
                     if particle_editor_burns_field.spawns_on_fire {
-                        commands.entity(entity).insert(
-                            particle_editor_burns_field
-                                .blueprint
-                                .component()
-                                .to_burning(),
-                        );
+                        commands
+                            .entity(entity)
+                            .insert(particle_editor_burns_field.blueprint.to_burning());
                     }
                 }
             }
@@ -1882,12 +1789,9 @@ fn particle_editor_save(
                         .entity(entity)
                         .insert(particle_editor_burns_field.blueprint.clone());
                     if particle_editor_burns_field.spawns_on_fire {
-                        commands.entity(entity).insert(
-                            particle_editor_burns_field
-                                .blueprint
-                                .component()
-                                .to_burning(),
-                        );
+                        commands
+                            .entity(entity)
+                            .insert(particle_editor_burns_field.blueprint.to_burning());
                     }
                 }
             }
@@ -1989,29 +1893,29 @@ impl Default for ParticleEditorSelectedType {
 
 #[derive(Default, Resource, Clone)]
 pub struct ParticleEditorDensity {
-    blueprint: DensityBlueprint,
+    blueprint: Density,
 }
 
 #[derive(Default, Resource, Clone)]
 pub struct ParticleEditorMaxVelocity {
-    blueprint: VelocityBlueprint,
+    blueprint: Velocity,
 }
 
 #[derive(Default, Resource, Clone)]
 pub struct ParticleEditorMomentum {
     enable: bool,
-    blueprint: MomentumBlueprint,
+    blueprint: Momentum,
 }
 
 #[derive(Resource, Clone, Debug)]
 pub struct ParticleEditorColors {
-    blueprint: ColorProfileBlueprint,
+    blueprint: ColorProfile,
 }
 
 impl Default for ParticleEditorColors {
     fn default() -> Self {
         ParticleEditorColors {
-            blueprint: ColorProfileBlueprint(ColorProfile::default()),
+            blueprint: ColorProfile::default(),
         }
     }
 }
@@ -2019,14 +1923,14 @@ impl Default for ParticleEditorColors {
 #[derive(Resource, Clone, Debug)]
 pub struct ParticleEditorFlowsColor {
     enable: bool,
-    blueprint: ChangesColorBlueprint,
+    blueprint: ChangesColor,
 }
 
 impl Default for ParticleEditorFlowsColor {
     fn default() -> Self {
         ParticleEditorFlowsColor {
             enable: true,
-            blueprint: ChangesColorBlueprint(ChangesColor::new(0.1)),
+            blueprint: ChangesColor::new(0.1),
         }
     }
 }
@@ -2057,13 +1961,13 @@ impl ParticleEditorCategoryState {
 
 #[derive(Resource, Clone, Debug)]
 pub struct ParticleEditorMovementPriority {
-    blueprint: MovementPriorityBlueprint,
+    blueprint: MovementPriority,
 }
 
 impl Default for ParticleEditorMovementPriority {
     fn default() -> Self {
         ParticleEditorMovementPriority {
-            blueprint: MovementPriorityBlueprint(MovementPriority::empty()),
+            blueprint: MovementPriority::empty(),
         }
     }
 }
@@ -2078,7 +1982,7 @@ pub struct ParticleEditorBurns {
     color_enable: bool,
     spreads_enable: bool,
     spawns_on_fire: bool,
-    blueprint: BurnsBlueprint,
+    blueprint: Burns,
 }
 
 impl Default for ParticleEditorBurns {
@@ -2094,32 +1998,32 @@ impl Default for ParticleEditorBurns {
             color_enable: false,
             spreads_enable: false,
             spawns_on_fire: false,
-            blueprint: BurnsBlueprint::default(),
+            blueprint: Burns::default(),
         }
     }
 }
 
 #[derive(Resource, Clone, Default, Debug)]
 pub struct ParticleEditorWall {
-    blueprint: WallBlueprint,
+    blueprint: Wall,
 }
 
 #[derive(Resource, Clone, Default, Debug)]
 pub struct ParticleEditorSolid {
-    blueprint: SolidBlueprint,
+    blueprint: Solid,
 }
 
 #[derive(Resource, Clone, Default, Debug)]
 pub struct ParticleEditorMovableSolid {
-    blueprint: MovableSolidBlueprint,
+    blueprint: MovableSolid,
 }
 
 #[derive(Resource, Clone, Default, Debug)]
 pub struct ParticleEditorLiquid {
-    blueprint: LiquidBlueprint,
+    blueprint: Liquid,
 }
 
 #[derive(Resource, Clone, Default, Debug)]
 pub struct ParticleEditorGas {
-    blueprint: GasBlueprint,
+    blueprint: Gas,
 }

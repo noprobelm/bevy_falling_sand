@@ -1,18 +1,15 @@
 use bevy::prelude::*;
 use bevy_turborand::RngComponent;
 use bfs_core::{
-    impl_particle_blueprint, impl_particle_rng, Particle, ParticleComponent,
-    ParticleRegistrationEvent, ParticleRng, ParticleSimulationSet, ParticleType,
+    impl_particle_rng, Particle, ParticleRegistrationEvent, ParticleRng, ParticleSimulationSet,
+    ParticleType,
 };
 use serde::{Deserialize, Serialize};
 use smallvec::SmallVec;
 use std::iter;
 use std::slice::Iter;
 
-use crate::{
-    Gas, GasBlueprint, Liquid, LiquidBlueprint, MovableSolid, MovableSolidBlueprint, Solid,
-    SolidBlueprint, Wall, WallBlueprint,
-};
+use crate::{Gas, Liquid, Material, MovableSolid, Solid, Wall};
 
 pub(super) struct ParticleDefinitionsPlugin;
 
@@ -20,13 +17,9 @@ impl Plugin for ParticleDefinitionsPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<Moved>()
             .register_type::<MovementRng>()
-            .register_type::<DensityBlueprint>()
             .register_type::<Density>()
-            .register_type::<VelocityBlueprint>()
             .register_type::<Velocity>()
-            .register_type::<MomentumBlueprint>()
             .register_type::<Momentum>()
-            .register_type::<MovementPriorityBlueprint>()
             .register_type::<MovementPriority>()
             .add_systems(
                 Update,
@@ -36,10 +29,6 @@ impl Plugin for ParticleDefinitionsPlugin {
 }
 
 impl_particle_rng!(MovementRng, RngComponent);
-impl_particle_blueprint!(DensityBlueprint, Density);
-impl_particle_blueprint!(VelocityBlueprint, Velocity);
-impl_particle_blueprint!(MomentumBlueprint, Momentum);
-impl_particle_blueprint!(MovementPriorityBlueprint, MovementPriority);
 
 /// Provides rng for particle movement.
 #[derive(Clone, PartialEq, Debug, Default, Component, Reflect)]
@@ -81,24 +70,6 @@ pub struct Moved(pub bool);
 )]
 #[reflect(Component, Debug)]
 pub struct Density(pub u32);
-
-/// Blueprint for a [`Density`]
-#[derive(
-    Copy,
-    Clone,
-    Hash,
-    Debug,
-    Default,
-    Eq,
-    PartialEq,
-    PartialOrd,
-    Component,
-    Reflect,
-    Serialize,
-    Deserialize,
-)]
-#[reflect(Component, Debug)]
-pub struct DensityBlueprint(pub Density);
 
 ///  Stores the velocity of a particle
 #[derive(
@@ -146,25 +117,6 @@ impl Velocity {
     }
 }
 
-/// Blueprint for a [`Velocity`].
-#[derive(
-    Copy,
-    Clone,
-    Eq,
-    PartialEq,
-    Ord,
-    PartialOrd,
-    Hash,
-    Debug,
-    Default,
-    Component,
-    Reflect,
-    Serialize,
-    Deserialize,
-)]
-#[reflect(Component)]
-pub struct VelocityBlueprint(pub Velocity);
-
 /// Stores the momentum for a particle.
 #[derive(
     Copy, Clone, Eq, PartialEq, Hash, Debug, Default, Component, Reflect, Serialize, Deserialize,
@@ -175,17 +127,6 @@ pub struct Momentum(pub IVec2);
 impl Momentum {
     /// Get a [`Momentum`] with zero.
     pub const ZERO: Self = Self(IVec2::splat(0));
-}
-
-/// Blueprint for a [`Momentum`]
-#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, Component, Reflect, Serialize, Deserialize)]
-#[reflect(Component)]
-pub struct MomentumBlueprint(pub Momentum);
-
-impl Default for MomentumBlueprint {
-    fn default() -> Self {
-        Self(Momentum::ZERO)
-    }
 }
 
 /// A `NeighborGroup` defines an ordered, hierarchial group of relative neighbors usedto evalute
@@ -436,27 +377,22 @@ impl MovementPriority {
     }
 }
 
-#[derive(Clone, Eq, PartialEq, Hash, Debug, Default, Component, Reflect)]
-#[reflect(Component)]
-/// Blueprint for a [`MovementPriority`]
-pub struct MovementPriorityBlueprint(pub MovementPriority);
-
-type BlueprintQuery<'a> = (
-    Option<&'a mut DensityBlueprint>,
-    Option<&'a mut VelocityBlueprint>,
-    Option<&'a mut MovementPriorityBlueprint>,
-    Option<&'a mut MomentumBlueprint>,
-    Option<&'a mut WallBlueprint>,
-    Option<&'a mut LiquidBlueprint>,
-    Option<&'a mut GasBlueprint>,
-    Option<&'a mut MovableSolidBlueprint>,
-    Option<&'a mut SolidBlueprint>,
+type MovementQuery<'a> = (
+    Option<&'a mut Density>,
+    Option<&'a mut Velocity>,
+    Option<&'a mut MovementPriority>,
+    Option<&'a mut Momentum>,
+    Option<&'a mut Wall>,
+    Option<&'a mut Liquid>,
+    Option<&'a mut Gas>,
+    Option<&'a mut MovableSolid>,
+    Option<&'a mut Solid>,
 );
 
 #[allow(clippy::needless_pass_by_value)]
 fn handle_particle_registration(
     mut commands: Commands,
-    blueprint_query: Query<BlueprintQuery<'_>, With<ParticleType>>,
+    blueprint_query: Query<MovementQuery<'_>, With<ParticleType>>,
     mut ev_particle_registered: EventReader<ParticleRegistrationEvent>,
     particle_query: Query<&ChildOf, With<Particle>>,
 ) {
@@ -477,56 +413,67 @@ fn handle_particle_registration(
                 )) = blueprint_query.get(child_of.parent())
                 {
                     if let Some(density) = density {
-                        commands.entity(*entity).insert(density.0);
+                        commands.entity(*entity).insert(*density);
                     } else {
                         commands.entity(*entity).remove::<Density>();
                     }
                     if let Some(velocity) = velocity {
-                        commands.entity(*entity).insert(velocity.0);
+                        commands.entity(*entity).insert(*velocity);
                     } else {
                         commands.entity(*entity).remove::<Velocity>();
                     }
                     if let Some(movement_priority) = movement_priority {
-                        commands.entity(*entity).insert(movement_priority.0.clone());
+                        commands.entity(*entity).insert(movement_priority.clone());
                     } else {
                         commands.entity(*entity).remove::<MovementPriority>();
                     }
                     if let Some(momentum) = momentum {
-                        commands.entity(*entity).insert(momentum.0);
+                        commands.entity(*entity).insert(*momentum);
                     } else {
                         commands.entity(*entity).remove::<Momentum>();
                     }
                     if wall.is_some() {
                         commands.entity(*entity).insert(Wall);
                         commands.entity(*entity).insert(Moved(false));
+                        commands.entity(*entity).remove::<MovementPriority>();
                     } else {
                         commands.entity(*entity).remove::<Wall>();
                         commands.entity(*entity).remove::<Moved>();
                     }
                     if let Some(liquid) = liquid {
-                        commands.entity(*entity).insert(liquid.0.clone());
+                        commands.entity(*entity).insert(liquid.clone());
                         commands.entity(*entity).insert(Moved(true));
+                        commands
+                            .entity(*entity)
+                            .insert(liquid.to_movement_priority());
                     } else {
                         commands.entity(*entity).remove::<Liquid>();
                         commands.entity(*entity).remove::<Moved>();
                     }
                     if let Some(gas) = gas {
-                        commands.entity(*entity).insert(gas.0.clone());
+                        commands.entity(*entity).insert(gas.clone());
                         commands.entity(*entity).insert(Moved(true));
+                        commands.entity(*entity).insert(gas.to_movement_priority());
                     } else {
                         commands.entity(*entity).remove::<Gas>();
                         commands.entity(*entity).remove::<Moved>();
                     }
                     if let Some(movable_solid) = movable_solid {
-                        commands.entity(*entity).insert(movable_solid.0.clone());
+                        commands.entity(*entity).insert(movable_solid.clone());
                         commands.entity(*entity).insert(Moved(true));
+                        commands
+                            .entity(*entity)
+                            .insert(movable_solid.to_movement_priority());
                     } else {
                         commands.entity(*entity).remove::<MovableSolid>();
                         commands.entity(*entity).remove::<Moved>();
                     }
                     if let Some(solid) = solid {
-                        commands.entity(*entity).insert(solid.0.clone());
+                        commands.entity(*entity).insert(solid.clone());
                         commands.entity(*entity).insert(Moved(true));
+                        commands
+                            .entity(*entity)
+                            .insert(solid.to_movement_priority());
                     } else {
                         commands.entity(*entity).remove::<Solid>();
                         commands.entity(*entity).remove::<Moved>();

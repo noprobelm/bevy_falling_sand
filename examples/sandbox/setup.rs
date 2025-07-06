@@ -30,7 +30,7 @@ pub fn setup_particles(mut commands: Commands) {
             ParticleType::new("Ice Wall"),
             ColorProfile::new(vec![Color::Srgba(Srgba::hex("#8CDBF880").unwrap())]),
         ),
-        BurnsBlueprint(Burns::new(
+        Burns::new(
             Duration::from_secs(2),
             Duration::from_millis(100),
             Some(0.01),
@@ -38,7 +38,7 @@ pub fn setup_particles(mut commands: Commands) {
             None,
             None,
             false,
-        )),
+        ),
         Name::new("Ice Wall"),
     ));
 
@@ -55,7 +55,7 @@ pub fn setup_particles(mut commands: Commands) {
                 Color::srgba(0.95, 0.61, 0.43, 1.0),
             ]),
         ),
-        MomentumBlueprint(Momentum::ZERO),
+        Momentum::ZERO,
         Name::new("My Custom Particle"),
     ));
 
@@ -81,7 +81,7 @@ pub fn setup_particles(mut commands: Commands) {
             5,
             ColorProfile::new(vec![Color::Srgba(Srgba::hex("#0B80AB80").unwrap())]),
         ),
-        MomentumBlueprint(Momentum::ZERO),
+        Momentum::ZERO,
         Name::new("Water"),
     ));
 
@@ -100,8 +100,8 @@ pub fn setup_particles(mut commands: Commands) {
                 Color::Srgba(Srgba::hex("#F05C5EFF").unwrap()),
             ]),
         ),
-        MomentumBlueprint(Momentum::ZERO),
-        ChangesColorBlueprint(ChangesColor::new(0.1)),
+        Momentum::ZERO,
+        ChangesColor::new(0.1),
         Name::new("Sparkly Slime"),
     ));
 
@@ -116,8 +116,8 @@ pub fn setup_particles(mut commands: Commands) {
                 Color::Srgba(Srgba::hex("#8FA73980").unwrap()),
             ]),
         ),
-        MomentumBlueprint(Momentum::ZERO),
-        ChangesColorBlueprint(ChangesColor::new(0.1)),
+        Momentum::ZERO,
+        ChangesColor::new(0.1),
         Name::new("Slime"),
     ));
 
@@ -129,7 +129,7 @@ pub fn setup_particles(mut commands: Commands) {
             5,
             ColorProfile::new(vec![Color::Srgba(Srgba::hex("#D6997080").unwrap())]),
         ),
-        MomentumBlueprint(Momentum::ZERO),
+        Momentum::ZERO,
         Name::new("Whiskey"),
     ));
 
@@ -141,7 +141,7 @@ pub fn setup_particles(mut commands: Commands) {
             5,
             ColorProfile::new(vec![Color::Srgba(Srgba::hex("#780606").unwrap())]),
         ),
-        MomentumBlueprint(Momentum::ZERO),
+        Momentum::ZERO,
         Name::new("Blood"),
     ));
 
@@ -153,8 +153,8 @@ pub fn setup_particles(mut commands: Commands) {
             3,
             ColorProfile::new(vec![Color::Srgba(Srgba::hex("#2B1229").unwrap())]),
         ),
-        MomentumBlueprint(Momentum::ZERO),
-        BurnsBlueprint(Burns::new(
+        Momentum::ZERO,
+        Burns::new(
             Duration::from_secs(5),
             Duration::from_millis(100),
             Some(0.1),
@@ -172,7 +172,7 @@ pub fn setup_particles(mut commands: Commands) {
                 destroys_on_spread: false,
             }),
             false,
-        )),
+        ),
         Name::new("Oil"),
     ));
 
@@ -187,7 +187,7 @@ pub fn setup_particles(mut commands: Commands) {
             ]),
         ),
         // If momentum effects are desired, insert the marker component.
-        MomentumBlueprint(Momentum::ZERO),
+        Momentum::ZERO,
         Name::new("Sand"),
     ));
 
@@ -202,7 +202,7 @@ pub fn setup_particles(mut commands: Commands) {
             ]),
         ),
         // If momentum effects are desired, insert the marker component.
-        MomentumBlueprint(Momentum::ZERO),
+        Momentum::ZERO,
         Name::new("Dirt"),
     ));
 
@@ -217,7 +217,7 @@ pub fn setup_particles(mut commands: Commands) {
             ]),
         ),
         // If momentum effects are desired, insert the marker component.
-        MomentumBlueprint(Momentum::ZERO),
+        Momentum::ZERO,
         Name::new("Snow"),
     ));
 
@@ -232,8 +232,8 @@ pub fn setup_particles(mut commands: Commands) {
                 Color::Srgba(Srgba::hex("#C7D6E0").unwrap()),
             ]),
         ),
-        ChangesColorBlueprint(ChangesColor::new(0.1)),
-        BurnsBlueprint(Burns::new(
+        ChangesColor::new(0.1),
+        Burns::new(
             Duration::from_millis(200),
             Duration::from_millis(100),
             Some(1.),
@@ -241,7 +241,7 @@ pub fn setup_particles(mut commands: Commands) {
             None,
             None,
             false,
-        )),
+        ),
         Name::new("Steam"),
     ));
 
@@ -256,7 +256,7 @@ pub fn setup_particles(mut commands: Commands) {
                 Color::Srgba(Srgba::hex("#858073").unwrap()),
             ]),
         ),
-        ChangesColorBlueprint(ChangesColor::new(0.1)),
+        ChangesColor::new(0.1),
         Name::new("Smoke"),
     ));
 
@@ -271,8 +271,8 @@ pub fn setup_particles(mut commands: Commands) {
                 Color::Srgba(Srgba::hex("#4A731C80").unwrap()),
             ]),
         ),
-        ChangesColorBlueprint(ChangesColor::new(0.1)),
-        BurnsBlueprint(Burns::new(
+        ChangesColor::new(0.1),
+        Burns::new(
             Duration::from_secs(1),
             Duration::from_millis(100),
             Some(0.5),
@@ -290,7 +290,7 @@ pub fn setup_particles(mut commands: Commands) {
                 destroys_on_spread: true,
             }),
             false,
-        )),
+        ),
         Name::new("Flammable Gas"),
     ));
 
@@ -307,8 +307,8 @@ pub fn setup_particles(mut commands: Commands) {
                 Color::Srgba(Srgba::hex("#C74A05FF").unwrap()),
             ]),
         ),
-        ChangesColorBlueprint(ChangesColor::new(0.1)),
-        BurnsBlueprint(Burns::new(
+        ChangesColor::new(0.1),
+        Burns::new(
             Duration::from_secs(1),
             Duration::from_millis(100),
             Some(0.5),
@@ -320,7 +320,7 @@ pub fn setup_particles(mut commands: Commands) {
                 destroys_on_spread: false,
             }),
             true,
-        )),
+        ),
         Name::new("FIRE"),
     ));
 
@@ -370,7 +370,7 @@ pub fn setup_particles(mut commands: Commands) {
                 Color::Srgba(Srgba::hex("#5C8C33").unwrap()),
             ]),
         ),
-        BurnsBlueprint(Burns::new(
+        Burns::new(
             Duration::from_secs(1),
             Duration::from_millis(100),
             Some(0.5),
@@ -388,7 +388,7 @@ pub fn setup_particles(mut commands: Commands) {
                 destroys_on_spread: false,
             }),
             false,
-        )),
+        ),
         Name::new("Grass Wall"),
     ));
 
@@ -397,7 +397,7 @@ pub fn setup_particles(mut commands: Commands) {
             ParticleType::new("Wood Wall"),
             ColorProfile::new(vec![Color::Srgba(Srgba::hex("#A1662E").unwrap())]),
         ),
-        BurnsBlueprint(Burns::new(
+        Burns::new(
             Duration::from_secs(10),
             Duration::from_millis(100),
             Some(0.0),
@@ -415,7 +415,7 @@ pub fn setup_particles(mut commands: Commands) {
                 destroys_on_spread: false,
             }),
             false,
-        )),
+        ),
         Name::new("Wood Wall"),
     ));
 }

@@ -1,42 +1,24 @@
 use bevy::prelude::*;
-use bfs_core::{
-    impl_particle_blueprint, ClearParticleTypeChildrenEvent, ParticleComponent, ParticleType,
-};
+use bfs_core::{ClearParticleTypeChildrenEvent, ParticleType};
 use serde::{Deserialize, Serialize};
 
-use super::{MovementPriority, MovementPriorityBlueprint};
+use super::MovementPriority;
 
 pub(super) struct MaterialPlugin;
 
 impl Plugin for MaterialPlugin {
     fn build(&self, app: &mut App) {
-        app.register_type::<WallBlueprint>()
-            .register_type::<Wall>()
-            .register_type::<SolidBlueprint>()
+        app.register_type::<Wall>()
             .register_type::<Solid>()
-            .register_type::<MovableSolidBlueprint>()
             .register_type::<MovableSolid>()
-            .register_type::<LiquidBlueprint>()
             .register_type::<Liquid>()
-            .register_type::<GasBlueprint>()
             .register_type::<Gas>()
             .add_event::<ClearDynamicParticlesEvent>()
             .add_event::<ClearStaticParticlesEvent>()
-            .add_observer(on_solid_blueprint_added)
-            .add_observer(on_movable_solid_blueprint_added)
-            .add_observer(on_liquid_blueprint_added)
-            .add_observer(on_wall_added)
-            .add_observer(on_gas_blueprint_added)
             .add_observer(on_clear_dynamic_particles)
             .add_observer(on_clear_static_particles);
     }
 }
-
-impl_particle_blueprint!(WallBlueprint, Wall);
-impl_particle_blueprint!(SolidBlueprint, Solid);
-impl_particle_blueprint!(MovableSolidBlueprint, MovableSolid);
-impl_particle_blueprint!(LiquidBlueprint, Liquid);
-impl_particle_blueprint!(GasBlueprint, Gas);
 
 /// Used to describe a Material, which can be translated to a [`MovementPriority`].
 pub trait Material {
@@ -64,24 +46,6 @@ pub trait Material {
 )]
 #[reflect(Component)]
 pub struct Wall;
-
-/// Blueprint for a [`Wall`]
-#[derive(
-    Clone,
-    Eq,
-    PartialEq,
-    Ord,
-    PartialOrd,
-    Hash,
-    Debug,
-    Default,
-    Component,
-    Reflect,
-    Serialize,
-    Deserialize,
-)]
-#[reflect(Component)]
-pub struct WallBlueprint(pub Wall);
 
 impl Wall {
     /// Initialize a new `Wall`
@@ -125,24 +89,6 @@ impl Material for Solid {
     }
 }
 
-/// Blueprint for a [`Solid`]
-#[derive(
-    Clone,
-    Eq,
-    PartialEq,
-    Ord,
-    PartialOrd,
-    Hash,
-    Debug,
-    Default,
-    Component,
-    Reflect,
-    Serialize,
-    Deserialize,
-)]
-#[reflect(Component)]
-pub struct SolidBlueprint(pub Solid);
-
 /// A movable solid particle, which can move downwards and diagonally.
 #[derive(
     Clone,
@@ -177,24 +123,6 @@ impl Material for MovableSolid {
         ])
     }
 }
-
-/// Blueprint for a [`MovableSolid`]
-#[derive(
-    Clone,
-    Eq,
-    PartialEq,
-    Ord,
-    PartialOrd,
-    Hash,
-    Debug,
-    Default,
-    Component,
-    Reflect,
-    Serialize,
-    Deserialize,
-)]
-#[reflect(Component)]
-pub struct MovableSolidBlueprint(pub MovableSolid);
 
 /// A liquid particle, which can move downwards, diagonally, and horizontally.
 ///
@@ -248,24 +176,6 @@ impl Material for Liquid {
     }
 }
 
-/// Blueprint for a [`Liquid`]
-#[derive(
-    Clone,
-    Eq,
-    PartialEq,
-    Ord,
-    PartialOrd,
-    Hash,
-    Debug,
-    Default,
-    Component,
-    Reflect,
-    Serialize,
-    Deserialize,
-)]
-#[reflect(Component)]
-pub struct LiquidBlueprint(pub Liquid);
-
 /// A gas particle, which can move upwards, upwards diagonally, and horizontally.
 #[derive(
     Clone,
@@ -311,24 +221,6 @@ impl Material for Gas {
     }
 }
 
-/// Blueprint for a [`Gas`]
-#[derive(
-    Clone,
-    Eq,
-    PartialEq,
-    Ord,
-    PartialOrd,
-    Hash,
-    Debug,
-    Default,
-    Component,
-    Reflect,
-    Serialize,
-    Deserialize,
-)]
-#[reflect(Component)]
-pub struct GasBlueprint(pub Gas);
-
 /// Clear all dynamic particles from the world.
 #[derive(Event)]
 pub struct ClearDynamicParticlesEvent;
@@ -340,7 +232,7 @@ pub struct ClearStaticParticlesEvent;
 fn on_clear_dynamic_particles(
     _trigger: Trigger<ClearDynamicParticlesEvent>,
     mut commands: Commands,
-    dynamic_particle_types_query: Query<&ParticleType, Without<WallBlueprint>>,
+    dynamic_particle_types_query: Query<&ParticleType, Without<Wall>>,
 ) {
     dynamic_particle_types_query
         .iter()
@@ -352,81 +244,11 @@ fn on_clear_dynamic_particles(
 fn on_clear_static_particles(
     _trigger: Trigger<ClearStaticParticlesEvent>,
     mut commands: Commands,
-    dynamic_particle_types_query: Query<&ParticleType, With<WallBlueprint>>,
+    dynamic_particle_types_query: Query<&ParticleType, With<Wall>>,
 ) {
     dynamic_particle_types_query
         .iter()
         .for_each(|particle_type| {
             commands.trigger(ClearParticleTypeChildrenEvent(particle_type.name.clone()));
         });
-}
-
-#[allow(clippy::needless_pass_by_value)]
-fn on_solid_blueprint_added(
-    trigger: Trigger<OnAdd, SolidBlueprint>,
-    mut commands: Commands,
-    particle_query: Query<&SolidBlueprint, With<ParticleType>>,
-) {
-    let entity = trigger.target();
-    if let Ok(solid) = particle_query.get(entity) {
-        commands
-            .entity(entity)
-            .insert(MovementPriorityBlueprint(solid.0.to_movement_priority()));
-    }
-}
-
-#[allow(clippy::needless_pass_by_value)]
-fn on_movable_solid_blueprint_added(
-    trigger: Trigger<OnAdd, MovableSolidBlueprint>,
-    mut commands: Commands,
-    particle_query: Query<&MovableSolidBlueprint, With<ParticleType>>,
-) {
-    let entity = trigger.target();
-    if let Ok(movable_solid) = particle_query.get(entity) {
-        commands.entity(entity).insert(MovementPriorityBlueprint(
-            movable_solid.0.to_movement_priority(),
-        ));
-    }
-}
-
-#[allow(clippy::needless_pass_by_value)]
-fn on_liquid_blueprint_added(
-    trigger: Trigger<OnAdd, LiquidBlueprint>,
-    mut commands: Commands,
-    particle_query: Query<&LiquidBlueprint, With<ParticleType>>,
-) {
-    let entity = trigger.target();
-    if let Ok(liquid) = particle_query.get(entity) {
-        commands
-            .entity(entity)
-            .insert(MovementPriorityBlueprint(liquid.0.to_movement_priority()));
-    }
-}
-
-#[allow(clippy::needless_pass_by_value)]
-fn on_gas_blueprint_added(
-    trigger: Trigger<OnAdd, GasBlueprint>,
-    mut commands: Commands,
-    particle_query: Query<&GasBlueprint, With<ParticleType>>,
-) {
-    let entity = trigger.target();
-    if let Ok(gas) = particle_query.get(entity) {
-        commands
-            .entity(entity)
-            .insert(MovementPriorityBlueprint(gas.0.to_movement_priority()));
-    }
-}
-
-#[allow(clippy::needless_pass_by_value)]
-fn on_wall_added(
-    trigger: Trigger<OnAdd, WallBlueprint>,
-    mut commands: Commands,
-    particle_query: Query<&WallBlueprint, With<ParticleType>>,
-) {
-    let entity = trigger.target();
-    if let Ok(gas) = particle_query.get(entity) {
-        commands
-            .entity(entity)
-            .insert(MovementPriorityBlueprint(gas.0.to_movement_priority()));
-    }
 }

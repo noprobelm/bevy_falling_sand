@@ -4,8 +4,8 @@ use bevy_turborand::{DelegatedRng, GlobalRng, TurboRand};
 use serde::{Deserialize, Serialize};
 
 use bfs_core::{
-    impl_particle_blueprint, impl_particle_rng, Particle, ParticleComponent,
-    ParticleRegistrationEvent, ParticleRng, ParticleSimulationSet, ParticleType,
+    impl_particle_rng, Particle, ParticleRegistrationEvent, ParticleRng, ParticleSimulationSet,
+    ParticleType,
 };
 
 pub(super) struct ParticleDefinitionsPlugin;
@@ -13,9 +13,7 @@ pub(super) struct ParticleDefinitionsPlugin;
 impl Plugin for ParticleDefinitionsPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<ColorRng>()
-            .register_type::<ColorProfileBlueprint>()
             .register_type::<ColorProfile>()
-            .register_type::<ChangesColorBlueprint>()
             .register_type::<ChangesColor>()
             .add_event::<ResetParticleColorEvent>()
             .add_systems(
@@ -25,8 +23,6 @@ impl Plugin for ParticleDefinitionsPlugin {
     }
 }
 
-impl_particle_blueprint!(ColorProfileBlueprint, ColorProfile);
-impl_particle_blueprint!(ChangesColorBlueprint, ChangesColor);
 impl_particle_rng!(ColorRng, RngComponent);
 
 /// Provides rng for coloring particles.
@@ -165,11 +161,6 @@ impl Default for ColorProfile {
     }
 }
 
-/// Blueprint for a [`ColorProfile`].
-#[derive(Clone, PartialEq, Debug, Default, Component, Reflect, Serialize, Deserialize)]
-#[reflect(Component)]
-pub struct ColorProfileBlueprint(pub ColorProfile);
-
 /// Component that allows particles to change color based on an input chance.
 #[derive(Copy, Clone, PartialEq, Debug, Component, Reflect, Serialize, Deserialize)]
 #[reflect(Component)]
@@ -186,12 +177,7 @@ impl ChangesColor {
     }
 }
 
-/// Blueprint for holding a `ChangesColor`.
-#[derive(Copy, Clone, PartialEq, Debug, Component, Reflect, Serialize, Deserialize)]
-#[reflect(Component)]
-pub struct ChangesColorBlueprint(pub ChangesColor);
-
-/// Triggers a particle to reset its [`ParticleColor`] to its parent's blueprint data.
+/// Triggers a particle to reset its [`ParticleColor`] to its parent's data.
 #[derive(
     Clone, Hash, Debug, Default, Eq, PartialEq, PartialOrd, Event, Reflect, Serialize, Deserialize,
 )]
@@ -203,13 +189,7 @@ pub struct ResetParticleColorEvent {
 fn handle_particle_components(
     commands: &mut Commands,
     rng: &mut ResMut<GlobalRng>,
-    parent_query: &Query<
-        (
-            Option<&ColorProfileBlueprint>,
-            Option<&ChangesColorBlueprint>,
-        ),
-        With<ParticleType>,
-    >,
+    parent_query: &Query<(Option<&ColorProfile>, Option<&ChangesColor>), With<ParticleType>>,
     particle_query: &Query<&ChildOf, With<Particle>>,
     entities: &[Entity],
 ) {
@@ -228,12 +208,12 @@ fn handle_particle_components(
                     let rng = rng.get_mut();
                     commands
                         .entity(*entity)
-                        .insert(particle_color.0.new_with_random(rng));
+                        .insert(particle_color.new_with_random(rng));
                 } else {
                     commands.entity(*entity).remove::<ColorProfile>();
                 }
                 if let Some(flows_color) = flows_color {
-                    commands.entity(*entity).insert(flows_color.0);
+                    commands.entity(*entity).insert(flows_color.clone());
                 } else {
                     commands.entity(*entity).remove::<ChangesColor>();
                 }
@@ -245,13 +225,7 @@ fn handle_particle_components(
 fn handle_particle_registration(
     mut commands: Commands,
     mut rng: ResMut<GlobalRng>,
-    parent_query: Query<
-        (
-            Option<&ColorProfileBlueprint>,
-            Option<&ChangesColorBlueprint>,
-        ),
-        With<ParticleType>,
-    >,
+    parent_query: Query<(Option<&ColorProfile>, Option<&ChangesColor>), With<ParticleType>>,
     particle_query: Query<&ChildOf, With<Particle>>,
     mut ev_particle_registered: EventReader<ParticleRegistrationEvent>,
     mut ev_reset_particle_color: EventReader<ResetParticleColorEvent>,

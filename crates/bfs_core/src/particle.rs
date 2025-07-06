@@ -40,42 +40,6 @@ impl Plugin for ParticleCorePlugin {
     }
 }
 
-/// Designates a component as a blueprint for some particle data. Types implmeneting this
-/// trait can use its underlying methods to access component data for a particle, which can be
-/// useful for resetting particle data back to the blueprint its parent holds.
-#[doc(hidden)]
-pub trait ParticleComponent: Component {
-    /// The data held by the blueprint
-    type Data: Component;
-
-    /// The immutable component.
-    fn component(&self) -> &Self::Data;
-    /// The mutable component.
-    fn component_mut(&mut self) -> &mut Self::Data;
-    /// Set the inner component.
-    fn set_component(&mut self, new: Self::Data);
-}
-
-#[macro_export]
-#[doc(hidden)]
-macro_rules! impl_particle_blueprint {
-    ($struct_name:ident, $data_type:ty) => {
-        impl ParticleComponent for $struct_name {
-            type Data = $data_type;
-
-            fn component(&self) -> &Self::Data {
-                &self.0
-            }
-            fn component_mut(&mut self) -> &mut Self::Data {
-                &mut self.0
-            }
-            fn set_component(&mut self, new: Self::Data) {
-                self.0 = new;
-            }
-        }
-    };
-}
-
 /// A trait for RNG utilities used in particle systems.
 pub trait ParticleRng: Component {
     /// The type of the internal RNG (must implement the required methods).
