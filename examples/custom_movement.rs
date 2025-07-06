@@ -17,6 +17,7 @@ fn main() {
         ))
         .init_resource::<CursorPosition>()
         .init_resource::<BrushRadius>()
+        .init_resource::<MaxVelocitySelection>()
         .init_state::<ParticleMovementSelectionState>()
         .add_systems(Startup, setup)
         .add_systems(Update, (zoom_camera, pan_camera))
@@ -28,6 +29,7 @@ fn main() {
                 draw_brush,
                 spawn_particles.run_if(input_pressed(MouseButton::Left)),
                 cycle_selected_movement_state.run_if(input_just_pressed(KeyCode::F1)),
+                bump_velocity.run_if(input_just_pressed(KeyCode::F2)),
                 reset.run_if(input_just_pressed(KeyCode::KeyR)),
             ),
         )
@@ -43,12 +45,21 @@ fn resource_not_exists<T: Resource>(world: &World) -> bool {
     !world.contains_resource::<T>()
 }
 
-#[derive(Resource)]
+#[derive(Default, Resource, Clone, Debug)]
 struct BoundaryReady;
 
 #[derive(Default, Resource, Clone, Debug)]
 struct CursorPosition {
     pub current: Vec2,
+}
+
+#[derive(Resource, Clone, Debug)]
+struct MaxVelocitySelection(u8);
+
+impl Default for MaxVelocitySelection {
+    fn default() -> Self {
+        Self(1)
+    }
 }
 
 #[derive(Resource, Clone, Debug)]
@@ -64,6 +75,9 @@ impl Default for BrushRadius {
 
 #[derive(Component, Clone, Debug)]
 struct ParticleMovementSelectionText;
+
+#[derive(Component, Clone, Debug)]
+struct MaxVelocitySelectionText;
 
 #[derive(States, Reflect, Default, Debug, Clone, Eq, PartialEq, Hash)]
 pub enum ParticleMovementSelectionState {
@@ -220,6 +234,7 @@ fn setup(
     ));
 
     let instructions_text = "F1: Cycle particle movement rules\n\
+        F2: Bump max velocity\n\
         R: Reset";
     let style = TextFont::default();
 
@@ -236,8 +251,9 @@ fn setup(
             parent.spawn((Text::new(instructions_text), style.clone()));
             parent.spawn((
                 ParticleMovementSelectionText,
-                Text::new("Selected Movement Type: Moore Neighborhood Particle (no momentum)"),
+                Text::new("Selected movement type: Moore Neighborhood Particle (no momentum)"),
             ));
+            parent.spawn((MaxVelocitySelectionText, Text::new("Maximum velocity: 1")));
         });
     Ok(())
 }
@@ -420,6 +436,25 @@ fn cycle_selected_movement_state(
         (**particle_movement_selection_text).clone_from(&new_text);
     }
     next_particle_movement_selection_state.set(new_state);
+}
+
+fn bump_velocity(
+    mut particle_type_query: Query<&mut VelocityBlueprint>,
+    mut velocity_selection: ResMut<MaxVelocitySelection>,
+    mut velocity_selection_text: Query<&mut Text, With<MaxVelocitySelectionText>>,
+) {
+    if velocity_selection.0 < 5 {
+        velocity_selection.0 += 1;
+    } else {
+        velocity_selection.0 = 1;
+    }
+    particle_type_query.iter_mut().for_each(|mut velocity_bp| {
+        velocity_bp.component_mut().max = velocity_selection.0;
+    });
+    for mut velocity_selection_text in velocity_selection_text.iter_mut() {
+        (**velocity_selection_text)
+            .clone_from(&format!("Maximum velocity: {}", velocity_selection.0));
+    }
 }
 
 fn reset(mut commands: Commands) {
