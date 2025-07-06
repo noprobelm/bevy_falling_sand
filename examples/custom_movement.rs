@@ -421,6 +421,7 @@ fn cycle_selected_movement_state(
     }
     next_particle_movement_selection_state.set(new_state);
 }
+
 fn reset(mut commands: Commands) {
     commands.trigger(ClearDynamicParticlesEvent);
 }
