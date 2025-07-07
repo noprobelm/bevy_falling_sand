@@ -228,7 +228,7 @@ fn handle_movement_by_particles(
                     let mut obstructed: HashSet<IVec2> = HashSet::default();
 
                     for relative_position in movement_priority
-                        .iter_candidates(&mut rng, momentum.as_deref().cloned().as_ref())
+                        .iter_candidates(&mut rng, momentum.as_deref().copied().as_ref())
                     {
                         let neighbor_position = position.0 + *relative_position;
 
