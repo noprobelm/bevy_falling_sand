@@ -21,10 +21,10 @@ impl Plugin for ParticleMapPlugin {
                 (
                     reset_chunks.in_set(ParticleSimulationSet),
                     ev_clear_particle_type_children,
+                    ev_clear_particle_map,
                 ),
             )
-            .add_observer(on_remove_particle)
-            .add_observer(on_clear_particle_map);
+            .add_observer(on_remove_particle);
     }
 }
 
@@ -482,16 +482,18 @@ fn on_remove_particle(
 }
 
 #[allow(clippy::needless_pass_by_value)]
-fn on_clear_particle_map(
-    _trigger: Trigger<ClearParticleMapEvent>,
+fn ev_clear_particle_map(
+    mut ev_clear_particle_map: EventReader<ClearParticleMapEvent>,
     mut commands: Commands,
     mut map: ResMut<ParticleMap>,
     particle_parent_map: Res<ParticleTypeMap>,
 ) {
-    particle_parent_map.iter().for_each(|(_, entity)| {
-        commands.entity(*entity).despawn_related::<Children>();
+    ev_clear_particle_map.read().for_each(|_| {
+        particle_parent_map.iter().for_each(|(_, entity)| {
+            commands.entity(*entity).despawn_related::<Children>();
+        });
+        map.clear();
     });
-    map.clear();
 }
 
 #[allow(clippy::needless_pass_by_value)]
