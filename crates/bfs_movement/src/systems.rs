@@ -13,15 +13,14 @@ impl Plugin for SystemsPlugin {
         app.init_state::<MovementSource>()
             .add_systems(
                 PreUpdate,
-                handle_movement_by_chunks
-                    .in_set(ParticleSimulationSet)
-                    .run_if(in_state(MovementSource::Chunks)),
-            )
-            .add_systems(
-                PreUpdate,
-                handle_movement_by_particles
-                    .in_set(ParticleSimulationSet)
-                    .run_if(in_state(MovementSource::Particles)),
+                (
+                    handle_movement_by_chunks
+                        .in_set(ParticleSimulationSet)
+                        .run_if(in_state(MovementSource::Chunks)),
+                    handle_movement_by_particles
+                        .in_set(ParticleSimulationSet)
+                        .run_if(in_state(MovementSource::Particles)),
+                ),
             );
     }
 }

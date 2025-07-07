@@ -33,11 +33,8 @@ impl Plugin for ParticleCorePlugin {
             .add_event::<RemoveParticleEvent>()
             .add_systems(
                 PreUpdate,
-                handle_new_particles.before(ParticleSimulationSet),
-            )
-            .add_systems(
-                PreUpdate,
                 (
+                    handle_new_particles.before(ParticleSimulationSet),
                     handle_new_particle_types,
                     ev_reset_particle,
                     ev_reset_particle_children,

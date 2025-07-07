@@ -25,8 +25,13 @@ impl Plugin for FallingSandScenesPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<LoadSceneEvent>()
             .add_event::<SaveSceneEvent>()
-            .add_systems(Update, save_scene_system.run_if(on_event::<SaveSceneEvent>))
-            .add_systems(Update, load_scene_system.run_if(on_event::<LoadSceneEvent>));
+            .add_systems(
+                Update,
+                (
+                    save_scene_system.run_if(on_event::<SaveSceneEvent>),
+                    load_scene_system.run_if(on_event::<LoadSceneEvent>),
+                ),
+            )
     }
 }
 
