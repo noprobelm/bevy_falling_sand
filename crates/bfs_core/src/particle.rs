@@ -18,7 +18,7 @@ impl Plugin for ParticleCorePlugin {
             .register_type::<ParticlePosition>()
             .init_resource::<ParticleSimulationRun>()
             .configure_sets(
-                Update,
+                PreUpdate,
                 ParticleSimulationSet.run_if(
                     resource_exists::<ParticleSimulationRun>
                         .or(condition_ev_simulation_step_received),
@@ -35,7 +35,7 @@ impl Plugin for ParticleCorePlugin {
                 handle_new_particles.before(ParticleSimulationSet),
             )
             .add_systems(
-                Update,
+                PreUpdate,
                 (
                     handle_new_particle_types,
                     ev_reset_particle,

@@ -29,7 +29,7 @@ impl Plugin for FallingSandDebugPlugin {
             .init_resource::<DebugDirtyRects>()
             .init_gizmo_group::<DebugGizmos>()
             .add_systems(
-                Update,
+                PreUpdate,
                 (
                     color_active_chunks
                         .after(ParticleSimulationSet)

@@ -8,7 +8,7 @@ pub(super) struct SystemsPlugin;
 impl Plugin for SystemsPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
-            Update,
+            PreUpdate,
             (color_particles, handle_changes_color).in_set(ParticleSimulationSet),
         );
     }

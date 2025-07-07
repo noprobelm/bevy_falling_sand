@@ -12,13 +12,13 @@ impl Plugin for SystemsPlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<MovementSource>()
             .add_systems(
-                Update,
+                PreUpdate,
                 handle_movement_by_chunks
                     .in_set(ParticleSimulationSet)
                     .run_if(in_state(MovementSource::Chunks)),
             )
             .add_systems(
-                Update,
+                PreUpdate,
                 handle_movement_by_particles
                     .in_set(ParticleSimulationSet)
                     .run_if(in_state(MovementSource::Particles)),

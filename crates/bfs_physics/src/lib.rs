@@ -12,7 +12,7 @@ use avian2d::math::Vector;
 pub use avian2d::prelude::*;
 
 use bevy::prelude::*;
-use bfs_core::ParticlePosition;
+use bfs_core::{ParticlePosition, ParticleSimulationSet};
 use bfs_movement::{MovableSolid, Moved, Solid, Wall};
 
 /// Provides the constructs and systems necessary to integrate avian2d in the Falling Sand simulation.
@@ -37,7 +37,7 @@ impl Plugin for FallingSandPhysicsPlugin {
             .init_resource::<SolidMeshData>()
             .init_resource::<SolidTerrainColliders>()
             .add_systems(
-                Update,
+                PreUpdate,
                 (
                     map_wall_particles.run_if(condition_walls_changed),
                     spawn_wall_terrain_colliders,
@@ -45,7 +45,8 @@ impl Plugin for FallingSandPhysicsPlugin {
                     spawn_movable_solid_terrain_colliders,
                     map_solid_particles.run_if(condition_solids_changed),
                     spawn_solid_terrain_colliders,
-                ),
+                )
+                    .in_set(ParticleSimulationSet),
             );
     }
 }
