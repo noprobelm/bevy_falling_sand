@@ -3,7 +3,7 @@ use std::mem;
 
 use bevy::prelude::*;
 use bevy::platform::collections::HashSet;
-use bevy_turborand::{DelegatedRng, GlobalRng};
+use bevy_turborand::GlobalRng;
 use bfs_core::{Particle, ParticleMap, ParticlePosition, ParticleSimulationSet};
 
 pub(super) struct SystemsPlugin;
@@ -52,7 +52,6 @@ type ParticleMovementQuery<'a> = (
 fn handle_movement_by_chunks(
     mut particle_query: Query<ParticleMovementQuery>,
     mut map: ResMut<ParticleMap>,
-    mut rng: ResMut<GlobalRng>,
 ) {
     let mut visited: HashSet<Entity> = HashSet::default();
     let mut particle_entities: Vec<Entity> = Vec::with_capacity(map.particles_per_chunk);
@@ -67,10 +66,9 @@ fn handle_movement_by_chunks(
                 });
             }
         });
-        rng.shuffle(&mut particle_entities);
-        particle_entities.iter().for_each(|entity| {
-            if visited.contains(entity) {
-                return;
+        for entity in particle_entities {
+            if visited.contains(&entity) {
+                continue;
             }
 
             if let Ok((
@@ -84,7 +82,7 @@ fn handle_movement_by_chunks(
                 density,
                 mut movement_priority,
                 mut particle_moved,
-            )) = particle_query.get_unchecked(*entity)
+            )) = particle_query.get_unchecked(entity)
             {
                 let mut moved = false;
 
@@ -92,7 +90,7 @@ fn handle_movement_by_chunks(
                     let mut obstructed: HashSet<IVec2> = HashSet::default();
 
                     for relative_position in movement_priority
-                        .iter_candidates(&mut rng, momentum.as_deref().cloned().as_ref())
+                        .iter_candidates(&mut rng, momentum.as_deref().copied().as_ref())
                     {
                         let neighbor_position = position.0 + *relative_position;
                         let signum = relative_position.signum();
@@ -144,11 +142,9 @@ fn handle_movement_by_chunks(
                                         }
                                     } else {
                                         obstructed.insert(signum);
-                                        continue;
                                     }
                                 } else {
                                     obstructed.insert(signum);
-                                    continue;
                                 }
                             }
                             None => {
@@ -164,9 +160,10 @@ fn handle_movement_by_chunks(
                                         moved = true;
                                         continue 'velocity_loop;
                                     },
-                                    Err(err) => {debug!("Attempted to swap particles at {:?} and {:?} but failed: {:?}", position.0, neighbor_position, err);}
+                                    Err(err) => {
+                                        debug!("Attempted to swap particles at {:?} and {:?} but failed: {:?}", position.0, neighbor_position, err);
+                                    }
                                 }
-
                             }
                         }
                     }
@@ -177,7 +174,7 @@ fn handle_movement_by_chunks(
                 }
 
                 if moved {
-                    visited.insert(*entity);
+                    visited.insert(entity);
                 } else {
                     if let Some(ref mut m) = momentum {
                         m.0 = IVec2::ZERO;
@@ -186,7 +183,7 @@ fn handle_movement_by_chunks(
                 }
                 particle_moved.0 = moved;
             }
-        });
+        }
     }
 }
 
