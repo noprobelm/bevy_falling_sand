@@ -152,6 +152,7 @@ impl ParticleControlUI {
         brush_state: &mut ResMut<NextState<BrushState>>,
         commands: &mut Commands,
         ev_clear_dynamic_particles: &mut EventWriter<ClearDynamicParticlesEvent>,
+        ev_clear_static_particles: &mut EventWriter<ClearStaticParticlesEvent>,
     ) {
         ui.vertical(|ui| {
             // Existing UI elements for Remove and Despawn All Particles
@@ -168,7 +169,7 @@ impl ParticleControlUI {
             }
 
             if ui.button("Despawn All Wall Particles").clicked() {
-                commands.trigger(ClearStaticParticlesEvent);
+                ev_clear_static_particles.write(ClearStaticParticlesEvent);
             }
 
             if ui.button("Despawn All Particles").clicked() {
@@ -425,6 +426,7 @@ pub fn render_side_panel(
         ResMut<NextState<MovementSource>>,
     ),
     mut ev_clear_dynamic_particles: EventWriter<ClearDynamicParticlesEvent>,
+    mut ev_clear_static_particles: EventWriter<ClearStaticParticlesEvent>,
 ) {
     let ctx = contexts.ctx_mut();
     let brush = brush_query.single().expect("No brush found!");
@@ -455,6 +457,7 @@ pub fn render_side_panel(
                 &mut brush_state,
                 &mut commands,
                 &mut ev_clear_dynamic_particles,
+                &mut ev_clear_static_particles,
             );
             DebugUI.render(
                 ui,

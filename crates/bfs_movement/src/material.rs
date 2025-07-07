@@ -15,8 +15,10 @@ impl Plugin for MaterialPlugin {
             .register_type::<Gas>()
             .add_event::<ClearDynamicParticlesEvent>()
             .add_event::<ClearStaticParticlesEvent>()
-            .add_systems(Update, ev_clear_dynamic_particles)
-            .add_observer(on_clear_static_particles);
+            .add_systems(
+                Update,
+                (ev_clear_dynamic_particles, ev_clear_static_particles),
+            );
     }
 }
 
@@ -244,14 +246,17 @@ fn ev_clear_dynamic_particles(
     });
 }
 
-fn on_clear_static_particles(
-    _trigger: Trigger<ClearStaticParticlesEvent>,
-    mut commands: Commands,
-    dynamic_particle_types_query: Query<&ParticleType, With<Wall>>,
+fn ev_clear_static_particles(
+    mut ev_clear_static_particles: EventReader<ClearStaticParticlesEvent>,
+    mut ev_clear_particle_type_children: EventWriter<ClearParticleTypeChildrenEvent>,
+    static_particle_types_query: Query<&ParticleType, With<Wall>>,
 ) {
-    dynamic_particle_types_query
-        .iter()
-        .for_each(|particle_type| {
-            commands.trigger(ClearParticleTypeChildrenEvent(particle_type.name.clone()));
-        });
+    ev_clear_static_particles.read().for_each(|_| {
+        static_particle_types_query
+            .iter()
+            .for_each(|particle_type| {
+                ev_clear_particle_type_children
+                    .write(ClearParticleTypeChildrenEvent(particle_type.name.clone()));
+            });
+    });
 }
