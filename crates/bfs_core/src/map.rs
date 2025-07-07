@@ -22,9 +22,9 @@ impl Plugin for ParticleMapPlugin {
                     reset_chunks.in_set(ParticleSimulationSet),
                     ev_clear_particle_type_children,
                     ev_clear_particle_map,
+                    ev_remove_particle,
                 ),
-            )
-            .add_observer(on_remove_particle);
+            );
     }
 }
 
@@ -467,18 +467,20 @@ fn reset_chunks(mut map: ResMut<ParticleMap>) {
 /// the [`ParticleMap`] and also unlinked from its [`ParticleType`] parent entity. If the `despawn`
 /// flag is set, despawn the particle entity from the ECS world.
 #[allow(clippy::needless_pass_by_value)]
-fn on_remove_particle(
-    trigger: Trigger<RemoveParticleEvent>,
+fn ev_remove_particle(
+    mut ev_remove_particle: EventReader<RemoveParticleEvent>,
     mut commands: Commands,
     mut map: ResMut<ParticleMap>,
 ) {
-    if let Some(entity) = map.remove(&trigger.event().position) {
-        if trigger.event().despawn {
-            commands.entity(entity).remove::<ChildOf>().despawn();
-        } else {
-            commands.entity(entity).remove::<ChildOf>();
+    ev_remove_particle.read().for_each(|ev| {
+        if let Some(entity) = map.remove(&ev.position) {
+            if ev.despawn {
+                commands.entity(entity).remove::<ChildOf>().despawn();
+            } else {
+                commands.entity(entity).remove::<ChildOf>();
+            }
         }
-    }
+    });
 }
 
 #[allow(clippy::needless_pass_by_value)]

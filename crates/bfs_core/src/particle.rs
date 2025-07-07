@@ -1,7 +1,8 @@
 //! Provides all core functionality for particles, including registration, mutation, removal, and
 //! even extension through external plugins if desired.
-use bevy::platform::collections::HashMap;
+use bevy::ecs::component::Mutable;
 use bevy::prelude::*;
+use bevy::{ecs::component::StorageType, platform::collections::HashMap};
 use bevy_turborand::DelegatedRng;
 use serde::{Deserialize, Serialize};
 use std::ops::RangeBounds;
@@ -162,7 +163,7 @@ impl ParticleTypeMap {
 }
 
 /// Marker component for a Particle entity.
-#[derive(Component, Clone, Debug, Eq, PartialEq, Reflect, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Reflect, Serialize, Deserialize)]
 #[reflect(Component)]
 pub struct Particle {
     /// The name of the particle, which corresponds to its [`ParticleType`] and can be used as an
@@ -177,6 +178,22 @@ impl Particle {
         Self {
             name: name.to_string(),
         }
+    }
+}
+
+impl Component for Particle {
+    type Mutability = Mutable;
+
+    const STORAGE_TYPE: StorageType = StorageType::Table;
+
+    fn register_component_hooks(hooks: &mut bevy::ecs::component::ComponentHooks) {
+        hooks.on_remove(|mut world, context| {
+            if let Some(position) = world.get::<ParticlePosition>(context.entity) {
+                let position = position.0;
+                let mut map = world.resource_mut::<ParticleMap>();
+                map.remove(&position);
+            }
+        });
     }
 }
 

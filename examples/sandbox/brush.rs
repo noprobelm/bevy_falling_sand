@@ -182,7 +182,12 @@ impl BrushType {
         }
     }
 
-    pub fn remove_particles(&self, commands: &mut Commands, coords: IVec2, brush_size: f32) {
+    pub fn remove_particles(
+        &self,
+        ev_remove_particle: &mut EventWriter<RemoveParticleEvent>,
+        coords: IVec2,
+        brush_size: f32,
+    ) {
         let min_x = -(brush_size as i32) / 2;
         let max_x = (brush_size / 2.) as i32;
         let min_y = -(brush_size as i32) / 2;
@@ -192,7 +197,7 @@ impl BrushType {
             BrushType::Line => {
                 for x in min_x * 3..=max_x * 3 {
                     let position = IVec2::new(coords.x + x, coords.y);
-                    commands.trigger(RemoveParticleEvent {
+                    ev_remove_particle.write(RemoveParticleEvent {
                         position,
                         despawn: true,
                     });
@@ -209,15 +214,15 @@ impl BrushType {
                     }
                 }
                 for position in circle_coords {
-                    commands.trigger(RemoveParticleEvent {
+                    ev_remove_particle.write(RemoveParticleEvent {
                         position,
                         despawn: true,
-                    })
+                    });
                 }
             }
             BrushType::Cursor => {
                 let position = IVec2::new(coords.x, coords.y);
-                commands.trigger(RemoveParticleEvent {
+                ev_remove_particle.write(RemoveParticleEvent {
                     position,
                     despawn: true,
                 });
@@ -327,7 +332,7 @@ pub fn spawn_particles(
 }
 
 pub fn despawn_particles(
-    mut commands: Commands,
+    mut ev_remove_particle: EventWriter<RemoveParticleEvent>,
     cursor_coords: Res<CursorCoords>,
     brush_type: Res<State<BrushType>>,
     brush_query: Query<&Brush>,
@@ -342,7 +347,7 @@ pub fn despawn_particles(
     let brush_size = brush.size;
 
     brush_type.remove_particles(
-        &mut commands,
+        &mut ev_remove_particle,
         cursor_coords.current.as_ivec2(),
         brush_size as f32,
     );
