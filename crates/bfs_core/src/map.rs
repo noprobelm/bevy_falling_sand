@@ -16,10 +16,15 @@ impl Plugin for ParticleMapPlugin {
         app.add_event::<ClearParticleMapEvent>()
             .add_event::<ClearParticleTypeChildrenEvent>()
             .add_systems(Startup, setup_particle_map)
-            .add_systems(Update, reset_chunks.in_set(ParticleSimulationSet))
+            .add_systems(
+                Update,
+                (
+                    reset_chunks.in_set(ParticleSimulationSet),
+                    ev_clear_particle_type_children,
+                ),
+            )
             .add_observer(on_remove_particle)
-            .add_observer(on_clear_particle_map)
-            .add_observer(on_clear_particle_type_children);
+            .add_observer(on_clear_particle_map);
     }
 }
 
@@ -476,10 +481,6 @@ fn on_remove_particle(
     }
 }
 
-/// Observer for handling [`ClearParticleMapEvent`].
-///
-/// When this event is received, all children are removed from their [`ParticleType`] parents and
-/// the [`ParticleMap`] is cleared.
 #[allow(clippy::needless_pass_by_value)]
 fn on_clear_particle_map(
     _trigger: Trigger<ClearParticleMapEvent>,
@@ -493,25 +494,17 @@ fn on_clear_particle_map(
     map.clear();
 }
 
-/// Observer for handling [`ClearParticleTypeChildrenEvent`].
-///
-/// When this event is received, all children of a specified [`ParticleType`] are removed from the
-/// simulation and despawned.
-///
-/// # Panics
-///
-/// This function panics if we attempt to remove a particle from the ECS world which does not exist
-/// in the [`ParticleMap`].
 #[allow(clippy::needless_pass_by_value)]
-fn on_clear_particle_type_children(
-    trigger: Trigger<ClearParticleTypeChildrenEvent>,
+fn ev_clear_particle_type_children(
+    mut ev_clear_particle_type_children: EventReader<ClearParticleTypeChildrenEvent>,
     mut commands: Commands,
+    mut map: ResMut<ParticleMap>,
     particle_query: Query<&ParticlePosition, With<Particle>>,
     parent_query: Query<&Children, With<ParticleType>>,
     particle_parent_map: Res<ParticleTypeMap>,
-    mut map: ResMut<ParticleMap>,
 ) {
-    let particle_type = trigger.event().0.clone();
+    ev_clear_particle_type_children.read().for_each(|ev| {
+        let particle_type = ev.0.clone();
     if let Some(parent_entity) = particle_parent_map.get(&particle_type) {
         if let Ok(children) = parent_query.get(*parent_entity) {
             children.iter().for_each(|child_entity| {
@@ -528,4 +521,6 @@ fn on_clear_particle_type_children(
     } else {
         warn!("Ignoring particle type '{particle_type}': not found in particle type map.");
     }
+
+    });
 }

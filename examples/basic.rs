@@ -210,8 +210,8 @@ fn update_total_particle_count_text(
     Ok(())
 }
 
-fn reset(mut commands: Commands) {
-    commands.trigger(ClearDynamicParticlesEvent);
+fn reset(mut ev_clear_dynamic_particles: EventWriter<ClearDynamicParticlesEvent>) {
+    ev_clear_dynamic_particles.write(ClearDynamicParticlesEvent);
 }
 
 fn zoom_camera(

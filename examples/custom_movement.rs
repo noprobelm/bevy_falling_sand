@@ -459,6 +459,6 @@ fn bump_velocity(
     }
 }
 
-fn reset(mut commands: Commands) {
-    commands.trigger(ClearDynamicParticlesEvent);
+fn reset(mut ev_clear_dynamic_particles: EventWriter<ClearDynamicParticlesEvent>) {
+    ev_clear_dynamic_particles.write(ClearDynamicParticlesEvent);
 }

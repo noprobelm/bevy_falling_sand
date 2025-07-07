@@ -223,8 +223,12 @@ fn toggle_spawn_sand_particles(mut commands: Commands, debug_map: Option<Res<Spa
     }
 }
 
-fn reset(mut commands: Commands, demo_rigid_body_query: Query<Entity, With<DemoRigidBody>>) {
-    commands.trigger(ClearDynamicParticlesEvent);
+fn reset(
+    mut commands: Commands,
+    mut ev_clear_dynamic_particles: EventWriter<ClearDynamicParticlesEvent>,
+    demo_rigid_body_query: Query<Entity, With<DemoRigidBody>>,
+) {
+    ev_clear_dynamic_particles.write(ClearDynamicParticlesEvent);
     demo_rigid_body_query.iter().for_each(|entity| {
         commands.entity(entity).despawn();
     });

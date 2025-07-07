@@ -431,8 +431,8 @@ pub fn update_app_state(
     }
 }
 
-fn reset(mut commands: Commands) {
-    commands.trigger(ClearDynamicParticlesEvent);
+fn reset(mut ev_clear_dynamic_particles: EventWriter<ClearDynamicParticlesEvent>) {
+    ev_clear_dynamic_particles.write(ClearDynamicParticlesEvent);
 }
 
 fn render_fire_settings_gui(
