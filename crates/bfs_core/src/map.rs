@@ -461,11 +461,6 @@ fn reset_chunks(mut map: ResMut<ParticleMap>) {
     map.reset_chunks();
 }
 
-/// Observer for handling [`RemoveParticleEvent`].
-///
-/// When this event is received, the particle entity at the corresponding position is removed from
-/// the [`ParticleMap`] and also unlinked from its [`ParticleType`] parent entity. If the `despawn`
-/// flag is set, despawn the particle entity from the ECS world.
 #[allow(clippy::needless_pass_by_value)]
 fn ev_remove_particle(
     mut ev_remove_particle: EventReader<RemoveParticleEvent>,
