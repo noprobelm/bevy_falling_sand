@@ -80,10 +80,7 @@ fn handle_burning(
         .for_each(|(entity, mut burns, mut burning, mut rng, position)| {
             if burning.timer.tick(time.delta()).finished() {
                 if burns.chance_destroy_per_tick.is_some() {
-                    commands.trigger(RemoveParticleEvent {
-                        position: position.0,
-                        despawn: true,
-                    });
+                    commands.entity(entity).despawn();
                 } else {
                     commands.entity(entity).remove::<Burning>();
                     entities.push(entity);
@@ -96,10 +93,7 @@ fn handle_burning(
                 }
                 if let Some(chance_destroy) = burns.chance_destroy_per_tick {
                     if rng.chance(chance_destroy) {
-                        commands.trigger(RemoveParticleEvent {
-                            position: position.0,
-                            despawn: true,
-                        });
+                        commands.entity(entity).despawn();
                     }
                 }
             }
