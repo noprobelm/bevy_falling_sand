@@ -3,7 +3,6 @@ use std::mem;
 
 use bevy::prelude::*;
 use bevy::platform::collections::HashSet;
-use bevy_turborand::GlobalRng;
 use bfs_core::{Particle, ParticleMap, ParticlePosition, ParticleSimulationSet};
 
 pub(super) struct SystemsPlugin;
