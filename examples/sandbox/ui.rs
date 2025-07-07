@@ -63,7 +63,9 @@ impl bevy::prelude::Plugin for UIPlugin {
             )
             .add_systems(
                 Update,
-                ev_write_step_simulation.run_if(input_just_pressed(KeyCode::KeyP)),
+                ev_write_step_simulation
+                    .run_if(input_just_pressed(KeyCode::KeyP))
+                    .before(ParticleSimulationSet),
             )
             .add_systems(OnEnter(AppState::Ui), show_cursor)
             .add_systems(OnEnter(AppState::Canvas), hide_cursor)
@@ -150,7 +152,6 @@ impl ParticleControlUI {
         &self,
         ui: &mut egui::Ui,
         brush_state: &mut ResMut<NextState<BrushState>>,
-        commands: &mut Commands,
         ev_clear_dynamic_particles: &mut EventWriter<ClearDynamicParticlesEvent>,
         ev_clear_static_particles: &mut EventWriter<ClearStaticParticlesEvent>,
         ev_clear_particle_map: &mut EventWriter<ClearParticleMapEvent>,
@@ -457,7 +458,6 @@ pub fn render_side_panel(
             ParticleControlUI.render(
                 ui,
                 &mut brush_state,
-                &mut commands,
                 &mut ev_clear_dynamic_particles,
                 &mut ev_clear_static_particles,
                 &mut ev_clear_particle_map,
