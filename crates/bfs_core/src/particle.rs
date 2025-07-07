@@ -238,9 +238,9 @@ pub struct ResetParticleEvent {
 
 #[allow(clippy::needless_pass_by_value)]
 fn condition_ev_simulation_step_received(
-    mut ev_simulation_step: EventReader<SimulationStepEvent>,
+    ev_simulation_step: EventReader<SimulationStepEvent>,
 ) -> bool {
-    for _ in ev_simulation_step.read() {
+    if !ev_simulation_step.is_empty() {
         return true;
     }
     false
@@ -323,7 +323,7 @@ fn ev_reset_particle(
         } else {
             warn!("No Particle component found for entity {:?}", ev.entity);
         }
-    })
+    });
 }
 
 #[allow(clippy::needless_pass_by_value)]
@@ -333,12 +333,10 @@ fn ev_reset_particle_children(
     particle_type_query: Query<Option<&Children>, With<ParticleType>>,
 ) {
     ev_reset_particle_children.read().for_each(|ev| {
-        if let Ok(children) = particle_type_query.get(ev.entity) {
-            if let Some(children) = children {
-                children.iter().for_each(|entity| {
-                    ev_reset_particle.write(ResetParticleEvent { entity });
-                });
-            }
+        if let Ok(Some(children)) = particle_type_query.get(ev.entity) {
+            children.iter().for_each(|entity| {
+                ev_reset_particle.write(ResetParticleEvent { entity });
+            });
         }
     });
 }

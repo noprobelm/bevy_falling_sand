@@ -31,7 +31,7 @@ impl Plugin for FallingSandScenesPlugin {
                     save_scene_system.run_if(on_event::<SaveSceneEvent>),
                     load_scene_system.run_if(on_event::<LoadSceneEvent>),
                 ),
-            )
+            );
     }
 }
 
