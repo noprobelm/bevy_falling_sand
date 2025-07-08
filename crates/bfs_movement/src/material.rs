@@ -1,8 +1,13 @@
-use bevy::prelude::*;
+use bevy::{
+    ecs::component::{Mutable, StorageType},
+    prelude::*,
+};
 use bfs_core::{ClearParticleTypeChildrenEvent, ParticleType};
 use serde::{Deserialize, Serialize};
 
-use super::MovementPriority;
+use crate::Moved;
+
+use super::Movement;
 
 pub(super) struct MaterialPlugin;
 
@@ -22,29 +27,18 @@ impl Plugin for MaterialPlugin {
     }
 }
 
-/// Used to describe a Material, which can be translated to a [`MovementPriority`].
+/// Used to describe a Material, which can be translated to a [`Movement`].
 pub trait Material {
     #[allow(dead_code)]
-    /// Get the [`MovementPriority`] for the material type.
-    fn to_movement_priority(&self) -> MovementPriority {
-        MovementPriority::empty()
+    /// Get the [`Movement`] for the material type.
+    fn to_movement_priority(&self) -> Movement {
+        Movement::empty()
     }
 }
 
 /// A simple wall, which has no movement to it.
 #[derive(
-    Clone,
-    Eq,
-    PartialEq,
-    Ord,
-    PartialOrd,
-    Hash,
-    Debug,
-    Default,
-    Component,
-    Reflect,
-    Serialize,
-    Deserialize,
+    Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Reflect, Serialize, Deserialize,
 )]
 #[reflect(Component)]
 pub struct Wall;
@@ -57,22 +51,37 @@ impl Wall {
     }
 }
 
-impl Material for Wall {}
+impl Component for Wall {
+    type Mutability = Mutable;
+
+    const STORAGE_TYPE: StorageType = StorageType::Table;
+
+    fn register_component_hooks(hooks: &mut bevy::ecs::component::ComponentHooks) {
+        hooks.on_add(|mut world, context| {
+            if world.get::<Solid>(context.entity).is_some() {
+                world.commands().entity(context.entity).remove::<Solid>();
+            }
+            if world.get::<MovableSolid>(context.entity).is_some() {
+                world
+                    .commands()
+                    .entity(context.entity)
+                    .remove::<MovableSolid>();
+            }
+            if world.get::<Liquid>(context.entity).is_some() {
+                world.commands().entity(context.entity).remove::<Liquid>();
+            }
+            if world.get::<Gas>(context.entity).is_some() {
+                world.commands().entity(context.entity).remove::<Gas>();
+            }
+            world.commands().entity(context.entity).remove::<Movement>();
+            world.commands().entity(context.entity).insert(Moved(false));
+        });
+    }
+}
 
 /// A solid particle, which can move only downwards.
 #[derive(
-    Clone,
-    Eq,
-    PartialEq,
-    Ord,
-    PartialOrd,
-    Hash,
-    Debug,
-    Default,
-    Component,
-    Reflect,
-    Serialize,
-    Deserialize,
+    Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Reflect, Serialize, Deserialize,
 )]
 #[reflect(Component)]
 pub struct Solid;
@@ -86,25 +95,41 @@ impl Solid {
 }
 
 impl Material for Solid {
-    fn to_movement_priority(&self) -> MovementPriority {
-        MovementPriority::from(vec![vec![IVec2::NEG_Y]])
+    fn to_movement_priority(&self) -> Movement {
+        Movement::from(vec![vec![IVec2::NEG_Y]])
+    }
+}
+
+impl Component for Solid {
+    type Mutability = Mutable;
+
+    const STORAGE_TYPE: StorageType = StorageType::Table;
+
+    fn register_component_hooks(hooks: &mut bevy::ecs::component::ComponentHooks) {
+        hooks.on_add(|mut world, context| {
+            if world.get::<Wall>(context.entity).is_some() {
+                world.commands().entity(context.entity).remove::<Wall>();
+            }
+            if world.get::<MovableSolid>(context.entity).is_some() {
+                world
+                    .commands()
+                    .entity(context.entity)
+                    .remove::<MovableSolid>();
+            }
+            if world.get::<Liquid>(context.entity).is_some() {
+                world.commands().entity(context.entity).remove::<Liquid>();
+            }
+            if world.get::<Gas>(context.entity).is_some() {
+                world.commands().entity(context.entity).remove::<Gas>();
+            }
+            world.commands().entity(context.entity).insert(Moved(true));
+        });
     }
 }
 
 /// A movable solid particle, which can move downwards and diagonally.
 #[derive(
-    Clone,
-    Eq,
-    PartialEq,
-    Ord,
-    PartialOrd,
-    Hash,
-    Debug,
-    Default,
-    Component,
-    Reflect,
-    Serialize,
-    Deserialize,
+    Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Reflect, Serialize, Deserialize,
 )]
 #[reflect(Component)]
 pub struct MovableSolid;
@@ -118,11 +143,35 @@ impl MovableSolid {
 }
 
 impl Material for MovableSolid {
-    fn to_movement_priority(&self) -> MovementPriority {
-        MovementPriority::from(vec![
+    fn to_movement_priority(&self) -> Movement {
+        Movement::from(vec![
             vec![IVec2::NEG_Y],
             vec![IVec2::NEG_ONE, IVec2::new(1, -1)],
         ])
+    }
+}
+
+impl Component for MovableSolid {
+    type Mutability = Mutable;
+
+    const STORAGE_TYPE: StorageType = StorageType::Table;
+
+    fn register_component_hooks(hooks: &mut bevy::ecs::component::ComponentHooks) {
+        hooks.on_add(|mut world, context| {
+            if world.get::<Wall>(context.entity).is_some() {
+                world.commands().entity(context.entity).remove::<Wall>();
+            }
+            if world.get::<Solid>(context.entity).is_some() {
+                world.commands().entity(context.entity).remove::<Solid>();
+            }
+            if world.get::<Liquid>(context.entity).is_some() {
+                world.commands().entity(context.entity).remove::<Liquid>();
+            }
+            if world.get::<Gas>(context.entity).is_some() {
+                world.commands().entity(context.entity).remove::<Gas>();
+                world.commands().entity(context.entity).insert(Moved(true));
+            }
+        });
     }
 }
 
@@ -132,18 +181,7 @@ impl Material for MovableSolid {
 /// positions are found, it will attempt to move horizontally n spaces as a function of its fluidity
 /// + 1.
 #[derive(
-    Clone,
-    Eq,
-    PartialEq,
-    Ord,
-    PartialOrd,
-    Hash,
-    Debug,
-    Default,
-    Component,
-    Reflect,
-    Serialize,
-    Deserialize,
+    Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Reflect, Serialize, Deserialize,
 )]
 #[reflect(Component)]
 pub struct Liquid {
@@ -160,7 +198,7 @@ impl Liquid {
 }
 
 impl Material for Liquid {
-    fn to_movement_priority(&self) -> MovementPriority {
+    fn to_movement_priority(&self) -> Movement {
         let mut neighbors: Vec<Vec<IVec2>> = vec![
             vec![IVec2::NEG_Y],
             vec![IVec2::NEG_ONE, IVec2::new(1, -1)],
@@ -174,24 +212,40 @@ impl Material for Liquid {
             ]);
         }
 
-        MovementPriority::from(neighbors)
+        Movement::from(neighbors)
+    }
+}
+
+impl Component for Liquid {
+    type Mutability = Mutable;
+
+    const STORAGE_TYPE: StorageType = StorageType::Table;
+
+    fn register_component_hooks(hooks: &mut bevy::ecs::component::ComponentHooks) {
+        hooks.on_add(|mut world, context| {
+            if world.get::<Wall>(context.entity).is_some() {
+                world.commands().entity(context.entity).remove::<Wall>();
+            }
+            if world.get::<Solid>(context.entity).is_some() {
+                world.commands().entity(context.entity).remove::<Solid>();
+            }
+            if world.get::<MovableSolid>(context.entity).is_some() {
+                world
+                    .commands()
+                    .entity(context.entity)
+                    .remove::<MovableSolid>();
+            }
+            if world.get::<Gas>(context.entity).is_some() {
+                world.commands().entity(context.entity).remove::<Gas>();
+                world.commands().entity(context.entity).insert(Moved(true));
+            }
+        });
     }
 }
 
 /// A gas particle, which can move upwards, upwards diagonally, and horizontally.
 #[derive(
-    Clone,
-    Eq,
-    PartialEq,
-    Ord,
-    PartialOrd,
-    Hash,
-    Debug,
-    Default,
-    Component,
-    Reflect,
-    Serialize,
-    Deserialize,
+    Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Reflect, Serialize, Deserialize,
 )]
 #[reflect(Component)]
 pub struct Gas {
@@ -208,7 +262,7 @@ impl Gas {
 }
 
 impl Material for Gas {
-    fn to_movement_priority(&self) -> MovementPriority {
+    fn to_movement_priority(&self) -> Movement {
         let mut neighbors: Vec<Vec<IVec2>> =
             vec![vec![IVec2::Y, IVec2::new(1, 1), IVec2::new(-1, 1)]];
 
@@ -219,10 +273,36 @@ impl Material for Gas {
             ]);
         }
 
-        MovementPriority::from(neighbors)
+        Movement::from(neighbors)
     }
 }
 
+impl Component for Gas {
+    type Mutability = Mutable;
+
+    const STORAGE_TYPE: StorageType = StorageType::Table;
+
+    fn register_component_hooks(hooks: &mut bevy::ecs::component::ComponentHooks) {
+        hooks.on_add(|mut world, context| {
+            if world.get::<Wall>(context.entity).is_some() {
+                world.commands().entity(context.entity).remove::<Wall>();
+            }
+            if world.get::<Solid>(context.entity).is_some() {
+                world.commands().entity(context.entity).remove::<Solid>();
+            }
+            if world.get::<MovableSolid>(context.entity).is_some() {
+                world
+                    .commands()
+                    .entity(context.entity)
+                    .remove::<MovableSolid>();
+            }
+            if world.get::<Liquid>(context.entity).is_some() {
+                world.commands().entity(context.entity).remove::<Liquid>();
+                world.commands().entity(context.entity).insert(Moved(true));
+            }
+        });
+    }
+}
 /// Clear all dynamic particles from the world.
 #[derive(Event)]
 pub struct ClearDynamicParticlesEvent;

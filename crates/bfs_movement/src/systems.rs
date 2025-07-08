@@ -1,4 +1,4 @@
-use crate::{MovementRng, Velocity, Momentum, Density, MovementPriority, Moved};
+use crate::{MovementRng, Velocity, Momentum, Density, Movement, Moved};
 use std::mem;
 
 use bevy::prelude::*;
@@ -43,7 +43,7 @@ type ParticleMovementQuery<'a> = (
     &'a mut Velocity,
     Option<&'a mut Momentum>,
     &'a Density,
-    &'a mut MovementPriority,
+    &'a mut Movement,
     &'a mut Moved,
 );
 
@@ -85,7 +85,7 @@ fn handle_movement_by_chunks(
             {
                 let mut moved = false;
 
-                'velocity_loop: for _ in 0..velocity.val {
+                'velocity_loop: for _ in 0..velocity.current() {
                     let mut obstructed: HashSet<IVec2> = HashSet::default();
 
                     for relative_position in movement_priority
@@ -218,7 +218,7 @@ fn handle_movement_by_particles(
                 }
                 // Used to determine if we should add the particle to set of visited particles.
                 let mut moved = false;
-                'velocity_loop: for _ in 0..velocity.val {
+                'velocity_loop: for _ in 0..velocity.current() {
                     // If a particle is blocked on a certain vector, we shouldn't attempt to swap it with other particles along that
                     // same vector.
                     let mut obstructed: HashSet<IVec2> = HashSet::default();

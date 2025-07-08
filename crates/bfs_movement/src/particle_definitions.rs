@@ -20,7 +20,7 @@ impl Plugin for ParticleDefinitionsPlugin {
             .register_type::<Density>()
             .register_type::<Velocity>()
             .register_type::<Momentum>()
-            .register_type::<MovementPriority>()
+            .register_type::<Movement>()
             .add_systems(
                 PreUpdate,
                 handle_particle_registration.before(ParticleSimulationSet),
@@ -35,7 +35,7 @@ impl_particle_rng!(MovementRng, RngComponent);
 #[reflect(Component)]
 pub struct MovementRng(pub RngComponent);
 
-/// Marker comopenponent to indicate that a particle has been moved.
+/// Marker component to indicate that a particle has been moved.
 #[derive(
     Copy,
     Clone,
@@ -81,7 +81,6 @@ pub struct Density(pub u32);
     PartialOrd,
     Hash,
     Debug,
-    Default,
     Component,
     Reflect,
     Serialize,
@@ -90,29 +89,83 @@ pub struct Density(pub u32);
 #[reflect(Component)]
 pub struct Velocity {
     /// The current velocity value.
-    pub val: u8,
+    current: u8,
     /// The maximum velocity value.
-    pub max: u8,
+    max: u8,
+}
+
+impl Default for Velocity {
+    fn default() -> Self {
+        Self::new(1, 1)
+    }
 }
 
 impl Velocity {
     /// Initialize a Velocity
     #[must_use]
-    pub const fn new(val: u8, max: u8) -> Self {
-        Self { val, max }
+    pub const fn new(initial: u8, max: u8) -> Self {
+        if initial < 1 {
+            Self { current: 1, max }
+        } else {
+            Self {
+                current: initial,
+                max,
+            }
+        }
+    }
+
+    /// Get the current velocity value
+    #[must_use]
+    pub const fn current(&self) -> u8 {
+        self.current
+    }
+
+    /// Get the current mutable velocity value
+    #[must_use]
+    pub const fn current_mut(&self) -> u8 {
+        self.current
+    }
+
+    /// Get the max velocity value
+    #[must_use]
+    pub const fn max(&self) -> u8 {
+        self.max
+    }
+
+    /// Get the mutable max velocity value
+    pub const fn max_mut(&mut self) -> u8 {
+        self.max
+    }
+
+    /// Set the velocity to a new value.
+    pub const fn set_velocity(&mut self, val: u8) {
+        if val < 1 {
+            self.current = 1;
+        } else {
+            self.current = val;
+        }
+    }
+
+    /// Set the velocity to a new value.
+    pub const fn set_max_velocity(&mut self, val: u8) {
+        if val < 1 {
+            self.max = 1;
+        } else {
+            self.max = val;
+        }
     }
 
     /// Increment the velocity by 1.
     pub const fn increment(&mut self) {
-        if self.val < self.max {
-            self.val += 1;
+        if self.current < self.max {
+            self.current += 1;
         }
     }
 
     /// Decrement the velocity by 1.
     pub const fn decrement(&mut self) {
-        if self.val > 1 {
-            self.val -= 1;
+        if self.current > 1 {
+            self.current -= 1;
         }
     }
 }
@@ -238,19 +291,19 @@ impl<'a> Iterator for NeighborGroupIter<'a> {
 /// move while using [`bfs_movement`].
 #[derive(Clone, Eq, PartialEq, Hash, Debug, Default, Component, Reflect)]
 #[reflect(Component)]
-pub struct MovementPriority {
+pub struct Movement {
     /// The underlying groups of neighbors that define the movement priority.
     pub neighbor_groups: SmallVec<[NeighborGroup; 8]>,
 }
 
-impl MovementPriority {
-    /// Initialize a new `MovementPriority` with the specified neighbor groups.
+impl Movement {
+    /// Initialize a new `Movement` with the specified neighbor groups.
     #[must_use]
     pub const fn new(neighbor_groups: SmallVec<[NeighborGroup; 8]>) -> Self {
         Self { neighbor_groups }
     }
 
-    /// Build a [`MovementPriority`] from Vec<Vec<IVec2>>. Each inner vector represents a group of
+    /// Build a [`Movement`] from Vec<Vec<IVec2>>. Each inner vector represents a group of
     /// neighbors
     #[must_use]
     pub fn from(movement_priority: Vec<Vec<IVec2>>) -> Self {
@@ -262,24 +315,24 @@ impl MovementPriority {
         )
     }
 
-    /// Returns true if the [`MovementPriority`] holds no data.
+    /// Returns true if the [`Movement`] holds no data.
     #[must_use]
     pub fn is_empty(&self) -> bool {
         self.neighbor_groups.is_empty()
     }
 
-    /// Returns the length of the [`MovementPriority`].
+    /// Returns the length of the [`Movement`].
     #[must_use]
     pub fn len(&self) -> usize {
         self.neighbor_groups.len()
     }
 
-    /// Pushes back a new group of neighbors to the [`MovementPriority`].
+    /// Pushes back a new group of neighbors to the [`Movement`].
     pub fn push_outer(&mut self, neighbor_group: NeighborGroup) {
         self.neighbor_groups.push(neighbor_group);
     }
 
-    /// Pushes back a new neighbor to a specified inner group index of the [`MovementPriority`].
+    /// Pushes back a new neighbor to a specified inner group index of the [`Movement`].
     ///
     /// # Errors
     ///
@@ -331,7 +384,7 @@ impl MovementPriority {
             })
     }
 
-    /// An iterator for the outer groups of the [`MovementPriority`].
+    /// An iterator for the outer groups of the [`Movement`].
     pub fn iter(&self) -> impl Iterator<Item = &NeighborGroup> {
         self.neighbor_groups.iter()
     }
@@ -367,7 +420,7 @@ impl MovementPriority {
     }
 }
 
-impl MovementPriority {
+impl Movement {
     /// Initialize an empty `NeighborGroup`
     #[must_use]
     pub const fn empty() -> Self {
@@ -380,7 +433,7 @@ impl MovementPriority {
 type MovementQuery<'a> = (
     Option<&'a mut Density>,
     Option<&'a mut Velocity>,
-    Option<&'a mut MovementPriority>,
+    Option<&'a mut Movement>,
     Option<&'a mut Momentum>,
     Option<&'a mut Wall>,
     Option<&'a mut Liquid>,
@@ -422,11 +475,6 @@ fn handle_particle_registration(
                     } else {
                         commands.entity(*entity).remove::<Velocity>();
                     }
-                    if let Some(movement_priority) = movement_priority {
-                        commands.entity(*entity).insert(movement_priority.clone());
-                    } else {
-                        commands.entity(*entity).remove::<MovementPriority>();
-                    }
                     if let Some(momentum) = momentum {
                         commands.entity(*entity).insert(*momentum);
                     } else {
@@ -434,11 +482,6 @@ fn handle_particle_registration(
                     }
                     if wall.is_some() {
                         commands.entity(*entity).insert(Wall);
-                        commands.entity(*entity).insert(Moved(false));
-                        commands.entity(*entity).remove::<MovementPriority>();
-                    } else {
-                        commands.entity(*entity).remove::<Wall>();
-                        commands.entity(*entity).remove::<Moved>();
                     }
                     if let Some(liquid) = liquid {
                         commands.entity(*entity).insert(liquid.clone());
@@ -446,37 +489,26 @@ fn handle_particle_registration(
                         commands
                             .entity(*entity)
                             .insert(liquid.to_movement_priority());
-                    } else {
-                        commands.entity(*entity).remove::<Liquid>();
-                        commands.entity(*entity).remove::<Moved>();
-                    }
-                    if let Some(gas) = gas {
+                    } else if let Some(gas) = gas {
                         commands.entity(*entity).insert(gas.clone());
                         commands.entity(*entity).insert(Moved(true));
                         commands.entity(*entity).insert(gas.to_movement_priority());
-                    } else {
-                        commands.entity(*entity).remove::<Gas>();
-                        commands.entity(*entity).remove::<Moved>();
-                    }
-                    if let Some(movable_solid) = movable_solid {
+                    } else if let Some(movable_solid) = movable_solid {
                         commands.entity(*entity).insert(movable_solid.clone());
                         commands.entity(*entity).insert(Moved(true));
                         commands
                             .entity(*entity)
                             .insert(movable_solid.to_movement_priority());
-                    } else {
-                        commands.entity(*entity).remove::<MovableSolid>();
-                        commands.entity(*entity).remove::<Moved>();
-                    }
-                    if let Some(solid) = solid {
+                    } else if let Some(solid) = solid {
                         commands.entity(*entity).insert(solid.clone());
                         commands.entity(*entity).insert(Moved(true));
                         commands
                             .entity(*entity)
                             .insert(solid.to_movement_priority());
+                    } else if let Some(movement_priority) = movement_priority {
+                        commands.entity(*entity).insert(movement_priority.clone());
                     } else {
-                        commands.entity(*entity).remove::<Solid>();
-                        commands.entity(*entity).remove::<Moved>();
+                        commands.entity(*entity).remove::<Movement>();
                     }
                 }
                 commands.entity(*entity).insert(Moved(true));

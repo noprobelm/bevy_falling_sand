@@ -1122,7 +1122,8 @@ fn render_max_velocity_field(
     ui.horizontal(|ui| {
         ui.label("Max Velocity: ");
         ui.add(
-            egui::Slider::new(&mut particle_max_velocity_field.blueprint.max, 1..=5).step_by(1.),
+            egui::Slider::new(&mut particle_max_velocity_field.blueprint.max_mut(), 1..=5)
+                .step_by(1.),
         );
     });
 }
@@ -1910,9 +1911,17 @@ pub struct ParticleEditorDensity {
     blueprint: Density,
 }
 
-#[derive(Default, Resource, Clone)]
+#[derive(Resource, Clone)]
 pub struct ParticleEditorMaxVelocity {
     blueprint: Velocity,
+}
+
+impl Default for ParticleEditorMaxVelocity {
+    fn default() -> Self {
+        ParticleEditorMaxVelocity {
+            blueprint: Velocity::new(3, 3),
+        }
+    }
 }
 
 #[derive(Default, Resource, Clone)]
@@ -1921,17 +1930,9 @@ pub struct ParticleEditorMomentum {
     blueprint: Momentum,
 }
 
-#[derive(Resource, Clone, Debug)]
+#[derive(Resource, Default, Clone, Debug)]
 pub struct ParticleEditorColors {
     blueprint: ColorProfile,
-}
-
-impl Default for ParticleEditorColors {
-    fn default() -> Self {
-        ParticleEditorColors {
-            blueprint: ColorProfile::default(),
-        }
-    }
 }
 
 #[derive(Resource, Clone, Debug)]
@@ -1975,13 +1976,13 @@ impl ParticleEditorCategoryState {
 
 #[derive(Resource, Clone, Debug)]
 pub struct ParticleEditorMovementPriority {
-    blueprint: MovementPriority,
+    blueprint: Movement,
 }
 
 impl Default for ParticleEditorMovementPriority {
     fn default() -> Self {
         ParticleEditorMovementPriority {
-            blueprint: MovementPriority::empty(),
+            blueprint: Movement::empty(),
         }
     }
 }

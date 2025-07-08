@@ -1,9 +1,7 @@
 use bevy::prelude::*;
 use bfs_color::{ChangesColor, ColorProfile};
 use bfs_core::ParticleType;
-use bfs_movement::{
-    Density, Gas, Liquid, Momentum, MovableSolid, MovementPriority, Solid, Velocity, Wall,
-};
+use bfs_movement::{Density, Gas, Liquid, Momentum, MovableSolid, Movement, Solid, Velocity, Wall};
 use bfs_reactions::{Burning, Burns};
 use serde::{Deserialize, Serialize};
 
@@ -16,7 +14,7 @@ pub struct ParticleBundle {
     pub density: Density,
     pub velocity: Velocity,
     pub momentum: Momentum,
-    pub movement_priority: MovementPriority,
+    pub movement_priority: Movement,
     pub burns: Burns,
     pub burning: Burning,
     pub wall: Wall,
