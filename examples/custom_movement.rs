@@ -155,7 +155,7 @@ fn setup(
 
     commands.spawn((
         ParticleType::new("Moore Neighborhood Particle (no momentum)"),
-        MovementPriority::from(vec![vec![
+        Movement::from(vec![vec![
             IVec2::new(-1, -1),
             IVec2::new(0, -1),
             IVec2::new(1, -1),
@@ -171,7 +171,7 @@ fn setup(
     ));
     commands.spawn((
         ParticleType::new("Moore Neighborhood Particle (with momentum)"),
-        MovementPriority::from(vec![vec![
+        Movement::from(vec![vec![
             IVec2::new(-1, -1),
             IVec2::new(0, -1),
             IVec2::new(1, -1),
@@ -188,7 +188,7 @@ fn setup(
     ));
     commands.spawn((
         ParticleType::new("Neumann Neighborhood Particle (no momentum)"),
-        MovementPriority::from(vec![vec![
+        Movement::from(vec![vec![
             IVec2::new(0, -1),
             IVec2::new(-1, 0),
             IVec2::new(1, 0),
@@ -200,7 +200,7 @@ fn setup(
     ));
     commands.spawn((
         ParticleType::new("Neumann Neighborhood Particle (with momentum)"),
-        MovementPriority::from(vec![vec![
+        Movement::from(vec![vec![
             IVec2::new(0, -1),
             IVec2::new(-1, 0),
             IVec2::new(1, 0),
@@ -213,14 +213,14 @@ fn setup(
     ));
     commands.spawn((
         ParticleType::new("Downward diagonal (no momentum)"),
-        MovementPriority::from(vec![vec![IVec2::new(-1, -1), IVec2::new(1, -1)]]),
+        Movement::from(vec![vec![IVec2::new(-1, -1), IVec2::new(1, -1)]]),
         density,
         velocity,
         color_profile.clone(),
     ));
     commands.spawn((
         ParticleType::new("Downward diagonal (with momentum)"),
-        MovementPriority::from(vec![vec![IVec2::new(-1, -1), IVec2::new(1, -1)]]),
+        Movement::from(vec![vec![IVec2::new(-1, -1), IVec2::new(1, -1)]]),
         density,
         velocity,
         color_profile.clone(),
@@ -450,7 +450,7 @@ fn bump_velocity(
     particle_type_query
         .iter_mut()
         .for_each(|(entity, mut velocity_bp)| {
-            velocity_bp.max = velocity_selection.0;
+            velocity_bp.set_max_velocity(velocity_selection.0);
             ev_reset_particle_chidlren.write(ResetParticleChildrenEvent { entity });
         });
     for mut velocity_selection_text in velocity_selection_text.iter_mut() {
