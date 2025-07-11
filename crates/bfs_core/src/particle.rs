@@ -238,9 +238,9 @@ pub struct ResetParticleEvent {
 
 #[allow(clippy::needless_pass_by_value)]
 fn condition_ev_simulation_step_received(
-    ev_simulation_step: EventReader<SimulationStepEvent>,
+    mut ev_simulation_step: EventReader<SimulationStepEvent>,
 ) -> bool {
-    if !ev_simulation_step.is_empty() {
+    for _ in ev_simulation_step.read() {
         return true;
     }
     false
