@@ -53,145 +53,139 @@ fn handle_movement_by_chunks(
     mut map: ResMut<ParticleMap>,
 ) {
     let mut visited: HashSet<Entity> = HashSet::default();
-    let mut particle_entities: Vec<Entity> = Vec::with_capacity(map.particles_per_chunk);
 
     unsafe {
-        map.iter_chunks_mut().for_each(|mut chunk| {
+        let map_ptr = &raw mut *map;
+
+        let mut chunks = (*map_ptr).iter_chunks_mut();
+        for mut chunk in chunks {
             if let Some(dirty_rect) = chunk.dirty_rect() {
-                chunk.iter().for_each(|(position, entity)| {
+                let chunk_iter = chunk.iter().collect::<Vec<_>>();
+
+                for (position, entity) in chunk_iter {
                     if dirty_rect.contains(*position) {
-                        particle_entities.push(*entity);
-                    }
-                });
-            }
-        });
-        for entity in particle_entities {
-            if visited.contains(&entity) {
-                continue;
-            }
-
-            if let Ok((
-                _,
-                particle_type,
-                mut position,
-                mut transform,
-                mut rng,
-                mut velocity,
-                mut momentum,
-                density,
-                mut movement_priority,
-                mut particle_moved,
-            )) = particle_query.get_unchecked(entity)
-            {
-                let mut moved = false;
-
-                'velocity_loop: for _ in 0..velocity.current() {
-                    let mut obstructed: HashSet<IVec2> = HashSet::default();
-
-                    for relative_position in movement_priority
-                        .iter_candidates(&mut rng, momentum.as_deref().copied().as_ref())
-                    {
-                        let neighbor_position = position.0 + *relative_position;
-                        let signum = relative_position.signum();
-
-                        if obstructed.contains(&signum) {
+                        if visited.contains(entity) {
                             continue;
                         }
 
-                        match map.get(&neighbor_position) {
-                            Some(neighbor_entity) => {
-                                if let Ok((
-                                    _,
-                                    neighbor_particle_type,
-                                    mut neighbor_position,
-                                    mut neighbor_transform,
-                                    _,
-                                    _,
-                                    _,
-                                    neighbor_density,
-                                    _,
-                                    _,
-                                )) = particle_query.get_unchecked(*neighbor_entity)
+                        if let Ok((
+                            _,
+                            particle_type,
+                            mut position,
+                            mut transform,
+                            mut rng,
+                            mut velocity,
+                            mut momentum,
+                            density,
+                            mut movement_priority,
+                            mut particle_moved,
+                        )) = particle_query.get_unchecked(*entity)
+                        {
+                            let mut moved = false;
+
+                            'velocity_loop: for _ in 0..velocity.current() {
+                                let mut obstructed: HashSet<IVec2> = HashSet::default();
+
+                                for relative_position in movement_priority
+                                    .iter_candidates(&mut rng, momentum.as_deref().copied().as_ref())
                                 {
-                                    if *particle_type == *neighbor_particle_type {
+                                    let neighbor_position = position.0 + *relative_position;
+                                    let signum = relative_position.signum();
+
+                                    if obstructed.contains(&signum) {
                                         continue;
                                     }
 
-                                    if density > neighbor_density {
-                                        match map.swap(neighbor_position.0, position.0) {
-                                            Ok(()) => {
-                                                swap_particle_positions(
-                                                    &mut position,
-                                                    &mut transform,
-                                                    &mut neighbor_position,
-                                                    &mut neighbor_transform,
-                                                );
+                                    let neighbor_entity = (*map_ptr).get(&neighbor_position).copied();
 
-                                                if let Some(ref mut m) = momentum {
-                                                    m.0 = IVec2::ZERO;
+                                    match neighbor_entity {
+                                        Some(neighbor_entity) => {
+                                            if let Ok((
+                                                _,
+                                                neighbor_particle_type,
+                                                mut neighbor_position,
+                                                mut neighbor_transform,
+                                                _,
+                                                _,
+                                                _,
+                                                neighbor_density,
+                                                _,
+                                                _,
+                                            )) = particle_query.get_unchecked(neighbor_entity)
+                                            {
+                                                if *particle_type == *neighbor_particle_type {
+                                                    continue;
                                                 }
 
-                                                velocity.decrement();
+                                                if density > neighbor_density {
+                                                    if (*map_ptr).swap(neighbor_position.0, position.0).is_ok() {
+                                                        swap_particle_positions(
+                                                            &mut position,
+                                                            &mut transform,
+                                                            &mut neighbor_position,
+                                                            &mut neighbor_transform,
+                                                        );
+
+                                                        if let Some(ref mut m) = momentum {
+                                                            m.0 = IVec2::ZERO;
+                                                        }
+
+                                                        velocity.decrement();
+                                                        moved = true;
+                                                        break 'velocity_loop;
+                                                    }
+                                                } else {
+                                                    obstructed.insert(signum);
+                                                }
+                                            } else {
+                                                obstructed.insert(signum);
+                                            }
+                                        }
+                                        None => {
+                                            if (*map_ptr).swap(position.0, neighbor_position).is_ok() {
+                                                position.0 = neighbor_position;
+                                                transform.translation.x = neighbor_position.x as f32;
+                                                transform.translation.y = neighbor_position.y as f32;
+                                                if let Some(ref mut m) = momentum {
+                                                    m.0 = *relative_position;
+                                                }
+                                                velocity.increment();
                                                 moved = true;
-                                                break 'velocity_loop;
-                                            }
-                                            Err(err) => {
-                                                debug!("Attempted to swap particles at {:?} and {:?} but failed: {:?}", position.0, neighbor_position, err);
+                                                continue 'velocity_loop;
                                             }
                                         }
-                                    } else {
-                                        obstructed.insert(signum);
-                                    }
-                                } else {
-                                    obstructed.insert(signum);
-                                }
-                            }
-                            None => {
-                                match map.swap(position.0, neighbor_position) {
-                                    Ok(()) => {
-                                        position.0 = neighbor_position;
-                                        transform.translation.x = neighbor_position.x as f32;
-                                        transform.translation.y = neighbor_position.y as f32;
-                                        if let Some(ref mut m) = momentum {
-                                            m.0 = *relative_position;
-                                        }
-                                        velocity.increment();
-                                        moved = true;
-                                        continue 'velocity_loop;
-                                    },
-                                    Err(err) => {
-                                        debug!("Attempted to swap particles at {:?} and {:?} but failed: {:?}", position.0, neighbor_position, err);
                                     }
                                 }
+                                if !moved {
+                                    break 'velocity_loop;
+                                }
+                                particle_moved.0 = moved;
                             }
+
+                            if moved {
+                                visited.insert(*entity);
+                            } else {
+                                if let Some(ref mut m) = momentum {
+                                    m.0 = IVec2::ZERO;
+                                }
+                                velocity.decrement();
+                            }
+                            particle_moved.0 = moved;
                         }
                     }
-                    if !moved {
-                        break 'velocity_loop;
-                    }
-                    particle_moved.0 = moved;
                 }
-
-                if moved {
-                    visited.insert(entity);
-                } else {
-                    if let Some(ref mut m) = momentum {
-                        m.0 = IVec2::ZERO;
-                    }
-                    velocity.decrement();
-                }
-                particle_moved.0 = moved;
             }
         }
     }
 }
+
+
 
 #[allow(unused_mut, clippy::too_many_lines)]
 fn handle_movement_by_particles(
     mut particle_query: Query<ParticleMovementQuery>,
     mut map: ResMut<ParticleMap>,
 ) {
-    // Check visited before we perform logic on a particle (particles shouldn't move more than once)
     let mut visited: HashSet<IVec2> = HashSet::default();
     unsafe {
         particle_query.iter_unsafe().for_each(
@@ -216,11 +210,8 @@ fn handle_movement_by_particles(
                         return;
                     }
                 }
-                // Used to determine if we should add the particle to set of visited particles.
                 let mut moved = false;
                 'velocity_loop: for _ in 0..velocity.current() {
-                    // If a particle is blocked on a certain vector, we shouldn't attempt to swap it with other particles along that
-                    // same vector.
                     let mut obstructed: HashSet<IVec2> = HashSet::default();
 
                     for relative_position in movement_priority
@@ -275,13 +266,11 @@ fn handle_movement_by_particles(
                                         continue;
                                     }
                                 }
-                                // We've encountered an anchored particle
                                 else {
                                     obstructed.insert(relative_position.signum());
                                     continue;
                                 }
                             }
-                            // We've encountered a free slot for the target particle to move to
                             None => {
                                 match  map.swap(position.0, neighbor_position) {
                                     Ok(()) => {
@@ -289,7 +278,7 @@ fn handle_movement_by_particles(
                                         transform.translation.x = neighbor_position.x as f32;
                                         transform.translation.y = neighbor_position.y as f32;
                                         if let Some(ref mut momentum) = momentum {
-                                            momentum.0 = *relative_position; // Set momentum relative to the current position
+                                            momentum.0 = *relative_position;
                                         }
                                         velocity.increment();
                                         moved = true;
