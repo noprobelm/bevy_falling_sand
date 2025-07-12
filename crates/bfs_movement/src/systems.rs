@@ -3,13 +3,38 @@ use std::mem;
 
 use bevy::prelude::*;
 use bevy::platform::collections::HashSet;
+use bevy_turborand::prelude::*;
 use bfs_core::{Particle, ParticleMap, ParticlePosition, ParticleSimulationSet};
+
+type ObstructedDirections = [bool; 9];
+
+fn direction_to_index(dir: IVec2) -> usize {
+    match (dir.x, dir.y) {
+        (-1, -1) => 0, // bottom-left
+        (0, -1) => 1,  // bottom
+        (1, -1) => 2,  // bottom-right
+        (-1, 0) => 3,  // left
+        (0, 0) => 4,   // center
+        (1, 0) => 5,   // right
+        (-1, 1) => 6,  // top-left
+        (0, 1) => 7,   // top
+        (1, 1) => 8,   // top-right
+        _ => 4,        // fallback to center
+    }
+}
+
+#[derive(Resource, Default)]
+struct MovementState {
+    visited_entities: HashSet<Entity>,
+    visited_positions: HashSet<IVec2>,
+}
 
 pub(super) struct SystemsPlugin;
 
 impl Plugin for SystemsPlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<MovementSource>()
+            .init_resource::<MovementState>()
             .add_systems(
                 PreUpdate,
                 (
@@ -51,8 +76,11 @@ type ParticleMovementQuery<'a> = (
 fn handle_movement_by_chunks(
     mut particle_query: Query<ParticleMovementQuery>,
     mut map: ResMut<ParticleMap>,
+    mut movement_state: ResMut<MovementState>,
+    mut global_rng: ResMut<GlobalRng>,
 ) {
-    let mut visited: HashSet<Entity> = HashSet::default();
+    movement_state.visited_entities.clear();
+    let visited = &mut movement_state.visited_entities;
 
     unsafe {
         let map_ptr = &raw mut *map;
@@ -60,9 +88,11 @@ fn handle_movement_by_chunks(
         let mut chunks = (*map_ptr).iter_chunks_mut();
         for mut chunk in chunks {
             if let Some(dirty_rect) = chunk.dirty_rect() {
-                let chunk_iter = chunk.iter().collect::<Vec<_>>();
+                let mut chunk_entities: Vec<_> = chunk.iter().collect();
+                // Shuffle entities to prevent deterministic patterns
+                global_rng.shuffle(&mut chunk_entities);
 
-                for (position, entity) in chunk_iter {
+                for (position, entity) in chunk_entities {
                     if dirty_rect.contains(*position) {
                         if visited.contains(entity) {
                             continue;
@@ -81,18 +111,25 @@ fn handle_movement_by_chunks(
                             mut particle_moved,
                         )) = particle_query.get_unchecked(*entity)
                         {
+                            // Early exit for particles with no velocity
+                            if velocity.current() == 0 {
+                                particle_moved.0 = false;
+                                continue;
+                            }
+                            
                             let mut moved = false;
 
                             'velocity_loop: for _ in 0..velocity.current() {
-                                let mut obstructed: HashSet<IVec2> = HashSet::default();
+                                let mut obstructed: ObstructedDirections = [false; 9];
 
                                 for relative_position in movement_priority
                                     .iter_candidates(&mut rng, momentum.as_deref().copied().as_ref())
                                 {
                                     let neighbor_position = position.0 + *relative_position;
                                     let signum = relative_position.signum();
+                                    let obstruct_idx = direction_to_index(signum);
 
-                                    if obstructed.contains(&signum) {
+                                    if obstructed[obstruct_idx] {
                                         continue;
                                     }
 
@@ -135,17 +172,21 @@ fn handle_movement_by_chunks(
                                                         break 'velocity_loop;
                                                     }
                                                 } else {
-                                                    obstructed.insert(signum);
+                                                    obstructed[obstruct_idx] = true;
                                                 }
                                             } else {
-                                                obstructed.insert(signum);
+                                                obstructed[obstruct_idx] = true;
                                             }
                                         }
                                         None => {
                                             if (*map_ptr).swap(position.0, neighbor_position).is_ok() {
                                                 position.0 = neighbor_position;
-                                                transform.translation.x = neighbor_position.x as f32;
-                                                transform.translation.y = neighbor_position.y as f32;
+                                                // Batch transform update
+                                                transform.translation = Vec3::new(
+                                                    neighbor_position.x as f32,
+                                                    neighbor_position.y as f32,
+                                                    transform.translation.z,
+                                                );
                                                 if let Some(ref mut m) = momentum {
                                                     m.0 = *relative_position;
                                                 }
@@ -185,8 +226,11 @@ fn handle_movement_by_chunks(
 fn handle_movement_by_particles(
     mut particle_query: Query<ParticleMovementQuery>,
     mut map: ResMut<ParticleMap>,
+    mut movement_state: ResMut<MovementState>,
+    _global_rng: ResMut<GlobalRng>,
 ) {
-    let mut visited: HashSet<IVec2> = HashSet::default();
+    movement_state.visited_positions.clear();
+    let visited = &mut movement_state.visited_positions;
     unsafe {
         particle_query.iter_unsafe().for_each(
             |(
@@ -201,6 +245,12 @@ fn handle_movement_by_particles(
                 mut movement_priority,
                 mut particle_moved,
             )| {
+                // Early exit for particles with no velocity
+                if velocity.current() == 0 {
+                    particle_moved.0 = false;
+                    return;
+                }
+                
                 if let Some(chunk) = map.chunk(&position.0) {
                     if let Some(dirty_rect) = chunk.dirty_rect() {
                     if !dirty_rect.contains(position.0) {
@@ -212,16 +262,15 @@ fn handle_movement_by_particles(
                 }
                 let mut moved = false;
                 'velocity_loop: for _ in 0..velocity.current() {
-                    let mut obstructed: HashSet<IVec2> = HashSet::default();
+                    let mut obstructed: ObstructedDirections = [false; 9];
 
                     for relative_position in movement_priority
                         .iter_candidates(&mut rng, momentum.as_deref().copied().as_ref())
                     {
                         let neighbor_position = position.0 + *relative_position;
 
-                        if visited.contains(&neighbor_position)
-                            || obstructed.contains(&relative_position.signum())
-                        {
+                        let obstruct_idx = direction_to_index(relative_position.signum());
+                        if visited.contains(&neighbor_position) || obstructed[obstruct_idx] {
                             continue;
                         }
 
@@ -262,12 +311,12 @@ fn handle_movement_by_particles(
                                             Err(err) => {debug!("Attempted to swap particles at {:?} and {:?} but failed: {:?}", position.0, neighbor_position, err);}
                                         }
                                     } else {
-                                        obstructed.insert(relative_position.signum());
+                                        obstructed[obstruct_idx] = true;
                                         continue;
                                     }
                                 }
                                 else {
-                                    obstructed.insert(relative_position.signum());
+                                    obstructed[obstruct_idx] = true;
                                     continue;
                                 }
                             }
@@ -275,8 +324,12 @@ fn handle_movement_by_particles(
                                 match  map.swap(position.0, neighbor_position) {
                                     Ok(()) => {
                                         position.0 = neighbor_position;
-                                        transform.translation.x = neighbor_position.x as f32;
-                                        transform.translation.y = neighbor_position.y as f32;
+                                        // Batch transform update
+                                        transform.translation = Vec3::new(
+                                            neighbor_position.x as f32,
+                                            neighbor_position.y as f32,
+                                            transform.translation.z,
+                                        );
                                         if let Some(ref mut momentum) = momentum {
                                             momentum.0 = *relative_position;
                                         }
