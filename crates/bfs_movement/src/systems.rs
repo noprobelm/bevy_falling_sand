@@ -193,6 +193,8 @@ fn handle_movement_by_chunks(
                                                 velocity.increment();
                                                 moved = true;
                                                 continue 'velocity_loop;
+                                            } else {
+                                                obstructed[obstruct_idx] = true;
                                             }
                                         }
                                     }
@@ -268,8 +270,9 @@ fn handle_movement_by_particles(
                         .iter_candidates(&mut rng, momentum.as_deref().copied().as_ref())
                     {
                         let neighbor_position = position.0 + *relative_position;
+                        let signum = relative_position.signum();
+                        let obstruct_idx = direction_to_index(signum);
 
-                        let obstruct_idx = direction_to_index(relative_position.signum());
                         if visited.contains(&neighbor_position) || obstructed[obstruct_idx] {
                             continue;
                         }
@@ -339,6 +342,7 @@ fn handle_movement_by_particles(
                                     },
                                     Err(err) => {
                                         debug!("Attempted to swap particles at {:?} and {:?} but failed: {:?}", position.0, neighbor_position, err);
+                                        obstructed[obstruct_idx] = true;
                                     }
                                 }
                             }
