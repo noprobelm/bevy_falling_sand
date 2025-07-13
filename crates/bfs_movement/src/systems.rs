@@ -8,25 +8,16 @@ use bfs_core::{Particle, ParticleMap, ParticlePosition, ParticleSimulationSet};
 
 type ObstructedDirections = [bool; 9];
 
-fn direction_to_index(dir: IVec2) -> usize {
-    match (dir.x, dir.y) {
-        (-1, -1) => 0, // bottom-left
-        (0, -1) => 1,  // bottom
-        (1, -1) => 2,  // bottom-right
-        (-1, 0) => 3,  // left
-        (0, 0) => 4,   // center
-        (1, 0) => 5,   // right
-        (-1, 1) => 6,  // top-left
-        (0, 1) => 7,   // top
-        (1, 1) => 8,   // top-right
-        _ => 4,        // fallback to center
-    }
+#[inline(always)]
+const fn direction_to_index(dir: IVec2) -> usize {
+    ((dir.y + 1) * 3 + (dir.x + 1)) as usize
 }
 
 #[derive(Resource, Default)]
 struct MovementState {
     visited_entities: HashSet<Entity>,
     visited_positions: HashSet<IVec2>,
+    chunk_entities_buffer: Vec<(IVec2, Entity)>,
 }
 
 pub(super) struct SystemsPlugin;
@@ -80,7 +71,6 @@ fn handle_movement_by_chunks(
     mut global_rng: ResMut<GlobalRng>,
 ) {
     movement_state.visited_entities.clear();
-    let visited = &mut movement_state.visited_entities;
 
     unsafe {
         let map_ptr = &raw mut *map;
@@ -88,13 +78,15 @@ fn handle_movement_by_chunks(
         let mut chunks = (*map_ptr).iter_chunks_mut();
         for mut chunk in chunks {
             if let Some(dirty_rect) = chunk.dirty_rect() {
-                let mut chunk_entities: Vec<_> = chunk.iter().collect();
+                movement_state.chunk_entities_buffer.clear();
+                movement_state.chunk_entities_buffer.extend(chunk.iter().map(|(pos, entity)| (*pos, *entity)));
                 // Shuffle entities to prevent deterministic patterns
-                global_rng.shuffle(&mut chunk_entities);
-
-                for (position, entity) in chunk_entities {
+                global_rng.shuffle(&mut movement_state.chunk_entities_buffer);
+                
+                let chunk_entities = movement_state.chunk_entities_buffer.clone();
+                for (position, entity) in &chunk_entities {
                     if dirty_rect.contains(*position) {
-                        if visited.contains(entity) {
+                        if movement_state.visited_entities.contains(entity) {
                             continue;
                         }
 
@@ -118,10 +110,9 @@ fn handle_movement_by_chunks(
                             }
                             
                             let mut moved = false;
+                            let mut obstructed: ObstructedDirections = [false; 9];
 
                             'velocity_loop: for _ in 0..velocity.current() {
-                                let mut obstructed: ObstructedDirections = [false; 9];
-
                                 for relative_position in movement_priority
                                     .iter_candidates(&mut rng, momentum.as_deref().copied().as_ref())
                                 {
@@ -206,7 +197,7 @@ fn handle_movement_by_chunks(
                             }
 
                             if moved {
-                                visited.insert(*entity);
+                                movement_state.visited_entities.insert(*entity);
                             } else {
                                 if let Some(ref mut m) = momentum {
                                     m.0 = IVec2::ZERO;
@@ -232,7 +223,6 @@ fn handle_movement_by_particles(
     _global_rng: ResMut<GlobalRng>,
 ) {
     movement_state.visited_positions.clear();
-    let visited = &mut movement_state.visited_positions;
     unsafe {
         particle_query.iter_unsafe().for_each(
             |(
@@ -263,9 +253,9 @@ fn handle_movement_by_particles(
                     }
                 }
                 let mut moved = false;
+                let mut obstructed: ObstructedDirections = [false; 9];
+                
                 'velocity_loop: for _ in 0..velocity.current() {
-                    let mut obstructed: ObstructedDirections = [false; 9];
-
                     for relative_position in movement_priority
                         .iter_candidates(&mut rng, momentum.as_deref().copied().as_ref())
                     {
@@ -273,7 +263,7 @@ fn handle_movement_by_particles(
                         let signum = relative_position.signum();
                         let obstruct_idx = direction_to_index(signum);
 
-                        if visited.contains(&neighbor_position) || obstructed[obstruct_idx] {
+                        if movement_state.visited_positions.contains(&neighbor_position) || obstructed[obstruct_idx] {
                             continue;
                         }
 
@@ -351,7 +341,7 @@ fn handle_movement_by_particles(
                 }
 
                 if moved {
-                    visited.insert(position.0);
+                    movement_state.visited_positions.insert(position.0);
                 } else {
                     if let Some(ref mut momentum) = momentum {
                         momentum.0 = IVec2::ZERO;
