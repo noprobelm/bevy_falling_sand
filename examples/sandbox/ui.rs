@@ -46,6 +46,7 @@ impl bevy::prelude::Plugin for UIPlugin {
             .init_state::<ParticleEditorCategoryState>()
             .add_event::<ParticleEditorSave>()
             .add_event::<ParticleEditorUpdate>()
+            .add_event::<ParticleEditorNew>()
             .add_systems(First, update_cursor_position)
             .add_systems(Update, float_dynamic_rigid_bodies)
             .add_systems(
@@ -824,9 +825,15 @@ pub fn update_particle_editor_fields(
 }
 
 pub fn render_particle_editor(
-    (mut ev_particle_editor_save, mut ev_particle_editor_update, mut contexts): (
+    (
+        mut ev_particle_editor_save,
+        mut ev_particle_editor_update,
+        mut ev_particle_editor_new,
+        mut contexts,
+    ): (
         EventWriter<ParticleEditorSave>,
         EventWriter<ParticleEditorUpdate>,
+        EventWriter<ParticleEditorNew>,
         EguiContexts,
     ),
     particle_type_list: Res<ParticleTypeList>,
@@ -892,7 +899,7 @@ pub fn render_particle_editor(
                         }
 
                         if ui.button("New Particle").clicked() {
-                            todo!()
+                            ev_particle_editor_new.write(ParticleEditorNew);
                         }
                         if ui.button("Save Particle").clicked() {
                             ev_particle_editor_save.write(ParticleEditorSave);
@@ -1899,6 +1906,9 @@ pub struct DemoBall {
 pub struct ParticleEditorUpdate;
 
 #[derive(Event, Clone, Debug)]
+pub struct ParticleEditorNew;
+
+#[derive(Event, Clone, Debug)]
 pub struct ParticleEditorSave;
 
 #[derive(Resource, Clone)]
@@ -1926,7 +1936,7 @@ pub struct ParticleEditorMaxVelocity {
 impl Default for ParticleEditorMaxVelocity {
     fn default() -> Self {
         ParticleEditorMaxVelocity {
-            blueprint: Velocity::new(3, 3),
+            blueprint: Velocity::new(1, 3),
         }
     }
 }
