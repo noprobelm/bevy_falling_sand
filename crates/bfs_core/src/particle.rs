@@ -35,10 +35,10 @@ impl Plugin for ParticleCorePlugin {
             .add_event::<ResetParticleChildrenEvent>()
             .add_event::<ResetParticleEvent>()
             .add_event::<RemoveParticleEvent>()
+            .add_systems(PreUpdate, handle_new_particles)
             .add_systems(
                 Update,
                 (
-                    handle_new_particles.before(ParticleSimulationSet),
                     ev_reset_particle,
                     ev_reset_particle_children,
                     cleanup_orphaned_particle_instances,

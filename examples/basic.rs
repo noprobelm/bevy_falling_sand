@@ -19,14 +19,14 @@ fn main() {
         .add_systems(
             Update,
             (
-                utils::camera::zoom_camera,
-                utils::camera::pan_camera,
                 stream_particles.run_if(resource_exists::<SpawnParticles>),
                 update_total_particle_count_text.run_if(resource_exists::<TotalParticleCount>),
                 toggle_spawn_particles.run_if(input_just_pressed(KeyCode::F1)),
                 toggle_debug_map.run_if(input_just_pressed(KeyCode::F2)),
                 toggle_debug_dirty_rects.run_if(input_just_pressed(KeyCode::F3)),
-                reset.run_if(input_just_pressed(KeyCode::KeyR)),
+                utils::camera::zoom_camera,
+                utils::camera::pan_camera,
+                utils::particles::reset_dynamic_particles.run_if(input_just_pressed(KeyCode::KeyR)),
             ),
         )
         .run();
@@ -178,8 +178,4 @@ fn update_total_particle_count_text(
         (**total_particle_count_text).clone_from(&new_text);
     }
     Ok(())
-}
-
-fn reset(mut ev_clear_dynamic_particles: EventWriter<ClearDynamicParticlesEvent>) {
-    ev_clear_dynamic_particles.write(ClearDynamicParticlesEvent);
 }
