@@ -1,9 +1,9 @@
-use bevy::{
-    input::{common_conditions::input_just_pressed, mouse::MouseWheel},
-    prelude::*,
-};
+mod utils;
+
+use bevy::{input::common_conditions::input_just_pressed, prelude::*};
 use bevy_falling_sand::prelude::*;
 use bevy_turborand::prelude::*;
+use utils::{boundary::SetupBoundary, status_ui::MovementSourceText};
 
 fn main() {
     App::new()
@@ -12,23 +12,30 @@ fn main() {
             FallingSandMinimalPlugin,
             FallingSandMovementPlugin,
             FallingSandColorPlugin,
+            FallingSandDebugPlugin,
         ))
         .init_state::<ParticleTypeOneMutationState>()
         .init_state::<ParticleTypeTwoMutationState>()
-        .add_systems(Startup, setup)
-        .add_systems(Update, (zoom_camera, pan_camera))
+        .add_systems(Startup, (setup, utils::camera::setup_camera))
         .add_systems(
             Update,
-            (spawn_boundary.run_if(resource_not_exists::<BoundaryReady>),),
+            (
+                utils::particles::toggle_debug_map.run_if(input_just_pressed(KeyCode::F1)),
+                utils::particles::toggle_debug_dirty_rects.run_if(input_just_pressed(KeyCode::F2)),
+                utils::particles::change_movement_source.run_if(input_just_pressed(KeyCode::F3)),
+                utils::camera::zoom_camera,
+                utils::camera::pan_camera,
+                spawn_particles.before(ParticleSimulationSet),
+                utils::instructions::toggle_standalone_instructions,
+                update_movement_source_text,
+            ),
         )
-        .add_systems(Update, spawn_particles)
         .add_systems(
             Update,
-            mutate_particle_type_one.run_if(input_just_pressed(KeyCode::F1)),
-        )
-        .add_systems(
-            Update,
-            mutate_particle_type_two.run_if(input_just_pressed(KeyCode::F2)),
+            (
+                mutate_particle_type_one.run_if(input_just_pressed(MouseButton::Left)),
+                mutate_particle_type_two.run_if(input_just_pressed(MouseButton::Right)),
+            ),
         )
         .run();
 }
@@ -37,16 +44,6 @@ const BOUNDARY_START_X: i32 = -150;
 const BOUNDARY_END_X: i32 = 150;
 const BOUNDARY_START_Y: i32 = -150;
 const BOUNDARY_END_Y: i32 = 150;
-
-fn resource_not_exists<T: Resource>(world: &World) -> bool {
-    !world.contains_resource::<T>()
-}
-
-#[derive(Resource)]
-struct BoundaryReady;
-
-#[derive(Component)]
-struct MainCamera;
 
 #[derive(Component)]
 struct ParticleTypeOneText;
@@ -101,16 +98,6 @@ impl std::fmt::Display for ParticleTypeTwoMutationState {
 }
 
 fn setup(mut commands: Commands) {
-    commands.spawn((
-        Camera2d,
-        Projection::Orthographic(OrthographicProjection {
-            near: -1000.0,
-            scale: 0.2,
-            ..OrthographicProjection::default_2d()
-        }),
-        MainCamera,
-    ));
-
     commands.spawn((WallBundle::new(
         ParticleType::new("Dirt Wall"),
         ColorProfile::new(vec![
@@ -158,78 +145,31 @@ fn setup(mut commands: Commands) {
         ChangesColor::new(0.1),
     ));
 
-    let instructions_text = "F1: Change particle type one\n\
-        F2: Change particle type two\n";
-    let style = TextFont::default();
+    let setup_boundary = SetupBoundary::from_corners(
+        IVec2::new(BOUNDARY_START_X, BOUNDARY_START_Y),
+        IVec2::new(BOUNDARY_END_X, BOUNDARY_END_Y),
+        ParticleType::new("Dirt Wall"),
+    )
+    .with_thickness(2);
+    commands.queue(setup_boundary);
 
-    commands
-        .spawn(Node {
-            position_type: PositionType::Absolute,
-            top: Val::Px(12.0),
-            left: Val::Px(12.0),
-            flex_direction: FlexDirection::Column,
-            row_gap: Val::Px(20.0),
-            ..default()
-        })
-        .with_children(|parent| {
-            parent.spawn((Text::new(instructions_text), style.clone()));
-            parent.spawn((
-                ParticleTypeOneText,
-                Text::new("Particle Type: Water"),
-                style.clone(),
-            ));
-            parent.spawn((
-                ParticleTypeTwoText,
-                Text::new("Particle Type: Sand"),
-                style.clone(),
-            ));
-        });
-}
+    let instructions_text = "Left mouse: Mutate particle type one\n\
+        Right Mouse: Mutate particle type two\n\
+        F1: Show/hide particle chunk map\n\
+        F2: Show/hide dirty rectangles\n\
+        F3: Change movement logic (Particles vs. Chunks)\n\
+        H: Hide/Show this help\n\
+        R: Reset";
 
-fn spawn_boundary(mut commands: Commands, particle_type_map: Res<ParticleTypeMap>) {
-    if particle_type_map.contains("Dirt Wall") && particle_type_map.contains("Smoke") {
-        for y in BOUNDARY_START_Y - 1..BOUNDARY_END_Y + 1 {
-            commands.spawn((
-                Particle::new("Dirt Wall"),
-                Transform::from_xyz(BOUNDARY_START_X as f32, -(y as f32), 0.0),
-            ));
-            commands.spawn((
-                Particle::new("Dirt Wall"),
-                Transform::from_xyz(BOUNDARY_START_X as f32 - 1., -(y as f32), 0.0),
-            ));
-
-            commands.spawn((
-                Particle::new("Dirt Wall"),
-                Transform::from_xyz(BOUNDARY_END_X as f32, -(y as f32), 0.0),
-            ));
-            commands.spawn((
-                Particle::new("Dirt Wall"),
-                Transform::from_xyz(BOUNDARY_END_X as f32 + 1., -(y as f32), 0.0),
-            ));
-        }
-
-        for x in BOUNDARY_START_X - 1..=BOUNDARY_END_X + 1 {
-            commands.spawn((
-                Particle::new("Dirt Wall"),
-                Transform::from_xyz(x as f32, -(BOUNDARY_START_Y as f32), 0.0),
-            ));
-            commands.spawn((
-                Particle::new("Dirt Wall"),
-                Transform::from_xyz(x as f32, -(BOUNDARY_START_Y as f32 - 1.), 0.0),
-            ));
-
-            commands.spawn((
-                Particle::new("Dirt Wall"),
-                Transform::from_xyz(x as f32, -(BOUNDARY_END_Y as f32), 0.0),
-            ));
-            commands.spawn((
-                Particle::new("Dirt Wall"),
-                Transform::from_xyz(x as f32, -(BOUNDARY_END_Y as f32 + 1.), 0.0),
-            ));
-        }
-
-        commands.insert_resource(BoundaryReady);
-    }
+    let panel_id = utils::instructions::setup_standalone_instructions(&mut commands, instructions_text, KeyCode::KeyH);
+    commands.entity(panel_id).with_children(|parent| {
+        let style = TextFont::default();
+        parent.spawn((
+            MovementSourceText,
+            Text::new("Movement Source: Particles"),
+            style.clone(),
+        ));
+    });
 }
 
 fn spawn_particles(mut commands: Commands, time: Res<Time>, mut rng: ResMut<GlobalRng>) {
@@ -279,6 +219,17 @@ fn mutate_particle_type_one(
     }
 }
 
+fn update_movement_source_text(
+    movement_source: Res<State<MovementSource>>,
+    mut movement_source_text: Query<&mut Text, With<MovementSourceText>>,
+) {
+    let source_text = format!("Movement Source: {:?}", movement_source.get());
+
+    for mut text in movement_source_text.iter_mut() {
+        **text = source_text.clone();
+    }
+}
+
 fn mutate_particle_type_two(
     mut mutate_particle_query: Query<&mut Particle, With<MutationParticleTwo>>,
     state: Res<State<ParticleTypeTwoMutationState>>,
@@ -299,52 +250,4 @@ fn mutate_particle_type_two(
     for mut particle_type_text in particle_type_text_query.iter_mut() {
         (**particle_type_text).clone_from(&new_text);
     }
-}
-
-fn zoom_camera(
-    mut ev_scroll: EventReader<MouseWheel>,
-    mut camera_query: Query<&mut Projection, With<MainCamera>>,
-) {
-    const ZOOM_IN_FACTOR: f32 = 0.98;
-    const ZOOM_OUT_FACTOR: f32 = 1.02;
-
-    if !ev_scroll.is_empty() {
-        let mut projection = match camera_query.single_mut() {
-            Ok(p) => p,
-            Err(_) => return,
-        };
-        let Projection::Orthographic(orthographic) = projection.as_mut() else {
-            return;
-        };
-        ev_scroll.read().for_each(|ev| {
-            if ev.y < 0. {
-                orthographic.scale *= ZOOM_OUT_FACTOR;
-            } else if ev.y > 0. {
-                orthographic.scale *= ZOOM_IN_FACTOR;
-            }
-        });
-    };
-}
-
-fn pan_camera(
-    mut camera_query: Query<&mut Transform, With<MainCamera>>,
-    keys: Res<ButtonInput<KeyCode>>,
-) -> Result {
-    let mut transform = camera_query.single_mut()?;
-    if keys.pressed(KeyCode::KeyW) {
-        transform.translation.y += 2.;
-    }
-
-    if keys.pressed(KeyCode::KeyA) {
-        transform.translation.x -= 2.;
-    }
-
-    if keys.pressed(KeyCode::KeyS) {
-        transform.translation.y -= 2.;
-    }
-
-    if keys.pressed(KeyCode::KeyD) {
-        transform.translation.x += 2.;
-    }
-    Ok(())
 }

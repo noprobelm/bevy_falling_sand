@@ -35,6 +35,7 @@ fn main() {
                 utils::particles::ev_clear_dynamic_particles
                     .run_if(input_just_pressed(KeyCode::KeyR)),
                 bump_velocity.run_if(input_just_pressed(KeyCode::KeyV)),
+                utils::brush::handle_alt_release_without_egui,
             ),
         )
         .run();

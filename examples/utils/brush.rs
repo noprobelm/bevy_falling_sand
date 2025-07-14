@@ -423,6 +423,19 @@ pub fn handle_alt_app_state_transition(
     }
 }
 
+pub fn handle_alt_release_without_egui(
+    keys: Res<ButtonInput<KeyCode>>,
+    keybindings: Res<BrushKeybindings>,
+    mut app_state: ResMut<NextState<AppState>>,
+    current_state: Res<State<AppState>>,
+) {
+    // This system should only be used by examples that don't have GuiPlugin
+    // It handles transitioning back to Canvas when ALT is released
+    if !keys.pressed(keybindings.resize_modifier_key) && current_state.get() == &AppState::Ui {
+        app_state.set(AppState::Canvas)
+    }
+}
+
 pub fn cycle_selected_particle(
     mut particle_spawn_list: ResMut<ParticleSpawnList>,
     mut selected_particle: ResMut<SelectedBrushParticle>,

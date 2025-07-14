@@ -38,6 +38,7 @@ fn main() {
                 utils::camera::zoom_camera.run_if(in_state(AppState::Canvas)),
                 utils::camera::pan_camera,
                 utils::particles::ev_clear_particle_map.run_if(input_just_pressed(KeyCode::KeyR)),
+                utils::brush::handle_alt_release_without_egui,
             ),
         )
         .run();

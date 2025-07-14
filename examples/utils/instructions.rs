@@ -1,5 +1,40 @@
 use bevy::{input::common_conditions::input_just_pressed, prelude::*};
 
+/// Standalone instructions setup that doesn't require the plugin system
+/// Useful for examples that don't want to include the full utils ecosystem
+pub fn setup_standalone_instructions(
+    commands: &mut Commands,
+    instructions_text: &str,
+    toggle_key: KeyCode,
+) -> Entity {
+    let panel_id = spawn_instructions_panel(commands, instructions_text);
+    
+    // Add a marker component to track which key toggles this panel
+    commands.entity(panel_id).insert(StandaloneInstructionsToggle(toggle_key));
+    
+    panel_id
+}
+
+#[derive(Component)]
+pub struct StandaloneInstructionsToggle(KeyCode);
+
+/// System function for toggling standalone instructions
+/// Add this to your app's Update schedule manually
+pub fn toggle_standalone_instructions(
+    keys: Res<ButtonInput<KeyCode>>,
+    mut instructions_query: Query<(&mut Visibility, &StandaloneInstructionsToggle), With<InstructionsPanel>>,
+) {
+    for (mut visibility, toggle) in instructions_query.iter_mut() {
+        if keys.just_pressed(toggle.0) {
+            *visibility = match *visibility {
+                Visibility::Visible => Visibility::Hidden,
+                Visibility::Hidden => Visibility::Visible,
+                Visibility::Inherited => Visibility::Hidden,
+            };
+        }
+    }
+}
+
 #[derive(Component)]
 pub struct InstructionsPanel;
 
@@ -68,4 +103,3 @@ fn toggle_instructions_panel(
         };
     }
 }
-
