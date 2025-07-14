@@ -39,7 +39,6 @@ impl Plugin for ParticleCorePlugin {
                 Update,
                 (
                     handle_new_particles.before(ParticleSimulationSet),
-                    handle_new_particle_types,
                     ev_reset_particle,
                     ev_reset_particle_children,
                     cleanup_orphaned_particle_instances,
@@ -101,18 +100,7 @@ pub struct ParticleSimulationSet;
 
 /// Unique identifer for a particle type. No two particle types with the same name can exist.
 #[derive(
-    Clone,
-    Eq,
-    PartialEq,
-    Ord,
-    PartialOrd,
-    Hash,
-    Debug,
-    Default,
-    Component,
-    Reflect,
-    Serialize,
-    Deserialize,
+    Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Reflect, Serialize, Deserialize,
 )]
 #[reflect(Component)]
 pub struct ParticleTypeId {
@@ -127,6 +115,29 @@ impl ParticleTypeId {
         Self {
             name: name.to_string(),
         }
+    }
+}
+
+impl Component for ParticleTypeId {
+    type Mutability = Mutable;
+
+    const STORAGE_TYPE: StorageType = StorageType::Table;
+
+    fn register_component_hooks(hooks: &mut bevy::ecs::component::ComponentHooks) {
+        hooks.on_add(|mut world, context| {
+            let particle_type = world.get::<Self>(context.entity).unwrap();
+            let name = particle_type.name.clone();
+
+            // Add ParticleInstances component
+            world
+                .commands()
+                .entity(context.entity)
+                .insert(ParticleInstances::default());
+
+            // Register in ParticleTypeMap
+            let mut type_map = world.resource_mut::<ParticleTypeMap>();
+            type_map.insert(name, context.entity);
+        });
     }
 }
 
@@ -313,21 +324,6 @@ fn condition_ev_simulation_step_received(
         return true;
     }
     false
-}
-
-/// Handles new particle types as they are added to the world. Particle types with existing names
-/// will overwrite the previous entry.
-pub fn handle_new_particle_types(
-    mut commands: Commands,
-    particle_type_query: Query<(Entity, &ParticleTypeId), Changed<ParticleTypeId>>,
-    mut type_map: ResMut<ParticleTypeMap>,
-) {
-    particle_type_query
-        .iter()
-        .for_each(|(entity, particle_type)| {
-            commands.entity(entity).insert(ParticleInstances::default());
-            type_map.insert(particle_type.name.clone(), entity);
-        });
 }
 
 /// Handles new particles as they are added to the world. If a new particle is being added at the same
