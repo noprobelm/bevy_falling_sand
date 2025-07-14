@@ -1,4 +1,5 @@
 //! UI module.
+use bevy::platform::collections::HashSet;
 use bevy::platform::collections::{hash_map::Entry, HashMap};
 use bevy::{
     input::{
@@ -111,7 +112,11 @@ impl ParticleTypeList {
     pub fn insert_or_modify(&mut self, material: String, particles: Vec<String>) {
         match self.map.entry(material) {
             Entry::Occupied(mut entry) => {
-                entry.get_mut().extend(particles);
+                for particle in particles {
+                    if !entry.get().contains(&particle) {
+                        entry.get_mut().push(particle);
+                    }
+                }
                 entry.get_mut().sort();
             }
             Entry::Vacant(entry) => {
@@ -125,12 +130,12 @@ impl ParticleTypeList {
 
 #[derive(Resource, Default)]
 pub struct ParticleList {
-    pub particle_list: Vec<String>,
+    pub particle_list: HashSet<String>,
 }
 
 impl ParticleList {
-    pub fn push(&mut self, value: String) {
-        self.particle_list.push(value);
+    pub fn insert(&mut self, value: String) {
+        self.particle_list.insert(value);
     }
 
     fn iter(&self) -> impl Iterator<Item = &String> {
@@ -495,7 +500,7 @@ pub fn update_particle_type_list(
     new_particle_query.iter().for_each(
         |(particle_type, wall, movable_solid, solid, liquid, gas)| {
             // Add the particle type name to the particle_list
-            particle_list.push(particle_type.name.clone());
+            particle_list.insert(particle_type.name.clone());
 
             // Check for the presence of each optional component and update particle_type_list accordingly
             if wall.is_some() {
