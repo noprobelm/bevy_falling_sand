@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bfs_color::{ChangesColor, ColorProfile};
-use bfs_core::ParticleTypeId;
+use bfs_core::ParticleType;
 use bfs_movement::{Density, Momentum, Velocity};
 use bfs_reactions::{Burns, Fire};
 use serde::{Deserialize, Serialize};
@@ -122,7 +122,7 @@ impl ParticleData {
 
     /// Spawn this particle data as a [`ParticleTypeId`] entity with all appropriate components.
     pub fn spawn_particle_type(&self, commands: &mut Commands) -> Entity {
-        let mut entity_commands = commands.spawn(ParticleTypeId::new(&self.name));
+        let mut entity_commands = commands.spawn(ParticleType::new(&self.name));
 
         // Add movement components
         if let Some(density) = self.density {
@@ -234,4 +234,3 @@ impl ParticleData {
 
 /// A collection of particle definitions loaded from a RON file.
 pub type ParticleDefinitions = HashMap<String, ParticleData>;
-

@@ -1,13 +1,13 @@
-use std::path::PathBuf;
 use std::collections::HashMap;
+use std::path::PathBuf;
 
 use bevy::prelude::*;
 use bevy::tasks::{AsyncComputeTaskPool, Task};
 use bevy_egui::egui;
 use bfs_assets::{ParticleData, ParticleDefinitions};
-use bfs_core::{ParticleTypeMap, ParticleTypeId};
 use bfs_color::ColorProfile;
-use bfs_movement::{Density, Velocity, Momentum};
+use bfs_core::{ParticleType, ParticleTypeMap};
+use bfs_movement::{Density, Momentum, Velocity};
 use bfs_reactions::{Burns, Fire};
 use futures_lite::future;
 use rfd::AsyncFileDialog;
@@ -20,12 +20,15 @@ impl Plugin for ParticleFilesPlugin {
         app.init_resource::<ParticleFileDialog>()
             .add_event::<SaveParticlesEvent>()
             .add_event::<LoadParticlesEvent>()
-            .add_systems(Update, (
-                poll_save_dialog_task,
-                poll_load_dialog_task,
-                save_particles_to_file,
-                load_particles_from_file,
-            ));
+            .add_systems(
+                Update,
+                (
+                    poll_save_dialog_task,
+                    poll_load_dialog_task,
+                    save_particles_to_file,
+                    load_particles_from_file,
+                ),
+            );
     }
 }
 
@@ -60,7 +63,7 @@ impl ParticleFileManagementUI {
     ) {
         ui.separator();
         ui.label("Particle Files");
-        
+
         ui.horizontal_wrapped(|ui| {
             if ui.button("SAVE PARTICLES").clicked() {
                 dialog_state.show_save_dialog = true;
@@ -77,7 +80,7 @@ impl ParticleFileManagementUI {
         if let Some(ref error) = dialog_state.last_error {
             ui.colored_label(egui::Color32::RED, format!("Error: {}", error));
         }
-        
+
         if let Some(ref success) = dialog_state.last_success {
             ui.colored_label(egui::Color32::GREEN, success);
         }
@@ -121,7 +124,7 @@ fn poll_save_dialog_task(
         if let Some(result) = future::block_on(future::poll_once(&mut task.0)) {
             dialog_state.show_save_dialog = false;
             commands.entity(entity).despawn();
-            
+
             match result {
                 Some(path) => {
                     dialog_state.last_error = None;
@@ -147,7 +150,7 @@ fn poll_load_dialog_task(
         if let Some(result) = future::block_on(future::poll_once(&mut task.0)) {
             dialog_state.show_load_dialog = false;
             commands.entity(entity).despawn();
-            
+
             match result {
                 Some(path) => {
                     dialog_state.last_error = None;
@@ -171,7 +174,7 @@ fn save_particles_to_file(
     save_path: Option<Res<SavePath>>,
     mut dialog_state: ResMut<ParticleFileDialog>,
     particle_query: Query<(
-        &ParticleTypeId,
+        &ParticleType,
         Option<&Density>,
         Option<&Velocity>,
         Option<&Momentum>,
@@ -195,7 +198,22 @@ fn save_particles_to_file(
         let mut particle_definitions = HashMap::new();
 
         // Collect all particle types and convert them to ParticleData
-        for (particle_type_id, density, velocity, momentum, color_profile, burns, fire, wall, liquid, gas, movable_solid, solid, changes_color) in particle_query.iter() {
+        for (
+            particle_type_id,
+            density,
+            velocity,
+            momentum,
+            color_profile,
+            burns,
+            fire,
+            wall,
+            liquid,
+            gas,
+            movable_solid,
+            solid,
+            changes_color,
+        ) in particle_query.iter()
+        {
             let mut particle_data = ParticleData {
                 name: particle_type_id.name.clone(),
                 density: density.map(|d| d.0),
@@ -228,10 +246,13 @@ fn save_particles_to_file(
 
             // Convert colors
             if let Some(color_profile) = color_profile {
-                let color_strings: Vec<String> = color_profile.palette.iter()
+                let color_strings: Vec<String> = color_profile
+                    .palette
+                    .iter()
                     .map(|color| {
                         let srgba = color.to_srgba();
-                        format!("#{:02X}{:02X}{:02X}{:02X}", 
+                        format!(
+                            "#{:02X}{:02X}{:02X}{:02X}",
                             (srgba.red * 255.0) as u8,
                             (srgba.green * 255.0) as u8,
                             (srgba.blue * 255.0) as u8,
@@ -261,10 +282,13 @@ fn save_particles_to_file(
                         chance_to_produce: r.chance_to_produce,
                     }),
                     colors: burns.color.as_ref().map(|color_profile| {
-                        color_profile.palette.iter()
+                        color_profile
+                            .palette
+                            .iter()
                             .map(|color| {
                                 let srgba = color.to_srgba();
-                                format!("#{:02X}{:02X}{:02X}{:02X}", 
+                                format!(
+                                    "#{:02X}{:02X}{:02X}{:02X}",
                                     (srgba.red * 255.0) as u8,
                                     (srgba.green * 255.0) as u8,
                                     (srgba.blue * 255.0) as u8,
@@ -286,21 +310,19 @@ fn save_particles_to_file(
 
         // Serialize to RON and save
         match to_string_pretty(&particle_definitions, PrettyConfig::default()) {
-            Ok(ron_content) => {
-                match std::fs::write(&save_path.0, ron_content) {
-                    Ok(()) => {
-                        dialog_state.last_success = Some(format!(
-                            "Saved {} particles to {}", 
-                            particle_definitions.len(),
-                            save_path.0.display()
-                        ));
-                        dialog_state.last_error = None;
-                    }
-                    Err(e) => {
-                        dialog_state.last_error = Some(format!("Failed to write file: {}", e));
-                    }
+            Ok(ron_content) => match std::fs::write(&save_path.0, ron_content) {
+                Ok(()) => {
+                    dialog_state.last_success = Some(format!(
+                        "Saved {} particles to {}",
+                        particle_definitions.len(),
+                        save_path.0.display()
+                    ));
+                    dialog_state.last_error = None;
                 }
-            }
+                Err(e) => {
+                    dialog_state.last_error = Some(format!("Failed to write file: {}", e));
+                }
+            },
             Err(e) => {
                 dialog_state.last_error = Some(format!("Failed to serialize particles: {}", e));
             }
@@ -315,7 +337,7 @@ fn load_particles_from_file(
     mut ev_load_particles: EventReader<LoadParticlesEvent>,
     mut dialog_state: ResMut<ParticleFileDialog>,
     _particle_type_map: Res<ParticleTypeMap>,
-    particle_query: Query<Entity, With<ParticleTypeId>>,
+    particle_query: Query<Entity, With<ParticleType>>,
 ) {
     for LoadParticlesEvent(path) in ev_load_particles.read() {
         match std::fs::read_to_string(path) {
@@ -335,7 +357,7 @@ fn load_particles_from_file(
                         }
 
                         dialog_state.last_success = Some(format!(
-                            "Loaded {} particles from {}", 
+                            "Loaded {} particles from {}",
                             loaded_count,
                             path.display()
                         ));
@@ -352,3 +374,4 @@ fn load_particles_from_file(
         }
     }
 }
+

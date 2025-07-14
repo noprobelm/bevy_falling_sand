@@ -19,7 +19,7 @@ pub fn remove_debug_resources(mut commands: Commands) {
 pub fn setup_particles(mut commands: Commands) {
     commands.spawn((
         SolidBundle::new(
-            ParticleTypeId::new("Rock"),
+            ParticleType::new("Rock"),
             Density(1250),
             Velocity::new(1, 3),
             ColorProfile::new(vec![
@@ -33,7 +33,7 @@ pub fn setup_particles(mut commands: Commands) {
 
     commands.spawn((
         WallBundle::new(
-            ParticleTypeId::new("Ice Wall"),
+            ParticleType::new("Ice Wall"),
             ColorProfile::new(vec![Color::Srgba(Srgba::hex("#8CDBF880").unwrap())]),
         ),
         Burns::new(
@@ -50,7 +50,7 @@ pub fn setup_particles(mut commands: Commands) {
 
     commands.spawn((
         MovableSolidBundle::new(
-            ParticleTypeId::new("My Custom Particle"),
+            ParticleType::new("My Custom Particle"),
             Density(1250),
             Velocity::new(1, 3),
             ColorProfile::new(vec![
@@ -67,7 +67,7 @@ pub fn setup_particles(mut commands: Commands) {
 
     commands.spawn((
         WallBundle::new(
-            ParticleTypeId::new("My Custom Wall Particle"),
+            ParticleType::new("My Custom Wall Particle"),
             ColorProfile::new(vec![
                 Color::srgba(0.22, 0.11, 0.16, 1.0),
                 Color::srgba(0.24, 0.41, 0.56, 1.0),
@@ -81,7 +81,7 @@ pub fn setup_particles(mut commands: Commands) {
 
     commands.spawn((
         LiquidBundle::new(
-            ParticleTypeId::new("Water"),
+            ParticleType::new("Water"),
             Density(750),
             Velocity::new(1, 3),
             5,
@@ -93,7 +93,7 @@ pub fn setup_particles(mut commands: Commands) {
 
     commands.spawn((
         LiquidBundle::new(
-            ParticleTypeId::new("Sparkly Slime"),
+            ParticleType::new("Sparkly Slime"),
             Density(850),
             Velocity::new(1, 2),
             1,
@@ -113,7 +113,7 @@ pub fn setup_particles(mut commands: Commands) {
 
     commands.spawn((
         LiquidBundle::new(
-            ParticleTypeId::new("Slime"),
+            ParticleType::new("Slime"),
             Density(850),
             Velocity::new(1, 2),
             1,
@@ -129,7 +129,7 @@ pub fn setup_particles(mut commands: Commands) {
 
     commands.spawn((
         LiquidBundle::new(
-            ParticleTypeId::new("Whiskey"),
+            ParticleType::new("Whiskey"),
             Density(850),
             Velocity::new(1, 3),
             5,
@@ -141,7 +141,7 @@ pub fn setup_particles(mut commands: Commands) {
 
     commands.spawn((
         LiquidBundle::new(
-            ParticleTypeId::new("Blood"),
+            ParticleType::new("Blood"),
             Density(800),
             Velocity::new(1, 3),
             5,
@@ -153,7 +153,7 @@ pub fn setup_particles(mut commands: Commands) {
 
     commands.spawn((
         LiquidBundle::new(
-            ParticleTypeId::new("Oil"),
+            ParticleType::new("Oil"),
             Density(730),
             Velocity::new(1, 3),
             3,
@@ -184,7 +184,7 @@ pub fn setup_particles(mut commands: Commands) {
 
     commands.spawn((
         MovableSolidBundle::new(
-            ParticleTypeId::new("Sand"),
+            ParticleType::new("Sand"),
             Density(1250),
             Velocity::new(1, 3),
             ColorProfile::new(vec![
@@ -199,7 +199,7 @@ pub fn setup_particles(mut commands: Commands) {
 
     commands.spawn((
         MovableSolidBundle::new(
-            ParticleTypeId::new("Dirt"),
+            ParticleType::new("Dirt"),
             Density(1250),
             Velocity::new(1, 3),
             ColorProfile::new(vec![
@@ -214,7 +214,7 @@ pub fn setup_particles(mut commands: Commands) {
 
     commands.spawn((
         MovableSolidBundle::new(
-            ParticleTypeId::new("Snow"),
+            ParticleType::new("Snow"),
             Density(1250),
             Velocity::new(1, 3),
             ColorProfile::new(vec![
@@ -229,7 +229,7 @@ pub fn setup_particles(mut commands: Commands) {
 
     commands.spawn((
         GasBundle::new(
-            ParticleTypeId::new("Steam"),
+            ParticleType::new("Steam"),
             Density(250),
             Velocity::new(1, 1),
             3,
@@ -253,7 +253,7 @@ pub fn setup_particles(mut commands: Commands) {
 
     commands.spawn((
         GasBundle::new(
-            ParticleTypeId::new("Smoke"),
+            ParticleType::new("Smoke"),
             Density(275),
             Velocity::new(1, 1),
             1,
@@ -268,7 +268,7 @@ pub fn setup_particles(mut commands: Commands) {
 
     commands.spawn((
         GasBundle::new(
-            ParticleTypeId::new("Flammable Gas"),
+            ParticleType::new("Flammable Gas"),
             Density(200),
             Velocity::new(1, 1),
             1,
@@ -302,7 +302,7 @@ pub fn setup_particles(mut commands: Commands) {
 
     commands.spawn((
         GasBundle::new(
-            ParticleTypeId::new("FIRE"),
+            ParticleType::new("FIRE"),
             Density(450),
             Velocity::new(1, 3),
             1,
@@ -332,7 +332,7 @@ pub fn setup_particles(mut commands: Commands) {
 
     commands.spawn((
         WallBundle::new(
-            ParticleTypeId::new("Dirt Wall"),
+            ParticleType::new("Dirt Wall"),
             ColorProfile::new(vec![
                 Color::Srgba(Srgba::hex("#916B4C").unwrap()),
                 Color::Srgba(Srgba::hex("#73573D").unwrap()),
@@ -343,7 +343,7 @@ pub fn setup_particles(mut commands: Commands) {
 
     commands.spawn((
         WallBundle::new(
-            ParticleTypeId::new("Rock Wall"),
+            ParticleType::new("Rock Wall"),
             ColorProfile::new(vec![
                 Color::Srgba(Srgba::hex("#3B3333").unwrap()),
                 Color::Srgba(Srgba::hex("#4A3D3D").unwrap()),
@@ -356,7 +356,7 @@ pub fn setup_particles(mut commands: Commands) {
 
     commands.spawn((
         WallBundle::new(
-            ParticleTypeId::new("Dense Rock Wall"),
+            ParticleType::new("Dense Rock Wall"),
             ColorProfile::new(vec![
                 Color::Srgba(Srgba::hex("#6B738C").unwrap()),
                 Color::Srgba(Srgba::hex("#8C96AB").unwrap()),
@@ -368,7 +368,7 @@ pub fn setup_particles(mut commands: Commands) {
 
     commands.spawn((
         WallBundle::new(
-            ParticleTypeId::new("Grass Wall"),
+            ParticleType::new("Grass Wall"),
             ColorProfile::new(vec![
                 Color::Srgba(Srgba::hex("#5C8730").unwrap()),
                 Color::Srgba(Srgba::hex("#3D5C21").unwrap()),
@@ -400,7 +400,7 @@ pub fn setup_particles(mut commands: Commands) {
 
     commands.spawn((
         WallBundle::new(
-            ParticleTypeId::new("Wood Wall"),
+            ParticleType::new("Wood Wall"),
             ColorProfile::new(vec![Color::Srgba(Srgba::hex("#A1662E").unwrap())]),
         ),
         Burns::new(

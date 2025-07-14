@@ -4,8 +4,8 @@ use bevy::platform::hash::FixedHasher;
 use bevy::prelude::*;
 
 use crate::{
-    Particle, ParticlePosition, ParticleSimulationSet, ParticleTypeId, ParticleTypeMap,
-    RemoveParticleEvent, ParticleInstances,
+    Particle, ParticleInstances, ParticlePosition, ParticleSimulationSet, ParticleType,
+    ParticleTypeMap, RemoveParticleEvent,
 };
 
 /// Adds Bevy plugin elements for particle mapping functionality.
@@ -459,7 +459,7 @@ fn ev_clear_particle_map(
     mut commands: Commands,
     mut map: ResMut<ParticleMap>,
     particle_parent_map: Res<ParticleTypeMap>,
-    mut particle_type_query: Query<&mut ParticleInstances, With<ParticleTypeId>>,
+    mut particle_type_query: Query<&mut ParticleInstances, With<ParticleType>>,
 ) {
     ev_clear_particle_map.read().for_each(|_| {
         particle_parent_map.iter().for_each(|(_, entity)| {
@@ -480,7 +480,7 @@ fn ev_clear_particle_type_children(
     mut commands: Commands,
     mut map: ResMut<ParticleMap>,
     particle_query: Query<&ParticlePosition, With<Particle>>,
-    mut particle_type_query: Query<&mut ParticleInstances, With<ParticleTypeId>>,
+    mut particle_type_query: Query<&mut ParticleInstances, With<ParticleType>>,
     particle_parent_map: Res<ParticleTypeMap>,
 ) {
     ev_clear_particle_type_children.read().for_each(|ev| {

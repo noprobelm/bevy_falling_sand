@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_turborand::RngComponent;
 use bfs_core::{
     impl_particle_rng, AttachedToParticleType, Particle, ParticleRegistrationEvent, ParticleRng,
-    ParticleTypeId,
+    ParticleType,
 };
 use serde::{Deserialize, Serialize};
 use smallvec::SmallVec;
@@ -442,7 +442,7 @@ type MovementQuery<'a> = (
 #[allow(clippy::needless_pass_by_value)]
 fn handle_particle_registration(
     mut commands: Commands,
-    blueprint_query: Query<MovementQuery<'_>, With<ParticleTypeId>>,
+    blueprint_query: Query<MovementQuery<'_>, With<ParticleType>>,
     mut ev_particle_registered: EventReader<ParticleRegistrationEvent>,
     particle_query: Query<&AttachedToParticleType, With<Particle>>,
 ) {

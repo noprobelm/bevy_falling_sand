@@ -17,7 +17,7 @@ pub(super) struct ParticleCorePlugin;
 impl Plugin for ParticleCorePlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<Particle>()
-            .register_type::<ParticleTypeId>()
+            .register_type::<ParticleType>()
             .register_type::<ParticlePosition>()
             .register_type::<AttachedToParticleType>()
             .register_type::<ParticleInstances>()
@@ -103,12 +103,12 @@ pub struct ParticleSimulationSet;
     Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Reflect, Serialize, Deserialize,
 )]
 #[reflect(Component)]
-pub struct ParticleTypeId {
+pub struct ParticleType {
     /// The particle type's name.
     pub name: String,
 }
 
-impl ParticleTypeId {
+impl ParticleType {
     /// Initialize a new `ParticleType`
     #[must_use]
     pub fn new(name: &str) -> Self {
@@ -118,7 +118,7 @@ impl ParticleTypeId {
     }
 }
 
-impl Component for ParticleTypeId {
+impl Component for ParticleType {
     type Mutability = Mutable;
 
     const STORAGE_TYPE: StorageType = StorageType::Table;
@@ -345,7 +345,7 @@ fn condition_ev_simulation_step_received(
 #[allow(clippy::needless_pass_by_value)]
 fn handle_new_particles(
     mut commands: Commands,
-    mut particle_type_query: Query<&mut ParticleInstances, With<ParticleTypeId>>,
+    mut particle_type_query: Query<&mut ParticleInstances, With<ParticleType>>,
     particle_query: Query<(&Particle, &Transform, Entity), Changed<Particle>>,
     mut map: ResMut<ParticleMap>,
     type_map: Res<ParticleTypeMap>,
@@ -408,7 +408,7 @@ fn ev_reset_particle(
 fn ev_reset_particle_children(
     mut ev_reset_particle_children: EventReader<ResetParticleChildrenEvent>,
     mut ev_reset_particle: EventWriter<ResetParticleEvent>,
-    particle_type_query: Query<&ParticleInstances, With<ParticleTypeId>>,
+    particle_type_query: Query<&ParticleInstances, With<ParticleType>>,
 ) {
     ev_reset_particle_children.read().for_each(|ev| {
         if let Ok(particle_instances) = particle_type_query.get(ev.entity) {
@@ -423,7 +423,7 @@ fn ev_reset_particle_children(
 /// when particles are despawned outside of the normal flow.
 #[allow(clippy::needless_pass_by_value)]
 fn cleanup_orphaned_particle_instances(
-    mut particle_type_query: Query<&mut ParticleInstances, With<ParticleTypeId>>,
+    mut particle_type_query: Query<&mut ParticleInstances, With<ParticleType>>,
     particle_query: Query<Entity, With<Particle>>,
 ) {
     for mut particle_instances in particle_type_query.iter_mut() {

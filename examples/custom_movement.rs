@@ -146,7 +146,7 @@ fn setup(
     let velocity = Velocity::new(1, 1);
 
     commands.spawn((WallBundle::new(
-        ParticleTypeId::new("Dirt Wall"),
+        ParticleType::new("Dirt Wall"),
         ColorProfile::new(vec![
             Color::Srgba(Srgba::hex("#916B4C").unwrap()),
             Color::Srgba(Srgba::hex("#73573D").unwrap()),
@@ -154,7 +154,7 @@ fn setup(
     ),));
 
     commands.spawn((
-        ParticleTypeId::new("Moore Neighborhood Particle (no momentum)"),
+        ParticleType::new("Moore Neighborhood Particle (no momentum)"),
         Movement::from(vec![vec![
             IVec2::new(-1, -1),
             IVec2::new(0, -1),
@@ -170,7 +170,7 @@ fn setup(
         color_profile.clone(),
     ));
     commands.spawn((
-        ParticleTypeId::new("Moore Neighborhood Particle (with momentum)"),
+        ParticleType::new("Moore Neighborhood Particle (with momentum)"),
         Movement::from(vec![vec![
             IVec2::new(-1, -1),
             IVec2::new(0, -1),
@@ -187,7 +187,7 @@ fn setup(
         Momentum::default(),
     ));
     commands.spawn((
-        ParticleTypeId::new("Neumann Neighborhood Particle (no momentum)"),
+        ParticleType::new("Neumann Neighborhood Particle (no momentum)"),
         Movement::from(vec![vec![
             IVec2::new(0, -1),
             IVec2::new(-1, 0),
@@ -199,7 +199,7 @@ fn setup(
         color_profile.clone(),
     ));
     commands.spawn((
-        ParticleTypeId::new("Neumann Neighborhood Particle (with momentum)"),
+        ParticleType::new("Neumann Neighborhood Particle (with momentum)"),
         Movement::from(vec![vec![
             IVec2::new(0, -1),
             IVec2::new(-1, 0),
@@ -212,14 +212,14 @@ fn setup(
         Momentum::default(),
     ));
     commands.spawn((
-        ParticleTypeId::new("Downward diagonal (no momentum)"),
+        ParticleType::new("Downward diagonal (no momentum)"),
         Movement::from(vec![vec![IVec2::new(-1, -1), IVec2::new(1, -1)]]),
         density,
         velocity,
         color_profile.clone(),
     ));
     commands.spawn((
-        ParticleTypeId::new("Downward diagonal (with momentum)"),
+        ParticleType::new("Downward diagonal (with momentum)"),
         Movement::from(vec![vec![IVec2::new(-1, -1), IVec2::new(1, -1)]]),
         density,
         velocity,
@@ -438,7 +438,7 @@ fn cycle_selected_movement_state(
 
 fn bump_velocity(
     mut ev_reset_particle_chidlren: EventWriter<ResetParticleChildrenEvent>,
-    mut particle_type_query: Query<(Entity, &mut Velocity), With<ParticleTypeId>>,
+    mut particle_type_query: Query<(Entity, &mut Velocity), With<ParticleType>>,
     mut velocity_selection: ResMut<MaxVelocitySelection>,
     mut velocity_selection_text: Query<&mut Text, With<MaxVelocitySelectionText>>,
 ) {

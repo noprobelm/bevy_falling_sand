@@ -51,7 +51,7 @@ fn setup(mut commands: Commands) {
     commands.remove_resource::<DebugDirtyRects>();
 
     commands.spawn((WallBundle::new(
-        ParticleTypeId::new("Dirt Wall"),
+        ParticleType::new("Dirt Wall"),
         ColorProfile::new(vec![
             Color::Srgba(Srgba::hex("#916B4C").unwrap()),
             Color::Srgba(Srgba::hex("#73573D").unwrap()),
@@ -60,7 +60,7 @@ fn setup(mut commands: Commands) {
 
     commands.spawn((
         LiquidBundle::new(
-            ParticleTypeId::new("Water"),
+            ParticleType::new("Water"),
             Density(750),
             Velocity::new(1, 3),
             5,
@@ -72,7 +72,7 @@ fn setup(mut commands: Commands) {
 
     commands.spawn((
         MovableSolidBundle::new(
-            ParticleTypeId::new("Sand"),
+            ParticleType::new("Sand"),
             Density(1250),
             Velocity::new(1, 3),
             ColorProfile::new(vec![
@@ -86,7 +86,7 @@ fn setup(mut commands: Commands) {
     let setup_boundary = SetupBoundary::from_corners(
         IVec2::new(BOUNDARY_START_X, BOUNDARY_START_Y),
         IVec2::new(BOUNDARY_END_X, BOUNDARY_END_Y),
-        ParticleTypeId::new("Dirt Wall"),
+        ParticleType::new("Dirt Wall"),
     )
     .without_sides(vec![Sides::Top]);
     commands.queue(setup_boundary);

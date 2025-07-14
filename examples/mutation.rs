@@ -112,7 +112,7 @@ fn setup(mut commands: Commands) {
     ));
 
     commands.spawn((WallBundle::new(
-        ParticleTypeId::new("Dirt Wall"),
+        ParticleType::new("Dirt Wall"),
         ColorProfile::new(vec![
             Color::Srgba(Srgba::hex("#916B4C").unwrap()),
             Color::Srgba(Srgba::hex("#73573D").unwrap()),
@@ -121,7 +121,7 @@ fn setup(mut commands: Commands) {
 
     commands.spawn((
         LiquidBundle::new(
-            ParticleTypeId::new("Water"),
+            ParticleType::new("Water"),
             Density(750),
             Velocity::new(1, 3),
             5,
@@ -133,7 +133,7 @@ fn setup(mut commands: Commands) {
 
     commands.spawn((
         MovableSolidBundle::new(
-            ParticleTypeId::new("Sand"),
+            ParticleType::new("Sand"),
             Density(1250),
             Velocity::new(1, 3),
             ColorProfile::new(vec![
@@ -146,7 +146,7 @@ fn setup(mut commands: Commands) {
 
     commands.spawn((
         GasBundle::new(
-            ParticleTypeId::new("Smoke"),
+            ParticleType::new("Smoke"),
             Density(275),
             Velocity::new(1, 1),
             1,

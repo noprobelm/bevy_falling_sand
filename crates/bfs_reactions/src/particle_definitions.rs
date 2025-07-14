@@ -3,7 +3,7 @@ use bevy_turborand::RngComponent;
 use bfs_color::ColorProfile;
 use bfs_core::{
     impl_particle_rng, AttachedToParticleType, Particle, ParticlePosition,
-    ParticleRegistrationEvent, ParticleRng, ParticleTypeId,
+    ParticleRegistrationEvent, ParticleRng, ParticleType,
 };
 use std::time::Duration;
 
@@ -174,7 +174,7 @@ type ReactionsQuery<'a> = (Option<&'a Fire>, Option<&'a Burns>, Option<&'a Burni
 
 fn handle_particle_components(
     commands: &mut Commands,
-    parent_query: &Query<ReactionsQuery, With<ParticleTypeId>>,
+    parent_query: &Query<ReactionsQuery, With<ParticleType>>,
     particle_query: &Query<&AttachedToParticleType, With<Particle>>,
     entities: &[Entity],
 ) {
@@ -210,7 +210,7 @@ fn handle_particle_components(
 
 fn handle_particle_registration(
     mut commands: Commands,
-    parent_query: Query<ReactionsQuery, With<ParticleTypeId>>,
+    parent_query: Query<ReactionsQuery, With<ParticleType>>,
     particle_query: Query<&AttachedToParticleType, With<Particle>>,
     mut ev_particle_registered: EventReader<ParticleRegistrationEvent>,
 ) {

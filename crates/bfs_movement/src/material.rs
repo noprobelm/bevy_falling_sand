@@ -2,7 +2,7 @@ use bevy::{
     ecs::component::{Mutable, StorageType},
     prelude::*,
 };
-use bfs_core::{ClearParticleTypeChildrenEvent, ParticleTypeId};
+use bfs_core::{ClearParticleTypeChildrenEvent, ParticleType};
 use serde::{Deserialize, Serialize};
 
 use crate::Moved;
@@ -314,7 +314,7 @@ pub struct ClearStaticParticlesEvent;
 fn ev_clear_dynamic_particles(
     mut ev_clear_dynamic_particles: EventReader<ClearDynamicParticlesEvent>,
     mut ev_clear_particle_type_children: EventWriter<ClearParticleTypeChildrenEvent>,
-    dynamic_particle_types_query: Query<&ParticleTypeId, Without<Wall>>,
+    dynamic_particle_types_query: Query<&ParticleType, Without<Wall>>,
 ) {
     ev_clear_dynamic_particles.read().for_each(|_| {
         dynamic_particle_types_query
@@ -329,7 +329,7 @@ fn ev_clear_dynamic_particles(
 fn ev_clear_static_particles(
     mut ev_clear_static_particles: EventReader<ClearStaticParticlesEvent>,
     mut ev_clear_particle_type_children: EventWriter<ClearParticleTypeChildrenEvent>,
-    static_particle_types_query: Query<&ParticleTypeId, With<Wall>>,
+    static_particle_types_query: Query<&ParticleType, With<Wall>>,
 ) {
     ev_clear_static_particles.read().for_each(|_| {
         static_particle_types_query

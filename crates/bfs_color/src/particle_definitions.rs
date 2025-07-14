@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use bfs_core::{
     impl_particle_rng, AttachedToParticleType, Particle, ParticleRegistrationEvent, ParticleRng,
-    ParticleTypeId,
+    ParticleType,
 };
 
 pub(super) struct ParticleDefinitionsPlugin;
@@ -186,7 +186,7 @@ pub struct ResetParticleColorEvent {
 fn handle_particle_components(
     commands: &mut Commands,
     rng: &mut ResMut<GlobalRng>,
-    parent_query: &Query<(Option<&ColorProfile>, Option<&ChangesColor>), With<ParticleTypeId>>,
+    parent_query: &Query<(Option<&ColorProfile>, Option<&ChangesColor>), With<ParticleType>>,
     particle_query: &Query<&AttachedToParticleType, With<Particle>>,
     entities: &[Entity],
 ) {
@@ -223,7 +223,7 @@ fn handle_particle_components(
 fn handle_particle_registration(
     mut commands: Commands,
     mut rng: ResMut<GlobalRng>,
-    parent_query: Query<(Option<&ColorProfile>, Option<&ChangesColor>), With<ParticleTypeId>>,
+    parent_query: Query<(Option<&ColorProfile>, Option<&ChangesColor>), With<ParticleType>>,
     particle_query: Query<&AttachedToParticleType, With<Particle>>,
     mut ev_particle_registered: EventReader<ParticleRegistrationEvent>,
     mut ev_reset_particle_color: EventReader<ResetParticleColorEvent>,

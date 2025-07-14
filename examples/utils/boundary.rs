@@ -17,13 +17,13 @@ impl Sides {
 
 pub struct SetupBoundary {
     irect: IRect,
-    particle_type: ParticleTypeId,
+    particle_type: ParticleType,
     sides: HashSet<Sides>,
 }
 
 impl SetupBoundary {
     #[allow(dead_code)]
-    pub fn new(x0: i32, y0: i32, x1: i32, y1: i32, particle_type: ParticleTypeId) -> Self {
+    pub fn new(x0: i32, y0: i32, x1: i32, y1: i32, particle_type: ParticleType) -> Self {
         Self {
             irect: IRect::new(x0, y0, x1, y1),
             particle_type,
@@ -32,7 +32,7 @@ impl SetupBoundary {
     }
 
     #[allow(dead_code)]
-    pub fn from_irect(irect: IRect, particle_type: ParticleTypeId) -> Self {
+    pub fn from_irect(irect: IRect, particle_type: ParticleType) -> Self {
         Self {
             irect,
             particle_type,
@@ -40,7 +40,7 @@ impl SetupBoundary {
         }
     }
 
-    pub fn from_corners(p0: IVec2, p1: IVec2, particle_type: ParticleTypeId) -> Self {
+    pub fn from_corners(p0: IVec2, p1: IVec2, particle_type: ParticleType) -> Self {
         Self {
             irect: IRect::from_corners(p0, p1),
             particle_type,
