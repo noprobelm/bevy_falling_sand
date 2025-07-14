@@ -209,7 +209,8 @@ fn setup(
         IVec2::new(BOUNDARY_START_X, BOUNDARY_START_Y),
         IVec2::new(BOUNDARY_END_X, BOUNDARY_END_Y),
         ParticleType::new("Dirt Wall"),
-    );
+    )
+    .with_thickness(2);
     commands.queue(setup_boundary);
 
     commands.insert_resource(ParticleSpawnList::new(vec![
