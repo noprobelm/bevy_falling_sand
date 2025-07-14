@@ -751,7 +751,14 @@ dependencies = [
  "bevy",
  "bevy_egui",
  "bevy_turborand",
+ "bfs_assets",
+ "bfs_color",
+ "bfs_core",
  "bfs_internal",
+ "bfs_movement",
+ "bfs_reactions",
+ "bfs_spatial",
+ "ron",
 ]
 
 [[package]]
@@ -1524,6 +1531,21 @@ dependencies = [
  "web-sys",
  "wgpu-types",
  "winit",
+]
+
+[[package]]
+name = "bfs_assets"
+version = "0.5.0"
+dependencies = [
+ "anyhow",
+ "bevy",
+ "bfs_color",
+ "bfs_core",
+ "bfs_movement",
+ "bfs_reactions",
+ "futures-lite",
+ "ron",
+ "serde",
 ]
 
 [[package]]

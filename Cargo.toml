@@ -31,6 +31,7 @@ members = [
   "crates/bfs_physics",
   "crates/bfs_reactions",
   "crates/bfs_scenes",
+  "crates/bfs_assets",
 ]
 
 [workspace.dependencies]
@@ -38,11 +39,18 @@ bevy = { version = "0.16", features = ["wayland"] }
 
 [dependencies]
 bfs_internal = { path = "crates/bfs_internal" }
+bfs_assets = { path = "crates/bfs_assets" }
+bfs_core = { path = "crates/bfs_core" }
+bfs_color = { path = "crates/bfs_color" }
+bfs_movement = { path = "crates/bfs_movement" }
+bfs_reactions = { path = "crates/bfs_reactions" }
+bfs_spatial = { path = "crates/bfs_spatial" }
 bevy.workspace = true
 
 [dev-dependencies]
 bevy_egui = "0.34.1"
 bevy_turborand = "0.11.0"
+ron = "0.8"
 
 [profile.release]
 lto = true

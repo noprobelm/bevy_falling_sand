@@ -1,0 +1,20 @@
+[package]
+name = "bfs_assets"
+version = "0.5.0"
+edition = "2021"
+authors = ["Jeff Barfield <jeffreybarfield@protonmail.com>"]
+license-file = "../../LICENSE"
+repository = "https://github.com/noprobelm/bevy_falling_sand"
+description = "Asset loading functionality for Bevy Falling Sand particle definitions"
+keywords = ["falling-sand", "simulation", "assets"]
+
+[dependencies]
+bevy.workspace = true
+bfs_core = { path = "../bfs_core" }
+bfs_color = { path = "../bfs_color" }
+bfs_movement = { path = "../bfs_movement" }
+bfs_reactions = { path = "../bfs_reactions" }
+serde = { version = "1.0", features = ["derive"] }
+ron = "0.8"
+anyhow = "1.0"
+futures-lite = "2.0"
