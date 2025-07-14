@@ -1,3 +1,5 @@
+mod utils;
+
 use bevy::{
     input::{common_conditions::input_just_pressed, mouse::MouseWheel},
     prelude::*,
@@ -15,8 +17,11 @@ fn main() {
         ))
         .init_resource::<TotalParticleCount>()
         .init_resource::<SpawnParticles>()
-        .add_systems(Startup, setup)
-        .add_systems(Update, (zoom_camera, pan_camera))
+        .add_systems(Startup, (setup, utils::camera::setup_camera))
+        .add_systems(
+            Update,
+            (utils::camera::zoom_camera, utils::camera::pan_camera),
+        )
         .add_systems(
             Update,
             (
@@ -55,16 +60,6 @@ struct MainCamera;
 struct TotalParticleCountText;
 
 fn setup(mut commands: Commands) {
-    commands.spawn((
-        Camera2d,
-        Projection::Orthographic(OrthographicProjection {
-            near: -1000.0,
-            scale: 0.2,
-            ..OrthographicProjection::default_2d()
-        }),
-        MainCamera,
-    ));
-
     commands.spawn((WallBundle::new(
         ParticleTypeId::new("Dirt Wall"),
         ColorProfile::new(vec![
