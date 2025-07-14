@@ -5,6 +5,7 @@ use bevy_falling_sand::prelude::*;
 use utils::{
     boundary::{SetupBoundary, Sides},
     brush::{BrushState, ParticleSpawnList, SelectedBrushParticle},
+    instructions::spawn_instructions_panel,
 };
 
 fn main() {
@@ -18,6 +19,7 @@ fn main() {
             utils::states::StatesPlugin,
             utils::brush::BrushPlugin::default(),
             utils::cursor::CursorPlugin,
+            utils::instructions::InstructionsPlugin::new(),
         ))
         .init_resource::<TotalParticleCount>()
         .init_resource::<SpawnParticles>()
@@ -28,7 +30,6 @@ fn main() {
                 update_total_particle_count_text.run_if(resource_exists::<TotalParticleCount>),
                 update_brush_state_text,
                 update_selected_particle_text,
-                toggle_instructions_panel.run_if(input_just_pressed(KeyCode::KeyH)),
                 toggle_debug_map.run_if(input_just_pressed(KeyCode::F1)),
                 toggle_debug_dirty_rects.run_if(input_just_pressed(KeyCode::F2)),
                 utils::camera::zoom_camera.run_if(in_state(utils::states::AppState::Canvas)),
@@ -58,9 +59,6 @@ struct BrushStateText;
 
 #[derive(Component)]
 struct SelectedParticleText;
-
-#[derive(Component)]
-struct InstructionsPanel;
 
 fn setup(mut commands: Commands) {
     commands.remove_resource::<DebugParticleMap>();
@@ -121,43 +119,27 @@ fn setup(mut commands: Commands) {
         F1: Show/Hide particle chunk map\n\
         F2: Show/Hide \"dirty rectangles\"\n\
         R: Reset\n";
-    let style = TextFont::default();
 
-    commands
-        .spawn((
-            InstructionsPanel,
-            Node {
-                position_type: PositionType::Absolute,
-                top: Val::Px(12.0),
-                left: Val::Px(12.0),
-                flex_direction: FlexDirection::Column,
-                row_gap: Val::Px(20.0),
-                padding: UiRect::all(Val::Px(16.0)),
-                border: UiRect::all(Val::Px(2.0)),
-                ..default()
-            },
-            BackgroundColor(Color::Srgba(Srgba::new(0.0, 0.0, 0.0, 0.8))),
-            BorderColor(Color::Srgba(Srgba::new(0.4, 0.4, 0.4, 1.0))),
-            BorderRadius::all(Val::Px(8.0)),
-        ))
-        .with_children(|parent| {
-            parent.spawn((Text::new(instructions_text), style.clone()));
-            parent.spawn((
-                TotalParticleCountText,
-                Text::new("Total Particles: "),
-                style.clone(),
-            ));
-            parent.spawn((
-                BrushStateText,
-                Text::new("Brush Mode: Spawn"),
-                style.clone(),
-            ));
-            parent.spawn((
-                SelectedParticleText,
-                Text::new("Selected Particle: Sand"),
-                style.clone(),
-            ));
-        });
+    let panel_id = spawn_instructions_panel(&mut commands, instructions_text);
+
+    commands.entity(panel_id).with_children(|parent| {
+        let style = TextFont::default();
+        parent.spawn((
+            TotalParticleCountText,
+            Text::new("Total Particles: "),
+            style.clone(),
+        ));
+        parent.spawn((
+            BrushStateText,
+            Text::new("Brush Mode: Spawn"),
+            style.clone(),
+        ));
+        parent.spawn((
+            SelectedParticleText,
+            Text::new("Selected Particle: Sand"),
+            style.clone(),
+        ));
+    });
 }
 
 fn toggle_debug_map(mut commands: Commands, debug_map: Option<Res<DebugParticleMap>>) {
@@ -212,17 +194,5 @@ fn update_selected_particle_text(
 
     for mut text in selected_particle_text.iter_mut() {
         **text = particle_text.clone();
-    }
-}
-
-fn toggle_instructions_panel(
-    mut instructions_query: Query<&mut Visibility, With<InstructionsPanel>>,
-) {
-    for mut visibility in instructions_query.iter_mut() {
-        *visibility = match *visibility {
-            Visibility::Visible => Visibility::Hidden,
-            Visibility::Hidden => Visibility::Visible,
-            Visibility::Inherited => Visibility::Hidden,
-        };
     }
 }
