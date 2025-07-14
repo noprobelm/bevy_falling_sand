@@ -138,6 +138,14 @@ impl Component for ParticleTypeId {
             let mut type_map = world.resource_mut::<ParticleTypeMap>();
             type_map.insert(name, context.entity);
         });
+
+        hooks.on_remove(|mut world, context| {
+            let particle_type = world.get::<Self>(context.entity).unwrap();
+            let name = particle_type.name.clone();
+
+            let mut type_map = world.resource_mut::<ParticleTypeMap>();
+            type_map.remove(&name);
+        });
     }
 }
 
@@ -149,6 +157,7 @@ pub struct ParticleTypeMap {
 
 impl ParticleTypeMap {
     /// Returns true if the designated key exists in the map.
+    #[must_use]
     pub fn contains(&self, name: &str) -> bool {
         self.map.contains_key(name)
     }
@@ -177,6 +186,11 @@ impl ParticleTypeMap {
     #[must_use]
     pub fn get(&self, name: &String) -> Option<&Entity> {
         self.map.get(name)
+    }
+
+    /// Remove a particle type from the map
+    fn remove(&mut self, name: &String) -> Option<Entity> {
+        self.map.remove(name)
     }
 }
 
