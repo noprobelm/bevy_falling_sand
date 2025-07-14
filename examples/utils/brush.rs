@@ -64,6 +64,7 @@ pub struct BrushKeybindings {
     pub toggle_brush_state_button: BrushInput,
     pub resize_modifier_key: KeyCode,
     pub cycle_particle_button: BrushInput,
+    pub cycle_brush_type_button: BrushInput,
 }
 
 impl Default for BrushKeybindings {
@@ -74,6 +75,7 @@ impl Default for BrushKeybindings {
             toggle_brush_state_button: BrushInput::Key(KeyCode::Tab),
             resize_modifier_key: KeyCode::AltLeft,
             cycle_particle_button: BrushInput::Mouse(MouseButton::Right),
+            cycle_brush_type_button: BrushInput::Key(KeyCode::KeyB),
         }
     }
 }
@@ -115,6 +117,9 @@ impl bevy::prelude::Plugin for BrushPlugin {
                     )),
                     cycle_selected_particle.run_if(is_brush_input_just_pressed(
                         keybindings.cycle_particle_button,
+                    )),
+                    cycle_brush_type.run_if(is_brush_input_just_pressed(
+                        keybindings.cycle_brush_type_button,
                     )),
                     resize_brush_with_scroll,
                     handle_alt_app_state_transition,
@@ -185,6 +190,16 @@ pub enum BrushType {
 }
 
 impl BrushType {
+    pub fn cycle_next(&self) -> Self {
+        match self {
+            BrushType::Line => BrushType::Circle,
+            BrushType::Circle => BrushType::Cursor,
+            BrushType::Cursor => BrushType::Line,
+        }
+    }
+}
+
+impl BrushType {
     pub fn update_brush(
         &self,
         coords: Vec2,
@@ -222,19 +237,30 @@ impl BrushType {
         match self {
             BrushType::Line => {
                 let particle = selected_brush_particle.clone();
-                let min_x = -(brush_size as i32) / 2;
-                let max_x = (brush_size / 2.0) as i32;
 
-                commands.spawn_batch((min_x * 3..=max_x * 3).map(move |x| {
-                    (
+                if (coords.previous - coords.previous_previous).length() < 1.0 {
+                    spawn_line(commands, particle.clone(), coords.previous, brush_size);
+                } else {
+                    spawn_line_interpolated(
+                        commands,
                         particle.clone(),
-                        Transform::from_xyz(
-                            (coords.current.x + x as f32).round(),
-                            coords.current.y.round(),
-                            0.0,
-                        ),
-                    )
-                }));
+                        coords.previous,
+                        coords.previous_previous,
+                        brush_size,
+                    );
+                }
+
+                if (coords.current - coords.previous).length() < 1.0 {
+                    spawn_line(commands, particle, coords.current, brush_size);
+                } else {
+                    spawn_line_interpolated(
+                        commands,
+                        particle,
+                        coords.previous,
+                        coords.current,
+                        brush_size,
+                    );
+                }
             }
             BrushType::Circle => {
                 let particle = selected_brush_particle.clone();
@@ -267,6 +293,27 @@ impl BrushType {
             }
             BrushType::Cursor => {
                 let particle = selected_brush_particle.clone();
+
+                // Interpolate between previous positions if movement is significant
+                if (coords.previous - coords.previous_previous).length() >= 1.0 {
+                    spawn_cursor_interpolated(
+                        commands,
+                        particle.clone(),
+                        coords.previous_previous,
+                        coords.previous,
+                    );
+                }
+
+                if (coords.current - coords.previous).length() >= 1.0 {
+                    spawn_cursor_interpolated(
+                        commands,
+                        particle.clone(),
+                        coords.previous,
+                        coords.current,
+                    );
+                }
+
+                // Always spawn at current position
                 commands.spawn((
                     particle.clone(),
                     Transform::from_xyz(coords.current.x.round(), coords.current.y.round(), 0.0),
@@ -392,6 +439,14 @@ pub fn cycle_selected_particle(
     if let Some(next_particle) = particle_spawn_list.cycle_next() {
         selected_particle.0 = next_particle.clone();
     }
+}
+
+pub fn cycle_brush_type(
+    mut brush_type: ResMut<NextState<BrushType>>,
+    current_type: Res<State<BrushType>>,
+) {
+    let next_type = current_type.get().cycle_next();
+    brush_type.set(next_type);
 }
 
 pub fn setup_brush(
@@ -551,4 +606,87 @@ fn points_within_capsule(capsule: &Capsule2d, start: Vec2, end: Vec2) -> Vec<IVe
     }
 
     points_inside
+}
+
+fn spawn_line(commands: &mut Commands, particle: Particle, center: Vec2, brush_size: f32) {
+    let min_x = -(brush_size as i32) / 2;
+    let max_x = (brush_size / 2.0) as i32;
+
+    commands.spawn_batch((min_x * 3..=max_x * 3).map(move |x| {
+        (
+            particle.clone(),
+            Transform::from_xyz(
+                (center.x + x as f32).round(),
+                center.y.round(),
+                0.0,
+            ),
+        )
+    }));
+}
+
+fn spawn_line_interpolated(
+    commands: &mut Commands,
+    particle: Particle,
+    start: Vec2,
+    end: Vec2,
+    brush_size: f32,
+) {
+    let mut points: HashSet<IVec2> = HashSet::default();
+    let direction = (end - start).normalize();
+    let length = (end - start).length();
+    let min_x = -(brush_size as i32) / 2;
+    let max_x = (brush_size / 2.0) as i32;
+
+    // Sample points along the interpolated line
+    let num_samples = (length.ceil() as usize).max(1);
+    for i in 0..=num_samples {
+        let t = i as f32 / num_samples.max(1) as f32;
+        let sample_point = start + direction * length * t;
+        
+        // For each sample point, spawn a line
+        for x in min_x * 3..=max_x * 3 {
+            let position = Vec2::new(
+                (sample_point.x + x as f32).round(),
+                sample_point.y.round(),
+            );
+            points.insert(position.as_ivec2());
+        }
+    }
+
+    commands.spawn_batch(points.into_iter().map(move |point| {
+        (
+            particle.clone(),
+            Transform::from_xyz(point.x as f32, point.y as f32, 0.0),
+        )
+    }));
+}
+
+fn spawn_cursor_interpolated(
+    commands: &mut Commands,
+    particle: Particle,
+    start: Vec2,
+    end: Vec2,
+) {
+    let mut points: HashSet<IVec2> = HashSet::default();
+    let direction = (end - start).normalize();
+    let length = (end - start).length();
+
+    // Sample points along the interpolated path
+    let num_samples = (length.ceil() as usize).max(1);
+    for i in 0..=num_samples {
+        let t = i as f32 / num_samples.max(1) as f32;
+        let sample_point = start + direction * length * t;
+        
+        points.insert(IVec2::new(
+            sample_point.x.round() as i32,
+            sample_point.y.round() as i32,
+        ));
+    }
+
+    commands.spawn_batch(points.into_iter().map(move |point| {
+        (
+            particle.clone(),
+            Transform::from_xyz(point.x as f32, point.y as f32, 0.0),
+        )
+    }));
 }

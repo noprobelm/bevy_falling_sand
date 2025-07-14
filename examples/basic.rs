@@ -4,7 +4,7 @@ use bevy::{input::common_conditions::input_just_pressed, prelude::*};
 use bevy_falling_sand::prelude::*;
 use utils::{
     boundary::{SetupBoundary, Sides},
-    brush::{BrushState, ParticleSpawnList, SelectedBrushParticle},
+    brush::{BrushState, BrushType, ParticleSpawnList, SelectedBrushParticle},
     instructions::spawn_instructions_panel,
 };
 
@@ -30,6 +30,7 @@ fn main() {
                 update_total_particle_count_text.run_if(resource_exists::<TotalParticleCount>),
                 update_brush_state_text,
                 update_selected_particle_text,
+                update_brush_type_text,
                 toggle_debug_map.run_if(input_just_pressed(KeyCode::F1)),
                 toggle_debug_dirty_rects.run_if(input_just_pressed(KeyCode::F2)),
                 utils::camera::zoom_camera.run_if(in_state(utils::states::AppState::Canvas)),
@@ -59,6 +60,9 @@ struct BrushStateText;
 
 #[derive(Component)]
 struct SelectedParticleText;
+
+#[derive(Component)]
+struct BrushTypeText;
 
 fn setup(mut commands: Commands) {
     commands.remove_resource::<DebugParticleMap>();
@@ -115,6 +119,7 @@ fn setup(mut commands: Commands) {
     let instructions_text = "LMB: Spawn/despawn particles\n\
         RMB: Cycle particle type\n\
         TAB: Toggle brush spawn/despawn\n\
+        B: Cycle brush type\n\
         H: Hide/Show this help\n\
         F1: Show/Hide particle chunk map\n\
         F2: Show/Hide \"dirty rectangles\"\n\
@@ -137,6 +142,11 @@ fn setup(mut commands: Commands) {
         parent.spawn((
             SelectedParticleText,
             Text::new("Selected Particle: Sand"),
+            style.clone(),
+        ));
+        parent.spawn((
+            BrushTypeText,
+            Text::new("Brush Type: Circle"),
             style.clone(),
         ));
     });
@@ -194,5 +204,16 @@ fn update_selected_particle_text(
 
     for mut text in selected_particle_text.iter_mut() {
         **text = particle_text.clone();
+    }
+}
+
+fn update_brush_type_text(
+    brush_type: Res<State<BrushType>>,
+    mut brush_type_text: Query<&mut Text, With<BrushTypeText>>,
+) {
+    let type_text = format!("Brush Type: {:?}", brush_type.get());
+
+    for mut text in brush_type_text.iter_mut() {
+        **text = type_text.clone();
     }
 }
