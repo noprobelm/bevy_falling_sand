@@ -6,6 +6,33 @@ use super::{
     states::AppState,
 };
 
+#[derive(Clone, Debug, Resource)]
+pub struct ParticleSpawnList {
+    particles: Vec<Particle>,
+    index: usize,
+}
+
+impl ParticleSpawnList {
+    pub fn new(particles: Vec<Particle>) -> Self {
+        Self {
+            particles,
+            index: 0,
+        }
+    }
+
+    pub fn current(&self) -> Option<&Particle> {
+        self.particles.get(self.index)
+    }
+
+    pub fn cycle_next(&mut self) -> Option<&Particle> {
+        if self.particles.is_empty() {
+            return None;
+        }
+        self.index = (self.index + 1) % self.particles.len();
+        self.current()
+    }
+}
+
 #[derive(Clone, Copy, Debug)]
 pub enum BrushInput {
     Key(KeyCode),
@@ -36,6 +63,7 @@ pub struct BrushKeybindings {
     pub sample_button: BrushInput,
     pub toggle_brush_state_button: BrushInput,
     pub resize_modifier_key: KeyCode,
+    pub cycle_particle_button: BrushInput,
 }
 
 impl Default for BrushKeybindings {
@@ -45,6 +73,7 @@ impl Default for BrushKeybindings {
             sample_button: BrushInput::Mouse(MouseButton::Middle),
             toggle_brush_state_button: BrushInput::Mouse(MouseButton::Right),
             resize_modifier_key: KeyCode::AltLeft,
+            cycle_particle_button: BrushInput::Key(KeyCode::Tab),
         }
     }
 }
@@ -88,7 +117,12 @@ impl bevy::prelude::Plugin for BrushPlugin {
                     update_brush,
                     ev_resize_brush,
                     sample_hovered.run_if(is_brush_input_just_pressed(keybindings.sample_button)),
-                    toggle_brush_state.run_if(is_brush_input_just_pressed(keybindings.toggle_brush_state_button)),
+                    toggle_brush_state.run_if(is_brush_input_just_pressed(
+                        keybindings.toggle_brush_state_button,
+                    )),
+                    cycle_selected_particle.run_if(is_brush_input_just_pressed(
+                        keybindings.cycle_particle_button,
+                    )),
                     resize_brush_with_scroll,
                     handle_alt_app_state_transition,
                 ),
@@ -298,9 +332,12 @@ impl BrushType {
 }
 
 #[derive(Resource)]
-pub struct SelectedBrushParticle(pub String);
+pub struct SelectedBrushParticle(pub Particle);
 
-pub fn toggle_brush_state(mut brush_state: ResMut<NextState<BrushState>>, current_state: Res<State<BrushState>>) {
+pub fn toggle_brush_state(
+    mut brush_state: ResMut<NextState<BrushState>>,
+    current_state: Res<State<BrushState>>,
+) {
     match current_state.get() {
         BrushState::Spawn => brush_state.set(BrushState::Despawn),
         BrushState::Despawn => brush_state.set(BrushState::Spawn),
@@ -322,12 +359,12 @@ pub fn resize_brush_with_scroll(
                     // Scroll up - increase size
                     (current_size + 1).min(50) // Cap at 50
                 } else if event.y < 0.0 {
-                    // Scroll down - decrease size  
+                    // Scroll down - decrease size
                     (current_size - 1).max(1) // Minimum size of 1
                 } else {
                     current_size
                 };
-                
+
                 if new_size != current_size {
                     brush_resize_events.write(BrushResizeEvent(new_size as usize));
                 }
@@ -352,6 +389,15 @@ pub fn handle_alt_app_state_transition(
         if current_state.get() == &AppState::Ui {
             app_state.set(AppState::Canvas);
         }
+    }
+}
+
+pub fn cycle_selected_particle(
+    mut particle_spawn_list: ResMut<ParticleSpawnList>,
+    mut selected_particle: ResMut<SelectedBrushParticle>,
+) {
+    if let Some(next_particle) = particle_spawn_list.cycle_next() {
+        selected_particle.0 = next_particle.clone();
     }
 }
 
@@ -380,9 +426,7 @@ pub fn spawn_particles(
         &mut commands,
         cursor_coords,
         brush.size as f32,
-        Particle {
-            name: selected.0.clone(),
-        },
+        selected.0.clone(),
     );
     Ok(())
 }
@@ -424,7 +468,7 @@ fn sample_hovered(
 ) {
     if let Some(entity) = chunk_map.get(&cursor_coords.current.as_ivec2()) {
         let particle = particle_query.get(*entity).unwrap();
-        selected_brush_particle.0 = particle.name.clone();
+        selected_brush_particle.0 = particle.clone();
         brush_state.set(BrushState::Spawn);
     }
 }

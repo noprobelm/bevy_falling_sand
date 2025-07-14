@@ -4,7 +4,7 @@ use bevy::{input::common_conditions::input_just_pressed, prelude::*};
 use bevy_falling_sand::prelude::*;
 use utils::{
     boundary::{SetupBoundary, Sides},
-    brush::SelectedBrushParticle,
+    brush::{ParticleSpawnList, SelectedBrushParticle},
 };
 
 fn main() {
@@ -20,7 +20,6 @@ fn main() {
             utils::cursor::CursorPlugin,
         ))
         .init_resource::<TotalParticleCount>()
-        .insert_resource(SelectedBrushParticle(String::from("Sand")))
         .init_resource::<SpawnParticles>()
         .add_systems(Startup, (setup, utils::camera::setup_camera))
         .add_systems(
@@ -88,6 +87,13 @@ fn setup(mut commands: Commands) {
         ),
         Momentum::default(),
     ));
+
+    commands.insert_resource(ParticleSpawnList::new(vec![
+        Particle::new("Sand"),
+        Particle::new("Water"),
+        Particle::new("Dirt Wall"),
+    ]));
+    commands.insert_resource(SelectedBrushParticle(Particle::new("Sand")));
 
     let setup_boundary = SetupBoundary::from_corners(
         IVec2::new(BOUNDARY_START_X, BOUNDARY_START_Y),
