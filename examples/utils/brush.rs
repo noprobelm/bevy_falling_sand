@@ -78,16 +78,9 @@ impl Default for BrushKeybindings {
     }
 }
 
+#[derive(Default)]
 pub struct BrushPlugin {
     pub keybindings: BrushKeybindings,
-}
-
-impl Default for BrushPlugin {
-    fn default() -> Self {
-        Self {
-            keybindings: BrushKeybindings::default(),
-        }
-    }
 }
 
 impl BrushPlugin {

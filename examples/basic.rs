@@ -16,7 +16,7 @@ fn main() {
             FallingSandColorPlugin,
             FallingSandDebugPlugin,
             utils::states::StatesPlugin,
-            utils::brush::BrushPlugin::new(),
+            utils::brush::BrushPlugin::default(),
             utils::cursor::CursorPlugin,
         ))
         .init_resource::<TotalParticleCount>()
@@ -25,7 +25,6 @@ fn main() {
         .add_systems(
             Update,
             (
-                //stream_particles.run_if(resource_exists::<SpawnParticles>),
                 update_total_particle_count_text.run_if(resource_exists::<TotalParticleCount>),
                 toggle_debug_map.run_if(input_just_pressed(KeyCode::F2)),
                 toggle_debug_dirty_rects.run_if(input_just_pressed(KeyCode::F3)),
@@ -126,40 +125,6 @@ fn setup(mut commands: Commands) {
                 style.clone(),
             ));
         });
-}
-
-fn stream_particles(mut commands: Commands) {
-    let center_x = (BOUNDARY_START_X + BOUNDARY_END_X) / 2;
-    let spawn_y = -(BOUNDARY_END_Y as f32) - 10.0;
-
-    let radius = 3;
-
-    for dx in -radius..=radius {
-        for dy in -radius..=radius {
-            if dx * dx + dy * dy <= radius * radius {
-                let base_x = center_x as f32 + dx as f32;
-                let y = spawn_y + dy as f32 + 200.0;
-
-                commands.spawn((
-                    Particle::new("Sand"),
-                    Transform::from_xyz(base_x - 75.0, y, 0.0),
-                ));
-
-                commands.spawn((
-                    Particle::new("Water"),
-                    Transform::from_xyz(base_x + 75.0, y, 0.0),
-                ));
-            }
-        }
-    }
-}
-
-fn toggle_spawn_particles(mut commands: Commands, debug_map: Option<Res<SpawnParticles>>) {
-    if debug_map.is_some() {
-        commands.remove_resource::<SpawnParticles>();
-    } else {
-        commands.init_resource::<SpawnParticles>();
-    }
 }
 
 fn toggle_debug_map(mut commands: Commands, debug_map: Option<Res<DebugParticleMap>>) {
