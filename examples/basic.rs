@@ -2,7 +2,10 @@ mod utils;
 
 use bevy::{input::common_conditions::input_just_pressed, prelude::*};
 use bevy_falling_sand::prelude::*;
-use utils::boundary::{SetupBoundary, Sides};
+use utils::{
+    boundary::{SetupBoundary, Sides},
+    brush::SelectedBrushParticle,
+};
 
 fn main() {
     App::new()
@@ -12,19 +15,22 @@ fn main() {
             FallingSandMovementPlugin,
             FallingSandColorPlugin,
             FallingSandDebugPlugin,
+            utils::states::StatesPlugin,
+            utils::brush::BrushPlugin::new(),
+            utils::cursor::CursorPlugin,
         ))
         .init_resource::<TotalParticleCount>()
+        .insert_resource(SelectedBrushParticle(String::from("Sand")))
         .init_resource::<SpawnParticles>()
         .add_systems(Startup, (setup, utils::camera::setup_camera))
         .add_systems(
             Update,
             (
-                stream_particles.run_if(resource_exists::<SpawnParticles>),
+                //stream_particles.run_if(resource_exists::<SpawnParticles>),
                 update_total_particle_count_text.run_if(resource_exists::<TotalParticleCount>),
-                toggle_spawn_particles.run_if(input_just_pressed(KeyCode::F1)),
                 toggle_debug_map.run_if(input_just_pressed(KeyCode::F2)),
                 toggle_debug_dirty_rects.run_if(input_just_pressed(KeyCode::F3)),
-                utils::camera::zoom_camera,
+                utils::camera::zoom_camera.run_if(in_state(utils::states::AppState::Canvas)),
                 utils::camera::pan_camera,
                 utils::particles::reset_dynamic_particles.run_if(input_just_pressed(KeyCode::KeyR)),
             ),
