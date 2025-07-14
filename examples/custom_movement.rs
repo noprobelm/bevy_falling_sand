@@ -6,8 +6,8 @@ use std::time::Duration;
 use utils::{
     boundary::SetupBoundary,
     brush::{ParticleSpawnList, SelectedBrushParticle},
-    instructions::spawn_instructions_panel,
-    status_ui::{MovementSourceText, StatusUIPlugin},
+    states::AppState,
+    status_ui::MovementSourceText,
 };
 
 fn main() {
@@ -20,7 +20,7 @@ fn main() {
             utils::cursor::CursorPlugin,
             utils::instructions::InstructionsPlugin::default(),
             utils::brush::BrushPlugin::default(),
-            StatusUIPlugin,
+            utils::status_ui::StatusUIPlugin,
         ))
         .init_resource::<MaxVelocitySelection>()
         .add_systems(Startup, (setup, utils::camera::setup_camera))
@@ -30,7 +30,7 @@ fn main() {
                 utils::particles::toggle_debug_map.run_if(input_just_pressed(KeyCode::F1)),
                 utils::particles::toggle_debug_dirty_rects.run_if(input_just_pressed(KeyCode::F2)),
                 utils::particles::change_movement_source.run_if(input_just_pressed(KeyCode::F3)),
-                utils::camera::zoom_camera,
+                utils::camera::zoom_camera.run_if(in_state(AppState::Canvas)),
                 utils::camera::pan_camera,
                 utils::particles::ev_clear_dynamic_particles
                     .run_if(input_just_pressed(KeyCode::KeyR)),
@@ -188,7 +188,7 @@ fn setup(
         F3: Change movement logic (Particles vs. Chunks)\n\
         R: Reset";
 
-    let panel_id = spawn_instructions_panel(&mut commands, instructions_text);
+    let panel_id = utils::instructions::spawn_instructions_panel(&mut commands, instructions_text);
     commands.entity(panel_id).with_children(|parent| {
         let style = TextFont::default();
         parent.spawn((

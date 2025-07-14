@@ -5,8 +5,9 @@ use bevy_falling_sand::prelude::*;
 use utils::{
     boundary::{SetupBoundary, Sides},
     brush::{ParticleSpawnList, SelectedBrushParticle},
+    states::AppState,
     status_ui::{
-        BrushStateText, BrushTypeText, MovementSourceText, SelectedParticleText, StatusUIPlugin,
+        BrushStateText, BrushTypeText, MovementSourceText, SelectedParticleText,
         TotalParticleCountText,
     },
 };
@@ -23,7 +24,7 @@ fn main() {
             utils::brush::BrushPlugin::default(),
             utils::cursor::CursorPlugin,
             utils::instructions::InstructionsPlugin::default(),
-            StatusUIPlugin,
+            utils::status_ui::StatusUIPlugin,
         ))
         .init_resource::<TotalParticleCount>()
         .init_resource::<SpawnParticles>()
@@ -34,7 +35,7 @@ fn main() {
                 utils::particles::toggle_debug_map.run_if(input_just_pressed(KeyCode::F1)),
                 utils::particles::toggle_debug_dirty_rects.run_if(input_just_pressed(KeyCode::F2)),
                 utils::particles::change_movement_source.run_if(input_just_pressed(KeyCode::F3)),
-                utils::camera::zoom_camera.run_if(in_state(utils::states::AppState::Canvas)),
+                utils::camera::zoom_camera.run_if(in_state(AppState::Canvas)),
                 utils::camera::pan_camera,
                 utils::particles::ev_clear_particle_map.run_if(input_just_pressed(KeyCode::KeyR)),
             ),

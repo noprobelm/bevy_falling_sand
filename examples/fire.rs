@@ -1,32 +1,41 @@
+mod utils;
+
 use std::time::Duration;
 
-use bevy::{
-    input::{
-        common_conditions::{input_just_pressed, input_pressed},
-        mouse::MouseWheel,
-    },
-    prelude::*,
-    window::PrimaryWindow,
-};
+use bevy::{input::common_conditions::input_just_pressed, prelude::*};
 use bevy_egui::{egui, EguiContextPass, EguiContexts, EguiPlugin};
 use bevy_falling_sand::prelude::*;
+use utils::{
+    boundary::SetupBoundary,
+    brush::{ParticleSpawnList, SelectedBrushParticle},
+    states::AppState,
+    status_ui::{
+        BrushStateText, BrushTypeText, MovementSourceText, SelectedParticleText,
+        TotalParticleCountText,
+    },
+};
 
 fn main() {
     App::new()
         .add_plugins((
             DefaultPlugins,
             FallingSandPlugin::default().with_spatial_refresh_frequency(Duration::from_millis(20)),
+            FallingSandDebugPlugin,
             EguiPlugin {
                 enable_multipass_for_primary_context: false,
             },
+            utils::states::StatesPlugin,
+            utils::brush::BrushPlugin::default(),
+            utils::cursor::CursorPlugin,
+            utils::instructions::InstructionsPlugin::default(),
+            utils::status_ui::StatusUIPlugin,
+            utils::gui::GuiPlugin,
         ))
-        .init_state::<AppState>()
         .init_resource::<SpawnFlammableGasParticles>()
         .init_resource::<CursorPosition>()
         .init_resource::<DefaultFire>()
         .init_resource::<DefaultFlammableGas>()
-        .add_systems(Startup, setup)
-        .add_systems(Update, (zoom_camera, pan_camera))
+        .add_systems(Startup, (setup, utils::camera::setup_camera))
         .add_systems(
             EguiContextPass,
             render_fire_settings_gui.run_if(resource_exists::<RenderGUI>),
@@ -34,21 +43,17 @@ fn main() {
         .add_systems(
             Update,
             (
-                update_app_state,
-                update_cursor_position,
-                spawn_boundary.run_if(resource_not_exists::<BoundaryReady>),
-                spawn_fire
-                    .run_if(input_pressed(MouseButton::Left))
-                    .run_if(in_state(AppState::Canvas)),
-                spawn_flammable_gas_particles.run_if(
-                    resource_exists::<BoundaryReady>
-                        .and(resource_exists::<SpawnFlammableGasParticles>),
-                ),
+                utils::particles::toggle_debug_map.run_if(input_just_pressed(KeyCode::F1)),
+                utils::particles::toggle_debug_dirty_rects.run_if(input_just_pressed(KeyCode::F2)),
+                utils::particles::change_movement_source.run_if(input_just_pressed(KeyCode::F3)),
+                utils::camera::zoom_camera.run_if(in_state(AppState::Canvas)),
+                utils::camera::pan_camera.run_if(in_state(AppState::Canvas)),
+                spawn_flammable_gas_particles.run_if(resource_exists::<SpawnFlammableGasParticles>),
                 toggle_spawn_flamable_gas_particles
-                    .run_if(input_just_pressed(KeyCode::F1))
+                    .run_if(input_just_pressed(KeyCode::F3))
                     .run_if(in_state(AppState::Canvas)),
                 toggle_render_gui.run_if(input_just_pressed(KeyCode::KeyH)),
-                reset
+                utils::particles::ev_clear_dynamic_particles
                     .run_if(input_just_pressed(KeyCode::KeyR))
                     .run_if(in_state(AppState::Canvas)),
             ),
@@ -60,17 +65,6 @@ const BOUNDARY_START_X: i32 = -150;
 const BOUNDARY_END_X: i32 = 150;
 const BOUNDARY_START_Y: i32 = -150;
 const BOUNDARY_END_Y: i32 = 150;
-
-fn resource_not_exists<T: Resource>(world: &World) -> bool {
-    !world.contains_resource::<T>()
-}
-
-#[derive(States, Reflect, Default, Debug, Clone, Eq, PartialEq, Hash)]
-pub enum AppState {
-    #[default]
-    Canvas,
-    Ui,
-}
 
 #[derive(Clone, Resource)]
 struct DefaultFire(GasBundle, ChangesColor, Burns, Name);
@@ -150,9 +144,6 @@ impl Default for DefaultFlammableGas {
     }
 }
 
-#[derive(Resource)]
-struct BoundaryReady;
-
 #[derive(Default, Resource)]
 struct RenderGUI;
 
@@ -172,15 +163,8 @@ fn setup(
     default_flammable_gas: Res<DefaultFlammableGas>,
     default_fire: Res<DefaultFire>,
 ) {
-    commands.spawn((
-        Camera2d,
-        Projection::Orthographic(OrthographicProjection {
-            near: -1000.0,
-            scale: 0.2,
-            ..OrthographicProjection::default_2d()
-        }),
-        MainCamera,
-    ));
+    commands.remove_resource::<DebugParticleMap>();
+    commands.remove_resource::<DebugDirtyRects>();
 
     commands.spawn((WallBundle::new(
         ParticleType::new("Dirt Wall"),
@@ -219,70 +203,61 @@ fn setup(
         default_fire.3.clone(),
     ));
 
-    let instructions_text = "F1: Toggle flammable gas stream\n\
-        Left Mouse: Spawn fire at cursor\n\
-        H: Show/hide settings GUI\n\
-        R: Reset";
-    let style = TextFont::default();
+    let setup_boundary = SetupBoundary::from_corners(
+        IVec2::new(BOUNDARY_START_X, BOUNDARY_START_Y),
+        IVec2::new(BOUNDARY_END_X, BOUNDARY_END_Y),
+        ParticleType::new("Dirt Wall"),
+    );
+    commands.queue(setup_boundary);
 
-    commands
-        .spawn(Node {
-            position_type: PositionType::Absolute,
-            top: Val::Px(12.0),
-            left: Val::Px(12.0),
-            flex_direction: FlexDirection::Column,
-            row_gap: Val::Px(20.0),
-            ..default()
-        })
-        .with_children(|parent| {
-            parent.spawn((Text::new(instructions_text), style.clone()));
-        });
-}
+    commands.insert_resource(ParticleSpawnList::new(vec![
+        Particle::new("FIRE"),
+        Particle::new("Flammable Gas"),
+    ]));
+    commands.insert_resource(SelectedBrushParticle(Particle::new("FIRE")));
 
-fn spawn_boundary(mut commands: Commands, particle_type_map: Res<ParticleTypeMap>) {
-    if particle_type_map.contains("Dirt Wall") {
-        for y in BOUNDARY_START_Y - 1..BOUNDARY_END_Y + 1 {
-            commands.spawn((
-                Particle::new("Dirt Wall"),
-                Transform::from_xyz(BOUNDARY_START_X as f32, -(y as f32), 0.0),
-            ));
-            commands.spawn((
-                Particle::new("Dirt Wall"),
-                Transform::from_xyz(BOUNDARY_START_X as f32 - 1., -(y as f32), 0.0),
-            ));
+    let instructions_text = "Left mouse: Spawn/despawn particles\n\
+        Right mouse: Cycle particle type\n\
+        Middle Mouse: Cycle brush type\n\
+        TAB: Toggle brush spawn/despawn\n\
+        SPACE: Sample particle under cursor\n\
+        LALT + mouse wheel: Change brush size\n\
+        H: Hide/Show this help\n\
+        F1: Show/hide particle chunk map\n\
+        F2: Show/hide \"dirty rectangles\"\n\
+        F3: Change movement logic (Particles vs. Chunks)\n\
+        R: Reset\n";
 
-            commands.spawn((
-                Particle::new("Dirt Wall"),
-                Transform::from_xyz(BOUNDARY_END_X as f32, -(y as f32), 0.0),
-            ));
-            commands.spawn((
-                Particle::new("Dirt Wall"),
-                Transform::from_xyz(BOUNDARY_END_X as f32 + 1., -(y as f32), 0.0),
-            ));
-        }
+    let panel_id = utils::instructions::spawn_instructions_panel(&mut commands, instructions_text);
 
-        for x in BOUNDARY_START_X - 1..=BOUNDARY_END_X + 1 {
-            commands.spawn((
-                Particle::new("Dirt Wall"),
-                Transform::from_xyz(x as f32, -(BOUNDARY_START_Y as f32), 0.0),
-            ));
-            commands.spawn((
-                Particle::new("Dirt Wall"),
-                Transform::from_xyz(x as f32, -(BOUNDARY_START_Y as f32 - 1.), 0.0),
-            ));
-
-            commands.spawn((
-                Particle::new("Dirt Wall"),
-                Transform::from_xyz(x as f32, -(BOUNDARY_END_Y as f32), 0.0),
-            ));
-            commands.spawn((
-                Particle::new("Dirt Wall"),
-                Transform::from_xyz(x as f32, -(BOUNDARY_END_Y as f32 + 1.), 0.0),
-            ));
-        }
-
-        commands.insert_resource(BoundaryReady);
-    }
+    commands.entity(panel_id).with_children(|parent| {
+        let style = TextFont::default();
+        parent.spawn((
+            TotalParticleCountText,
+            Text::new("Total Particles: "),
+            style.clone(),
+        ));
+        parent.spawn((
+            BrushStateText,
+            Text::new("Brush Mode: Spawn"),
+            style.clone(),
+        ));
+        parent.spawn((
+            SelectedParticleText,
+            Text::new("Selected Particle: Sand"),
+            style.clone(),
+        ));
+        parent.spawn((
+            BrushTypeText,
+            Text::new("Brush Type: Circle"),
+            style.clone(),
+        ));
+        parent.spawn((
+            MovementSourceText,
+            Text::new("Movement Source: Particles"),
+            style.clone(),
+        ));
+    });
 }
 
 fn spawn_flammable_gas_particles(mut commands: Commands) {
@@ -299,25 +274,6 @@ fn spawn_flammable_gas_particles(mut commands: Commands) {
 
                 commands.spawn((
                     Particle::new("Flammable Gas"),
-                    Transform::from_xyz(spawn_x, spawn_y, 0.0),
-                ));
-            }
-        }
-    }
-}
-
-fn spawn_fire(mut commands: Commands, cursor_position: Res<CursorPosition>) {
-    let center = cursor_position.current;
-    let radius = 3;
-
-    for dx in -radius..=radius {
-        for dy in -radius..=radius {
-            if dx * dx + dy * dy <= radius * radius {
-                let spawn_x = center.x + dx as f32;
-                let spawn_y = center.y + dy as f32;
-
-                commands.spawn((
-                    Particle::new("FIRE"),
                     Transform::from_xyz(spawn_x, spawn_y, 0.0),
                 ));
             }
@@ -342,97 +298,6 @@ fn toggle_render_gui(mut commands: Commands, render_gui: Option<Res<RenderGUI>>)
     } else {
         commands.init_resource::<RenderGUI>();
     }
-}
-
-fn update_cursor_position(
-    mut cursor_position: ResMut<CursorPosition>,
-    q_window: Query<&Window, With<PrimaryWindow>>,
-    q_camera: Query<(&Camera, &GlobalTransform), With<MainCamera>>,
-) -> Result {
-    let (camera, camera_transform) = q_camera.single()?;
-
-    let window = q_window.single()?;
-    if let Some(world_position) = window
-        .cursor_position()
-        .map(|cursor| camera.viewport_to_world(camera_transform, cursor))
-        .map(|ray| ray.unwrap().origin.truncate())
-    {
-        cursor_position.current = world_position;
-    }
-    Ok(())
-}
-
-fn zoom_camera(
-    mut ev_scroll: EventReader<MouseWheel>,
-    mut camera_query: Query<&mut Projection, With<MainCamera>>,
-) {
-    const ZOOM_IN_FACTOR: f32 = 0.98;
-    const ZOOM_OUT_FACTOR: f32 = 1.02;
-
-    if !ev_scroll.is_empty() {
-        let mut projection = match camera_query.single_mut() {
-            Ok(p) => p,
-            Err(_) => return,
-        };
-        let Projection::Orthographic(orthographic) = projection.as_mut() else {
-            return;
-        };
-        ev_scroll.read().for_each(|ev| {
-            if ev.y < 0. {
-                orthographic.scale *= ZOOM_OUT_FACTOR;
-            } else if ev.y > 0. {
-                orthographic.scale *= ZOOM_IN_FACTOR;
-            }
-        });
-    };
-}
-
-fn pan_camera(
-    mut camera_query: Query<&mut Transform, With<MainCamera>>,
-    keys: Res<ButtonInput<KeyCode>>,
-) -> Result {
-    let mut transform = camera_query.single_mut()?;
-    if keys.pressed(KeyCode::KeyW) {
-        transform.translation.y += 2.;
-    }
-
-    if keys.pressed(KeyCode::KeyA) {
-        transform.translation.x -= 2.;
-    }
-
-    if keys.pressed(KeyCode::KeyS) {
-        transform.translation.y -= 2.;
-    }
-
-    if keys.pressed(KeyCode::KeyD) {
-        transform.translation.x += 2.;
-    }
-    Ok(())
-}
-
-pub fn update_app_state(
-    mut contexts: EguiContexts,
-    app_state: Res<State<AppState>>,
-    mut next_app_state: ResMut<NextState<AppState>>,
-) {
-    match app_state.get() {
-        AppState::Ui => {
-            let ctx = contexts.ctx_mut();
-            if !ctx.is_pointer_over_area() {
-                next_app_state.set(AppState::Canvas);
-            }
-        }
-        AppState::Canvas => {
-            let ctx = contexts.ctx_mut();
-            if ctx.is_pointer_over_area() {
-                next_app_state.set(AppState::Ui);
-            }
-        }
-    }
-}
-
-fn reset(mut ev_clear_dynamic_particles: EventWriter<ClearDynamicParticlesEvent>) {
-    ev_clear_dynamic_particles.write(ClearDynamicParticlesEvent);
 }
 
 fn render_fire_settings_gui(
