@@ -17,6 +17,8 @@ impl Plugin for ParticleCorePlugin {
         app.register_type::<Particle>()
             .register_type::<ParticleTypeId>()
             .register_type::<ParticlePosition>()
+            .register_type::<AttachedToParticleType>()
+            .register_type::<ParticleInstances>()
             .init_resource::<ParticleSimulationRun>()
             .configure_sets(
                 PreUpdate,
@@ -38,6 +40,7 @@ impl Plugin for ParticleCorePlugin {
                     handle_new_particle_types,
                     ev_reset_particle,
                     ev_reset_particle_children,
+                    cleanup_orphaned_particle_instances,
                 ),
             );
     }
@@ -159,6 +162,55 @@ impl ParticleTypeMap {
     }
 }
 
+/// Component that tracks which ParticleTypeId entity a Particle belongs to.
+/// This replaces the Parent/Child relationship for custom particle management.
+#[derive(Clone, Debug, Eq, PartialEq, Component, Reflect, Serialize, Deserialize)]
+#[reflect(Component)]
+pub struct AttachedToParticleType(pub Entity);
+
+/// Component that tracks all Particle entities belonging to a ParticleTypeId.
+/// This replaces the Children component for custom particle management.
+#[derive(Clone, Debug, Default, Component, Reflect)]
+#[reflect(Component)]
+pub struct ParticleInstances {
+    /// The list of particle entity instances belonging to this ParticleTypeId.
+    pub instances: Vec<Entity>,
+}
+
+impl ParticleInstances {
+    /// Add a particle instance to this type.
+    pub fn add(&mut self, entity: Entity) {
+        if !self.instances.contains(&entity) {
+            self.instances.push(entity);
+        }
+    }
+
+    /// Remove a particle instance from this type.
+    pub fn remove(&mut self, entity: Entity) {
+        self.instances.retain(|&e| e != entity);
+    }
+
+    /// Get all particle instances.
+    pub fn iter(&self) -> std::slice::Iter<Entity> {
+        self.instances.iter()
+    }
+
+    /// Get the number of instances.
+    pub fn len(&self) -> usize {
+        self.instances.len()
+    }
+
+    /// Check if there are no instances.
+    pub fn is_empty(&self) -> bool {
+        self.instances.is_empty()
+    }
+
+    /// Clear all instances.
+    pub fn clear(&mut self) {
+        self.instances.clear();
+    }
+}
+
 /// Marker component for a Particle entity.
 #[derive(Clone, Debug, Eq, PartialEq, Reflect, Serialize, Deserialize)]
 #[reflect(Component)]
@@ -189,6 +241,16 @@ impl Component for Particle {
                 let position = position.0;
                 let mut map = world.resource_mut::<ParticleMap>();
                 map.remove(&position);
+            }
+
+            // Clean up relationship when particle is removed
+            if let Some(attached_to) = world.get::<AttachedToParticleType>(context.entity) {
+                let parent_entity = attached_to.0;
+                if let Some(mut particle_instances) =
+                    world.get_mut::<ParticleInstances>(parent_entity)
+                {
+                    particle_instances.remove(context.entity);
+                }
             }
         });
     }
@@ -256,9 +318,7 @@ pub fn handle_new_particle_types(
     particle_type_query
         .iter()
         .for_each(|(entity, particle_type)| {
-            commands
-                .entity(entity)
-                .insert((Transform::default(), Visibility::default()));
+            commands.entity(entity).insert(ParticleInstances::default());
             type_map.insert(particle_type.name.clone(), entity);
         });
 }
@@ -268,7 +328,7 @@ pub fn handle_new_particle_types(
 #[allow(clippy::needless_pass_by_value)]
 fn handle_new_particles(
     mut commands: Commands,
-    parent_query: Query<Entity, With<ParticleTypeId>>,
+    mut particle_type_query: Query<&mut ParticleInstances, With<ParticleTypeId>>,
     particle_query: Query<(&Particle, &Transform, Entity), Changed<Particle>>,
     mut map: ResMut<ParticleMap>,
     type_map: Res<ParticleTypeMap>,
@@ -294,12 +354,13 @@ fn handle_new_particles(
         }
 
         if let Some(parent_handle) = type_map.get(&particle_type.name) {
-            if let Ok(parent_entity) = parent_query.get(*parent_handle) {
+            if let Ok(mut particle_instances) = particle_type_query.get_mut(*parent_handle) {
                 entities.push(entity);
-                commands.entity(parent_entity).add_child(entity);
-                commands
-                    .entity(entity)
-                    .insert((ParticlePosition(coordinates),));
+                particle_instances.add(entity);
+                commands.entity(entity).insert((
+                    ParticlePosition(coordinates),
+                    AttachedToParticleType(*parent_handle),
+                ));
             }
         } else {
             warn!(
@@ -330,13 +391,27 @@ fn ev_reset_particle(
 fn ev_reset_particle_children(
     mut ev_reset_particle_children: EventReader<ResetParticleChildrenEvent>,
     mut ev_reset_particle: EventWriter<ResetParticleEvent>,
-    particle_type_query: Query<Option<&Children>, With<ParticleTypeId>>,
+    particle_type_query: Query<&ParticleInstances, With<ParticleTypeId>>,
 ) {
     ev_reset_particle_children.read().for_each(|ev| {
-        if let Ok(Some(children)) = particle_type_query.get(ev.entity) {
-            children.iter().for_each(|entity| {
-                ev_reset_particle.write(ResetParticleEvent { entity });
+        if let Ok(particle_instances) = particle_type_query.get(ev.entity) {
+            particle_instances.iter().for_each(|entity| {
+                ev_reset_particle.write(ResetParticleEvent { entity: *entity });
             });
         }
     });
+}
+
+/// System to clean up orphaned particle instances from ParticleInstances components
+/// when particles are despawned outside of the normal flow.
+#[allow(clippy::needless_pass_by_value)]
+fn cleanup_orphaned_particle_instances(
+    mut particle_type_query: Query<&mut ParticleInstances, With<ParticleTypeId>>,
+    particle_query: Query<Entity, With<Particle>>,
+) {
+    for mut particle_instances in particle_type_query.iter_mut() {
+        particle_instances
+            .instances
+            .retain(|&entity| particle_query.get(entity).is_ok());
+    }
 }

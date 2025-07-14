@@ -10,7 +10,7 @@ use bevy::{
     window::PrimaryWindow,
 };
 use bevy_egui::{egui, egui::Color32, EguiContexts};
-use bevy_falling_sand::prelude::*;
+use bevy_falling_sand::{core::ParticleInstances, prelude::*};
 use std::time::Duration;
 
 use super::*;
@@ -1634,7 +1634,7 @@ pub fn render_fluidity_field(
 fn particle_editor_save(
     (mut commands, mut ev_particle_editor_save): (Commands, EventReader<ParticleEditorSave>),
     particle_type_map: Res<ParticleTypeMap>,
-    particle_type_query: Query<Option<&Children>, With<ParticleTypeId>>,
+    particle_type_query: Query<&ParticleInstances, With<ParticleTypeId>>,
     (
         current_particle_category_field,
         particle_selected_field,
@@ -1811,12 +1811,10 @@ fn particle_editor_save(
                 }
             }
         }
-        if let Ok(children) = particle_type_query.get(entity) {
-            if let Some(children) = children {
-                children.iter().for_each(|child| {
-                    ev_reset_particle.write(ResetParticleEvent { entity: child });
-                });
-            }
+        if let Ok(particle_instances) = particle_type_query.get(entity) {
+            particle_instances.iter().for_each(|child| {
+                ev_reset_particle.write(ResetParticleEvent { entity: *child });
+            });
         }
     })
 }

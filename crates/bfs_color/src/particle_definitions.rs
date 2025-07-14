@@ -4,8 +4,8 @@ use bevy_turborand::{DelegatedRng, GlobalRng, TurboRand};
 use serde::{Deserialize, Serialize};
 
 use bfs_core::{
-    impl_particle_rng, Particle, ParticleRegistrationEvent, ParticleRng, ParticleSimulationSet,
-    ParticleTypeId,
+    impl_particle_rng, AttachedToParticleType, Particle, ParticleRegistrationEvent, ParticleRng,
+    ParticleSimulationSet, ParticleTypeId,
 };
 
 pub(super) struct ParticleDefinitionsPlugin;
@@ -190,13 +190,13 @@ fn handle_particle_components(
     commands: &mut Commands,
     rng: &mut ResMut<GlobalRng>,
     parent_query: &Query<(Option<&ColorProfile>, Option<&ChangesColor>), With<ParticleTypeId>>,
-    particle_query: &Query<&ChildOf, With<Particle>>,
+    particle_query: &Query<&AttachedToParticleType, With<Particle>>,
     entities: &[Entity],
 ) {
     for entity in entities {
-        if let Ok(child_of) = particle_query.get(*entity) {
+        if let Ok(attached_to) = particle_query.get(*entity) {
             commands.entity(*entity).insert(ColorRng::default());
-            if let Ok((particle_color, flows_color)) = parent_query.get(child_of.parent()) {
+            if let Ok((particle_color, flows_color)) = parent_query.get(attached_to.0) {
                 commands.entity(*entity).insert((
                     Sprite {
                         color: Color::srgba(0., 0., 0., 0.),
@@ -204,6 +204,7 @@ fn handle_particle_components(
                     },
                     ColorRng::default(),
                 ));
+                commands.entity(*entity).insert(Visibility::default());
                 if let Some(particle_color) = particle_color {
                     let rng = rng.get_mut();
                     commands
@@ -226,7 +227,7 @@ fn handle_particle_registration(
     mut commands: Commands,
     mut rng: ResMut<GlobalRng>,
     parent_query: Query<(Option<&ColorProfile>, Option<&ChangesColor>), With<ParticleTypeId>>,
-    particle_query: Query<&ChildOf, With<Particle>>,
+    particle_query: Query<&AttachedToParticleType, With<Particle>>,
     mut ev_particle_registered: EventReader<ParticleRegistrationEvent>,
     mut ev_reset_particle_color: EventReader<ResetParticleColorEvent>,
 ) {

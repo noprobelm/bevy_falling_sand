@@ -3,7 +3,7 @@ use bevy_turborand::RngComponent;
 use bfs_color::ColorProfile;
 use bfs_core::{
     impl_particle_rng, Particle, ParticlePosition, ParticleRegistrationEvent, ParticleRng,
-    ParticleSimulationSet, ParticleTypeId,
+    ParticleSimulationSet, ParticleTypeId, AttachedToParticleType,
 };
 use std::time::Duration;
 
@@ -178,12 +178,12 @@ type ReactionsQuery<'a> = (Option<&'a Fire>, Option<&'a Burns>, Option<&'a Burni
 fn handle_particle_components(
     commands: &mut Commands,
     parent_query: &Query<ReactionsQuery, With<ParticleTypeId>>,
-    particle_query: &Query<&ChildOf, With<Particle>>,
+    particle_query: &Query<&AttachedToParticleType, With<Particle>>,
     entities: &[Entity],
 ) {
     for entity in entities {
-        if let Ok(child_of) = particle_query.get(*entity) {
-            if let Ok((fire, burns, burning)) = parent_query.get(child_of.parent()) {
+        if let Ok(attached_to) = particle_query.get(*entity) {
+            if let Ok((fire, burns, burning)) = parent_query.get(attached_to.0) {
                 commands.entity(*entity).insert(ReactionRng::default());
                 if let Some(fire) = fire {
                     commands.entity(*entity).insert(*fire);
@@ -214,7 +214,7 @@ fn handle_particle_components(
 fn handle_particle_registration(
     mut commands: Commands,
     parent_query: Query<ReactionsQuery, With<ParticleTypeId>>,
-    particle_query: Query<&ChildOf, With<Particle>>,
+    particle_query: Query<&AttachedToParticleType, With<Particle>>,
     mut ev_particle_registered: EventReader<ParticleRegistrationEvent>,
 ) {
     ev_particle_registered.read().for_each(|ev| {

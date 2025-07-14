@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_turborand::RngComponent;
 use bfs_core::{
     impl_particle_rng, Particle, ParticleRegistrationEvent, ParticleRng, ParticleSimulationSet,
-    ParticleTypeId,
+    ParticleTypeId, AttachedToParticleType,
 };
 use serde::{Deserialize, Serialize};
 use smallvec::SmallVec;
@@ -447,11 +447,11 @@ fn handle_particle_registration(
     mut commands: Commands,
     blueprint_query: Query<MovementQuery<'_>, With<ParticleTypeId>>,
     mut ev_particle_registered: EventReader<ParticleRegistrationEvent>,
-    particle_query: Query<&ChildOf, With<Particle>>,
+    particle_query: Query<&AttachedToParticleType, With<Particle>>,
 ) {
     ev_particle_registered.read().for_each(|ev| {
         ev.entities.iter().for_each(|entity| {
-            if let Ok(child_of) = particle_query.get(*entity) {
+            if let Ok(attached_to) = particle_query.get(*entity) {
                 commands.entity(*entity).insert(MovementRng::default());
                 if let Ok((
                     density,
@@ -463,7 +463,7 @@ fn handle_particle_registration(
                     gas,
                     movable_solid,
                     solid,
-                )) = blueprint_query.get(child_of.parent())
+                )) = blueprint_query.get(attached_to.0)
                 {
                     if let Some(density) = density {
                         commands.entity(*entity).insert(*density);
