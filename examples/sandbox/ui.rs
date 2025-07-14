@@ -46,7 +46,6 @@ impl bevy::prelude::Plugin for UIPlugin {
             .init_state::<ParticleEditorCategoryState>()
             .add_event::<ParticleEditorSave>()
             .add_event::<ParticleEditorUpdate>()
-            .add_event::<ParticleEditorNew>()
             .add_systems(First, update_cursor_position)
             .add_systems(Update, float_dynamic_rigid_bodies)
             .add_systems(
@@ -825,15 +824,9 @@ pub fn update_particle_editor_fields(
 }
 
 pub fn render_particle_editor(
-    (
-        mut ev_particle_editor_save,
-        mut ev_particle_editor_update,
-        mut ev_particle_editor_new,
-        mut contexts,
-    ): (
+    (mut ev_particle_editor_save, mut ev_particle_editor_update, mut contexts): (
         EventWriter<ParticleEditorSave>,
         EventWriter<ParticleEditorUpdate>,
-        EventWriter<ParticleEditorNew>,
         EguiContexts,
     ),
     particle_type_list: Res<ParticleTypeList>,
@@ -899,10 +892,10 @@ pub fn render_particle_editor(
                         }
 
                         if ui.button("New Particle").clicked() {
-                            ev_particle_editor_new.write(ParticleEditorNew);
+                            ev_particle_editor_save.write(ParticleEditorSave { create_new: true });
                         }
                         if ui.button("Save Particle").clicked() {
-                            ev_particle_editor_save.write(ParticleEditorSave);
+                            ev_particle_editor_save.write(ParticleEditorSave { create_new: false });
                         }
                     },
                 );
@@ -1653,7 +1646,8 @@ fn particle_editor_save(
     particle_type_query: Query<&ParticleInstances, With<ParticleTypeId>>,
     (
         current_particle_category_field,
-        particle_selected_field,
+        mut particle_selected_field,
+        mut selected_brush_particle,
         particle_density_field,
         particle_max_velocity_field,
         particle_momentum_field,
@@ -1668,7 +1662,8 @@ fn particle_editor_save(
         particle_editor_gas_field,
     ): (
         Res<State<ParticleEditorCategoryState>>,
-        Res<ParticleEditorSelectedType>,
+        ResMut<ParticleEditorSelectedType>,
+        ResMut<SelectedBrushParticle>,
         Res<ParticleEditorDensity>,
         Res<ParticleEditorMaxVelocity>,
         Res<ParticleEditorMomentum>,
@@ -1684,15 +1679,19 @@ fn particle_editor_save(
     ),
     mut ev_reset_particle: EventWriter<ResetParticleEvent>,
 ) {
-    ev_particle_editor_save.read().for_each(|_| {
+    ev_particle_editor_save.read().for_each(|ev| {
+        let name = if ev.create_new {
+            let n = get_next_particle_name(&particle_type_map);
+            particle_selected_field.0 = ParticleTypeId::new(n.as_str());
+            selected_brush_particle.0 = n.clone();
+            n
+        } else {
+            particle_selected_field.0.name.clone()
+        };
         let entity = particle_type_map
-            .get(&particle_selected_field.0.name)
+            .get(&name)
             .cloned()
-            .unwrap_or_else(|| {
-                commands
-                    .spawn(ParticleTypeId::new(particle_selected_field.0.name.as_str()))
-                    .id()
-            });
+            .unwrap_or_else(|| commands.spawn(ParticleTypeId::new(name.as_str())).id());
         commands.entity(entity).remove::<ParticleBundle>();
         match current_particle_category_field.get() {
             ParticleEditorCategoryState::Wall => {
@@ -1835,6 +1834,16 @@ fn particle_editor_save(
     })
 }
 
+fn get_next_particle_name(particle_type_map: &ParticleTypeMap) -> String {
+    let mut name = String::from("New Particle");
+    let mut enumeration = 1;
+    while particle_type_map.get(&name).is_some() {
+        name = format!("New Particle {enumeration}");
+        enumeration += 1;
+    }
+    name
+}
+
 fn spawn_ball(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -1906,10 +1915,9 @@ pub struct DemoBall {
 pub struct ParticleEditorUpdate;
 
 #[derive(Event, Clone, Debug)]
-pub struct ParticleEditorNew;
-
-#[derive(Event, Clone, Debug)]
-pub struct ParticleEditorSave;
+pub struct ParticleEditorSave {
+    create_new: bool,
+}
 
 #[derive(Resource, Clone)]
 pub struct ParticleEditorSelectedType(pub ParticleTypeId);
