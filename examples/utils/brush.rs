@@ -417,13 +417,8 @@ pub fn handle_alt_app_state_transition(
 ) {
     if keys.pressed(keybindings.resize_modifier_key) {
         // LALT is held - transition to Ui if not already there
-        if current_state.get() != &AppState::Ui {
-            app_state.set(AppState::Ui);
-        }
-    } else {
-        // LALT is not held - transition to Canvas if currently in Ui
-        if current_state.get() == &AppState::Ui {
-            app_state.set(AppState::Canvas);
+        if current_state.get() == &AppState::Canvas {
+            app_state.set(AppState::Ui)
         }
     }
 }

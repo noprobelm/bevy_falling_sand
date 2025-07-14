@@ -48,9 +48,11 @@ fn main() {
                 utils::particles::change_movement_source.run_if(input_just_pressed(KeyCode::F3)),
                 utils::camera::zoom_camera.run_if(in_state(AppState::Canvas)),
                 utils::camera::pan_camera.run_if(in_state(AppState::Canvas)),
-                spawn_flammable_gas_particles.run_if(resource_exists::<SpawnFlammableGasParticles>),
+                spawn_flammable_gas_particles
+                    .run_if(resource_exists::<SpawnFlammableGasParticles>)
+                    .before(ParticleSimulationSet),
                 toggle_spawn_flamable_gas_particles
-                    .run_if(input_just_pressed(KeyCode::F3))
+                    .run_if(input_just_pressed(KeyCode::F4))
                     .run_if(in_state(AppState::Canvas)),
                 toggle_render_gui.run_if(input_just_pressed(KeyCode::KeyH)),
                 utils::particles::ev_clear_dynamic_particles
@@ -226,6 +228,7 @@ fn setup(
         F1: Show/hide particle chunk map\n\
         F2: Show/hide \"dirty rectangles\"\n\
         F3: Change movement logic (Particles vs. Chunks)\n\
+        F4: Toggle flammable gas stream\n\
         R: Reset\n";
 
     let panel_id = utils::instructions::spawn_instructions_panel(&mut commands, instructions_text);
