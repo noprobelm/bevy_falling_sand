@@ -51,6 +51,8 @@ bevy.workspace = true
 bevy_egui = "0.34.1"
 bevy_turborand = "0.11.0"
 ron = "0.8"
+rfd = "0.15"
+futures-lite = "2.0"
 
 [profile.release]
 lto = true
