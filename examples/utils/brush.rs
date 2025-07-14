@@ -86,7 +86,6 @@ pub struct BrushPlugin {
 }
 
 impl BrushPlugin {
-    #[allow(dead_code)]
     pub fn with_keybindings(mut self, keybindings: BrushKeybindings) -> Self {
         self.keybindings = keybindings;
         self

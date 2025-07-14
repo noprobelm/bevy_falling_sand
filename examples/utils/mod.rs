@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 pub mod boundary;
 pub mod brush;
 pub mod camera;

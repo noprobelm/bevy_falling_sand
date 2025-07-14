@@ -5,9 +5,9 @@ use bevy_falling_sand::prelude::*;
 use utils::{
     boundary::{SetupBoundary, Sides},
     brush::{ParticleSpawnList, SelectedBrushParticle},
-    instructions::spawn_instructions_panel,
     status_ui::{
-        BrushStateText, BrushTypeText, SelectedParticleText, StatusUIPlugin, TotalParticleCountText,
+        BrushStateText, BrushTypeText, MovementSourceText, SelectedParticleText, StatusUIPlugin,
+        TotalParticleCountText,
     },
 };
 
@@ -31,11 +31,12 @@ fn main() {
         .add_systems(
             Update,
             (
-                toggle_debug_map.run_if(input_just_pressed(KeyCode::F1)),
-                toggle_debug_dirty_rects.run_if(input_just_pressed(KeyCode::F2)),
+                utils::particles::change_movement_source.run_if(input_just_pressed(KeyCode::F3)),
+                utils::particles::toggle_debug_map.run_if(input_just_pressed(KeyCode::F1)),
+                utils::particles::toggle_debug_dirty_rects.run_if(input_just_pressed(KeyCode::F2)),
                 utils::camera::zoom_camera.run_if(in_state(utils::states::AppState::Canvas)),
                 utils::camera::pan_camera,
-                utils::particles::reset_dynamic_particles.run_if(input_just_pressed(KeyCode::KeyR)),
+                utils::particles::ev_clear_particle_map.run_if(input_just_pressed(KeyCode::KeyR)),
             ),
         )
         .run();
@@ -111,11 +112,12 @@ fn setup(mut commands: Commands) {
         SPACE: Sample particle under cursor\n\
         LALT + mouse wheel: Change brush size\n\
         H: Hide/Show this help\n\
-        F1: Show/Hide particle chunk map\n\
-        F2: Show/Hide \"dirty rectangles\"\n\
+        F1: Show/hide particle chunk map\n\
+        F2: Show/hide \"dirty rectangles\"\n\
+        F3: Change movement logic (Particles vs. Chunks)\n\
         R: Reset\n";
 
-    let panel_id = spawn_instructions_panel(&mut commands, instructions_text);
+    let panel_id = utils::instructions::spawn_instructions_panel(&mut commands, instructions_text);
 
     commands.entity(panel_id).with_children(|parent| {
         let style = TextFont::default();
@@ -139,24 +141,10 @@ fn setup(mut commands: Commands) {
             Text::new("Brush Type: Circle"),
             style.clone(),
         ));
+        parent.spawn((
+            MovementSourceText,
+            Text::new("Movement Source: Particles"),
+            style.clone(),
+        ));
     });
-}
-
-fn toggle_debug_map(mut commands: Commands, debug_map: Option<Res<DebugParticleMap>>) {
-    if debug_map.is_some() {
-        commands.remove_resource::<DebugParticleMap>();
-    } else {
-        commands.init_resource::<DebugParticleMap>();
-    }
-}
-
-fn toggle_debug_dirty_rects(
-    mut commands: Commands,
-    debug_dirty_rects: Option<Res<DebugDirtyRects>>,
-) {
-    if debug_dirty_rects.is_some() {
-        commands.remove_resource::<DebugDirtyRects>();
-    } else {
-        commands.init_resource::<DebugDirtyRects>();
-    }
 }

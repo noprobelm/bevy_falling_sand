@@ -22,7 +22,6 @@ pub struct SetupBoundary {
 }
 
 impl SetupBoundary {
-    #[allow(dead_code)]
     pub fn new(x0: i32, y0: i32, x1: i32, y1: i32, particle_type: ParticleType) -> Self {
         Self {
             irect: IRect::new(x0, y0, x1, y1),
@@ -31,7 +30,6 @@ impl SetupBoundary {
         }
     }
 
-    #[allow(dead_code)]
     pub fn from_irect(irect: IRect, particle_type: ParticleType) -> Self {
         Self {
             irect,
@@ -61,7 +59,7 @@ impl Command for SetupBoundary {
     fn apply(self, world: &mut World) {
         if let Some(map) = world.get_resource::<ParticleTypeMap>() {
             if map.contains(self.particle_type.name.as_str()) {
-                for x in self.irect.min.x..self.irect.max.x {
+                for x in self.irect.min.x..=self.irect.max.x {
                     if self.sides.contains(&Sides::Bottom) {
                         world.spawn((
                             Particle::new(self.particle_type.name.as_str()),
@@ -75,7 +73,7 @@ impl Command for SetupBoundary {
                         ));
                     }
                 }
-                for y in self.irect.min.y..self.irect.max.y {
+                for y in self.irect.min.y..=self.irect.max.y {
                     if self.sides.contains(&Sides::Left) {
                         world.spawn((
                             Particle::new(self.particle_type.name.as_str()),

@@ -14,6 +14,9 @@ pub struct SelectedParticleText;
 #[derive(Component)]
 pub struct BrushTypeText;
 
+#[derive(Component)]
+pub struct MovementSourceText;
+
 pub struct StatusUIPlugin;
 
 impl Plugin for StatusUIPlugin {
@@ -25,6 +28,7 @@ impl Plugin for StatusUIPlugin {
                 update_brush_state_text,
                 update_selected_particle_text,
                 update_brush_type_text,
+                update_movement_source_text,
             ),
         );
     }
@@ -77,5 +81,16 @@ fn update_brush_type_text(
 
     for mut text in brush_type_text.iter_mut() {
         **text = type_text.clone();
+    }
+}
+
+fn update_movement_source_text(
+    movement_source: Res<State<MovementSource>>,
+    mut movement_source_text: Query<&mut Text, With<MovementSourceText>>,
+) {
+    let source_text = format!("Movement Source: {:?}", movement_source.get());
+
+    for mut text in movement_source_text.iter_mut() {
+        **text = source_text.clone();
     }
 }

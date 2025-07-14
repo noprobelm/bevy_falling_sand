@@ -16,7 +16,6 @@ impl Default for InstructionsPlugin {
 }
 
 impl InstructionsPlugin {
-    #[allow(dead_code)]
     pub fn with_toggle_key(mut self, toggle_key: KeyCode) -> Self {
         self.toggle_key = toggle_key;
         self

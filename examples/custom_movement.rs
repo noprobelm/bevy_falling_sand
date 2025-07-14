@@ -1,36 +1,39 @@
-use bevy::{
-    input::{
-        common_conditions::{input_just_pressed, input_pressed},
-        mouse::MouseWheel,
-    },
-    prelude::*,
-    window::PrimaryWindow,
-};
+mod utils;
+
+use bevy::{input::common_conditions::input_just_pressed, prelude::*, window::PrimaryWindow};
 use bevy_falling_sand::prelude::*;
 use std::time::Duration;
+use utils::{
+    boundary::SetupBoundary,
+    brush::{ParticleSpawnList, SelectedBrushParticle},
+    instructions::spawn_instructions_panel,
+    status_ui::{MovementSourceText, StatusUIPlugin},
+};
 
 fn main() {
     App::new()
         .add_plugins((
             DefaultPlugins,
             FallingSandPlugin::default().with_spatial_refresh_frequency(Duration::from_millis(40)),
+            FallingSandDebugPlugin,
+            utils::states::StatesPlugin,
+            utils::cursor::CursorPlugin,
+            utils::instructions::InstructionsPlugin::default(),
+            utils::brush::BrushPlugin::default(),
+            StatusUIPlugin,
         ))
-        .init_resource::<CursorPosition>()
-        .init_resource::<BrushRadius>()
         .init_resource::<MaxVelocitySelection>()
-        .init_state::<ParticleMovementSelectionState>()
-        .add_systems(Startup, setup)
-        .add_systems(Update, (zoom_camera, pan_camera))
+        .add_systems(Startup, (setup, utils::camera::setup_camera))
         .add_systems(
             Update,
             (
-                update_cursor_position,
-                spawn_boundary.run_if(resource_not_exists::<BoundaryReady>),
-                draw_brush,
-                spawn_particles.run_if(input_pressed(MouseButton::Left)),
-                cycle_selected_movement_state.run_if(input_just_pressed(KeyCode::F1)),
-                bump_velocity.run_if(input_just_pressed(KeyCode::F2)),
-                reset.run_if(input_just_pressed(KeyCode::KeyR)),
+                utils::particles::toggle_debug_map.run_if(input_just_pressed(KeyCode::F1)),
+                utils::particles::toggle_debug_dirty_rects.run_if(input_just_pressed(KeyCode::F2)),
+                utils::camera::zoom_camera,
+                utils::camera::pan_camera,
+                utils::particles::ev_clear_dynamic_particles
+                    .run_if(input_just_pressed(KeyCode::KeyR)),
+                bump_velocity.run_if(input_just_pressed(KeyCode::KeyV)),
             ),
         )
         .run();
@@ -41,18 +44,6 @@ const BOUNDARY_END_X: i32 = 150;
 const BOUNDARY_START_Y: i32 = -150;
 const BOUNDARY_END_Y: i32 = 150;
 
-fn resource_not_exists<T: Resource>(world: &World) -> bool {
-    !world.contains_resource::<T>()
-}
-
-#[derive(Default, Resource, Clone, Debug)]
-struct BoundaryReady;
-
-#[derive(Default, Resource, Clone, Debug)]
-struct CursorPosition {
-    pub current: Vec2,
-}
-
 #[derive(Resource, Clone, Debug)]
 struct MaxVelocitySelection(u8);
 
@@ -62,78 +53,18 @@ impl Default for MaxVelocitySelection {
     }
 }
 
-#[derive(Resource, Clone, Debug)]
-struct BrushRadius {
-    radius: f32,
-}
-
-impl Default for BrushRadius {
-    fn default() -> Self {
-        Self { radius: 5.0 }
-    }
-}
-
-#[derive(Component, Clone, Debug)]
-struct ParticleMovementSelectionText;
-
 #[derive(Component, Clone, Debug)]
 struct MaxVelocitySelectionText;
-
-#[derive(States, Reflect, Default, Debug, Clone, Eq, PartialEq, Hash)]
-pub enum ParticleMovementSelectionState {
-    #[default]
-    MooreNoMomentum,
-    MooreMomentum,
-    NeumannNoMomentum,
-    NeumannMomentum,
-    DownwardDiagonalNoMomentum,
-    DownwardDiagonalMomentum,
-}
-
-impl std::fmt::Display for ParticleMovementSelectionState {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ParticleMovementSelectionState::MooreNoMomentum => {
-                f.write_str("Moore Neighborhood Particle (no momentum)")
-            }
-            ParticleMovementSelectionState::MooreMomentum => {
-                f.write_str("Moore Neighborhood Particle (with momentum)")
-            }
-            ParticleMovementSelectionState::NeumannNoMomentum => {
-                f.write_str("Neumann Neighborhood Particle (no momentum)")
-            }
-            ParticleMovementSelectionState::NeumannMomentum => {
-                f.write_str("Neumann Neighborhood Particle (with momentum)")
-            }
-            ParticleMovementSelectionState::DownwardDiagonalNoMomentum => {
-                f.write_str("Downward diagonal (no momentum)")
-            }
-            ParticleMovementSelectionState::DownwardDiagonalMomentum => {
-                f.write_str("Downward diagonal (with momentum)")
-            }
-        }
-    }
-}
-
-#[derive(Component)]
-struct MainCamera;
 
 fn setup(
     mut commands: Commands,
     mut primary_window: Query<&mut Window, With<PrimaryWindow>>,
 ) -> Result {
+    commands.remove_resource::<DebugParticleMap>();
+    commands.remove_resource::<DebugDirtyRects>();
+
     let mut window = primary_window.single_mut()?;
     window.cursor_options.visible = false;
-
-    commands.spawn((
-        Camera2d,
-        Projection::Orthographic(OrthographicProjection {
-            near: -1000.0,
-            scale: 0.2,
-            ..OrthographicProjection::default_2d()
-        }),
-        MainCamera,
-    ));
 
     let color_profile = ColorProfile::new(vec![
         Color::srgba(0.22, 0.11, 0.16, 1.0),
@@ -227,213 +158,49 @@ fn setup(
         Momentum::default(),
     ));
 
-    let instructions_text = "F1: Cycle particle movement rules\n\
-        F2: Bump max velocity\n\
-        R: Reset";
-    let style = TextFont::default();
-
-    commands
-        .spawn(Node {
-            position_type: PositionType::Absolute,
-            top: Val::Px(12.0),
-            left: Val::Px(12.0),
-            flex_direction: FlexDirection::Column,
-            row_gap: Val::Px(20.0),
-            ..default()
-        })
-        .with_children(|parent| {
-            parent.spawn((Text::new(instructions_text), style.clone()));
-            parent.spawn((
-                ParticleMovementSelectionText,
-                Text::new("Selected movement type: Moore Neighborhood Particle (no momentum)"),
-            ));
-            parent.spawn((MaxVelocitySelectionText, Text::new("Maximum velocity: 1")));
-        });
-    Ok(())
-}
-
-fn spawn_boundary(mut commands: Commands, particle_type_map: Res<ParticleTypeMap>) {
-    if particle_type_map.contains("Dirt Wall") {
-        for y in BOUNDARY_START_Y - 1..BOUNDARY_END_Y + 1 {
-            commands.spawn((
-                Particle::new("Dirt Wall"),
-                Transform::from_xyz(BOUNDARY_START_X as f32, -(y as f32), 0.0),
-            ));
-            commands.spawn((
-                Particle::new("Dirt Wall"),
-                Transform::from_xyz(BOUNDARY_START_X as f32 - 1., -(y as f32), 0.0),
-            ));
-
-            commands.spawn((
-                Particle::new("Dirt Wall"),
-                Transform::from_xyz(BOUNDARY_END_X as f32, -(y as f32), 0.0),
-            ));
-            commands.spawn((
-                Particle::new("Dirt Wall"),
-                Transform::from_xyz(BOUNDARY_END_X as f32 + 1., -(y as f32), 0.0),
-            ));
-        }
-
-        for x in BOUNDARY_START_X - 1..=BOUNDARY_END_X + 1 {
-            commands.spawn((
-                Particle::new("Dirt Wall"),
-                Transform::from_xyz(x as f32, -(BOUNDARY_START_Y as f32), 0.0),
-            ));
-            commands.spawn((
-                Particle::new("Dirt Wall"),
-                Transform::from_xyz(x as f32, -(BOUNDARY_START_Y as f32 - 1.), 0.0),
-            ));
-
-            commands.spawn((
-                Particle::new("Dirt Wall"),
-                Transform::from_xyz(x as f32, -(BOUNDARY_END_Y as f32), 0.0),
-            ));
-            commands.spawn((
-                Particle::new("Dirt Wall"),
-                Transform::from_xyz(x as f32, -(BOUNDARY_END_Y as f32 + 1.), 0.0),
-            ));
-        }
-
-        commands.insert_resource(BoundaryReady);
-    }
-}
-
-fn spawn_particles(
-    mut commands: Commands,
-    cursor_position: Res<CursorPosition>,
-    brush_radius: Res<BrushRadius>,
-    particle_movement_selection_state: Res<State<ParticleMovementSelectionState>>,
-) {
-    let name = particle_movement_selection_state.get().to_string();
-    let center = cursor_position.current;
-    let radius = brush_radius.radius as i32;
-    for dx in -radius..=radius {
-        for dy in -radius..=radius {
-            if dx * dx + dy * dy <= radius * radius {
-                let spawn_x = center.x + dx as f32;
-                let spawn_y = center.y + dy as f32;
-
-                commands.spawn((
-                    Particle::new(name.as_str()),
-                    Transform::from_xyz(spawn_x, spawn_y, 0.0),
-                ));
-            }
-        }
-    }
-}
-
-fn draw_brush(
-    cursor_position: Res<CursorPosition>,
-    spatial_query_radius: Res<BrushRadius>,
-    mut gizmos: Gizmos,
-) {
-    gizmos.circle_2d(
-        cursor_position.current,
-        spatial_query_radius.radius,
-        Color::WHITE,
+    let setup_boundary = SetupBoundary::from_corners(
+        IVec2::new(BOUNDARY_START_X, BOUNDARY_START_Y),
+        IVec2::new(BOUNDARY_END_X, BOUNDARY_END_Y),
+        ParticleType::new("Dirt Wall"),
     );
-}
+    commands.queue(setup_boundary);
 
-fn update_cursor_position(
-    mut cursor_position: ResMut<CursorPosition>,
-    q_window: Query<&Window, With<PrimaryWindow>>,
-    q_camera: Query<(&Camera, &GlobalTransform), With<MainCamera>>,
-) -> Result {
-    let (camera, camera_transform) = q_camera.single()?;
+    // Setup particle spawn list for brush system
+    let particles = vec![
+        Particle::new("Moore Neighborhood Particle (no momentum)"),
+        Particle::new("Moore Neighborhood Particle (with momentum)"),
+        Particle::new("Neumann Neighborhood Particle (no momentum)"),
+        Particle::new("Neumann Neighborhood Particle (with momentum)"),
+        Particle::new("Downward diagonal (no momentum)"),
+        Particle::new("Downward diagonal (with momentum)"),
+    ];
+    commands.insert_resource(ParticleSpawnList::new(particles));
+    commands.insert_resource(SelectedBrushParticle(Particle::new(
+        "Moore Neighborhood Particle (no momentum)",
+    )));
 
-    let window = q_window.single()?;
-    if let Some(world_position) = window
-        .cursor_position()
-        .map(|cursor| camera.viewport_to_world(camera_transform, cursor))
-        .map(|ray| ray.unwrap().origin.truncate())
-    {
-        cursor_position.current = world_position;
-    }
+    let instructions_text = "Left mouse: Spawn/despawn particles\n\
+        Right mouse: Cycle particle type\n\
+        F1: Show/hide particle chunk map\n\
+        F2: Show/hide dirty rectangles\n\
+        V: Bump max velocity\n\
+        R: Reset";
+
+    let panel_id = spawn_instructions_panel(&mut commands, instructions_text);
+    commands.entity(panel_id).with_children(|parent| {
+        let style = TextFont::default();
+        parent.spawn((
+            MaxVelocitySelectionText,
+            Text::new("Maximum velocity: 1"),
+            style.clone(),
+        ));
+        parent.spawn((
+            MovementSourceText,
+            Text::new("Movement Source: Particles"),
+            style.clone(),
+        ));
+    });
     Ok(())
-}
-
-fn zoom_camera(
-    mut ev_scroll: EventReader<MouseWheel>,
-    mut camera_query: Query<&mut Projection, With<MainCamera>>,
-) {
-    const ZOOM_IN_FACTOR: f32 = 0.98;
-    const ZOOM_OUT_FACTOR: f32 = 1.02;
-
-    if !ev_scroll.is_empty() {
-        let mut projection = match camera_query.single_mut() {
-            Ok(p) => p,
-            Err(_) => return,
-        };
-        let Projection::Orthographic(orthographic) = projection.as_mut() else {
-            return;
-        };
-        ev_scroll.read().for_each(|ev| {
-            if ev.y < 0. {
-                orthographic.scale *= ZOOM_OUT_FACTOR;
-            } else if ev.y > 0. {
-                orthographic.scale *= ZOOM_IN_FACTOR;
-            }
-        });
-    };
-}
-
-fn pan_camera(
-    mut camera_query: Query<&mut Transform, With<MainCamera>>,
-    keys: Res<ButtonInput<KeyCode>>,
-) -> Result {
-    let mut transform = camera_query.single_mut()?;
-    if keys.pressed(KeyCode::KeyW) {
-        transform.translation.y += 2.;
-    }
-
-    if keys.pressed(KeyCode::KeyA) {
-        transform.translation.x -= 2.;
-    }
-
-    if keys.pressed(KeyCode::KeyS) {
-        transform.translation.y -= 2.;
-    }
-
-    if keys.pressed(KeyCode::KeyD) {
-        transform.translation.x += 2.;
-    }
-    Ok(())
-}
-
-fn cycle_selected_movement_state(
-    mut particle_query: Query<&mut Particle, Without<Wall>>,
-    particle_movement_selection_state: Res<State<ParticleMovementSelectionState>>,
-    mut next_particle_movement_selection_state: ResMut<NextState<ParticleMovementSelectionState>>,
-    mut particle_movement_selection_text: Query<&mut Text, With<ParticleMovementSelectionText>>,
-) {
-    let new_state = match particle_movement_selection_state.get() {
-        ParticleMovementSelectionState::MooreNoMomentum => {
-            ParticleMovementSelectionState::MooreMomentum
-        }
-        ParticleMovementSelectionState::MooreMomentum => {
-            ParticleMovementSelectionState::NeumannNoMomentum
-        }
-        ParticleMovementSelectionState::NeumannNoMomentum => {
-            ParticleMovementSelectionState::NeumannMomentum
-        }
-        ParticleMovementSelectionState::NeumannMomentum => {
-            ParticleMovementSelectionState::DownwardDiagonalNoMomentum
-        }
-        ParticleMovementSelectionState::DownwardDiagonalNoMomentum => {
-            ParticleMovementSelectionState::DownwardDiagonalMomentum
-        }
-        ParticleMovementSelectionState::DownwardDiagonalMomentum => {
-            ParticleMovementSelectionState::MooreNoMomentum
-        }
-    };
-    let new_text = format!("Selected Movement Type: {new_state}");
-    for mut particle_movement_selection_text in particle_movement_selection_text.iter_mut() {
-        (**particle_movement_selection_text).clone_from(&new_text);
-    }
-    next_particle_movement_selection_state.set(new_state.clone());
-    particle_query
-        .iter_mut()
-        .for_each(|mut particle| particle.name = format!("{new_state}"));
 }
 
 fn bump_velocity(
@@ -457,8 +224,4 @@ fn bump_velocity(
         (**velocity_selection_text)
             .clone_from(&format!("Maximum velocity: {}", velocity_selection.0));
     }
-}
-
-fn reset(mut ev_clear_dynamic_particles: EventWriter<ClearDynamicParticlesEvent>) {
-    ev_clear_dynamic_particles.write(ClearDynamicParticlesEvent);
 }
