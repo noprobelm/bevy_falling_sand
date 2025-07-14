@@ -86,10 +86,7 @@ pub struct BrushPlugin {
 }
 
 impl BrushPlugin {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
+    #[allow(dead_code)]
     pub fn with_keybindings(mut self, keybindings: BrushKeybindings) -> Self {
         self.keybindings = keybindings;
         self
@@ -615,11 +612,7 @@ fn spawn_line(commands: &mut Commands, particle: Particle, center: Vec2, brush_s
     commands.spawn_batch((min_x * 3..=max_x * 3).map(move |x| {
         (
             particle.clone(),
-            Transform::from_xyz(
-                (center.x + x as f32).round(),
-                center.y.round(),
-                0.0,
-            ),
+            Transform::from_xyz((center.x + x as f32).round(), center.y.round(), 0.0),
         )
     }));
 }
@@ -642,13 +635,10 @@ fn spawn_line_interpolated(
     for i in 0..=num_samples {
         let t = i as f32 / num_samples.max(1) as f32;
         let sample_point = start + direction * length * t;
-        
+
         // For each sample point, spawn a line
         for x in min_x * 3..=max_x * 3 {
-            let position = Vec2::new(
-                (sample_point.x + x as f32).round(),
-                sample_point.y.round(),
-            );
+            let position = Vec2::new((sample_point.x + x as f32).round(), sample_point.y.round());
             points.insert(position.as_ivec2());
         }
     }
@@ -661,12 +651,7 @@ fn spawn_line_interpolated(
     }));
 }
 
-fn spawn_cursor_interpolated(
-    commands: &mut Commands,
-    particle: Particle,
-    start: Vec2,
-    end: Vec2,
-) {
+fn spawn_cursor_interpolated(commands: &mut Commands, particle: Particle, start: Vec2, end: Vec2) {
     let mut points: HashSet<IVec2> = HashSet::default();
     let direction = (end - start).normalize();
     let length = (end - start).length();
@@ -676,7 +661,7 @@ fn spawn_cursor_interpolated(
     for i in 0..=num_samples {
         let t = i as f32 / num_samples.max(1) as f32;
         let sample_point = start + direction * length * t;
-        
+
         points.insert(IVec2::new(
             sample_point.x.round() as i32,
             sample_point.y.round() as i32,

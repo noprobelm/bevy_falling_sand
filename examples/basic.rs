@@ -19,7 +19,7 @@ fn main() {
             utils::states::StatesPlugin,
             utils::brush::BrushPlugin::default(),
             utils::cursor::CursorPlugin,
-            utils::instructions::InstructionsPlugin::new(),
+            utils::instructions::InstructionsPlugin::default(),
         ))
         .init_resource::<TotalParticleCount>()
         .init_resource::<SpawnParticles>()
@@ -120,6 +120,7 @@ fn setup(mut commands: Commands) {
         RMB: Cycle particle type\n\
         TAB: Toggle brush spawn/despawn\n\
         B: Cycle brush type\n\
+        LALT + mouse wheel: Change brush size\n\
         H: Hide/Show this help\n\
         F1: Show/Hide particle chunk map\n\
         F2: Show/Hide \"dirty rectangles\"\n\
