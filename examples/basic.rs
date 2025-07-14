@@ -1,11 +1,8 @@
 mod utils;
 
-use bevy::{
-    input::{common_conditions::input_just_pressed, mouse::MouseWheel},
-    prelude::*,
-};
+use bevy::{input::common_conditions::input_just_pressed, prelude::*};
 use bevy_falling_sand::prelude::*;
-use utils::boundary::{BoundaryReady, SetupBoundary, Sides};
+use utils::boundary::{SetupBoundary, Sides};
 
 fn main() {
     App::new()
@@ -33,10 +30,7 @@ fn main() {
         .add_systems(
             Update,
             (
-                setup_boundary.run_if(utils::conditions::resource_not_exists::<BoundaryReady>),
-                stream_particles.run_if(
-                    resource_exists::<BoundaryReady>.and(resource_exists::<SpawnParticles>),
-                ),
+                stream_particles.run_if(resource_exists::<SpawnParticles>),
                 update_total_particle_count_text.run_if(resource_exists::<TotalParticleCount>),
                 toggle_spawn_particles.run_if(input_just_pressed(KeyCode::F1)),
                 toggle_debug_map.run_if(input_just_pressed(KeyCode::F2)),
@@ -118,6 +112,9 @@ fn setup(mut commands: Commands) {
                 style.clone(),
             ));
         });
+
+    commands.remove_resource::<DebugParticleMap>();
+    commands.remove_resource::<DebugDirtyRects>();
 }
 
 fn setup_boundary(mut commands: Commands, particle_type_map: Res<ParticleTypeMap>) {
@@ -129,7 +126,6 @@ fn setup_boundary(mut commands: Commands, particle_type_map: Res<ParticleTypeMap
         )
         .without_sides(vec![Sides::Top]);
         commands.queue(setup_boundary);
-        commands.insert_resource(BoundaryReady);
     }
 }
 

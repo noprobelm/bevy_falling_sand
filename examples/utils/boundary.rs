@@ -1,9 +1,6 @@
 use bevy::{platform::collections::HashSet, prelude::*};
 use bevy_falling_sand::prelude::*;
 
-#[derive(Default, Resource)]
-pub struct BoundaryReady;
-
 #[derive(PartialEq, Eq, Hash, Copy, Clone, Debug)]
 pub enum Sides {
     Top,
@@ -92,7 +89,6 @@ impl Command for SetupBoundary {
                         ));
                     }
                 }
-                world.init_resource::<BoundaryReady>();
             } else {
                 warn!(
                     "No paricle type {} found in ParticleTypeMap; will not spawn boundary",
