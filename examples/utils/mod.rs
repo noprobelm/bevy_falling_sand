@@ -6,3 +6,4 @@ pub mod cursor;
 pub mod instructions;
 pub mod particles;
 pub mod states;
+pub mod status_ui;
