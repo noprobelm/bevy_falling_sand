@@ -29,6 +29,7 @@ fn main() {
             (
                 utils::particles::toggle_debug_map.run_if(input_just_pressed(KeyCode::F1)),
                 utils::particles::toggle_debug_dirty_rects.run_if(input_just_pressed(KeyCode::F2)),
+                utils::particles::change_movement_source.run_if(input_just_pressed(KeyCode::F3)),
                 utils::camera::zoom_camera,
                 utils::camera::pan_camera,
                 utils::particles::ev_clear_dynamic_particles
@@ -181,9 +182,10 @@ fn setup(
 
     let instructions_text = "Left mouse: Spawn/despawn particles\n\
         Right mouse: Cycle particle type\n\
+        V: Bump max velocity\n\
         F1: Show/hide particle chunk map\n\
         F2: Show/hide dirty rectangles\n\
-        V: Bump max velocity\n\
+        F3: Change movement logic (Particles vs. Chunks)\n\
         R: Reset";
 
     let panel_id = spawn_instructions_panel(&mut commands, instructions_text);
