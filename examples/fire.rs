@@ -79,7 +79,7 @@ impl Default for DefaultFire {
     fn default() -> Self {
         DefaultFire(
             GasBundle::new(
-                ParticleType::new("FIRE"),
+                ParticleTypeId::new("FIRE"),
                 Density(450),
                 Velocity::new(1, 3),
                 1,
@@ -116,7 +116,7 @@ impl Default for DefaultFlammableGas {
     fn default() -> Self {
         DefaultFlammableGas(
             GasBundle::new(
-                ParticleType::new("Flammable Gas"),
+                ParticleTypeId::new("Flammable Gas"),
                 Density(200),
                 Velocity::new(1, 1),
                 1,
@@ -183,7 +183,7 @@ fn setup(
     ));
 
     commands.spawn((WallBundle::new(
-        ParticleType::new("Dirt Wall"),
+        ParticleTypeId::new("Dirt Wall"),
         ColorProfile::new(vec![
             Color::Srgba(Srgba::hex("#916B4C").unwrap()),
             Color::Srgba(Srgba::hex("#73573D").unwrap()),
@@ -192,7 +192,7 @@ fn setup(
 
     commands.spawn((
         GasBundle::new(
-            ParticleType::new("Smoke"),
+            ParticleTypeId::new("Smoke"),
             Density(275),
             Velocity::new(1, 1),
             1,
@@ -439,8 +439,8 @@ fn render_fire_settings_gui(
     mut contexts: EguiContexts,
     mut ev_reset_particle_children: EventWriter<ResetParticleChildrenEvent>,
     particle_type_map: Res<ParticleTypeMap>,
-    mut burns_query: Query<&mut Burns, With<ParticleType>>,
-    mut color_profile_query: Query<&mut ColorProfile, With<ParticleType>>,
+    mut burns_query: Query<&mut Burns, With<ParticleTypeId>>,
+    mut color_profile_query: Query<&mut ColorProfile, With<ParticleTypeId>>,
     mut commands: Commands,
     default_fire: Res<DefaultFire>,
     default_flammable_gas: Res<DefaultFlammableGas>,

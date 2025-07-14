@@ -15,7 +15,7 @@ pub(super) struct ParticleCorePlugin;
 impl Plugin for ParticleCorePlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<Particle>()
-            .register_type::<ParticleType>()
+            .register_type::<ParticleTypeId>()
             .register_type::<ParticlePosition>()
             .init_resource::<ParticleSimulationRun>()
             .configure_sets(
@@ -110,12 +110,12 @@ pub struct ParticleSimulationSet;
     Deserialize,
 )]
 #[reflect(Component)]
-pub struct ParticleType {
+pub struct ParticleTypeId {
     /// The particle type's name.
     pub name: String,
 }
 
-impl ParticleType {
+impl ParticleTypeId {
     /// Initialize a new `ParticleType`
     #[must_use]
     pub fn new(name: &str) -> Self {
@@ -250,7 +250,7 @@ fn condition_ev_simulation_step_received(
 /// will overwrite the previous entry.
 pub fn handle_new_particle_types(
     mut commands: Commands,
-    particle_type_query: Query<(Entity, &ParticleType), Changed<ParticleType>>,
+    particle_type_query: Query<(Entity, &ParticleTypeId), Changed<ParticleTypeId>>,
     mut type_map: ResMut<ParticleTypeMap>,
 ) {
     particle_type_query
@@ -268,7 +268,7 @@ pub fn handle_new_particle_types(
 #[allow(clippy::needless_pass_by_value)]
 fn handle_new_particles(
     mut commands: Commands,
-    parent_query: Query<Entity, With<ParticleType>>,
+    parent_query: Query<Entity, With<ParticleTypeId>>,
     particle_query: Query<(&Particle, &Transform, Entity), Changed<Particle>>,
     mut map: ResMut<ParticleMap>,
     type_map: Res<ParticleTypeMap>,
@@ -330,7 +330,7 @@ fn ev_reset_particle(
 fn ev_reset_particle_children(
     mut ev_reset_particle_children: EventReader<ResetParticleChildrenEvent>,
     mut ev_reset_particle: EventWriter<ResetParticleEvent>,
-    particle_type_query: Query<Option<&Children>, With<ParticleType>>,
+    particle_type_query: Query<Option<&Children>, With<ParticleTypeId>>,
 ) {
     ev_reset_particle_children.read().for_each(|ev| {
         if let Ok(Some(children)) = particle_type_query.get(ev.entity) {

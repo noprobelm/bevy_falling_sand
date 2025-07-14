@@ -79,7 +79,7 @@ fn setup(
     ));
 
     commands.spawn((WallBundle::new(
-        ParticleType::new("Dirt Wall"),
+        ParticleTypeId::new("Dirt Wall"),
         ColorProfile::new(vec![
             Color::Srgba(Srgba::hex("#916B4C").unwrap()),
             Color::Srgba(Srgba::hex("#73573D").unwrap()),
@@ -88,7 +88,7 @@ fn setup(
 
     commands.spawn((
         LiquidBundle::new(
-            ParticleType::new("Water"),
+            ParticleTypeId::new("Water"),
             Density(750),
             Velocity::new(1, 3),
             5,
@@ -100,7 +100,7 @@ fn setup(
 
     commands.spawn((
         MovableSolidBundle::new(
-            ParticleType::new("Sand"),
+            ParticleTypeId::new("Sand"),
             Density(1250),
             Velocity::new(1, 3),
             ColorProfile::new(vec![

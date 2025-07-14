@@ -476,14 +476,14 @@ pub fn render_side_panel(
 pub fn update_particle_list(
     new_particle_query: Query<
         (
-            &ParticleType,
+            &ParticleTypeId,
             Option<&Wall>,
             Option<&MovableSolid>,
             Option<&Solid>,
             Option<&Liquid>,
             Option<&Gas>,
         ),
-        Added<ParticleType>,
+        Added<ParticleTypeId>,
     >,
     mut particle_list: ResMut<ParticleList>,
     mut particle_type_list: ResMut<ParticleTypeList>,
@@ -735,7 +735,7 @@ pub fn update_particle_editor_fields(
             Option<&MovableSolid>,
             Option<&Gas>,
         ),
-        With<ParticleType>,
+        With<ParticleTypeId>,
     >,
     mut particle_density_field: ResMut<ParticleEditorDensity>,
     mut particle_max_velocity_field: ResMut<ParticleEditorMaxVelocity>,
@@ -761,7 +761,7 @@ pub fn update_particle_editor_fields(
             {
                 particle_editor_name.0 = particle_editor_selected_type.0.name.clone();
                 particle_editor_selected_type.0 =
-                    ParticleType::new(particle_editor_selected_type.0.name.clone().as_str());
+                    ParticleTypeId::new(particle_editor_selected_type.0.name.clone().as_str());
                 if let Some(density) = density {
                     particle_density_field.blueprint = *density;
                 }
@@ -873,7 +873,7 @@ pub fn render_particle_editor(
                                             if ui.button(particle_name).clicked() {
                                                 selected_brush_particle.0 = particle_name.clone();
                                                 particle_editor_selected_field.0 =
-                                                    ParticleType::new(particle_name.as_str());
+                                                    ParticleTypeId::new(particle_name.as_str());
                                                 ev_particle_editor_update
                                                     .write(ParticleEditorUpdate);
                                             }
@@ -1634,7 +1634,7 @@ pub fn render_fluidity_field(
 fn particle_editor_save(
     (mut commands, mut ev_particle_editor_save): (Commands, EventReader<ParticleEditorSave>),
     particle_type_map: Res<ParticleTypeMap>,
-    particle_type_query: Query<Option<&Children>, With<ParticleType>>,
+    particle_type_query: Query<Option<&Children>, With<ParticleTypeId>>,
     (
         current_particle_category_field,
         particle_selected_field,
@@ -1674,7 +1674,7 @@ fn particle_editor_save(
             .cloned()
             .unwrap_or_else(|| {
                 commands
-                    .spawn(ParticleType::new(particle_selected_field.0.name.as_str()))
+                    .spawn(ParticleTypeId::new(particle_selected_field.0.name.as_str()))
                     .id()
             });
         commands.entity(entity).remove::<ParticleBundle>();
@@ -1895,14 +1895,14 @@ pub struct ParticleEditorUpdate;
 pub struct ParticleEditorSave;
 
 #[derive(Resource, Clone)]
-pub struct ParticleEditorSelectedType(pub ParticleType);
+pub struct ParticleEditorSelectedType(pub ParticleTypeId);
 
 #[derive(Resource, Default, Clone)]
 pub struct ParticleEditorName(pub String);
 
 impl Default for ParticleEditorSelectedType {
     fn default() -> Self {
-        ParticleEditorSelectedType(ParticleType::new(DEFAULT_SELECTED_PARTICLE))
+        ParticleEditorSelectedType(ParticleTypeId::new(DEFAULT_SELECTED_PARTICLE))
     }
 }
 

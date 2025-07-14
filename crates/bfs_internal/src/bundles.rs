@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bfs_color::{ChangesColor, ColorProfile};
-use bfs_core::ParticleType;
+use bfs_core::ParticleTypeId;
 use bfs_movement::{Density, Gas, Liquid, Momentum, MovableSolid, Movement, Solid, Velocity, Wall};
 use bfs_reactions::{Burning, Burns};
 use serde::{Deserialize, Serialize};
@@ -28,7 +28,7 @@ pub struct ParticleBundle {
 #[derive(Clone, PartialEq, Asset, TypePath, Bundle, Serialize, Deserialize)]
 pub struct MovableSolidBundle {
     /// The particle type designator.
-    pub particle_type: ParticleType,
+    pub particle_type: ParticleTypeId,
     /// The Density of the particle.
     pub density: Density,
     /// The maximum Velocity of the particle.
@@ -43,7 +43,7 @@ impl MovableSolidBundle {
     /// Create a new instance of movable solid bundle.
     #[must_use]
     pub const fn new(
-        particle_type: ParticleType,
+        particle_type: ParticleTypeId,
         density: Density,
         velocity: Velocity,
         colors: ColorProfile,
@@ -62,7 +62,7 @@ impl MovableSolidBundle {
 /// A bundle to quickly create a solid particle.
 pub struct SolidBundle {
     /// The particle type designator.
-    pub particle_type: ParticleType,
+    pub particle_type: ParticleTypeId,
     /// The Density of the particle.
     pub density: Density,
     /// The maximum Velocity of the particle.
@@ -77,7 +77,7 @@ impl SolidBundle {
     /// Create a new instance of solid bundle.
     #[must_use]
     pub const fn new(
-        particle_type: ParticleType,
+        particle_type: ParticleTypeId,
         density: Density,
         velocity: Velocity,
         colors: ColorProfile,
@@ -96,7 +96,7 @@ impl SolidBundle {
 /// A bundle to quickly create a liquid particle.
 pub struct LiquidBundle {
     /// The particle type designator.
-    pub particle_type: ParticleType,
+    pub particle_type: ParticleTypeId,
     /// The Density of the particle.
     pub density: Density,
     /// The maximum Velocity of the particle.
@@ -111,7 +111,7 @@ impl LiquidBundle {
     /// Create a new instance of liquid bundle.
     #[must_use]
     pub const fn new(
-        particle_type: ParticleType,
+        particle_type: ParticleTypeId,
         density: Density,
         velocity: Velocity,
         fluidity: usize,
@@ -131,7 +131,7 @@ impl LiquidBundle {
 /// A bundle to quickly create a gas particle.
 pub struct GasBundle {
     /// The particle type designator.
-    pub particle_type: ParticleType,
+    pub particle_type: ParticleTypeId,
     /// The Density of the particle.
     pub density: Density,
     /// The maximum Velocity of the particle.
@@ -146,7 +146,7 @@ impl GasBundle {
     /// Create a new instance of gas bundle.
     #[must_use]
     pub const fn new(
-        particle_type: ParticleType,
+        particle_type: ParticleTypeId,
         density: Density,
         velocity: Velocity,
         fluidity: usize,
@@ -166,7 +166,7 @@ impl GasBundle {
 /// A bundle to quickly create a wall particle.
 pub struct WallBundle {
     /// The particle type designator.
-    pub particle_type: ParticleType,
+    pub particle_type: ParticleTypeId,
     /// The color profile of the particle.
     pub colors: ColorProfile,
     /// The wall component.
@@ -176,7 +176,7 @@ pub struct WallBundle {
 impl WallBundle {
     /// Create a new instance of gas bundle.
     #[must_use]
-    pub const fn new(particle_type: ParticleType, colors: ColorProfile) -> Self {
+    pub const fn new(particle_type: ParticleTypeId, colors: ColorProfile) -> Self {
         Self {
             particle_type,
             colors,
