@@ -47,6 +47,9 @@ struct MainCamera;
 struct TotalParticleCountText;
 
 fn setup(mut commands: Commands) {
+    commands.remove_resource::<DebugParticleMap>();
+    commands.remove_resource::<DebugDirtyRects>();
+
     commands.spawn((WallBundle::new(
         ParticleTypeId::new("Dirt Wall"),
         ColorProfile::new(vec![
@@ -80,6 +83,14 @@ fn setup(mut commands: Commands) {
         Momentum::default(),
     ));
 
+    let setup_boundary = SetupBoundary::from_corners(
+        IVec2::new(BOUNDARY_START_X, BOUNDARY_START_Y),
+        IVec2::new(BOUNDARY_END_X, BOUNDARY_END_Y),
+        ParticleTypeId::new("Dirt Wall"),
+    )
+    .without_sides(vec![Sides::Top]);
+    commands.queue(setup_boundary);
+
     let instructions_text = "F1: Toggle particle spawning\n\
         F2: Show/Hide particle chunk map\n\
         F3: Show/Hide \"dirty rectangles\"\n\
@@ -103,17 +114,6 @@ fn setup(mut commands: Commands) {
                 style.clone(),
             ));
         });
-
-    commands.remove_resource::<DebugParticleMap>();
-    commands.remove_resource::<DebugDirtyRects>();
-
-    let setup_boundary = SetupBoundary::from_corners(
-        IVec2::new(BOUNDARY_START_X, BOUNDARY_START_Y),
-        IVec2::new(BOUNDARY_END_X, BOUNDARY_END_Y),
-        ParticleTypeId::new("Dirt Wall"),
-    )
-    .without_sides(vec![Sides::Top]);
-    commands.queue(setup_boundary);
 }
 
 fn stream_particles(mut commands: Commands) {
