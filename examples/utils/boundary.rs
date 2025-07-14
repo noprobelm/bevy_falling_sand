@@ -19,6 +19,7 @@ pub struct SetupBoundary {
     irect: IRect,
     particle_type: ParticleType,
     sides: HashSet<Sides>,
+    thickness: u32,
 }
 
 impl SetupBoundary {
@@ -27,6 +28,7 @@ impl SetupBoundary {
             irect: IRect::new(x0, y0, x1, y1),
             particle_type,
             sides: HashSet::from_iter(Sides::all()),
+            thickness: 1,
         }
     }
 
@@ -35,6 +37,7 @@ impl SetupBoundary {
             irect,
             particle_type,
             sides: HashSet::from_iter(Sides::all()),
+            thickness: 1,
         }
     }
 
@@ -43,6 +46,7 @@ impl SetupBoundary {
             irect: IRect::from_corners(p0, p1),
             particle_type,
             sides: HashSet::from_iter(Sides::all()),
+            thickness: 1,
         }
     }
 
@@ -53,38 +57,71 @@ impl SetupBoundary {
             ..self
         }
     }
+
+    pub fn with_thickness(self, thickness: u32) -> SetupBoundary {
+        SetupBoundary { thickness, ..self }
+    }
 }
 
 impl Command for SetupBoundary {
     fn apply(self, world: &mut World) {
         if let Some(map) = world.get_resource::<ParticleTypeMap>() {
             if map.contains(self.particle_type.name.as_str()) {
+                let thickness = self.thickness as i32;
+
+                // Spawn horizontal sides (top and bottom)
                 for x in self.irect.min.x..=self.irect.max.x {
                     if self.sides.contains(&Sides::Bottom) {
-                        world.spawn((
-                            Particle::new(self.particle_type.name.as_str()),
-                            Transform::from_xyz(x as f32, self.irect.min.y as f32, 0.0),
-                        ));
+                        for layer in 0..thickness {
+                            world.spawn((
+                                Particle::new(self.particle_type.name.as_str()),
+                                Transform::from_xyz(
+                                    x as f32,
+                                    (self.irect.min.y - layer) as f32,
+                                    0.0,
+                                ),
+                            ));
+                        }
                     }
                     if self.sides.contains(&Sides::Top) {
-                        world.spawn((
-                            Particle::new(self.particle_type.name.as_str()),
-                            Transform::from_xyz(x as f32, self.irect.max.y as f32, 0.0),
-                        ));
+                        for layer in 0..thickness {
+                            world.spawn((
+                                Particle::new(self.particle_type.name.as_str()),
+                                Transform::from_xyz(
+                                    x as f32,
+                                    (self.irect.max.y + layer) as f32,
+                                    0.0,
+                                ),
+                            ));
+                        }
                     }
                 }
+
+                // Spawn vertical sides (left and right)
                 for y in self.irect.min.y..=self.irect.max.y {
                     if self.sides.contains(&Sides::Left) {
-                        world.spawn((
-                            Particle::new(self.particle_type.name.as_str()),
-                            Transform::from_xyz(self.irect.min.x as f32, y as f32, 0.0),
-                        ));
+                        for layer in 0..thickness {
+                            world.spawn((
+                                Particle::new(self.particle_type.name.as_str()),
+                                Transform::from_xyz(
+                                    (self.irect.min.x - layer) as f32,
+                                    y as f32,
+                                    0.0,
+                                ),
+                            ));
+                        }
                     }
                     if self.sides.contains(&Sides::Right) {
-                        world.spawn((
-                            Particle::new(self.particle_type.name.as_str()),
-                            Transform::from_xyz(self.irect.max.x as f32, y as f32, 0.0),
-                        ));
+                        for layer in 0..thickness {
+                            world.spawn((
+                                Particle::new(self.particle_type.name.as_str()),
+                                Transform::from_xyz(
+                                    (self.irect.max.x + layer) as f32,
+                                    y as f32,
+                                    0.0,
+                                ),
+                            ));
+                        }
                     }
                 }
             } else {
