@@ -5,10 +5,7 @@ use bevy::{
 };
 use bevy_falling_sand::prelude::*;
 use bfs_assets::{FallingSandAssetsPlugin, ParticleDefinitionsAsset, ParticleDefinitionsHandle};
-use bfs_color::FallingSandColorPlugin;
 use bfs_core::{Particle, ParticleTypeMap};
-use bfs_movement::FallingSandMovementPlugin;
-use bfs_reactions::FallingSandReactionsPlugin;
 use ron::ser::{to_string_pretty, PrettyConfig};
 use std::collections::HashMap;
 
@@ -16,13 +13,11 @@ fn main() {
     App::new()
         .add_plugins((
             DefaultPlugins,
-            FallingSandMinimalPlugin,
-            FallingSandColorPlugin,
-            FallingSandMovementPlugin,
-            FallingSandSpatialPlugin {
-                frequency: std::time::Duration::from_millis(50),
-            },
-            FallingSandReactionsPlugin,
+            FallingSandPlugin::default()
+                .with_length_unit(8.0)
+                .with_spatial_refresh_frequency(std::time::Duration::from_millis(50))
+                .with_gravity(Vec2::NEG_Y * 50.0),
+            FallingSandDebugPlugin,
             FallingSandAssetsPlugin,
         ))
         .init_resource::<SpawnParticles>()

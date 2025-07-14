@@ -37,7 +37,7 @@ impl Plugin for FallingSandPhysicsPlugin {
             .init_resource::<SolidMeshData>()
             .init_resource::<SolidTerrainColliders>()
             .add_systems(
-                PreUpdate,
+                Update,
                 (
                     map_wall_particles.run_if(condition_walls_changed),
                     spawn_wall_terrain_colliders,

@@ -22,7 +22,7 @@ impl Plugin for ParticleDefinitionsPlugin {
             .register_type::<Momentum>()
             .register_type::<Movement>()
             .add_systems(
-                PreUpdate,
+                Update,
                 handle_particle_registration.before(ParticleSimulationSet),
             );
     }
