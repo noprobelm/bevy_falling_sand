@@ -1,13 +1,14 @@
 use bevy::{
     input::{common_conditions::input_just_pressed, mouse::MouseWheel},
     prelude::*,
+    window::PrimaryWindow,
 };
+use bevy_falling_sand::prelude::*;
 use bfs_assets::{FallingSandAssetsPlugin, ParticleDefinitionsAsset, ParticleDefinitionsHandle};
 use bfs_color::FallingSandColorPlugin;
 use bfs_core::{Particle, ParticleTypeMap};
 use bfs_movement::FallingSandMovementPlugin;
 use bfs_reactions::FallingSandReactionsPlugin;
-use bevy_falling_sand::prelude::*;
 use ron::ser::{to_string_pretty, PrettyConfig};
 use std::collections::HashMap;
 
@@ -18,27 +19,30 @@ fn main() {
             FallingSandMinimalPlugin,
             FallingSandColorPlugin,
             FallingSandMovementPlugin,
-            FallingSandSpatialPlugin { frequency: std::time::Duration::from_millis(50) },
+            FallingSandSpatialPlugin {
+                frequency: std::time::Duration::from_millis(50),
+            },
             FallingSandReactionsPlugin,
             FallingSandAssetsPlugin,
-            FallingSandDebugPlugin,
         ))
         .init_resource::<SpawnParticles>()
         .init_resource::<CurrentParticleType>()
+        .init_resource::<CursorPosition>()
         .add_systems(Startup, setup)
         .add_systems(
             Update,
             (
                 zoom_camera,
                 pan_camera,
+                update_cursor_position,
                 setup_boundary.run_if(resource_not_exists::<BoundaryReady>),
                 stream_particles.run_if(
                     resource_exists::<BoundaryReady>.and(resource_exists::<SpawnParticles>),
                 ),
+                spawn_particle_at_cursor.run_if(resource_exists::<BoundaryReady>),
                 cycle_particle_type.run_if(input_just_pressed(KeyCode::Tab)),
                 toggle_spawn_particles.run_if(input_just_pressed(KeyCode::F1)),
-                toggle_debug_map.run_if(input_just_pressed(KeyCode::F2)),
-                save_particles.run_if(input_just_pressed(KeyCode::F3)),
+                save_particles.run_if(input_just_pressed(KeyCode::F2)),
                 reset.run_if(input_just_pressed(KeyCode::KeyR)),
                 check_asset_loading,
             ),
@@ -66,11 +70,16 @@ struct CurrentParticleType {
     types: Vec<String>,
 }
 
+#[derive(Resource, Default)]
+struct CursorPosition {
+    world_pos: Vec2,
+}
+
 impl Default for CurrentParticleType {
     fn default() -> Self {
         Self {
             index: 0,
-            types: vec!["Water".to_string(), "Sand".to_string(), "Oil".to_string(), "FIRE".to_string()],
+            types: vec![],
         }
     }
 }
@@ -93,15 +102,15 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     ));
 
     // Load the particle definitions asset
-    let particles_handle: Handle<ParticleDefinitionsAsset> = 
-        asset_server.load("particles/demo_particles.ron");
-    
+    let particles_handle: Handle<ParticleDefinitionsAsset> =
+        asset_server.load("particles/particles.ron");
+
     commands.spawn(ParticleDefinitionsHandle::new(particles_handle));
 
     let instructions_text = "TAB: Cycle particle type\n\
-        F1: Toggle particle spawning\n\
-        F2: Show/Hide particle chunk map\n\
-        F3: Save current particles to RON file\n\
+        Left Click: Spawn particles at cursor\n\
+        F1: Toggle auto particle spawning\n\
+        F2: Save current particles to RON file\n\
         WASD: Pan camera\n\
         Mouse Wheel: Zoom\n\
         R: Reset\n";
@@ -135,16 +144,28 @@ fn check_asset_loading(
     for handle_component in handles.iter() {
         if handle_component.spawned {
             if let Some(asset) = assets.get(&handle_component.handle) {
-                // Update available particle types from loaded asset
-                current_particle_type.types = asset.definitions().keys().cloned().collect();
-                current_particle_type.types.sort(); // Keep consistent ordering
-                
+                if current_particle_type.types.is_empty() {
+                    current_particle_type.types = asset
+                        .definitions()
+                        .keys()
+                        .filter(|name| !name.to_lowercase().contains("wall"))
+                        .cloned()
+                        .collect();
+                    current_particle_type.types.sort();
+                    current_particle_type.index = 0;
+                }
+
                 // Update UI text
                 if let Ok(mut text) = particle_type_text.single_mut() {
-                    if let Some(current_type) = current_particle_type.types.get(current_particle_type.index) {
-                        **text = format!("Current Particle: {} ({}/{})", 
-                            current_type, 
-                            current_particle_type.index + 1, 
+                    if current_particle_type.types.is_empty() {
+                        **text = "Current Particle: Loading...".to_string();
+                    } else if let Some(current_type) =
+                        current_particle_type.types.get(current_particle_type.index)
+                    {
+                        **text = format!(
+                            "Current Particle: {} ({}/{})",
+                            current_type,
+                            current_particle_type.index + 1,
                             current_particle_type.types.len()
                         );
                     }
@@ -184,7 +205,7 @@ fn setup_boundary(mut commands: Commands, particle_type_map: Res<ParticleTypeMap
 }
 
 fn stream_particles(
-    mut commands: Commands, 
+    mut commands: Commands,
     current_particle_type: Res<CurrentParticleType>,
     particle_type_map: Res<ParticleTypeMap>,
 ) {
@@ -218,13 +239,16 @@ fn cycle_particle_type(
     mut particle_type_text: Query<&mut Text, With<ParticleTypeText>>,
 ) {
     if !current_particle_type.types.is_empty() {
-        current_particle_type.index = (current_particle_type.index + 1) % current_particle_type.types.len();
-        
+        current_particle_type.index =
+            (current_particle_type.index + 1) % current_particle_type.types.len();
+
         if let Ok(mut text) = particle_type_text.single_mut() {
-            if let Some(current_type) = current_particle_type.types.get(current_particle_type.index) {
-                **text = format!("Current Particle: {} ({}/{})", 
-                    current_type, 
-                    current_particle_type.index + 1, 
+            if let Some(current_type) = current_particle_type.types.get(current_particle_type.index)
+            {
+                **text = format!(
+                    "Current Particle: {} ({}/{})",
+                    current_type,
+                    current_particle_type.index + 1,
                     current_particle_type.types.len()
                 );
             }
@@ -240,14 +264,6 @@ fn toggle_spawn_particles(mut commands: Commands, spawn_particles: Option<Res<Sp
     }
 }
 
-fn toggle_debug_map(mut commands: Commands, debug_map: Option<Res<DebugParticleMap>>) {
-    if debug_map.is_some() {
-        commands.remove_resource::<DebugParticleMap>();
-    } else {
-        commands.init_resource::<DebugParticleMap>();
-    }
-}
-
 fn save_particles(
     handles: Query<&ParticleDefinitionsHandle>,
     assets: Res<Assets<ParticleDefinitionsAsset>>,
@@ -257,10 +273,10 @@ fn save_particles(
             if let Some(asset) = assets.get(&handle_component.handle) {
                 // Create a subset of particles to save (just a few examples)
                 let mut save_definitions = HashMap::new();
-                
+
                 // Select a few interesting particles to save
                 let particles_to_save = ["Water", "Sand", "Oil", "FIRE", "Wall"];
-                
+
                 for particle_name in particles_to_save {
                     if let Some(particle_data) = asset.get(particle_name) {
                         save_definitions.insert(particle_name.to_string(), particle_data.clone());
@@ -281,7 +297,7 @@ fn save_particles(
                         error!("Failed to serialize particles to RON: {}", e);
                     }
                 }
-                
+
                 break; // Only process the first handle
             }
         }
@@ -338,4 +354,51 @@ fn pan_camera(
         transform.translation.x += 2.;
     }
     Ok(())
+}
+
+fn update_cursor_position(
+    mut cursor_pos: ResMut<CursorPosition>,
+    window_query: Query<&Window, With<PrimaryWindow>>,
+    camera_query: Query<(&Camera, &GlobalTransform), With<MainCamera>>,
+) {
+    if let (Ok(window), Ok((camera, camera_transform))) =
+        (window_query.single(), camera_query.single())
+    {
+        if let Some(screen_pos) = window.cursor_position() {
+            if let Ok(world_pos) = camera.viewport_to_world_2d(camera_transform, screen_pos) {
+                cursor_pos.world_pos = world_pos;
+            }
+        }
+    }
+}
+
+fn spawn_particle_at_cursor(
+    mut commands: Commands,
+    mouse_input: Res<ButtonInput<MouseButton>>,
+    cursor_pos: Res<CursorPosition>,
+    current_particle_type: Res<CurrentParticleType>,
+    particle_type_map: Res<ParticleTypeMap>,
+) {
+    if mouse_input.pressed(MouseButton::Left) {
+        if let Some(particle_name) = current_particle_type.types.get(current_particle_type.index) {
+            if particle_type_map.contains(particle_name) {
+                let spawn_pos = cursor_pos.world_pos;
+                let radius = 3;
+
+                for dx in -radius..=radius {
+                    for dy in -radius..=radius {
+                        if dx * dx + dy * dy <= radius * radius {
+                            let x = spawn_pos.x + dx as f32;
+                            let y = spawn_pos.y + dy as f32;
+
+                            commands.spawn((
+                                Particle::new(particle_name),
+                                Transform::from_xyz(x, y, 0.0),
+                            ));
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

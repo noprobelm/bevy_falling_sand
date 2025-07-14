@@ -14,6 +14,7 @@ use bevy_falling_sand::{core::ParticleInstances, prelude::*};
 use std::time::Duration;
 
 use super::*;
+use crate::particle_files::{ParticleFileDialog, ParticleFileManagementUI};
 
 pub(super) struct UIPlugin;
 
@@ -26,6 +27,7 @@ impl bevy::prelude::Plugin for UIPlugin {
             .init_resource::<ParticleList>()
             .init_resource::<ParticleTypeList>()
             .init_resource::<SelectedBrushParticle>()
+            .init_resource::<ParticleFileDialog>()
             .init_resource::<ParticleEditorSelectedType>()
             .init_resource::<ParticleEditorName>()
             .init_resource::<ParticleEditorDensity>()
@@ -427,6 +429,7 @@ pub fn render_side_panel(
         Res<State<MovementSource>>,
         ResMut<NextState<MovementSource>>,
     ),
+    mut particle_file_dialog: ResMut<ParticleFileDialog>,
     mut ev_clear_dynamic_particles: EventWriter<ClearDynamicParticlesEvent>,
     mut ev_clear_static_particles: EventWriter<ClearStaticParticlesEvent>,
     mut ev_clear_particle_map: EventWriter<ClearParticleMapEvent>,
@@ -445,6 +448,11 @@ pub fn render_side_panel(
                 &mut scene_path,
                 &mut ev_save_scene,
                 &mut ev_load_scene,
+            );
+            ParticleFileManagementUI.render(
+                ui,
+                &mut commands,
+                &mut particle_file_dialog,
             );
             MovementControlUI.render(ui, current_movement_source.get(), &mut next_movement_source);
             BrushControlUI.render(

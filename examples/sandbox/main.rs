@@ -1,5 +1,6 @@
 mod brush;
 mod camera;
+mod particle_files;
 mod scenes;
 mod setup;
 mod ui;
@@ -8,6 +9,7 @@ use std::time::Duration;
 
 use brush::*;
 use camera::*;
+use particle_files::*;
 use scenes::*;
 use setup::*;
 use ui::*;
@@ -15,6 +17,7 @@ use ui::*;
 use bevy::{prelude::*, window::WindowMode};
 use bevy_egui::EguiPlugin;
 use bevy_falling_sand::prelude::{FallingSandDebugPlugin, FallingSandPlugin};
+use bfs_assets::FallingSandAssetsPlugin;
 
 fn main() {
     App::new()
@@ -35,10 +38,12 @@ fn main() {
                 .with_spatial_refresh_frequency(Duration::from_millis(50))
                 .with_gravity(Vec2::NEG_Y * 50.0),
             FallingSandDebugPlugin,
+            FallingSandAssetsPlugin,
             CameraPlugin,
             ParticleSetupPlugin,
             BrushPlugin,
             ScenesPlugin,
+            ParticleFilesPlugin,
             UIPlugin,
         ))
         .insert_resource(ClearColor(Color::srgba(0.17, 0.16, 0.15, 1.0)))
