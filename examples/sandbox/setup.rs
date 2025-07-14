@@ -6,8 +6,14 @@ pub(super) struct ParticleSetupPlugin;
 
 impl bevy::prelude::Plugin for ParticleSetupPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
-        app.add_systems(Startup, setup_particles);
+        app.add_systems(Startup, remove_debug_resources)
+            .add_systems(Startup, setup_particles);
     }
+}
+
+pub fn remove_debug_resources(mut commands: Commands) {
+    commands.remove_resource::<DebugDirtyRects>();
+    commands.remove_resource::<DebugParticleMap>();
 }
 
 pub fn setup_particles(mut commands: Commands) {
