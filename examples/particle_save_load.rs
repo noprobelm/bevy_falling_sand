@@ -7,20 +7,21 @@ use bevy_falling_sand::prelude::*;
 use bfs_assets::{FallingSandAssetsPlugin, ParticleDefinitionsAsset, ParticleDefinitionsHandle};
 use bfs_core::{Particle, ParticleTypeMap};
 use ron::ser::{to_string_pretty, PrettyConfig};
-use std::collections::HashMap;
+use std::{collections::HashMap, time::Duration};
 
 fn main() {
     App::new()
         .add_plugins((
             DefaultPlugins,
-            FallingSandPlugin::default()
-                .with_length_unit(8.0)
-                .with_spatial_refresh_frequency(std::time::Duration::from_millis(50))
-                .with_gravity(Vec2::NEG_Y * 50.0),
-            FallingSandDebugPlugin,
+            FallingSandMinimalPlugin,
+            FallingSandReactionsPlugin,
+            FallingSandSpatialPlugin {
+                frequency: Duration::from_millis(50),
+            },
+            FallingSandMovementPlugin,
+            FallingSandColorPlugin,
             FallingSandAssetsPlugin,
         ))
-        .init_resource::<SpawnParticles>()
         .init_resource::<CurrentParticleType>()
         .init_resource::<CursorPosition>()
         .add_systems(Startup, setup)
@@ -31,13 +32,9 @@ fn main() {
                 pan_camera,
                 update_cursor_position,
                 setup_boundary.run_if(resource_not_exists::<BoundaryReady>),
-                stream_particles.run_if(
-                    resource_exists::<BoundaryReady>.and(resource_exists::<SpawnParticles>),
-                ),
                 spawn_particle_at_cursor.run_if(resource_exists::<BoundaryReady>),
                 cycle_particle_type.run_if(input_just_pressed(KeyCode::Tab)),
-                toggle_spawn_particles.run_if(input_just_pressed(KeyCode::F1)),
-                save_particles.run_if(input_just_pressed(KeyCode::F2)),
+                save_particles.run_if(input_just_pressed(KeyCode::F1)),
                 reset.run_if(input_just_pressed(KeyCode::KeyR)),
                 check_asset_loading,
             ),
@@ -55,9 +52,6 @@ fn resource_not_exists<T: Resource>(world: &World) -> bool {
 
 #[derive(Resource)]
 struct BoundaryReady;
-
-#[derive(Default, Resource)]
-struct SpawnParticles;
 
 #[derive(Resource)]
 struct CurrentParticleType {
@@ -104,8 +98,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 
     let instructions_text = "TAB: Cycle particle type\n\
         Left Click: Spawn particles at cursor\n\
-        F1: Toggle auto particle spawning\n\
-        F2: Save current particles to RON file\n\
+        F1: Save current particles to RON file\n\
         WASD: Pan camera\n\
         Mouse Wheel: Zoom\n\
         R: Reset\n";
@@ -199,36 +192,6 @@ fn setup_boundary(mut commands: Commands, particle_type_map: Res<ParticleTypeMap
     }
 }
 
-fn stream_particles(
-    mut commands: Commands,
-    current_particle_type: Res<CurrentParticleType>,
-    particle_type_map: Res<ParticleTypeMap>,
-) {
-    if let Some(particle_name) = current_particle_type.types.get(current_particle_type.index) {
-        // Only spawn if the particle type exists in the map
-        if particle_type_map.contains(particle_name) {
-            let center_x = (BOUNDARY_START_X + BOUNDARY_END_X) / 2;
-            let spawn_y = -(BOUNDARY_END_Y as f32) - 10.0;
-
-            let radius = 2;
-
-            for dx in -radius..=radius {
-                for dy in -radius..=radius {
-                    if dx * dx + dy * dy <= radius * radius {
-                        let base_x = center_x as f32 + dx as f32;
-                        let y = spawn_y + dy as f32 + 200.0;
-
-                        commands.spawn((
-                            Particle::new(particle_name),
-                            Transform::from_xyz(base_x, y, 0.0),
-                        ));
-                    }
-                }
-            }
-        }
-    }
-}
-
 fn cycle_particle_type(
     mut current_particle_type: ResMut<CurrentParticleType>,
     mut particle_type_text: Query<&mut Text, With<ParticleTypeText>>,
@@ -248,14 +211,6 @@ fn cycle_particle_type(
                 );
             }
         }
-    }
-}
-
-fn toggle_spawn_particles(mut commands: Commands, spawn_particles: Option<Res<SpawnParticles>>) {
-    if spawn_particles.is_some() {
-        commands.remove_resource::<SpawnParticles>();
-    } else {
-        commands.init_resource::<SpawnParticles>();
     }
 }
 
