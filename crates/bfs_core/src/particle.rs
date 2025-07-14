@@ -1,6 +1,8 @@
 //! Provides all core functionality for particles, including registration, mutation, removal, and
 //! even extension through external plugins if desired.
 use bevy::ecs::component::Mutable;
+use bevy::platform::collections::hash_map::Entry;
+use bevy::platform::hash::FixedHasher;
 use bevy::prelude::*;
 use bevy::{ecs::component::StorageType, platform::collections::HashMap};
 use bevy_turborand::DelegatedRng;
@@ -153,6 +155,11 @@ impl ParticleTypeMap {
     /// Insert a new particle type entity.
     pub fn insert(&mut self, name: String, entity: Entity) -> Option<Entity> {
         self.map.insert(name, entity)
+    }
+
+    /// Get the [`bevy::platform::collections::hash_map::Entry`]
+    pub fn entry(&mut self, name: String) -> Entry<'_, String, Entity, FixedHasher> {
+        self.map.entry(name)
     }
 
     /// Get a particle type from the map if it exists.
