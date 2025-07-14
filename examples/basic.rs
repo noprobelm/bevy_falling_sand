@@ -116,10 +116,11 @@ fn setup(mut commands: Commands) {
     .without_sides(vec![Sides::Top]);
     commands.queue(setup_boundary);
 
-    let instructions_text = "LMB: Spawn/despawn particles\n\
-        RMB: Cycle particle type\n\
+    let instructions_text = "Left mouse: Spawn/despawn particles\n\
+        Right mouse: Cycle particle type\n\
+        Middle Mouse: Cycle brush type\n\
         TAB: Toggle brush spawn/despawn\n\
-        B: Cycle brush type\n\
+        SPACE: Sample particle under cursor\n\
         LALT + mouse wheel: Change brush size\n\
         H: Hide/Show this help\n\
         F1: Show/Hide particle chunk map\n\

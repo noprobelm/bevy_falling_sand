@@ -71,11 +71,11 @@ impl Default for BrushKeybindings {
     fn default() -> Self {
         Self {
             spawn_despawn_button: BrushInput::Mouse(MouseButton::Left),
-            sample_button: BrushInput::Mouse(MouseButton::Middle),
+            sample_button: BrushInput::Key(KeyCode::Space),
             toggle_brush_state_button: BrushInput::Key(KeyCode::Tab),
             resize_modifier_key: KeyCode::AltLeft,
             cycle_particle_button: BrushInput::Mouse(MouseButton::Right),
-            cycle_brush_type_button: BrushInput::Key(KeyCode::KeyB),
+            cycle_brush_type_button: BrushInput::Mouse(MouseButton::Middle),
         }
     }
 }
