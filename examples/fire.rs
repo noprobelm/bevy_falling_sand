@@ -15,7 +15,7 @@ fn main() {
     App::new()
         .add_plugins((
             DefaultPlugins,
-            FallingSandPlugin::default().with_spatial_refresh_frequency(Duration::from_millis(40)),
+            FallingSandPlugin::default().with_spatial_refresh_frequency(Duration::from_millis(20)),
             EguiPlugin {
                 enable_multipass_for_primary_context: false,
             },
