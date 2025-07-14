@@ -4,7 +4,7 @@ use bevy::{input::common_conditions::input_just_pressed, prelude::*};
 use bevy_falling_sand::prelude::*;
 use utils::{
     boundary::{SetupBoundary, Sides},
-    brush::{ParticleSpawnList, SelectedBrushParticle},
+    brush::{BrushState, ParticleSpawnList, SelectedBrushParticle},
 };
 
 fn main() {
@@ -26,8 +26,11 @@ fn main() {
             Update,
             (
                 update_total_particle_count_text.run_if(resource_exists::<TotalParticleCount>),
-                toggle_debug_map.run_if(input_just_pressed(KeyCode::F2)),
-                toggle_debug_dirty_rects.run_if(input_just_pressed(KeyCode::F3)),
+                update_brush_state_text,
+                update_selected_particle_text,
+                toggle_instructions_panel.run_if(input_just_pressed(KeyCode::KeyH)),
+                toggle_debug_map.run_if(input_just_pressed(KeyCode::F1)),
+                toggle_debug_dirty_rects.run_if(input_just_pressed(KeyCode::F2)),
                 utils::camera::zoom_camera.run_if(in_state(utils::states::AppState::Canvas)),
                 utils::camera::pan_camera,
                 utils::particles::reset_dynamic_particles.run_if(input_just_pressed(KeyCode::KeyR)),
@@ -49,6 +52,15 @@ struct MainCamera;
 
 #[derive(Component)]
 struct TotalParticleCountText;
+
+#[derive(Component)]
+struct BrushStateText;
+
+#[derive(Component)]
+struct SelectedParticleText;
+
+#[derive(Component)]
+struct InstructionsPanel;
 
 fn setup(mut commands: Commands) {
     commands.remove_resource::<DebugParticleMap>();
@@ -88,11 +100,11 @@ fn setup(mut commands: Commands) {
     ));
 
     commands.insert_resource(ParticleSpawnList::new(vec![
+        Particle::new("Dirt Wall"),
         Particle::new("Sand"),
         Particle::new("Water"),
-        Particle::new("Dirt Wall"),
     ]));
-    commands.insert_resource(SelectedBrushParticle(Particle::new("Sand")));
+    commands.insert_resource(SelectedBrushParticle(Particle::new("Dirt Wall")));
 
     let setup_boundary = SetupBoundary::from_corners(
         IVec2::new(BOUNDARY_START_X, BOUNDARY_START_Y),
@@ -102,26 +114,47 @@ fn setup(mut commands: Commands) {
     .without_sides(vec![Sides::Top]);
     commands.queue(setup_boundary);
 
-    let instructions_text = "F1: Toggle particle spawning\n\
-        F2: Show/Hide particle chunk map\n\
-        F3: Show/Hide \"dirty rectangles\"\n\
+    let instructions_text = "LMB: Spawn/despawn particles\n\
+        RMB: Cycle particle type\n\
+        TAB: Toggle brush spawn/despawn\n\
+        H: Hide/Show this help\n\
+        F1: Show/Hide particle chunk map\n\
+        F2: Show/Hide \"dirty rectangles\"\n\
         R: Reset\n";
     let style = TextFont::default();
 
     commands
-        .spawn(Node {
-            position_type: PositionType::Absolute,
-            top: Val::Px(12.0),
-            left: Val::Px(12.0),
-            flex_direction: FlexDirection::Column,
-            row_gap: Val::Px(20.0),
-            ..default()
-        })
+        .spawn((
+            InstructionsPanel,
+            Node {
+                position_type: PositionType::Absolute,
+                top: Val::Px(12.0),
+                left: Val::Px(12.0),
+                flex_direction: FlexDirection::Column,
+                row_gap: Val::Px(20.0),
+                padding: UiRect::all(Val::Px(16.0)),
+                border: UiRect::all(Val::Px(2.0)),
+                ..default()
+            },
+            BackgroundColor(Color::Srgba(Srgba::new(0.0, 0.0, 0.0, 0.8))),
+            BorderColor(Color::Srgba(Srgba::new(0.4, 0.4, 0.4, 1.0))),
+            BorderRadius::all(Val::Px(8.0)),
+        ))
         .with_children(|parent| {
             parent.spawn((Text::new(instructions_text), style.clone()));
             parent.spawn((
                 TotalParticleCountText,
                 Text::new("Total Particles: "),
+                style.clone(),
+            ));
+            parent.spawn((
+                BrushStateText,
+                Text::new("Brush Mode: Spawn"),
+                style.clone(),
+            ));
+            parent.spawn((
+                SelectedParticleText,
+                Text::new("Selected Particle: Sand"),
                 style.clone(),
             ));
         });
@@ -155,4 +188,41 @@ fn update_total_particle_count_text(
         (**total_particle_count_text).clone_from(&new_text);
     }
     Ok(())
+}
+
+fn update_brush_state_text(
+    brush_state: Res<State<BrushState>>,
+    mut brush_state_text: Query<&mut Text, With<BrushStateText>>,
+) {
+    let state_text = match brush_state.get() {
+        BrushState::Spawn => "Brush Mode: Spawn",
+        BrushState::Despawn => "Brush Mode: Despawn",
+    };
+
+    for mut text in brush_state_text.iter_mut() {
+        **text = state_text.to_string();
+    }
+}
+
+fn update_selected_particle_text(
+    selected_particle: Res<SelectedBrushParticle>,
+    mut selected_particle_text: Query<&mut Text, With<SelectedParticleText>>,
+) {
+    let particle_text = format!("Selected Particle: {}", selected_particle.0.name);
+
+    for mut text in selected_particle_text.iter_mut() {
+        **text = particle_text.clone();
+    }
+}
+
+fn toggle_instructions_panel(
+    mut instructions_query: Query<&mut Visibility, With<InstructionsPanel>>,
+) {
+    for mut visibility in instructions_query.iter_mut() {
+        *visibility = match *visibility {
+            Visibility::Visible => Visibility::Hidden,
+            Visibility::Hidden => Visibility::Visible,
+            Visibility::Inherited => Visibility::Hidden,
+        };
+    }
 }

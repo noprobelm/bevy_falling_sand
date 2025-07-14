@@ -71,9 +71,9 @@ impl Default for BrushKeybindings {
         Self {
             spawn_despawn_button: BrushInput::Mouse(MouseButton::Left),
             sample_button: BrushInput::Mouse(MouseButton::Middle),
-            toggle_brush_state_button: BrushInput::Mouse(MouseButton::Right),
+            toggle_brush_state_button: BrushInput::Key(KeyCode::Tab),
             resize_modifier_key: KeyCode::AltLeft,
-            cycle_particle_button: BrushInput::Key(KeyCode::Tab),
+            cycle_particle_button: BrushInput::Mouse(MouseButton::Right),
         }
     }
 }
