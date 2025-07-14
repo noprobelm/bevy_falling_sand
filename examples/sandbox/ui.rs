@@ -53,7 +53,7 @@ impl bevy::prelude::Plugin for UIPlugin {
                     render_side_panel,
                     render_particle_editor,
                     render_search_bar_ui.run_if(resource_exists::<ParticleSearchBar>),
-                    update_particle_list,
+                    update_particle_type_list,
                     update_app_state.after(render_side_panel),
                     toggle_simulation.run_if(input_just_pressed(KeyCode::Space)),
                     ev_mouse_wheel,
@@ -449,11 +449,7 @@ pub fn render_side_panel(
                 &mut ev_save_scene,
                 &mut ev_load_scene,
             );
-            ParticleFileManagementUI.render(
-                ui,
-                &mut commands,
-                &mut particle_file_dialog,
-            );
+            ParticleFileManagementUI.render(ui, &mut commands, &mut particle_file_dialog);
             MovementControlUI.render(ui, current_movement_source.get(), &mut next_movement_source);
             BrushControlUI.render(
                 ui,
@@ -481,7 +477,7 @@ pub fn render_side_panel(
         });
 }
 
-pub fn update_particle_list(
+pub fn update_particle_type_list(
     new_particle_query: Query<
         (
             &ParticleTypeId,
