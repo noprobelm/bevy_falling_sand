@@ -15,21 +15,12 @@ fn main() {
         ))
         .init_resource::<TotalParticleCount>()
         .init_resource::<SpawnParticles>()
-        .add_systems(
-            Startup,
-            (
-                setup,
-                setup_boundary.after(setup),
-                utils::camera::setup_camera,
-            ),
-        )
-        .add_systems(
-            Update,
-            (utils::camera::zoom_camera, utils::camera::pan_camera),
-        )
+        .add_systems(Startup, (setup, utils::camera::setup_camera))
         .add_systems(
             Update,
             (
+                utils::camera::zoom_camera,
+                utils::camera::pan_camera,
                 stream_particles.run_if(resource_exists::<SpawnParticles>),
                 update_total_particle_count_text.run_if(resource_exists::<TotalParticleCount>),
                 toggle_spawn_particles.run_if(input_just_pressed(KeyCode::F1)),
@@ -115,18 +106,14 @@ fn setup(mut commands: Commands) {
 
     commands.remove_resource::<DebugParticleMap>();
     commands.remove_resource::<DebugDirtyRects>();
-}
 
-fn setup_boundary(mut commands: Commands, particle_type_map: Res<ParticleTypeMap>) {
-    if particle_type_map.contains("Dirt Wall") {
-        let setup_boundary = SetupBoundary::from_corners(
-            IVec2::new(BOUNDARY_START_X, BOUNDARY_START_Y),
-            IVec2::new(BOUNDARY_END_X, BOUNDARY_END_Y),
-            ParticleTypeId::new("Dirt Wall"),
-        )
-        .without_sides(vec![Sides::Top]);
-        commands.queue(setup_boundary);
-    }
+    let setup_boundary = SetupBoundary::from_corners(
+        IVec2::new(BOUNDARY_START_X, BOUNDARY_START_Y),
+        IVec2::new(BOUNDARY_END_X, BOUNDARY_END_Y),
+        ParticleTypeId::new("Dirt Wall"),
+    )
+    .without_sides(vec![Sides::Top]);
+    commands.queue(setup_boundary);
 }
 
 fn stream_particles(mut commands: Commands) {
