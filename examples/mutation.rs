@@ -13,6 +13,7 @@ fn main() {
             FallingSandMovementPlugin,
             FallingSandColorPlugin,
             FallingSandDebugPlugin,
+            utils::states::StatesPlugin,
         ))
         .init_state::<ParticleTypeOneMutationState>()
         .init_state::<ParticleTypeTwoMutationState>()
@@ -98,6 +99,9 @@ impl std::fmt::Display for ParticleTypeTwoMutationState {
 }
 
 fn setup(mut commands: Commands) {
+    commands.remove_resource::<DebugParticleMap>();
+    commands.remove_resource::<DebugDirtyRects>();
+
     commands.spawn((WallBundle::new(
         ParticleType::new("Dirt Wall"),
         ColorProfile::new(vec![
@@ -161,7 +165,11 @@ fn setup(mut commands: Commands) {
         H: Hide/Show this help\n\
         R: Reset";
 
-    let panel_id = utils::instructions::setup_standalone_instructions(&mut commands, instructions_text, KeyCode::KeyH);
+    let panel_id = utils::instructions::setup_standalone_instructions(
+        &mut commands,
+        instructions_text,
+        KeyCode::KeyH,
+    );
     commands.entity(panel_id).with_children(|parent| {
         let style = TextFont::default();
         parent.spawn((
@@ -219,17 +227,6 @@ fn mutate_particle_type_one(
     }
 }
 
-fn update_movement_source_text(
-    movement_source: Res<State<MovementSource>>,
-    mut movement_source_text: Query<&mut Text, With<MovementSourceText>>,
-) {
-    let source_text = format!("Movement Source: {:?}", movement_source.get());
-
-    for mut text in movement_source_text.iter_mut() {
-        **text = source_text.clone();
-    }
-}
-
 fn mutate_particle_type_two(
     mut mutate_particle_query: Query<&mut Particle, With<MutationParticleTwo>>,
     state: Res<State<ParticleTypeTwoMutationState>>,
@@ -249,5 +246,16 @@ fn mutate_particle_type_two(
     let new_text = format!("Particle Type: {}", new_state.clone());
     for mut particle_type_text in particle_type_text_query.iter_mut() {
         (**particle_type_text).clone_from(&new_text);
+    }
+}
+
+fn update_movement_source_text(
+    movement_source: Res<State<MovementSource>>,
+    mut movement_source_text: Query<&mut Text, With<MovementSourceText>>,
+) {
+    let source_text = format!("Movement Source: {:?}", movement_source.get());
+
+    for mut text in movement_source_text.iter_mut() {
+        **text = source_text.clone();
     }
 }

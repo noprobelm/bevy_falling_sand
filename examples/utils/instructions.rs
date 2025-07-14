@@ -8,10 +8,12 @@ pub fn setup_standalone_instructions(
     toggle_key: KeyCode,
 ) -> Entity {
     let panel_id = spawn_instructions_panel(commands, instructions_text);
-    
+
     // Add a marker component to track which key toggles this panel
-    commands.entity(panel_id).insert(StandaloneInstructionsToggle(toggle_key));
-    
+    commands
+        .entity(panel_id)
+        .insert(StandaloneInstructionsToggle(toggle_key));
+
     panel_id
 }
 
@@ -22,7 +24,10 @@ pub struct StandaloneInstructionsToggle(KeyCode);
 /// Add this to your app's Update schedule manually
 pub fn toggle_standalone_instructions(
     keys: Res<ButtonInput<KeyCode>>,
-    mut instructions_query: Query<(&mut Visibility, &StandaloneInstructionsToggle), With<InstructionsPanel>>,
+    mut instructions_query: Query<
+        (&mut Visibility, &StandaloneInstructionsToggle),
+        With<InstructionsPanel>,
+    >,
 ) {
     for (mut visibility, toggle) in instructions_query.iter_mut() {
         if keys.just_pressed(toggle.0) {
