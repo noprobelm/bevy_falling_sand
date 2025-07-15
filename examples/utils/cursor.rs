@@ -6,19 +6,19 @@ pub struct CursorPlugin;
 
 impl Plugin for CursorPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<CursorCoords>()
+        app.init_resource::<CursorPosition>()
             .add_systems(Update, update_cursor_position);
     }
 }
 
 #[derive(Default, Resource, Clone, Debug)]
-pub struct CursorCoords {
+pub struct CursorPosition {
     pub current: Vec2,
     pub previous: Vec2,
     pub previous_previous: Vec2,
 }
 
-impl CursorCoords {
+impl CursorPosition {
     pub fn update(&mut self, new_coords: Vec2) {
         self.previous_previous = self.previous;
         self.previous = self.current;
@@ -27,7 +27,7 @@ impl CursorCoords {
 }
 
 pub fn update_cursor_position(
-    mut coords: ResMut<CursorCoords>,
+    mut coords: ResMut<CursorPosition>,
     q_window: Query<&Window, With<PrimaryWindow>>,
     q_camera: Query<(&Camera, &GlobalTransform), With<MainCamera>>,
 ) -> Result {

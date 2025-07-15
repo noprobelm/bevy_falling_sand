@@ -2,7 +2,7 @@ use bevy::{input::mouse::MouseWheel, platform::collections::HashSet, prelude::*}
 use bfs_core::{Particle, ParticleMap, ParticleSimulationSet, RemoveParticleEvent};
 
 use super::{
-    cursor::{update_cursor_position, CursorCoords},
+    cursor::{update_cursor_position, CursorPosition},
     states::AppState,
 };
 
@@ -221,7 +221,7 @@ impl BrushType {
     pub fn spawn_particles(
         &self,
         commands: &mut Commands,
-        coords: Res<CursorCoords>,
+        coords: Res<CursorPosition>,
         brush_size: f32,
         selected_brush_particle: Particle,
     ) {
@@ -455,7 +455,7 @@ pub fn cycle_brush_type(
 pub fn setup_brush(
     mut commands: Commands,
     mut brush_gizmos: Gizmos<BrushGizmos>,
-    cursor_coords: Res<CursorCoords>,
+    cursor_coords: Res<CursorPosition>,
     brush_type: Res<State<BrushType>>,
 ) {
     let brush = Brush::new(2, Color::WHITE);
@@ -466,7 +466,7 @@ pub fn setup_brush(
 
 pub fn spawn_particles(
     mut commands: Commands,
-    cursor_coords: Res<CursorCoords>,
+    cursor_coords: Res<CursorPosition>,
     selected: Res<SelectedBrushParticle>,
     brush_type: Res<State<BrushType>>,
     brush_query: Query<&Brush>,
@@ -484,7 +484,7 @@ pub fn spawn_particles(
 
 pub fn despawn_particles(
     mut ev_remove_particle: EventWriter<RemoveParticleEvent>,
-    cursor_coords: Res<CursorCoords>,
+    cursor_coords: Res<CursorPosition>,
     brush_type: Res<State<BrushType>>,
     brush_query: Query<&Brush>,
 ) -> Result {
@@ -501,7 +501,7 @@ pub fn despawn_particles(
 
 pub fn update_brush(
     brush_query: Query<&Brush>,
-    cursor_coords: Res<CursorCoords>,
+    cursor_coords: Res<CursorPosition>,
     mut brush_gizmos: Gizmos<BrushGizmos>,
     brush_type: Res<State<BrushType>>,
 ) -> Result {
@@ -511,7 +511,7 @@ pub fn update_brush(
 }
 
 fn sample_hovered(
-    cursor_coords: Res<CursorCoords>,
+    cursor_coords: Res<CursorPosition>,
     chunk_map: Res<ParticleMap>,
     particle_query: Query<&Particle>,
     mut selected_brush_particle: ResMut<SelectedBrushParticle>,
