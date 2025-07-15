@@ -28,6 +28,7 @@ impl bevy::prelude::Plugin for BrushPlugin {
                     .run_if(input_pressed(MouseButton::Left))
                     .run_if(in_state(BrushState::Spawn))
                     .run_if(in_state(AppState::Canvas))
+                    .before(ParticleSimulationSet)
                     .after(update_cursor_position),
                 despawn_particles
                     .run_if(input_pressed(MouseButton::Left))

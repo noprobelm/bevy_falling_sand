@@ -4,8 +4,8 @@ use bevy_turborand::{DelegatedRng, GlobalRng, TurboRand};
 use serde::{Deserialize, Serialize};
 
 use bfs_core::{
-    impl_particle_rng, AttachedToParticleType, Particle, ParticleRegistrationEvent, ParticleRng,
-    ParticleType,
+    impl_particle_rng, AttachedToParticleType, Particle, ParticleRegistrationEvent,
+    ParticleRegistrationSet, ParticleRng, ParticleType,
 };
 
 pub(super) struct ParticleDefinitionsPlugin;
@@ -16,7 +16,10 @@ impl Plugin for ParticleDefinitionsPlugin {
             .register_type::<ColorProfile>()
             .register_type::<ChangesColor>()
             .add_event::<ResetParticleColorEvent>()
-            .add_systems(PreUpdate, handle_particle_registration);
+            .add_systems(
+                PreUpdate,
+                handle_particle_registration.after(ParticleRegistrationSet),
+            );
     }
 }
 

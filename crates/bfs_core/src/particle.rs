@@ -29,13 +29,17 @@ impl Plugin for ParticleCorePlugin {
                         .or(condition_ev_simulation_step_received),
                 ),
             )
+            .configure_sets(PreUpdate, ParticleRegistrationSet)
             .init_resource::<ParticleTypeMap>()
             .add_event::<SimulationStepEvent>()
             .add_event::<ParticleRegistrationEvent>()
             .add_event::<ResetParticleChildrenEvent>()
             .add_event::<ResetParticleEvent>()
             .add_event::<RemoveParticleEvent>()
-            .add_systems(PreUpdate, handle_new_particles)
+            .add_systems(
+                PreUpdate,
+                handle_new_particles.in_set(ParticleRegistrationSet),
+            )
             .add_systems(
                 Update,
                 (
@@ -97,6 +101,10 @@ pub struct ParticleSimulationRun;
 /// System set for particle simulation systems.
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ParticleSimulationSet;
+
+/// System set for registering new particles
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ParticleRegistrationSet;
 
 /// Unique identifer for a particle type. No two particle types with the same name can exist.
 #[derive(
@@ -381,7 +389,7 @@ fn handle_new_particles(
             }
         } else {
             warn!(
-                "No parent entity found for particle type {:?}",
+                "Attempted to spawn particle without valid parent type: '{:?}'",
                 particle_type
             );
         }

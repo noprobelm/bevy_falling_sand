@@ -3,7 +3,7 @@ use bevy_turborand::RngComponent;
 use bfs_color::ColorProfile;
 use bfs_core::{
     impl_particle_rng, AttachedToParticleType, Particle, ParticlePosition,
-    ParticleRegistrationEvent, ParticleRng, ParticleType,
+    ParticleRegistrationEvent, ParticleRegistrationSet, ParticleRng, ParticleType,
 };
 use std::time::Duration;
 
@@ -15,7 +15,10 @@ impl Plugin for ParticleDefinitionsPlugin {
             .register_type::<Fire>()
             .register_type::<Burning>()
             .register_type::<Burns>()
-            .add_systems(PreUpdate, handle_particle_registration);
+            .add_systems(
+                PreUpdate,
+                handle_particle_registration.after(ParticleRegistrationSet),
+            );
     }
 }
 

@@ -128,15 +128,14 @@ impl bevy::prelude::Plugin for BrushPlugin {
                     .run_if(is_brush_input_pressed(keybindings.spawn_despawn_button))
                     .run_if(in_state(BrushState::Spawn))
                     .run_if(in_state(AppState::Canvas))
-                    .after(update_cursor_position)
-                    .before(ParticleSimulationSet),
+                    .before(ParticleSimulationSet)
+                    .after(update_cursor_position),
                 despawn_particles
                     .run_if(is_brush_input_pressed(keybindings.spawn_despawn_button))
                     .run_if(in_state(BrushState::Despawn))
                     .run_if(in_state(AppState::Canvas))
                     .before(ParticleSimulationSet)
-                    .after(update_cursor_position)
-                    .before(ParticleSimulationSet),
+                    .after(update_cursor_position),
             ),
         );
     }
