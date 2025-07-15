@@ -7,7 +7,7 @@ use utils::{
     boundary::SetupBoundary,
     brush::{ParticleSpawnList, SelectedBrushParticle},
     states::AppState,
-    status_ui::MovementSourceText,
+    status_ui::{FpsText, MovementSourceText},
 };
 
 fn main() {
@@ -192,6 +192,11 @@ fn setup(
     let panel_id = utils::instructions::spawn_instructions_panel(&mut commands, instructions_text);
     commands.entity(panel_id).with_children(|parent| {
         let style = TextFont::default();
+        parent.spawn((
+            FpsText,
+            Text::new("FPS: --"),
+            style.clone(),
+        ));
         parent.spawn((
             MaxVelocitySelectionText,
             Text::new("Maximum velocity: 1"),

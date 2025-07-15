@@ -2,6 +2,7 @@
 use bevy::platform::collections::HashSet;
 use bevy::platform::collections::{hash_map::Entry, HashMap};
 use bevy::{
+    diagnostic::{DiagnosticsStore, FrameTimeDiagnosticsPlugin},
     input::{
         common_conditions::{input_just_pressed, input_pressed},
         keyboard::{Key, KeyboardInput},
@@ -23,7 +24,8 @@ const DEFAULT_SELECTED_PARTICLE: &str = "Dirt Wall";
 
 impl bevy::prelude::Plugin for UIPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
-        app.init_state::<AppState>()
+        app.add_plugins(FrameTimeDiagnosticsPlugin::default())
+            .init_state::<AppState>()
             .init_resource::<CursorCoords>()
             .init_resource::<ParticleList>()
             .init_resource::<ParticleTypeList>()
@@ -400,9 +402,11 @@ pub fn update_app_state(
     }
 }
 
+
 pub fn render_side_panel(
     mut commands: Commands,
     mut contexts: EguiContexts,
+    diagnostics: Res<DiagnosticsStore>,
     (
         mut brush_state,
         brush_query,
@@ -447,6 +451,20 @@ pub fn render_side_panel(
         .exact_width(275.0)
         .resizable(false)
         .show(ctx, |ui| {
+            // FPS Counter
+            ui.horizontal(|ui| {
+                ui.label("FPS:");
+                if let Some(fps) = diagnostics
+                    .get(&FrameTimeDiagnosticsPlugin::FPS)
+                    .and_then(|fps| fps.smoothed())
+                {
+                    ui.label(format!("{:.1}", fps));
+                } else {
+                    ui.label("--");
+                }
+            });
+            ui.separator();
+            
             SceneManagementUI.render(
                 ui,
                 &mut scene_selection_dialog,

@@ -1,4 +1,7 @@
-use bevy::prelude::*;
+use bevy::{
+    diagnostic::{DiagnosticsStore, FrameTimeDiagnosticsPlugin},
+    prelude::*,
+};
 use bevy_falling_sand::prelude::*;
 use super::brush::{BrushState, BrushType, SelectedBrushParticle};
 
@@ -17,18 +20,23 @@ pub struct BrushTypeText;
 #[derive(Component)]
 pub struct MovementSourceText;
 
+#[derive(Component)]
+pub struct FpsText;
+
 pub struct StatusUIPlugin;
 
 impl Plugin for StatusUIPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
+        app.add_plugins(FrameTimeDiagnosticsPlugin::default())
+        .add_systems(
             Update,
             (
+                update_fps_text,
                 update_total_particle_count_text.run_if(resource_exists::<TotalParticleCount>),
-                update_brush_state_text,
-                update_selected_particle_text,
-                update_brush_type_text,
-                update_movement_source_text,
+                update_brush_state_text.run_if(resource_exists::<State<BrushState>>),
+                update_selected_particle_text.run_if(resource_exists::<SelectedBrushParticle>),
+                update_brush_type_text.run_if(resource_exists::<State<BrushType>>),
+                update_movement_source_text.run_if(resource_exists::<State<MovementSource>>),
             ),
         );
     }
@@ -36,6 +44,21 @@ impl Plugin for StatusUIPlugin {
 
 // Component spawning will be done directly in basic.rs
 // This module just provides the plugin and component definitions
+
+fn update_fps_text(
+    diagnostics: Res<DiagnosticsStore>,
+    mut fps_text: Query<&mut Text, With<FpsText>>,
+) {
+    if let Some(fps) = diagnostics
+        .get(&FrameTimeDiagnosticsPlugin::FPS)
+        .and_then(|fps| fps.smoothed())
+    {
+        let fps_text_value = format!("FPS: {:.1}", fps);
+        for mut text in fps_text.iter_mut() {
+            **text = fps_text_value.clone();
+        }
+    }
+}
 
 fn update_total_particle_count_text(
     debug_total_particle_count: Res<TotalParticleCount>,

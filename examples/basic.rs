@@ -7,7 +7,7 @@ use utils::{
     brush::{ParticleSpawnList, SelectedBrushParticle},
     states::AppState,
     status_ui::{
-        BrushStateText, BrushTypeText, MovementSourceText, SelectedParticleText,
+        BrushStateText, BrushTypeText, FpsText, MovementSourceText, SelectedParticleText,
         TotalParticleCountText,
     },
 };
@@ -123,6 +123,11 @@ fn setup(mut commands: Commands) {
 
     commands.entity(panel_id).with_children(|parent| {
         let style = TextFont::default();
+        parent.spawn((
+            FpsText,
+            Text::new("FPS: --"),
+            style.clone(),
+        ));
         parent.spawn((
             TotalParticleCountText,
             Text::new("Total Particles: "),
