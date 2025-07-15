@@ -6,12 +6,17 @@ use bevy::{input::common_conditions::input_just_pressed, prelude::*};
 use bevy_falling_sand::prelude::*;
 use utils::{
     boundary::{SetupBoundary, Sides},
-    brush::{ParticleSpawnList, SelectedBrushParticle},
+    brush::{BrushInput, BrushKeybindings, ParticleSpawnList, SelectedBrushParticle},
     cursor::CursorPosition,
     states::AppState,
+    status_ui::{BrushStateText, BrushTypeText, MovementSourceText, SelectedParticleText},
 };
 
 fn main() {
+    let brush_bindings = BrushKeybindings {
+        sample_button: BrushInput::Key(KeyCode::ControlLeft),
+        ..default()
+    };
     App::new()
         .add_plugins((
             DefaultPlugins,
@@ -22,7 +27,7 @@ fn main() {
             FallingSandDebugPlugin,
             PhysicsDebugPlugin::default(),
             utils::states::StatesPlugin,
-            utils::brush::BrushPlugin::default(),
+            utils::brush::BrushPlugin::default().with_keybindings(brush_bindings),
             utils::cursor::CursorPlugin,
             utils::instructions::InstructionsPlugin::default(),
             utils::status_ui::StatusUIPlugin,
@@ -106,24 +111,44 @@ fn setup(mut commands: Commands) {
     ]));
     commands.insert_resource(SelectedBrushParticle(Particle::new("Dirt Wall")));
 
-    let instructions_text = "F1: Toggle sand spawn\n\
-        F2: Toggle water spawn\n\
-        Left Mouse: Spawn ball at cursor\"\n\
+    let instructions_text = "Left mouse: Spawn/despawn particles\n\
+        Right mouse: Cycle particle type\n\
+        Middle Mouse: Cycle brush type\n\
+        TAB: Toggle brush spawn/despawn\n\
+        SPACE: Spawn dynamic rigid body\n\
+        LALT + mouse wheel: Change brush size\n\
+        LCTRL: Sample particle under cursor\n\
+        H: Hide/Show this help\n\
+        F1: Show/hide particle chunk map\n\
+        F2: Show/hide \"dirty rectangles\"\n\
+        F3: Change movement logic (Particles vs. Chunks)\n\
         R: Reset\n";
-    let style = TextFont::default();
 
-    commands
-        .spawn(Node {
-            position_type: PositionType::Absolute,
-            top: Val::Px(12.0),
-            left: Val::Px(12.0),
-            flex_direction: FlexDirection::Column,
-            row_gap: Val::Px(20.0),
-            ..default()
-        })
-        .with_children(|parent| {
-            parent.spawn((Text::new(instructions_text), style.clone()));
-        });
+    let panel_id = utils::instructions::spawn_instructions_panel(&mut commands, instructions_text);
+
+    commands.entity(panel_id).with_children(|parent| {
+        let style = TextFont::default();
+        parent.spawn((
+            BrushStateText,
+            Text::new("Brush Mode: Spawn"),
+            style.clone(),
+        ));
+        parent.spawn((
+            SelectedParticleText,
+            Text::new("Selected Particle: Sand"),
+            style.clone(),
+        ));
+        parent.spawn((
+            BrushTypeText,
+            Text::new("Brush Type: Circle"),
+            style.clone(),
+        ));
+        parent.spawn((
+            MovementSourceText,
+            Text::new("Movement Source: Particles"),
+            style.clone(),
+        ));
+    });
 }
 
 fn spawn_ball(
