@@ -1130,10 +1130,10 @@ fn render_max_velocity_field(
 ) {
     ui.horizontal(|ui| {
         ui.label("Max Velocity: ");
-        ui.add(
-            egui::Slider::new(&mut particle_max_velocity_field.blueprint.max_mut(), 1..=5)
-                .step_by(1.),
-        );
+        let mut max_vel = bevy_falling_sand::prelude::Velocity::max(&particle_max_velocity_field.blueprint);
+        if ui.add(egui::Slider::new(&mut max_vel, 1..=5).step_by(1.)).changed() {
+            particle_max_velocity_field.blueprint.set_max_velocity(max_vel);
+        }
     });
 }
 
