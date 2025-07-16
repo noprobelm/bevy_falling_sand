@@ -20,6 +20,7 @@ use std::time::Duration;
 use bevy::prelude::{App, Plugin, Vec2};
 use bevy_turborand::prelude::*;
 
+pub use bfs_assets as assets;
 pub use bfs_color as color;
 pub use bfs_core as core;
 pub use bfs_debug as debug;

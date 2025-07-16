@@ -13,5 +13,6 @@ bfs_spatial = { path = "../bfs_spatial" }
 bfs_reactions = { path = "../bfs_reactions" }
 bfs_scenes = { path = "../bfs_scenes" }
 bfs_physics = { path = "../bfs_physics" }
+bfs_assets = { path = "../bfs_assets" }
 bevy_turborand = "0.11.0"
 serde = "1.0.210"

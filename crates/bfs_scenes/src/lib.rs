@@ -37,7 +37,7 @@ impl Plugin for FallingSandScenesPlugin {
 
 /// Particle type and position data for saving/loading scenes.
 #[derive(Serialize, Deserialize)]
-pub struct ParticleData {
+pub struct ParticleSceneData {
     /// The particle type.
     pub particle: Particle,
     /// The particle position.
@@ -48,7 +48,7 @@ pub struct ParticleData {
 #[derive(Serialize, Deserialize)]
 pub struct ParticleScene {
     /// The particles the scene is composed of.
-    pub particles: Vec<ParticleData>,
+    pub particles: Vec<ParticleSceneData>,
 }
 
 /// Triggers systems to save the current particle scene to a file.
@@ -64,9 +64,9 @@ fn save_scene_system(
     mut ev_save_scene: EventReader<SaveSceneEvent>,
 ) {
     for ev in ev_save_scene.read() {
-        let particles: Vec<ParticleData> = particle_query
+        let particles: Vec<ParticleSceneData> = particle_query
             .iter()
-            .map(|(particle_type, position)| ParticleData {
+            .map(|(particle_type, position)| ParticleSceneData {
                 particle: particle_type.clone(),
                 position: *position,
             })
