@@ -402,7 +402,6 @@ pub fn update_app_state(
     }
 }
 
-
 pub fn render_side_panel(
     mut commands: Commands,
     mut contexts: EguiContexts,
@@ -448,7 +447,6 @@ pub fn render_side_panel(
     let mut brush_size = brush.size;
 
     egui::SidePanel::left("side_panel")
-        .exact_width(275.0)
         .resizable(false)
         .show(ctx, |ui| {
             // FPS Counter
@@ -464,7 +462,7 @@ pub fn render_side_panel(
                 }
             });
             ui.separator();
-            
+
             SceneManagementUI.render(
                 ui,
                 &mut scene_selection_dialog,
@@ -1148,9 +1146,15 @@ fn render_max_velocity_field(
 ) {
     ui.horizontal(|ui| {
         ui.label("Max Velocity: ");
-        let mut max_vel = bevy_falling_sand::prelude::Velocity::max(&particle_max_velocity_field.blueprint);
-        if ui.add(egui::Slider::new(&mut max_vel, 1..=5).step_by(1.)).changed() {
-            particle_max_velocity_field.blueprint.set_max_velocity(max_vel);
+        let mut max_vel =
+            bevy_falling_sand::prelude::Velocity::max(&particle_max_velocity_field.blueprint);
+        if ui
+            .add(egui::Slider::new(&mut max_vel, 1..=5).step_by(1.))
+            .changed()
+        {
+            particle_max_velocity_field
+                .blueprint
+                .set_max_velocity(max_vel);
         }
     });
 }
