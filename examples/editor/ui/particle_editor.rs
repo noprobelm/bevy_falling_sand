@@ -21,13 +21,8 @@ impl ParticleEditor {
         egui::ScrollArea::vertical()
             .id_salt("particle_list_scroll")
             .show(ui, |ui| {
-                const CATEGORIES: [&str; 5] = [
-                    "Walls",
-                    "Solids",
-                    "Movable Solids",
-                    "Liquids",
-                    "Gases",
-                ];
+                const CATEGORIES: [&str; 5] =
+                    ["Walls", "Solids", "Movable Solids", "Liquids", "Gases"];
 
                 for &category in &CATEGORIES {
                     egui::CollapsingHeader::new(category)
@@ -151,3 +146,4 @@ impl ParticleEditor {
             });
     }
 }
+
