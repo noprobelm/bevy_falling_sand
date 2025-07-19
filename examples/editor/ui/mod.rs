@@ -50,7 +50,7 @@ fn render(mut contexts: EguiContexts) {
                 egui::Sense::hover(),
             );
 
-            ui.allocate_ui_at_rect(top_response.rect, |ui| {
+            ui.scope_builder(egui::UiBuilder::new().max_rect(top_response.rect), |ui| {
                 ui.set_clip_rect(top_response.rect);
                 egui::Frame::NONE
                     .fill(panel_bg)
@@ -72,18 +72,20 @@ fn render(mut contexts: EguiContexts) {
                 egui::Sense::hover(),
             );
 
-            ui.allocate_ui_at_rect(bottom_response.rect, |ui| {
-                ui.set_clip_rect(bottom_response.rect);
-                egui::Frame::NONE
-                    .fill(panel_bg)
-                    .rounding(4.0)
-                    .inner_margin(egui::Margin::same(8))
-                    .show(ui, |ui| {
-                        ui.set_min_height(panel_height - 16.0); // Account for margins
-                        ui.set_max_height(panel_height - 16.0);
-                        LayersPanel.render(ui);
-                    });
-            });
+            ui.scope_builder(
+                egui::UiBuilder::new().max_rect(bottom_response.rect),
+                |ui| {
+                    ui.set_clip_rect(bottom_response.rect);
+                    egui::Frame::NONE
+                        .fill(panel_bg)
+                        .corner_radius(4.0)
+                        .inner_margin(egui::Margin::same(8))
+                        .show(ui, |ui| {
+                            ui.set_min_height(panel_height - 16.0); // Account for margins
+                            ui.set_max_height(panel_height - 16.0);
+                            LayersPanel.render(ui);
+                        });
+                },
+            );
         });
 }
-
