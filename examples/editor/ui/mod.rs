@@ -22,7 +22,7 @@ impl Plugin for UiPlugin {
 
 fn render(mut contexts: EguiContexts) {
     let ctx = contexts.ctx_mut();
-    
+
     egui::TopBottomPanel::top("Top panel").show(ctx, |ui| {
         egui::menu::bar(ui, |ui| {
             UiTopBar.render(ui);
@@ -49,12 +49,12 @@ fn render(mut contexts: EguiContexts) {
                 egui::vec2(available_rect.width(), panel_height),
                 egui::Sense::hover(),
             );
-            
+
             ui.allocate_ui_at_rect(top_response.rect, |ui| {
                 ui.set_clip_rect(top_response.rect);
                 egui::Frame::NONE
                     .fill(panel_bg)
-                    .rounding(4.0)
+                    .corner_radius(4.0)
                     .inner_margin(egui::Margin::same(8))
                     .show(ui, |ui| {
                         ui.set_min_height(panel_height - 16.0); // Account for margins
@@ -71,7 +71,7 @@ fn render(mut contexts: EguiContexts) {
                 egui::vec2(available_rect.width(), panel_height),
                 egui::Sense::hover(),
             );
-            
+
             ui.allocate_ui_at_rect(bottom_response.rect, |ui| {
                 ui.set_clip_rect(bottom_response.rect);
                 egui::Frame::NONE
@@ -86,3 +86,4 @@ fn render(mut contexts: EguiContexts) {
             });
         });
 }
+
