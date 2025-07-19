@@ -12,7 +12,7 @@ impl Plugin for CameraPlugin {
 #[derive(Component)]
 pub struct MainCamera;
 
-pub fn setup_camera(mut commands: Commands) {
+fn setup_camera(mut commands: Commands) {
     commands.spawn((
         Camera2d,
         Projection::Orthographic(OrthographicProjection {
@@ -24,7 +24,7 @@ pub fn setup_camera(mut commands: Commands) {
     ));
 }
 
-pub fn pan_camera(
+fn pan_camera(
     mut camera_query: Query<&mut Transform, With<MainCamera>>,
     keys: Res<ButtonInput<KeyCode>>,
 ) -> Result {
@@ -48,7 +48,7 @@ pub fn pan_camera(
     Ok(())
 }
 
-pub fn zoom_camera(
+fn zoom_camera(
     mut ev_scroll: EventReader<MouseWheel>,
     mut camera_query: Query<&mut Projection, With<MainCamera>>,
 ) {
