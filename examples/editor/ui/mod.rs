@@ -1,7 +1,9 @@
+mod console;
 mod layers_panel;
 mod particle_editor;
 mod top_bar;
 
+use console::{ConsoleState, render_console};
 use layers_panel::LayersPanel;
 use particle_editor::ParticleEditor;
 use top_bar::UiTopBar;
@@ -16,11 +18,12 @@ impl Plugin for UiPlugin {
         app.add_plugins(EguiPlugin {
             enable_multipass_for_primary_context: false,
         })
+        .init_resource::<ConsoleState>()
         .add_systems(EguiContextPass, render);
     }
 }
 
-fn render(mut contexts: EguiContexts) {
+fn render(mut contexts: EguiContexts, mut console_state: ResMut<ConsoleState>) {
     let ctx = contexts.ctx_mut();
 
     egui::TopBottomPanel::top("Top panel").show(ctx, |ui| {
@@ -88,4 +91,14 @@ fn render(mut contexts: EguiContexts) {
                 },
             );
         });
+
+    egui::CentralPanel::default().show(ctx, |ui| {
+        egui::TopBottomPanel::bottom("Console panel")
+            .resizable(false)
+            .min_height(200.0)
+            .max_height(200.0)
+            .show_inside(ui, |ui| {
+                render_console(ui, &mut console_state);
+            });
+    });
 }
