@@ -20,9 +20,7 @@ fn main() {
                 ..default()
             }),
             UiPlugin,
-            CameraPlugin,
         ))
         .insert_resource(ClearColor(Color::srgba(0.17, 0.16, 0.15, 1.0)))
         .run();
 }
-

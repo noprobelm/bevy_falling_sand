@@ -15,6 +15,9 @@ impl Plugin for ConsolePlugin {
             .add_event::<ConsoleCommandEntered>()
             .add_event::<PrintConsoleLine>()
             .add_systems(Startup, core::init_commands)
-            .add_systems(Update, (help_command, clear_command, exit_command));
+            .add_systems(
+                Update,
+                (help_command, clear_command, exit_command, echo_command),
+            );
     }
 }
