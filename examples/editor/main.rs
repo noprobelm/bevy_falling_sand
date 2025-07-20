@@ -1,8 +1,10 @@
+mod app_state;
 mod camera;
 mod console;
 mod keybindings;
 mod ui;
 
+use app_state::StatesPlugin;
 use camera::*;
 use ui::*;
 
@@ -19,6 +21,7 @@ fn main() {
                 }),
                 ..default()
             }),
+            StatesPlugin,
             UiPlugin,
         ))
         .insert_resource(ClearColor(Color::srgba(0.17, 0.16, 0.15, 1.0)))

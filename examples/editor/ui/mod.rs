@@ -3,9 +3,12 @@ mod layers_panel;
 mod particle_editor;
 mod top_bar;
 
-use crate::console::{
-    core::{ConsoleCache, ConsoleCommandEntered, ConsoleConfiguration, ConsoleState},
-    ConsolePlugin,
+use crate::{
+    app_state::UiInteractionState,
+    console::{
+        core::{ConsoleCache, ConsoleCommandEntered, ConsoleConfiguration, ConsoleState},
+        ConsolePlugin,
+    },
 };
 use console::render_console;
 use layers_panel::LayersPanel;
@@ -17,11 +20,6 @@ pub(super) use bevy_egui::*;
 
 pub struct UiPlugin;
 
-#[derive(Resource, Default)]
-struct UiInteractionState {
-    mouse_over_ui: bool,
-}
-
 impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
@@ -30,25 +28,14 @@ impl Plugin for UiPlugin {
             },
             ConsolePlugin,
         ))
-        .init_state::<AppState>()
-        .init_resource::<UiInteractionState>()
         .add_systems(Update, console::receive_console_line)
         .add_systems(
             EguiContextPass,
-            (
-                render.before(bevy_egui::EguiPreUpdateSet::InitContexts),
-                detect_ui_interaction.after(render),
-            ),
+            render.before(bevy_egui::EguiPreUpdateSet::InitContexts),
         );
     }
 }
 
-#[derive(States, Reflect, Default, Debug, Clone, Eq, PartialEq, Hash)]
-pub enum AppState {
-    #[default]
-    Canvas,
-    Ui,
-}
 
 fn render(
     mut contexts: EguiContexts,
@@ -162,14 +149,3 @@ fn render(
     });
 }
 
-fn detect_ui_interaction(
-    ui_state: Res<UiInteractionState>,
-    current_state: Res<State<AppState>>,
-    mut next_state: ResMut<NextState<AppState>>,
-) {
-    match (current_state.get(), ui_state.mouse_over_ui) {
-        (AppState::Canvas, true) => next_state.set(AppState::Ui),
-        (AppState::Ui, false) => next_state.set(AppState::Canvas),
-        _ => {}
-    }
-}
