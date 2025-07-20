@@ -102,12 +102,17 @@ fn render(mut contexts: EguiContexts, mut console_state: ResMut<ConsoleState>) {
         
         let console_height = if console_state.expanded { 200.0 } else { 40.0 };
         
-        egui::TopBottomPanel::bottom("Console panel")
-            .resizable(false)
-            .min_height(console_height)
-            .max_height(console_height)
-            .show_inside(ui, |ui| {
-                render_console(ui, &mut console_state);
-            });
+        // Manual bottom area without separator
+        let available_rect = ui.available_rect_before_wrap();
+        let console_rect = egui::Rect::from_min_size(
+            egui::pos2(available_rect.left(), available_rect.bottom() - console_height),
+            egui::vec2(available_rect.width(), console_height),
+        );
+        
+        let _response = ui.allocate_rect(console_rect, egui::Sense::hover());
+        ui.scope_builder(egui::UiBuilder::new().max_rect(console_rect), |ui| {
+            ui.set_clip_rect(console_rect);
+            render_console(ui, &mut console_state);
+        });
     });
 }
