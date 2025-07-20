@@ -8,6 +8,7 @@ pub struct ConsoleState {
     pub history: Vec<String>,
     pub history_index: Option<usize>,
     pub expanded: bool,
+    pub height: f32,
 }
 
 impl Default for ConsoleState {
@@ -18,9 +19,10 @@ impl Default for ConsoleState {
             history: Vec::new(),
             history_index: None,
             expanded: false,
+            height: 300.0,
         };
 
-        state.add_message("Welcome to Falling Sand Editor Console".to_string());
+        state.add_message("--- Bevy Falling Sand Editor Console ---".to_string());
         state.add_message("Type 'help' for available commands".to_string());
         state.add_message(String::new());
 
@@ -115,7 +117,38 @@ pub fn render_console(ui: &mut egui::Ui, console_state: &mut ConsoleState) {
             ui.vertical(|ui| {
                 // Only show messages and history when expanded
                 if console_state.expanded {
-                    let text_height = available_height - 40.0;
+                    // Add resize handle at the top
+                    let resize_response = ui.allocate_response(
+                        egui::Vec2::new(ui.available_width(), 8.0),
+                        egui::Sense::drag(),
+                    );
+
+                    if resize_response.dragged() {
+                        let drag_delta = resize_response.drag_delta().y;
+                        console_state.height =
+                            (console_state.height - drag_delta).clamp(80.0, 600.0);
+                    }
+
+                    // Change cursor when hovering over resize handle
+                    if resize_response.hovered() {
+                        ui.ctx().set_cursor_icon(egui::CursorIcon::ResizeVertical);
+                    }
+
+                    // Draw resize handle indicator
+                    let handle_rect = resize_response.rect;
+                    let handle_center = handle_rect.center();
+                    ui.painter().hline(
+                        handle_center.x - 20.0..=handle_center.x + 20.0,
+                        handle_center.y - 1.0,
+                        egui::Stroke::new(1.0, egui::Color32::from_rgb(100, 100, 100)),
+                    );
+                    ui.painter().hline(
+                        handle_center.x - 20.0..=handle_center.x + 20.0,
+                        handle_center.y + 1.0,
+                        egui::Stroke::new(1.0, egui::Color32::from_rgb(100, 100, 100)),
+                    );
+
+                    let text_height = available_height - 50.0; // Account for resize handle
 
                     egui::ScrollArea::vertical()
                         .auto_shrink([false, false])
@@ -171,4 +204,3 @@ pub fn render_console(ui: &mut egui::Ui, console_state: &mut ConsoleState) {
             });
         });
 }
-

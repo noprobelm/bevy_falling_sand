@@ -100,7 +100,7 @@ fn render(mut contexts: EguiContexts, mut console_state: ResMut<ConsoleState>) {
             egui::Color32::from_rgb(30, 30, 30),
         );
         
-        let console_height = if console_state.expanded { 200.0 } else { 40.0 };
+        let console_height = if console_state.expanded { console_state.height } else { 40.0 };
         
         // Manual bottom area without separator
         let available_rect = ui.available_rect_before_wrap();
