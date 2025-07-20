@@ -7,6 +7,7 @@ pub struct StatesPlugin;
 impl Plugin for StatesPlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<AppState>()
+            .init_state::<InitializationState>()
             .add_systems(EguiContextPass, detect_ui_interaction)
             .add_systems(OnEnter(AppState::Canvas), hide_cursor)
             .add_systems(OnEnter(AppState::Ui), show_cursor);
@@ -18,6 +19,13 @@ pub enum AppState {
     #[default]
     Canvas,
     Ui,
+}
+
+#[derive(States, Reflect, Default, Debug, Clone, Eq, PartialEq, Hash)]
+pub enum InitializationState {
+    #[default]
+    Initializing,
+    Finished,
 }
 
 fn detect_ui_interaction(

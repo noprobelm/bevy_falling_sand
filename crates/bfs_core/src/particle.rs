@@ -170,6 +170,12 @@ impl ParticleTypeMap {
         self.map.contains_key(name)
     }
 
+    /// Returns a reference to the key-value pair for the given key, if it exists.
+    #[must_use]
+    pub fn get_key_value(&self, key: &str) -> Option<(&String, &Entity)> {
+        self.map.get_key_value(key)
+    }
+
     /// Iterate over key value pairs in the map.
     pub fn iter(&self) -> impl Iterator<Item = (&String, &Entity)> {
         self.map.iter()
@@ -199,6 +205,12 @@ impl ParticleTypeMap {
     /// Remove a particle type from the map
     fn remove(&mut self, name: &String) -> Option<Entity> {
         self.map.remove(name)
+    }
+
+    /// Returns 'true' if the particle type map is empty
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.map.is_empty()
     }
 }
 
