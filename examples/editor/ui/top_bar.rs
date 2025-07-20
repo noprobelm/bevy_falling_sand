@@ -4,7 +4,7 @@ pub(super) struct UiTopBar;
 
 impl UiTopBar {
     pub fn render(&self, ui: &mut egui::Ui) {
-        ui.menu_button("File", |ui| {
+        ui.menu_button(egui::RichText::new("File").size(16.0), |ui| {
             if ui.button("Save Particle Set").clicked() {
                 ui.close_menu();
             }
