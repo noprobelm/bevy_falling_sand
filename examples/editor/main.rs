@@ -5,6 +5,7 @@ mod keybindings;
 mod ui;
 
 use app_state::StatesPlugin;
+use bevy_falling_sand::prelude::FallingSandPlugin;
 use camera::*;
 use ui::*;
 
@@ -21,6 +22,7 @@ fn main() {
                 }),
                 ..default()
             }),
+            FallingSandPlugin::default(),
             StatesPlugin,
             UiPlugin,
         ))
