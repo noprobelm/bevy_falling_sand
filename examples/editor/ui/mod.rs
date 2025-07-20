@@ -4,6 +4,7 @@ mod particle_editor;
 mod top_bar;
 
 use console::{ConsoleState, render_console};
+use bevy_console::{PrintConsoleLine, ConsoleCommandEntered};
 use layers_panel::LayersPanel;
 use particle_editor::ParticleEditor;
 use top_bar::UiTopBar;
@@ -19,11 +20,16 @@ impl Plugin for UiPlugin {
             enable_multipass_for_primary_context: false,
         })
         .init_resource::<ConsoleState>()
-        .add_systems(EguiContextPass, render);
+        .add_systems(EguiContextPass, render)
+        .add_systems(Update, capture_console_output);
     }
 }
 
-fn render(mut contexts: EguiContexts, mut console_state: ResMut<ConsoleState>) {
+fn render(
+    mut contexts: EguiContexts, 
+    mut console_state: ResMut<ConsoleState>,
+    mut command_entered_writer: EventWriter<ConsoleCommandEntered>,
+) {
     let ctx = contexts.ctx_mut();
 
     egui::TopBottomPanel::top("Top panel").show(ctx, |ui| {
@@ -112,7 +118,16 @@ fn render(mut contexts: EguiContexts, mut console_state: ResMut<ConsoleState>) {
         let _response = ui.allocate_rect(console_rect, egui::Sense::hover());
         ui.scope_builder(egui::UiBuilder::new().max_rect(console_rect), |ui| {
             ui.set_clip_rect(console_rect);
-            render_console(ui, &mut console_state);
+            render_console(ui, &mut console_state, &mut command_entered_writer);
         });
     });
+}
+
+fn capture_console_output(
+    mut console_state: ResMut<ConsoleState>,
+    mut console_line_events: EventReader<PrintConsoleLine>,
+) {
+    for event in console_line_events.read() {
+        console_state.add_message(event.line.clone());
+    }
 }
