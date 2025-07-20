@@ -266,7 +266,7 @@ fn sample_hovered(
     if mouse_buttons.just_pressed(MouseButton::Middle) {
         if let Some(entity) = chunk_map.get(&cursor_coords.current.as_ivec2()) {
             let particle = particle_query.get(*entity).unwrap();
-            selected_brush_particle.0 = particle.name.clone();
+            selected_brush_particle.0 = particle.name.to_string();
             brush_state.set(BrushState::Spawn);
         }
     }
@@ -326,7 +326,7 @@ pub fn spawn_particles(
         cursor_coords,
         brush.size as f32,
         Particle {
-            name: selected.0.clone(),
+            name: selected.0.clone().into(),
         },
     );
     Ok(())

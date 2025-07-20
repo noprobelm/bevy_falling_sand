@@ -516,30 +516,30 @@ pub fn update_particle_type_list(
     new_particle_query.iter().for_each(
         |(particle_type, wall, movable_solid, solid, liquid, gas)| {
             // Add the particle type name to the particle_list
-            particle_list.insert(particle_type.name.clone());
+            particle_list.insert(particle_type.name.to_string());
 
             // Check for the presence of each optional component and update particle_type_list accordingly
             if wall.is_some() {
                 particle_type_list
-                    .insert_or_modify("Walls".to_string(), vec![particle_type.name.clone()]);
+                    .insert_or_modify("Walls".to_string(), vec![particle_type.name.to_string()]);
             }
             if movable_solid.is_some() {
                 particle_type_list.insert_or_modify(
                     "Movable Solids".to_string(),
-                    vec![particle_type.name.clone()],
+                    vec![particle_type.name.to_string()],
                 );
             }
             if solid.is_some() {
                 particle_type_list
-                    .insert_or_modify("Solids".to_string(), vec![particle_type.name.clone()]);
+                    .insert_or_modify("Solids".to_string(), vec![particle_type.name.to_string()]);
             }
             if liquid.is_some() {
                 particle_type_list
-                    .insert_or_modify("Liquids".to_string(), vec![particle_type.name.clone()]);
+                    .insert_or_modify("Liquids".to_string(), vec![particle_type.name.to_string()]);
             }
             if gas.is_some() {
                 particle_type_list
-                    .insert_or_modify("Gases".to_string(), vec![particle_type.name.clone()]);
+                    .insert_or_modify("Gases".to_string(), vec![particle_type.name.to_string()]);
             }
         },
     );
@@ -784,9 +784,9 @@ pub fn update_particle_editor_fields(
                 gas,
             )) = particle_query.get(*entity)
             {
-                particle_editor_name.0 = particle_editor_selected_type.0.name.clone();
+                particle_editor_name.0 = particle_editor_selected_type.0.name.to_string();
                 particle_editor_selected_type.0 =
-                    ParticleType::new(particle_editor_selected_type.0.name.clone().as_str());
+                    ParticleType::from_string(particle_editor_selected_type.0.name.to_string());
                 if let Some(density) = density {
                     particle_density_field.blueprint = *density;
                 }
@@ -904,7 +904,7 @@ pub fn render_particle_editor(
                                             if ui.button(particle_name).clicked() {
                                                 selected_brush_particle.0 = particle_name.clone();
                                                 particle_editor_selected_field.0 =
-                                                    ParticleType::new(particle_name.as_str());
+                                                    ParticleType::from_string(particle_name.clone());
                                                 ev_particle_editor_update
                                                     .write(ParticleEditorUpdate);
                                             }
@@ -1565,7 +1565,7 @@ fn render_burns_field(
                                         .unwrap()
                                         .produces
                                         .name,
-                                    particle.clone(),
+                                    particle.clone().into(),
                                     particle.clone(),
                                 )
                                 .clicked()
@@ -1713,16 +1713,16 @@ fn particle_editor_save(
     ev_particle_editor_save.read().for_each(|ev| {
         let name = if ev.create_new {
             let n = get_next_particle_name(&particle_type_map);
-            particle_selected_field.0 = ParticleType::new(n.as_str());
+            particle_selected_field.0 = ParticleType::from_string(n.clone());
             selected_brush_particle.0 = n.clone();
             n
         } else {
-            particle_selected_field.0.name.clone()
+            particle_selected_field.0.name.to_string()
         };
         let entity = particle_type_map
             .get(&name)
             .cloned()
-            .unwrap_or_else(|| commands.spawn(ParticleType::new(name.as_str())).id());
+            .unwrap_or_else(|| commands.spawn(ParticleType::from_string(name.clone())).id());
         commands.entity(entity).remove::<ParticleBundle>();
         match current_particle_category_field.get() {
             ParticleEditorCategoryState::Wall => {

@@ -66,7 +66,7 @@ impl SetupBoundary {
 impl Command for SetupBoundary {
     fn apply(self, world: &mut World) {
         if let Some(map) = world.get_resource::<ParticleTypeMap>() {
-            if map.contains(self.particle_type.name.as_str()) {
+            if map.contains(&self.particle_type.name) {
                 let thickness = self.thickness as i32;
 
                 // Spawn horizontal sides (top and bottom)
@@ -74,7 +74,7 @@ impl Command for SetupBoundary {
                     if self.sides.contains(&Sides::Bottom) {
                         for layer in 0..thickness {
                             world.spawn((
-                                Particle::new(self.particle_type.name.as_str()),
+                                Particle::from_string(self.particle_type.name.to_string()),
                                 Transform::from_xyz(
                                     x as f32,
                                     (self.irect.min.y - layer) as f32,
@@ -86,7 +86,7 @@ impl Command for SetupBoundary {
                     if self.sides.contains(&Sides::Top) {
                         for layer in 0..thickness {
                             world.spawn((
-                                Particle::new(self.particle_type.name.as_str()),
+                                Particle::from_string(self.particle_type.name.to_string()),
                                 Transform::from_xyz(
                                     x as f32,
                                     (self.irect.max.y + layer) as f32,
@@ -102,7 +102,7 @@ impl Command for SetupBoundary {
                     if self.sides.contains(&Sides::Left) {
                         for layer in 0..thickness {
                             world.spawn((
-                                Particle::new(self.particle_type.name.as_str()),
+                                Particle::from_string(self.particle_type.name.to_string()),
                                 Transform::from_xyz(
                                     (self.irect.min.x - layer) as f32,
                                     y as f32,
@@ -114,7 +114,7 @@ impl Command for SetupBoundary {
                     if self.sides.contains(&Sides::Right) {
                         for layer in 0..thickness {
                             world.spawn((
-                                Particle::new(self.particle_type.name.as_str()),
+                                Particle::from_string(self.particle_type.name.to_string()),
                                 Transform::from_xyz(
                                     (self.irect.max.x + layer) as f32,
                                     y as f32,

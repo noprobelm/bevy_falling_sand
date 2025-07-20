@@ -365,7 +365,7 @@ fn spawn_particle_at_cursor(
                             let y = spawn_pos.y + dy as f32;
 
                             commands.spawn((
-                                Particle::new(particle_name),
+                                Particle::from_string(particle_name.clone()),
                                 Transform::from_xyz(x, y, 0.0),
                             ));
                         }

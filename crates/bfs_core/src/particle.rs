@@ -7,6 +7,7 @@ use bevy::prelude::*;
 use bevy::{ecs::component::StorageType, platform::collections::HashMap};
 use bevy_turborand::DelegatedRng;
 use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
 use std::ops::RangeBounds;
 
 use crate::ParticleMap;
@@ -111,16 +112,48 @@ pub struct ParticleRegistrationSet;
 #[reflect(Component)]
 pub struct ParticleType {
     /// The particle type's name.
-    pub name: String,
+    pub name: Cow<'static, str>,
 }
 
 impl ParticleType {
-    /// Initialize a new `ParticleType`
+    /// Initialize a new `ParticleType` from a static string
     #[must_use]
-    pub fn new(name: &str) -> Self {
+    pub fn new(name: &'static str) -> Self {
         Self {
-            name: name.to_string(),
+            name: Cow::Borrowed(name),
         }
+    }
+
+    /// Initialize a new `ParticleType` from an owned string
+    #[must_use]
+    pub fn from_string(name: String) -> Self {
+        Self {
+            name: Cow::Owned(name),
+        }
+    }
+}
+
+impl From<&'static str> for ParticleType {
+    fn from(name: &'static str) -> Self {
+        Self::new(name)
+    }
+}
+
+impl From<String> for ParticleType {
+    fn from(name: String) -> Self {
+        Self::from_string(name)
+    }
+}
+
+impl From<Cow<'static, str>> for ParticleType {
+    fn from(name: Cow<'static, str>) -> Self {
+        Self { name }
+    }
+}
+
+impl Into<Cow<'static, str>> for ParticleType {
+    fn into(self) -> Cow<'static, str> {
+        self.name
     }
 }
 
@@ -131,26 +164,45 @@ impl Component for ParticleType {
 
     fn register_component_hooks(hooks: &mut bevy::ecs::component::ComponentHooks) {
         hooks.on_add(|mut world, context| {
-            let particle_type = world.get::<Self>(context.entity).unwrap();
-            let name = particle_type.name.clone();
+            let name = {
+                let particle_type = world.get::<Self>(context.entity).unwrap();
+                // For now, only support static strings in the map
+                if let Cow::Borrowed(name) = &particle_type.name {
+                    Some(*name)
+                } else {
+                    warn!("ParticleType with owned string cannot be registered in map: '{}'", particle_type.name);
+                    None
+                }
+            };
+            
+            if let Some(name) = name {
+                // Add ParticleInstances component - relationships will handle synchronization
+                world
+                    .commands()
+                    .entity(context.entity)
+                    .insert(ParticleInstances::default());
 
-            // Add ParticleInstances component - relationships will handle synchronization
-            world
-                .commands()
-                .entity(context.entity)
-                .insert(ParticleInstances::default());
-
-            // Register in ParticleTypeMap
-            let mut type_map = world.resource_mut::<ParticleTypeMap>();
-            type_map.insert(name, context.entity);
+                // Register in ParticleTypeMap
+                let mut type_map = world.resource_mut::<ParticleTypeMap>();
+                type_map.insert(name, context.entity);
+            }
         });
 
         hooks.on_remove(|mut world, context| {
-            let particle_type = world.get::<Self>(context.entity).unwrap();
-            let name = particle_type.name.clone();
-
-            let mut type_map = world.resource_mut::<ParticleTypeMap>();
-            type_map.remove(&name);
+            let name = {
+                let particle_type = world.get::<Self>(context.entity).unwrap();
+                // Only remove if it was a static string
+                if let Cow::Borrowed(name) = &particle_type.name {
+                    Some(*name)
+                } else {
+                    None
+                }
+            };
+            
+            if let Some(name) = name {
+                let mut type_map = world.resource_mut::<ParticleTypeMap>();
+                type_map.remove(name);
+            }
         });
     }
 }
@@ -158,7 +210,7 @@ impl Component for ParticleType {
 /// Maps each [`ParticleType`] to their corresponding entity in the ECS world.
 #[derive(Resource, Clone, Default, Debug)]
 pub struct ParticleTypeMap {
-    map: HashMap<String, Entity>,
+    map: HashMap<&'static str, Entity>,
 }
 
 impl ParticleTypeMap {
@@ -175,33 +227,33 @@ impl ParticleTypeMap {
     }
 
     /// Iterate over key value pairs in the map.
-    pub fn iter(&self) -> impl Iterator<Item = (&String, &Entity)> {
-        self.map.iter()
+    pub fn iter(&self) -> impl Iterator<Item = (&'static str, &Entity)> {
+        self.map.iter().map(|(&k, v)| (k, v))
     }
 
     /// Iterate over keys in the map.
-    pub fn keys(&self) -> impl Iterator<Item = &String> {
-        self.map.keys()
+    pub fn keys(&self) -> impl Iterator<Item = &'static str> + use<'_> {
+        self.map.keys().copied()
     }
 
     /// Insert a new particle type entity.
-    pub fn insert(&mut self, name: String, entity: Entity) -> Option<Entity> {
+    pub fn insert(&mut self, name: &'static str, entity: Entity) -> Option<Entity> {
         self.map.insert(name, entity)
     }
 
     /// Get the [`bevy::platform::collections::hash_map::Entry`]
-    pub fn entry(&mut self, name: String) -> Entry<'_, String, Entity, FixedHasher> {
+    pub fn entry(&mut self, name: &'static str) -> Entry<'_, &'static str, Entity, FixedHasher> {
         self.map.entry(name)
     }
 
     /// Get a particle type from the map if it exists.
     #[must_use]
-    pub fn get(&self, name: &String) -> Option<&Entity> {
+    pub fn get(&self, name: &str) -> Option<&Entity> {
         self.map.get(name)
     }
 
     /// Remove a particle type from the map
-    fn remove(&mut self, name: &String) -> Option<Entity> {
+    fn remove(&mut self, name: &str) -> Option<Entity> {
         self.map.remove(name)
     }
 
@@ -277,16 +329,48 @@ impl Default for ParticleInstances {
 pub struct Particle {
     /// The name of the particle, which corresponds to its [`ParticleType`] and can be used as an
     /// index in the  [`ParticleTypeMap`] resource.
-    pub name: String,
+    pub name: Cow<'static, str>,
 }
 
 impl Particle {
-    /// Initialize a new `Particle`
+    /// Initialize a new `Particle` from a static string
     #[must_use]
-    pub fn new(name: &str) -> Self {
+    pub fn new(name: &'static str) -> Self {
         Self {
-            name: name.to_string(),
+            name: Cow::Borrowed(name),
         }
+    }
+
+    /// Initialize a new `Particle` from an owned string
+    #[must_use]
+    pub fn from_string(name: String) -> Self {
+        Self {
+            name: Cow::Owned(name),
+        }
+    }
+}
+
+impl From<&'static str> for Particle {
+    fn from(name: &'static str) -> Self {
+        Self::new(name)
+    }
+}
+
+impl From<String> for Particle {
+    fn from(name: String) -> Self {
+        Self::from_string(name)
+    }
+}
+
+impl From<Cow<'static, str>> for Particle {
+    fn from(name: Cow<'static, str>) -> Self {
+        Self { name }
+    }
+}
+
+impl Into<Cow<'static, str>> for Particle {
+    fn into(self) -> Cow<'static, str> {
+        self.name
     }
 }
 

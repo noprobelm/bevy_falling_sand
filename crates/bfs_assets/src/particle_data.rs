@@ -122,7 +122,7 @@ impl ParticleData {
 
     /// Spawn this particle data as a [`ParticleTypeId`] entity with all appropriate components.
     pub fn spawn_particle_type(&self, commands: &mut Commands) -> Entity {
-        let mut entity_commands = commands.spawn(ParticleType::new(&self.name));
+        let mut entity_commands = commands.spawn(ParticleType::from_string(self.name.clone()));
 
         // Add movement components
         if let Some(density) = self.density {
@@ -186,7 +186,7 @@ impl ParticleData {
 
             let reaction = burns_data.reaction.as_ref().map(|r| {
                 bfs_reactions::Reacting::new(
-                    bfs_core::Particle::new(&r.produces),
+                    bfs_core::Particle::from_string(r.produces.clone()),
                     r.chance_to_produce,
                 )
             });
