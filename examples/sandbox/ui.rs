@@ -891,9 +891,15 @@ pub fn render_particle_editor(
 
                         for &category in &CATEGORIES {
                             if let Some(particles) = particle_type_list.get(category) {
+                                // Temporarily increase spacing for collapsing headers
+                                let original_indent = ui.spacing().indent;
+                                ui.spacing_mut().indent = 16.0;
+                                
                                 egui::CollapsingHeader::new(category)
                                     .default_open(false)
                                     .show(ui, |ui| {
+                                        // Restore original spacing inside the collapsing content
+                                        ui.spacing_mut().indent = original_indent;
                                         for particle_name in particles {
                                             if ui.button(particle_name).clicked() {
                                                 selected_brush_particle.0 = particle_name.clone();
@@ -904,6 +910,9 @@ pub fn render_particle_editor(
                                             }
                                         }
                                     });
+                                
+                                // Restore original spacing after the collapsing header
+                                ui.spacing_mut().indent = original_indent;
                             }
                         }
 

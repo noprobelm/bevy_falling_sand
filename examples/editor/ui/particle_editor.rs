@@ -30,9 +30,15 @@ impl ParticleEditor {
                     ["Walls", "Solids", "Movable Solids", "Liquids", "Gases"];
 
                 for &category in &CATEGORIES {
+                    // Temporarily increase spacing for collapsing headers
+                    let original_indent = ui.spacing().indent;
+                    ui.spacing_mut().indent = 16.0;
+                    
                     egui::CollapsingHeader::new(category)
                         .default_open(false)
                         .show(ui, |ui| {
+                            // Restore original spacing inside the collapsing content
+                            ui.spacing_mut().indent = original_indent;
                             let examples = match category {
                                 "Walls" => vec!["Stone Wall", "Dirt Wall", "Wood Wall"],
                                 "Solids" => vec!["Sand", "Dirt", "Snow"],
@@ -46,6 +52,9 @@ impl ParticleEditor {
                                 if ui.button(particle_name).clicked() {}
                             }
                         });
+                    
+                    // Restore original spacing after the collapsing header
+                    ui.spacing_mut().indent = original_indent;
                 }
 
                 ui.add_space(8.0);
