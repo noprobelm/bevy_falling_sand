@@ -2,8 +2,8 @@ pub mod commands;
 pub mod core;
 
 use bevy::prelude::*;
-use core::*;
 use commands::*;
+use core::*;
 
 pub struct ConsolePlugin;
 
@@ -15,15 +15,6 @@ impl Plugin for ConsolePlugin {
             .add_event::<ConsoleCommandEntered>()
             .add_event::<PrintConsoleLine>()
             .add_systems(Startup, core::init_commands)
-            .add_systems(
-                Update,
-                (
-                    help_command,
-                    clear_command,
-                    echo_command,
-                    exit_command,
-                ),
-            );
+            .add_systems(Update, (help_command, clear_command, exit_command));
     }
 }
-

@@ -4,7 +4,7 @@ use clap::Parser;
 use crate::console::core::{ConsoleCommandEntered, NamedCommand};
 
 #[derive(Parser, Resource)]
-#[command(name = "exit")]
+#[command(name = "exit", about = "Exit the application")]
 pub struct ExitCommand {
     command: Option<String>,
 }

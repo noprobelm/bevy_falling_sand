@@ -4,7 +4,7 @@ use clap::Parser;
 use crate::console::core::{ConsoleCommandEntered, ConsoleState, NamedCommand};
 
 #[derive(Parser, Resource)]
-#[command(name = "clear")]
+#[command(name = "clear", about = "Clear the console output")]
 pub struct ClearCommand;
 
 impl NamedCommand for ClearCommand {

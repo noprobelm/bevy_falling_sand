@@ -207,7 +207,7 @@ impl ConsoleState {
 
 // Initialization system to populate command registry
 pub fn init_commands(mut config: ResMut<ConsoleConfiguration>, mut cache: ResMut<ConsoleCache>) {
-    use crate::console::commands::{ClearCommand, EchoCommand, ExitCommand, HelpCommand};
+    use crate::console::commands::{ClearCommand, ExitCommand, HelpCommand};
 
     // Register help command
     let help_cmd = HelpCommand::command().no_binary_name(true);
@@ -216,10 +216,6 @@ pub fn init_commands(mut config: ResMut<ConsoleConfiguration>, mut cache: ResMut
     // Register clear command
     let clear_cmd = ClearCommand::command().no_binary_name(true);
     config.commands.insert(ClearCommand::name(), clear_cmd);
-
-    // Register echo command
-    let echo_cmd = EchoCommand::command().no_binary_name(true);
-    config.commands.insert(EchoCommand::name(), echo_cmd);
 
     // Register exit command
     let exit_cmd = ExitCommand::command().no_binary_name(true);
@@ -232,4 +228,3 @@ pub fn init_commands(mut config: ResMut<ConsoleConfiguration>, mut cache: ResMut
     }
     cache.commands_trie = Some(builder.build());
 }
-

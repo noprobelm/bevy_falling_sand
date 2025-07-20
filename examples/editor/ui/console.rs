@@ -114,7 +114,9 @@ pub fn render_console(
                             let remaining_text = &suggestion[console_state.input.len()..];
                             if !remaining_text.is_empty() {
                                 // Calculate position for the suggestion text more accurately
-                                let font_id = egui::FontId::monospace(14.0);
+                                let font_id = ui.style().text_styles.get(&egui::TextStyle::Monospace)
+                                    .unwrap_or(&egui::FontId::monospace(14.0)).clone();
+                                
                                 let text_galley = ui.fonts(|f| {
                                     f.layout_no_wrap(
                                         console_state.input.clone(),
@@ -123,9 +125,10 @@ pub fn render_console(
                                     )
                                 });
 
-                                // Position relative to the text edit field's content area
+                                // Get the exact text edit margins
+                                let text_edit_margin = ui.spacing().button_padding.x;
                                 let text_edit_content_rect = response.rect;
-                                let text_start_x = text_edit_content_rect.left() + 4.0; // Small padding inside text edit
+                                let text_start_x = text_edit_content_rect.left() + text_edit_margin;
                                 let text_y = text_edit_content_rect.center().y
                                     - (text_galley.size().y / 2.0);
 

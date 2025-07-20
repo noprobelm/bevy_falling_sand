@@ -6,7 +6,7 @@ use crate::console::core::{
 };
 
 #[derive(Parser, Resource)]
-#[command(name = "help")]
+#[command(name = "help", about = "Display help information for commands")]
 pub struct HelpCommand {
     command: Option<String>,
 }
