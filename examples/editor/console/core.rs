@@ -181,20 +181,31 @@ impl ConsoleState {
     }
 
     pub fn update_suggestions(&mut self, cache: &ConsoleCache) {
+        println!("update_suggestions called with input: '{}'", self.input);
         self.suggestions.clear();
         self.suggestion_index = None;
         
         if !self.input.is_empty() {
             if let Some(trie) = &cache.commands_trie {
-                let words = Shlex::new(&self.input).collect::<Vec<_>>();
-                let query = words.join(" ");
+                // Only search for command names (first word)
+                let trimmed = self.input.trim();
+                let first_word = trimmed.split_whitespace().next().unwrap_or("");
                 
-                self.suggestions = trie
-                    .predictive_search(query)
-                    .into_iter()
-                    .take(5)
-                    .map(|s| String::from_utf8(s).unwrap_or_default())
-                    .collect();
+                // Only suggest if we're still typing the first word
+                if !trimmed.contains(' ') && !first_word.is_empty() {
+                    self.suggestions = trie
+                        .predictive_search(first_word.as_bytes())
+                        .into_iter()
+                        .take(5)
+                        .map(|s| String::from_utf8(s).unwrap_or_default())
+                        .collect();
+                    
+                    if !self.suggestions.is_empty() {
+                        println!("Found {} suggestions for '{}': {:?}", self.suggestions.len(), first_word, self.suggestions);
+                    }
+                }
+            } else {
+                println!("No command trie available!");
             }
         }
     }
@@ -217,9 +228,23 @@ pub fn init_commands(mut config: ResMut<ConsoleConfiguration>, mut cache: ResMut
     config.commands.insert(EchoCommand::name(), echo_cmd);
     
     // Build command trie for autocompletion
-    let mut builder = TrieBuilder::new();
+    let mut builder: TrieBuilder<u8> = TrieBuilder::new();
     for name in config.commands.keys() {
-        builder.push(name);
+        println!("Registering command for autocompletion: {}", name);
+        builder.push(name.as_bytes());
     }
-    cache.commands_trie = Some(builder.build());
+    let trie = builder.build();
+    
+    // Test the trie
+    println!("Testing trie:");
+    for prefix in ["h", "he", "hel", "c", "cl", "e", "ec"] {
+        let results: Vec<String> = trie.predictive_search(prefix.as_bytes())
+            .into_iter()
+            .map(|s| String::from_utf8(s).unwrap_or_default())
+            .collect();
+        println!("  '{}' -> {:?}", prefix, results);
+    }
+    
+    cache.commands_trie = Some(trie);
+    println!("Command trie built with {} commands", config.commands.len());
 }

@@ -38,6 +38,14 @@ pub fn render_console(
     config: &ConsoleConfiguration,
     command_writer: &mut EventWriter<ConsoleCommandEntered>,
 ) {
+    static mut INIT_LOGGED: bool = false;
+    unsafe {
+        if !INIT_LOGGED {
+            println!("render_console first call - cache has trie: {}", cache.commands_trie.is_some());
+            INIT_LOGGED = true;
+        }
+    }
+    
     if ui.input(|i| i.key_pressed(egui::Key::Backtick)) {
         console_state.toggle();
     }
@@ -121,6 +129,25 @@ pub fn render_console(
                     if response.changed() {
                         console_state.history_index = 0;
                         console_state.update_suggestions(cache);
+                        println!("Input changed to: '{}', suggestions: {:?}", console_state.input, console_state.suggestions);
+                    }
+
+                    // Handle Tab key for autocompletion
+                    if response.has_focus() && ui.input(|i| i.key_pressed(egui::Key::Tab)) && !console_state.suggestions.is_empty() {
+                        match &mut console_state.suggestion_index {
+                            Some(index) => {
+                                *index = (*index + 1) % console_state.suggestions.len();
+                            }
+                            None => {
+                                console_state.suggestion_index = Some(0);
+                            }
+                        }
+                        // Update input with selected suggestion
+                        if let Some(index) = console_state.suggestion_index {
+                            if index < console_state.suggestions.len() {
+                                console_state.input = console_state.suggestions[index].clone();
+                            }
+                        }
                     }
 
                     // Handle Enter key submission - check this before focus is lost
@@ -128,6 +155,8 @@ pub fn render_console(
                         if !console_state.input.trim().is_empty() {
                             let command = console_state.input.clone();
                             console_state.input.clear();
+                            console_state.suggestions.clear(); // Clear suggestions after command
+                            console_state.suggestion_index = None;
                             console_state.execute_command(command, config, command_writer);
                             console_state.history_index = 0;
                             // Auto-expand when command is executed
@@ -153,6 +182,27 @@ pub fn render_console(
                         response.request_focus();
                     }
                 });
+
+                // Show suggestions below the input field (inside the console frame)
+                if !console_state.suggestions.is_empty() {
+                    ui.separator();
+                    ui.vertical(|ui| {
+                        ui.label(egui::RichText::new("Suggestions:").monospace().color(egui::Color32::from_rgb(150, 150, 150)));
+                        for (i, suggestion) in console_state.suggestions.iter().enumerate() {
+                            let is_highlighted = Some(i) == console_state.suggestion_index;
+                            let color = if is_highlighted {
+                                egui::Color32::from_rgb(100, 200, 100)
+                            } else {
+                                egui::Color32::from_rgb(200, 200, 200)
+                            };
+                            ui.label(
+                                egui::RichText::new(format!("  {}", suggestion))
+                                    .monospace()
+                                    .color(color)
+                            );
+                        }
+                    });
+                }
             });
         });
 }

@@ -1,4 +1,5 @@
 mod camera;
+mod console;
 mod keybindings;
 mod ui;
 
