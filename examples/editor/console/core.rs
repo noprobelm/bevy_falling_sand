@@ -98,11 +98,13 @@ impl<T> ConsoleCommand<'_, T> {
     }
 
     pub fn ok(&mut self) {
-        self.console_line.write(PrintConsoleLine::new("[ok]".into()));
+        self.console_line
+            .write(PrintConsoleLine::new("[ok]".into()));
     }
 
     pub fn failed(&mut self) {
-        self.console_line.write(PrintConsoleLine::new("[failed]".into()));
+        self.console_line
+            .write(PrintConsoleLine::new("[failed]".into()));
     }
 
     pub fn reply(&mut self, msg: impl Into<String>) {
@@ -149,13 +151,10 @@ impl ConsoleState {
         let mut args = Shlex::new(&command).collect::<Vec<_>>();
         if !args.is_empty() {
             let command_name = args.remove(0);
-            
+
             if config.commands.contains_key(command_name.as_str()) {
                 self.add_message(format!("Executing command: {}", command_name));
-                command_writer.write(ConsoleCommandEntered {
-                    command_name,
-                    args,
-                });
+                command_writer.write(ConsoleCommandEntered { command_name, args });
             } else {
                 self.add_message(format!("error: Unknown command '{}'", command_name));
                 self.add_message("Available commands: help, clear, echo".to_string());
@@ -181,16 +180,15 @@ impl ConsoleState {
     }
 
     pub fn update_suggestions(&mut self, cache: &ConsoleCache) {
-        println!("update_suggestions called with input: '{}'", self.input);
         self.suggestions.clear();
         self.suggestion_index = None;
-        
+
         if !self.input.is_empty() {
             if let Some(trie) = &cache.commands_trie {
                 // Only search for command names (first word)
                 let trimmed = self.input.trim();
                 let first_word = trimmed.split_whitespace().next().unwrap_or("");
-                
+
                 // Only suggest if we're still typing the first word
                 if !trimmed.contains(' ') && !first_word.is_empty() {
                     self.suggestions = trie
@@ -199,13 +197,7 @@ impl ConsoleState {
                         .take(5)
                         .map(|s| String::from_utf8(s).unwrap_or_default())
                         .collect();
-                    
-                    if !self.suggestions.is_empty() {
-                        println!("Found {} suggestions for '{}': {:?}", self.suggestions.len(), first_word, self.suggestions);
-                    }
                 }
-            } else {
-                println!("No command trie available!");
             }
         }
     }
@@ -213,38 +205,25 @@ impl ConsoleState {
 
 // Initialization system to populate command registry
 pub fn init_commands(mut config: ResMut<ConsoleConfiguration>, mut cache: ResMut<ConsoleCache>) {
-    use crate::console::commands::{HelpCommand, ClearCommand, EchoCommand};
-    
+    use crate::console::commands::{ClearCommand, EchoCommand, HelpCommand};
+
     // Register help command
     let help_cmd = HelpCommand::command().no_binary_name(true);
     config.commands.insert(HelpCommand::name(), help_cmd);
-    
+
     // Register clear command
     let clear_cmd = ClearCommand::command().no_binary_name(true);
     config.commands.insert(ClearCommand::name(), clear_cmd);
-    
+
     // Register echo command
     let echo_cmd = EchoCommand::command().no_binary_name(true);
     config.commands.insert(EchoCommand::name(), echo_cmd);
-    
+
     // Build command trie for autocompletion
     let mut builder: TrieBuilder<u8> = TrieBuilder::new();
     for name in config.commands.keys() {
-        println!("Registering command for autocompletion: {}", name);
         builder.push(name.as_bytes());
     }
-    let trie = builder.build();
-    
-    // Test the trie
-    println!("Testing trie:");
-    for prefix in ["h", "he", "hel", "c", "cl", "e", "ec"] {
-        let results: Vec<String> = trie.predictive_search(prefix.as_bytes())
-            .into_iter()
-            .map(|s| String::from_utf8(s).unwrap_or_default())
-            .collect();
-        println!("  '{}' -> {:?}", prefix, results);
-    }
-    
-    cache.commands_trie = Some(trie);
-    println!("Command trie built with {} commands", config.commands.len());
+    cache.commands_trie = Some(builder.build());
 }
+

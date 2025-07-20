@@ -1,7 +1,9 @@
 use bevy::prelude::*;
 use clap::Parser;
 
-use crate::console::core::{ConsoleCommandEntered, ConsoleConfiguration, NamedCommand, PrintConsoleLine};
+use crate::console::core::{
+    ConsoleCommandEntered, ConsoleConfiguration, NamedCommand, PrintConsoleLine,
+};
 
 #[derive(Parser, Resource)]
 #[command(name = "help")]
@@ -25,9 +27,14 @@ pub fn help_command(
             if let Some(target_cmd) = command_event.args.first() {
                 if let Some(cmd_info) = config.commands.get(target_cmd.as_str()) {
                     let mut cloned_cmd = cmd_info.clone();
-                    writer.write(PrintConsoleLine::new(cloned_cmd.render_long_help().to_string()));
+                    writer.write(PrintConsoleLine::new(
+                        cloned_cmd.render_long_help().to_string(),
+                    ));
                 } else {
-                    writer.write(PrintConsoleLine::new(format!("Command '{}' does not exist", target_cmd)));
+                    writer.write(PrintConsoleLine::new(format!(
+                        "Command '{}' does not exist",
+                        target_cmd
+                    )));
                 }
             } else {
                 writer.write(PrintConsoleLine::new("Available commands:".to_string()));
@@ -39,3 +46,4 @@ pub fn help_command(
         }
     }
 }
+

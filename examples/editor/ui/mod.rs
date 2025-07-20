@@ -3,10 +3,13 @@ mod layers_panel;
 mod particle_editor;
 mod top_bar;
 
-use console::{
-    render_console, ConsoleCache, ConsoleCommandEntered, ConsoleConfiguration, ConsoleState,
-    PrintConsoleLine,
+use crate::console::{
+    commands,
+    core::{
+        ConsoleCache, ConsoleCommandEntered, ConsoleConfiguration, ConsoleState, PrintConsoleLine,
+    },
 };
+use console::render_console;
 use layers_panel::LayersPanel;
 use particle_editor::ParticleEditor;
 use top_bar::UiTopBar;
@@ -26,13 +29,13 @@ impl Plugin for UiPlugin {
         .init_resource::<ConsoleCache>()
         .add_event::<ConsoleCommandEntered>()
         .add_event::<PrintConsoleLine>()
-        .add_systems(Startup, console::init_commands)
+        .add_systems(Startup, crate::console::core::init_commands)
         .add_systems(
             Update,
             (
-                console::help_command,
-                console::clear_command,
-                console::echo_command,
+                commands::help_command,
+                commands::clear_command,
+                commands::echo_command,
                 console::receive_console_line,
             ),
         )
