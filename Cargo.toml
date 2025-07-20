@@ -53,8 +53,6 @@ bevy_turborand = "0.11.0"
 ron = "0.8"
 rfd = "0.15"
 futures-lite = "2.0"
-bevy_console = "0.14.1"
-clap = { version = "4.0", features = ["derive"] }
 
 [profile.release]
 lto = true

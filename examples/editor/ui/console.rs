@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use bevy_console::ConsoleCommandEntered;
 use bevy_egui::egui;
 
 #[derive(Resource)]
@@ -24,7 +23,7 @@ impl Default for ConsoleState {
         };
 
         state.add_message("--- Bevy Falling Sand Editor Console ---".to_string());
-        state.add_message("Type 'help' for available commands".to_string());
+        state.add_message("Console ready. Commands not yet implemented.".to_string());
 
         state
     }
@@ -39,11 +38,7 @@ impl ConsoleState {
         self.messages.push(message);
     }
 
-    pub fn execute_command(
-        &mut self,
-        command: String,
-        command_entered_writer: &mut EventWriter<ConsoleCommandEntered>,
-    ) {
+    pub fn execute_command(&mut self, command: String) {
         if command.trim().is_empty() {
             return;
         }
@@ -52,37 +47,9 @@ impl ConsoleState {
         self.history.push(command.clone());
         self.history_index = None;
 
-        // Handle our custom commands first
-        match command.trim() {
-            "clear" => {
-                self.messages.clear();
-                return;
-            }
-            "help" => {
-                self.add_message("Available commands:".to_string());
-                self.add_message("  clear - Clear the console".to_string());
-                self.add_message("  help  - Show this help message".to_string());
-                self.add_message("  echo <message> - Echo a message".to_string());
-                self.add_message(
-                    "  hello [--name <name>] - Print hello world (bevy_console command)"
-                        .to_string(),
-                );
-                return;
-            }
-            cmd if cmd.starts_with("echo ") => {
-                let message = &cmd[5..]; // Remove "echo " prefix
-                self.add_message(message.to_string());
-                return;
-            }
-            _ => {
-                // For unknown commands, send to bevy_console for processing
-                let parts: Vec<&str> = command.split_whitespace().collect();
-                let command_name = parts.first().unwrap_or(&"").to_string();
-                let args = parts.into_iter().skip(1).map(|s| s.to_string()).collect();
-
-                command_entered_writer.send(ConsoleCommandEntered { command_name, args });
-            }
-        }
+        // For now, just echo the command back
+        // TODO: Implement command parsing and execution
+        self.add_message(format!("Command '{}' received (not yet implemented)", command));
     }
 
     pub fn navigate_history(&mut self, up: bool) {
@@ -115,7 +82,6 @@ impl ConsoleState {
 pub fn render_console(
     ui: &mut egui::Ui,
     console_state: &mut ConsoleState,
-    command_entered_writer: &mut EventWriter<ConsoleCommandEntered>,
 ) {
     if ui.input(|i| i.key_pressed(egui::Key::Backtick)) {
         console_state.toggle();
@@ -126,7 +92,7 @@ pub fn render_console(
         // We'll check if the input actually has focus inside the UI logic
         let command = console_state.input.clone();
         console_state.input.clear();
-        console_state.execute_command(command, command_entered_writer);
+        console_state.execute_command(command);
         // Auto-expand when command is executed
         if !console_state.expanded {
             console_state.expanded = true;
@@ -180,10 +146,15 @@ pub fn render_console(
                         .stick_to_bottom(true)
                         .show(ui, |ui| {
                             for message in &console_state.messages {
+                                let color = if message.starts_with("error:") {
+                                    egui::Color32::from_rgb(255, 100, 100)
+                                } else {
+                                    egui::Color32::from_rgb(200, 200, 200)
+                                };
                                 ui.label(
                                     egui::RichText::new(message)
                                         .monospace()
-                                        .color(egui::Color32::from_rgb(200, 200, 200)),
+                                        .color(color),
                                 );
                             }
                         });
