@@ -484,8 +484,8 @@ fn ev_clear_particle_type_children(
     particle_parent_map: Res<ParticleTypeMap>,
 ) {
     ev_clear_particle_type_children.read().for_each(|ev| {
-        let particle_type = ev.0.clone();
-        if let Some(parent_entity) = particle_parent_map.get(&particle_type) {
+        let particle_type = &ev.0;
+        if let Some(parent_entity) = particle_parent_map.get(particle_type) {
             if let Ok(mut particle_instances) = particle_type_query.get_mut(*parent_entity) {
                 for child_entity in particle_instances.iter() {
                     if let Ok(position) = particle_query.get(*child_entity) {

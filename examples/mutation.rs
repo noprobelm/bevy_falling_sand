@@ -224,7 +224,7 @@ fn mutate_particle_type_one(
         ParticleTypeOneMutationState::Water => ParticleTypeOneMutationState::Smoke,
     };
     mutate_particle_query.iter_mut().for_each(|mut particle| {
-        particle.name = format!("{new_state}");
+        particle.name = format!("{new_state}").into();
     });
     next_state.set(new_state.clone());
     let new_text = format!("Particle Type: {}", new_state.clone());
@@ -246,7 +246,7 @@ fn mutate_particle_type_two(
         ParticleTypeTwoMutationState::Water => ParticleTypeTwoMutationState::Smoke,
     };
     mutate_particle_query.iter_mut().for_each(|mut particle| {
-        particle.name = format!("{new_state}");
+        particle.name = format!("{new_state}").into();
     });
     next_state.set(new_state.clone());
     let new_text = format!("Particle Type: {}", new_state.clone());

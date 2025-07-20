@@ -215,7 +215,7 @@ fn save_particles_to_file(
         ) in particle_query.iter()
         {
             let mut particle_data = ParticleData {
-                name: particle_type_id.name.clone(),
+                name: particle_type_id.name.to_string(),
                 density: density.map(|d| d.0),
                 max_velocity: velocity.map(|v| v.max()),
                 momentum: momentum.map(|_| true),
@@ -278,7 +278,7 @@ fn save_particles_to_file(
                     tick_rate: burns.tick_rate.as_millis() as u64,
                     chance_destroy_per_tick: burns.chance_destroy_per_tick,
                     reaction: burns.reaction.as_ref().map(|r| bfs_assets::ReactionData {
-                        produces: r.produces.name.clone(),
+                        produces: r.produces.name.to_string(),
                         chance_to_produce: r.chance_to_produce,
                     }),
                     colors: burns.color.as_ref().map(|color_profile| {

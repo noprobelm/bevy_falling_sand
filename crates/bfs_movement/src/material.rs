@@ -321,7 +321,7 @@ fn ev_clear_dynamic_particles(
             .iter()
             .for_each(|particle_type| {
                 ev_clear_particle_type_children
-                    .write(ClearParticleTypeChildrenEvent(particle_type.name.clone()));
+                    .write(ClearParticleTypeChildrenEvent(particle_type.name.to_string()));
             });
     });
 }
@@ -336,7 +336,7 @@ fn ev_clear_static_particles(
             .iter()
             .for_each(|particle_type| {
                 ev_clear_particle_type_children
-                    .write(ClearParticleTypeChildrenEvent(particle_type.name.clone()));
+                    .write(ClearParticleTypeChildrenEvent(particle_type.name.to_string()));
             });
     });
 }
