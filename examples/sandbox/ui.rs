@@ -894,7 +894,7 @@ pub fn render_particle_editor(
                                 // Temporarily increase spacing for collapsing headers
                                 let original_indent = ui.spacing().indent;
                                 ui.spacing_mut().indent = 16.0;
-                                
+
                                 egui::CollapsingHeader::new(category)
                                     .default_open(false)
                                     .show(ui, |ui| {
@@ -910,7 +910,7 @@ pub fn render_particle_editor(
                                             }
                                         }
                                     });
-                                
+
                                 // Restore original spacing after the collapsing header
                                 ui.spacing_mut().indent = original_indent;
                             }
