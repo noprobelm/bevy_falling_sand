@@ -60,32 +60,37 @@ fn render(
 
     let left_response = egui::SidePanel::left("Left panel")
         .resizable(false)
-        .min_width(450.0)
-        .max_width(450.0)
+        .exact_width(550.0) // Increased to compensate for internal margins
         .show(ctx, |ui| {
+            // Remove all margins and padding to use full width
+            ui.spacing_mut().indent = 0.0;
+            ui.spacing_mut().button_padding = egui::Vec2::ZERO;
+            ui.spacing_mut().menu_margin = egui::Margin::ZERO;
+            ui.spacing_mut().indent_ends_with_horizontal_line = false;
+
             // Fill the entire panel with the background color
-            ui.painter().rect_filled(
-                ui.available_rect_before_wrap(),
-                0.0,
-                egui::Color32::from_rgb(30, 30, 30),
-            );
-            
+            ui.painter()
+                .rect_filled(ui.max_rect(), 0.0, egui::Color32::from_rgb(30, 30, 30));
+
             ui.vertical(|ui| {
+                ui.set_width(ui.available_width());
                 ui.spacing_mut().item_spacing.y = 8.0;
-                
+
                 // Calculate exact 50/50 split
                 let total_height = ui.available_height();
                 let spacing = 8.0;
                 let panel_height = (total_height - spacing) / 2.0;
-                
+
                 // Top half - Particle Editor (exactly 50%)
                 ui.group(|ui| {
+                    ui.set_width(ui.available_width());
                     ui.set_height(panel_height);
                     ParticleEditor.render(ui);
                 });
 
                 // Bottom half - Layers Panel (exactly 50%)
                 ui.group(|ui| {
+                    ui.set_width(ui.available_width());
                     ui.set_height(panel_height);
                     LayersPanel.render(ui);
                 });
@@ -121,7 +126,7 @@ fn render(
             // We can detect mouse interaction but don't draw anything
             let rect = ui.available_rect_before_wrap();
             let response = ui.allocate_rect(rect, egui::Sense::click());
-            
+
             // Only set mouse_over_ui to true if we're actually over UI elements, not the canvas
             if response.hovered() {
                 // Don't set mouse_over_ui = true here - this area should be for the canvas
