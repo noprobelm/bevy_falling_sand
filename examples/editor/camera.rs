@@ -1,11 +1,16 @@
 use bevy::{input::mouse::MouseWheel, prelude::*};
 
+use crate::app_state::AppState;
+
 pub(super) struct CameraPlugin;
 
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, setup_camera);
-        app.add_systems(Update, (pan_camera, zoom_camera));
+        app.add_systems(
+            Update,
+            (pan_camera, zoom_camera).run_if(in_state(AppState::Canvas)),
+        );
     }
 }
 
