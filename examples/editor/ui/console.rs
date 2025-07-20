@@ -101,7 +101,9 @@ pub fn render_console(
                     );
 
                     // Auto-focus when console is opened with backtick or on initial load
-                    if (backtick_pressed && console_state.expanded) || console_state.needs_initial_focus {
+                    if (backtick_pressed && console_state.expanded)
+                        || console_state.needs_initial_focus
+                    {
                         response.request_focus();
                         console_state.needs_initial_focus = false;
                     }
@@ -114,9 +116,13 @@ pub fn render_console(
                             let remaining_text = &suggestion[console_state.input.len()..];
                             if !remaining_text.is_empty() {
                                 // Calculate position for the suggestion text more accurately
-                                let font_id = ui.style().text_styles.get(&egui::TextStyle::Monospace)
-                                    .unwrap_or(&egui::FontId::monospace(14.0)).clone();
-                                
+                                let font_id = ui
+                                    .style()
+                                    .text_styles
+                                    .get(&egui::TextStyle::Monospace)
+                                    .unwrap_or(&egui::FontId::monospace(14.0))
+                                    .clone();
+
                                 let text_galley = ui.fonts(|f| {
                                     f.layout_no_wrap(
                                         console_state.input.clone(),
@@ -213,7 +219,6 @@ pub fn render_console(
         });
 }
 
-// System to receive console output
 pub fn receive_console_line(
     mut console_state: ResMut<ConsoleState>,
     mut events: EventReader<PrintConsoleLine>,
@@ -222,4 +227,3 @@ pub fn receive_console_line(
         console_state.add_message(event.line.clone());
     }
 }
-

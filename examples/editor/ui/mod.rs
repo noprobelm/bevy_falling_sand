@@ -4,10 +4,8 @@ mod particle_editor;
 mod top_bar;
 
 use crate::console::{
+    core::{ConsoleCache, ConsoleCommandEntered, ConsoleConfiguration, ConsoleState},
     ConsolePlugin,
-    core::{
-        ConsoleCache, ConsoleCommandEntered, ConsoleConfiguration, ConsoleState,
-    },
 };
 use console::render_console;
 use layers_panel::LayersPanel;
@@ -19,6 +17,11 @@ pub(super) use bevy_egui::*;
 
 pub struct UiPlugin;
 
+#[derive(Resource, Default)]
+struct UiInteractionState {
+    mouse_over_ui: bool,
+}
+
 impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
@@ -27,12 +30,24 @@ impl Plugin for UiPlugin {
             },
             ConsolePlugin,
         ))
+        .init_state::<AppState>()
+        .init_resource::<UiInteractionState>()
         .add_systems(Update, console::receive_console_line)
         .add_systems(
             EguiContextPass,
-            render.after(bevy_egui::EguiPreUpdateSet::InitContexts),
+            (
+                render.before(bevy_egui::EguiPreUpdateSet::InitContexts),
+                detect_ui_interaction.after(render),
+            ),
         );
     }
+}
+
+#[derive(States, Reflect, Default, Debug, Clone, Eq, PartialEq, Hash)]
+pub enum AppState {
+    #[default]
+    Canvas,
+    Ui,
 }
 
 fn render(
@@ -41,16 +56,23 @@ fn render(
     cache: Res<ConsoleCache>,
     config: Res<ConsoleConfiguration>,
     mut command_writer: EventWriter<ConsoleCommandEntered>,
+    mut ui_state: ResMut<UiInteractionState>,
 ) {
     let ctx = contexts.ctx_mut();
 
-    egui::TopBottomPanel::top("Top panel").show(ctx, |ui| {
+    ui_state.mouse_over_ui = false;
+
+    let top_response = egui::TopBottomPanel::top("Top panel").show(ctx, |ui| {
         egui::menu::bar(ui, |ui| {
             UiTopBar.render(ui);
         });
     });
 
-    egui::SidePanel::left("Left panel")
+    if top_response.response.hovered() {
+        ui_state.mouse_over_ui = true;
+    }
+
+    let left_response = egui::SidePanel::left("Left panel")
         .resizable(false)
         .show(ctx, |ui| {
             ui.painter().rect_filled(
@@ -106,6 +128,10 @@ fn render(
             );
         });
 
+    if left_response.response.hovered() {
+        ui_state.mouse_over_ui = true;
+    }
+
     egui::CentralPanel::default().show(ctx, |ui| {
         ui.painter().rect_filled(
             ui.available_rect_before_wrap(),
@@ -134,4 +160,16 @@ fn render(
             render_console(ui, &mut console_state, &cache, &config, &mut command_writer);
         });
     });
+}
+
+fn detect_ui_interaction(
+    ui_state: Res<UiInteractionState>,
+    current_state: Res<State<AppState>>,
+    mut next_state: ResMut<NextState<AppState>>,
+) {
+    match (current_state.get(), ui_state.mouse_over_ui) {
+        (AppState::Canvas, true) => next_state.set(AppState::Ui),
+        (AppState::Ui, false) => next_state.set(AppState::Canvas),
+        _ => {}
+    }
 }
