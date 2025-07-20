@@ -80,7 +80,6 @@ impl Default for ConsoleState {
     }
 }
 
-// Traits for command system
 pub trait NamedCommand {
     fn name() -> &'static str;
 }
