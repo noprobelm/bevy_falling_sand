@@ -170,11 +170,14 @@ impl Component for ParticleType {
                 if let Cow::Borrowed(name) = &particle_type.name {
                     Some(*name)
                 } else {
-                    warn!("ParticleType with owned string cannot be registered in map: '{}'", particle_type.name);
+                    warn!(
+                        "ParticleType with owned string cannot be registered in map: '{}'",
+                        particle_type.name
+                    );
                     None
                 }
             };
-            
+
             if let Some(name) = name {
                 // Add ParticleInstances component - relationships will handle synchronization
                 world
@@ -198,7 +201,7 @@ impl Component for ParticleType {
                     None
                 }
             };
-            
+
             if let Some(name) = name {
                 let mut type_map = world.resource_mut::<ParticleTypeMap>();
                 type_map.remove(name);
@@ -222,7 +225,7 @@ impl ParticleTypeMap {
 
     /// Returns a reference to the key-value pair for the given key, if it exists.
     #[must_use]
-    pub fn get_key_value(&self, key: &str) -> Option<(&String, &Entity)> {
+    pub fn get_key_value(&self, key: &str) -> Option<(&&str, &Entity)> {
         self.map.get_key_value(key)
     }
 
@@ -476,8 +479,8 @@ fn handle_new_particles(
 
         if let Some(parent_handle) = type_map.get(&particle_type.name) {
             entities.push(entity);
-            
-            // Use Bevy's relationship system - the ParticleInstances will be 
+
+            // Use Bevy's relationship system - the ParticleInstances will be
             // automatically updated when we add the AttachedToParticleType component
             commands.entity(entity).insert((
                 ParticlePosition(coordinates),
