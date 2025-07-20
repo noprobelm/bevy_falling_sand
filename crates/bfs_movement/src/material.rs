@@ -1,5 +1,8 @@
 use bevy::{
-    ecs::component::{Mutable, StorageType},
+    ecs::{
+        component::{Mutable, StorageType},
+        system::SystemParam,
+    },
     prelude::*,
 };
 use bfs_core::{ClearParticleTypeChildrenEvent, ParticleType};
@@ -310,6 +313,28 @@ pub struct ClearDynamicParticlesEvent;
 /// Clear all static particles from the world.
 #[derive(Event)]
 pub struct ClearStaticParticlesEvent;
+
+/// System param to fetch particles that fall into each category
+#[derive(SystemParam)]
+pub struct ParticleMaterialsParam<'w, 's> {
+    walls: Query<'w, 's, &'static ParticleType, With<Wall>>,
+    solids: Query<'w, 's, &'static ParticleType, With<Solid>>,
+    movable_solids: Query<'w, 's, &'static ParticleType, With<MovableSolid>>,
+    liquids: Query<'w, 's, &'static ParticleType, With<Liquid>>,
+    gases: Query<'w, 's, &'static ParticleType, With<Gas>>,
+    other: Query<
+        'w,
+        's,
+        &'static ParticleType,
+        (
+            Without<Wall>,
+            Without<Solid>,
+            Without<MovableSolid>,
+            Without<Liquid>,
+            Without<Gas>,
+        ),
+    >,
+}
 
 fn ev_clear_dynamic_particles(
     mut ev_clear_dynamic_particles: EventReader<ClearDynamicParticlesEvent>,

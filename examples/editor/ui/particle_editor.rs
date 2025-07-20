@@ -1,9 +1,11 @@
+use bevy::{ecs::system::SystemParam, prelude::*};
 use bevy_egui::egui;
+use bevy_falling_sand::prelude::ParticleMaterialsParam;
 
 pub struct ParticleEditor;
 
 impl ParticleEditor {
-    pub fn render(&self, ui: &mut egui::Ui) {
+    pub fn render(&self, ui: &mut egui::Ui, particle_materials: &ParticleMaterialsParam) {
         let text_color = egui::Color32::from_rgb(204, 204, 204);
         ui.visuals_mut().override_text_color = Some(text_color);
 
@@ -14,7 +16,7 @@ impl ParticleEditor {
         ui.columns(2, |columns| {
             columns[0].set_min_width(columns[0].available_width());
             columns[0].set_max_width(columns[0].available_width());
-            self.render_particle_list(&mut columns[0]);
+            self.render_particle_list(&mut columns[0], &particle_materials);
 
             columns[1].set_min_width(columns[1].available_width());
             columns[1].set_max_width(columns[1].available_width());
@@ -22,12 +24,18 @@ impl ParticleEditor {
         });
     }
 
-    fn render_particle_list(&self, ui: &mut egui::Ui) {
+    fn render_particle_list(&self, ui: &mut egui::Ui, particle_materials: &ParticleMaterialsParam) {
         egui::ScrollArea::vertical()
             .id_salt("particle_list_scroll")
             .show(ui, |ui| {
-                const CATEGORIES: [&str; 5] =
-                    ["Walls", "Solids", "Movable Solids", "Liquids", "Gases"];
+                const CATEGORIES: [&str; 6] = [
+                    "Walls",
+                    "Solids",
+                    "Movable Solids",
+                    "Liquids",
+                    "Gases",
+                    "Other",
+                ];
 
                 for &category in &CATEGORIES {
                     // Temporarily increase spacing for collapsing headers
@@ -39,13 +47,34 @@ impl ParticleEditor {
                         .show(ui, |ui| {
                             // Restore original spacing inside the collapsing content
                             ui.spacing_mut().indent = original_indent;
-                            let examples = match category {
-                                "Walls" => vec!["Stone Wall", "Dirt Wall", "Wood Wall"],
-                                "Solids" => vec!["Sand", "Dirt", "Snow"],
-                                "Movable Solids" => vec!["Powder", "Salt", "Sugar"],
-                                "Liquids" => vec!["Water", "Oil", "Acid"],
-                                "Gases" => vec!["Steam", "Smoke", "Vapor"],
-                                _ => vec![],
+                            let examples: Vec<&str> = match category {
+                                _ => vec![], // "Walls" => wall_query
+                                             //     .iter()
+                                             //     .map(|particle_type| particle_type.name.as_str())
+                                             //     .collect(),
+                                             // "Solids" => solid_query
+                                             //     .iter()
+                                             //     .map(|particle_type| particle_type.name.as_str())
+                                             //     .collect(),
+                                             // "Movable Solids" => movable_solid_query
+                                             //     .iter()
+                                             //     .map(|particle_type| particle_type.name.as_str())
+                                             //     .collect(),
+                                             //
+                                             // "Liquids" => liquid_query
+                                             //     .iter()
+                                             //     .map(|particle_type| particle_type.name.as_str())
+                                             //     .collect(),
+                                             //
+                                             // "Gases" => gas_query
+                                             //     .iter()
+                                             //     .map(|particle_type| particle_type.name.as_str())
+                                             //     .collect(),
+                                             // "Other" => other_query
+                                             //     .iter()
+                                             //     .map(|particle_type| particle_type.name.as_str())
+                                             //     .collect(),
+                                             // _ => vec![],
                             };
 
                             for particle_name in examples {

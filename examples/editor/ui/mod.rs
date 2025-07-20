@@ -7,6 +7,7 @@ use crate::console::{
     core::{ConsoleCache, ConsoleCommandEntered, ConsoleConfiguration, ConsoleState},
     ConsolePlugin,
 };
+use bevy_falling_sand::prelude::ParticleMaterialsParam;
 use console::render_console;
 use layers_panel::LayersPanel;
 use particle_editor::ParticleEditor;
@@ -39,6 +40,7 @@ fn render(
     cache: Res<ConsoleCache>,
     config: Res<ConsoleConfiguration>,
     mut command_writer: EventWriter<ConsoleCommandEntered>,
+    particle_materials: ParticleMaterialsParam,
 ) {
     let ctx = contexts.ctx_mut();
 
@@ -75,7 +77,7 @@ fn render(
                 ui.group(|ui| {
                     ui.set_width(ui.available_width());
                     ui.set_height(panel_height);
-                    ParticleEditor.render(ui);
+                    ParticleEditor.render(ui, &particle_materials);
                 });
 
                 // Bottom half - Layers Panel (exactly 50%)
