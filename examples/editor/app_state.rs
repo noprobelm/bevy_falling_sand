@@ -1,5 +1,15 @@
 use bevy::prelude::*;
 
+pub struct StatesPlugin;
+
+impl Plugin for StatesPlugin {
+    fn build(&self, app: &mut App) {
+        app.init_state::<AppState>()
+            .init_resource::<UiInteractionState>()
+            .add_systems(Update, detect_ui_interaction);
+    }
+}
+
 #[derive(States, Reflect, Default, Debug, Clone, Eq, PartialEq, Hash)]
 pub enum AppState {
     #[default]
@@ -10,16 +20,6 @@ pub enum AppState {
 #[derive(Resource, Default)]
 pub struct UiInteractionState {
     pub mouse_over_ui: bool,
-}
-
-pub struct StatesPlugin;
-
-impl Plugin for StatesPlugin {
-    fn build(&self, app: &mut App) {
-        app.init_state::<AppState>()
-            .init_resource::<UiInteractionState>()
-            .add_systems(Update, detect_ui_interaction);
-    }
 }
 
 fn detect_ui_interaction(
@@ -33,3 +33,4 @@ fn detect_ui_interaction(
         _ => {}
     }
 }
+
