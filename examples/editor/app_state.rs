@@ -1,12 +1,15 @@
 use bevy::prelude::*;
+use bevy::window::PrimaryWindow;
+use bevy_egui::{EguiContextPass, EguiContexts};
 
 pub struct StatesPlugin;
 
 impl Plugin for StatesPlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<AppState>()
-            .init_resource::<UiInteractionState>()
-            .add_systems(Update, detect_ui_interaction);
+            .add_systems(EguiContextPass, detect_ui_interaction)
+            .add_systems(OnEnter(AppState::Canvas), hide_cursor)
+            .add_systems(OnEnter(AppState::Ui), show_cursor);
     }
 }
 
@@ -17,20 +20,40 @@ pub enum AppState {
     Ui,
 }
 
-#[derive(Resource, Default)]
-pub struct UiInteractionState {
-    pub mouse_over_ui: bool,
-}
-
 fn detect_ui_interaction(
-    ui_state: Res<UiInteractionState>,
+    mut contexts: EguiContexts,
     current_state: Res<State<AppState>>,
     mut next_state: ResMut<NextState<AppState>>,
 ) {
-    match (current_state.get(), ui_state.mouse_over_ui) {
-        (AppState::Canvas, true) => next_state.set(AppState::Ui),
-        (AppState::Ui, false) => next_state.set(AppState::Canvas),
-        _ => {}
+    let ctx = contexts.ctx_mut();
+
+    let is_over_area = ctx.is_pointer_over_area();
+    println!("State: {:?}, is_pointer_over_area: {}", current_state.get(), is_over_area);
+    
+    match current_state.get() {
+        AppState::Ui => {
+            if !is_over_area {
+                println!("Switching to Canvas");
+                next_state.set(AppState::Canvas);
+            }
+        }
+        AppState::Canvas => {
+            if is_over_area {
+                println!("Switching to Ui");
+                next_state.set(AppState::Ui);
+            }
+        }
     }
 }
 
+pub fn hide_cursor(mut primary_window: Query<&mut Window, With<PrimaryWindow>>) {
+    if let Ok(mut window) = primary_window.single_mut() {
+        window.cursor_options.visible = false;
+    }
+}
+
+pub fn show_cursor(mut primary_window: Query<&mut Window, With<PrimaryWindow>>) {
+    if let Ok(mut window) = primary_window.single_mut() {
+        window.cursor_options.visible = true;
+    }
+}

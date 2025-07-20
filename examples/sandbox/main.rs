@@ -17,7 +17,6 @@ use ui::*;
 use bevy::{prelude::*, window::WindowMode};
 use bevy_egui::EguiPlugin;
 use bevy_falling_sand::prelude::{FallingSandDebugPlugin, FallingSandPlugin};
-use bfs_assets::FallingSandAssetsPlugin;
 
 fn main() {
     App::new()
@@ -38,7 +37,6 @@ fn main() {
                 .with_spatial_refresh_frequency(Duration::from_millis(50))
                 .with_gravity(Vec2::NEG_Y * 50.0),
             FallingSandDebugPlugin,
-            FallingSandAssetsPlugin,
             CameraPlugin,
             ParticleSetupPlugin,
             BrushPlugin,
