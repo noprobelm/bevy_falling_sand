@@ -102,6 +102,7 @@ impl Plugin for FallingSandPlugin {
                 length_unit: self.length_unit,
                 rigid_body_gravity: self.rigid_body_gravity,
             },
+            assets::FallingSandAssetsPlugin,
         ));
     }
 }
