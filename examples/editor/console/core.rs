@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use clap::{CommandFactory, FromArgMatches};
+use clap::CommandFactory;
 use shlex::Shlex;
 use std::collections::{BTreeMap, VecDeque};
 use trie_rs::{Trie, TrieBuilder};
@@ -81,48 +81,10 @@ impl Default for ConsoleState {
 }
 
 // Traits for command system
-pub trait Command: NamedCommand + CommandFactory + FromArgMatches + Sized + Resource {}
-impl<T: NamedCommand + CommandFactory + FromArgMatches + Sized + Resource> Command for T {}
-
 pub trait NamedCommand {
     fn name() -> &'static str;
 }
 
-// System param for commands
-pub struct ConsoleCommand<'w, T> {
-    pub command: Option<Result<T, clap::Error>>,
-    pub console_line: EventWriter<'w, PrintConsoleLine>,
-}
-
-impl<T> ConsoleCommand<'_, T> {
-    pub fn take(&mut self) -> Option<Result<T, clap::Error>> {
-        self.command.take()
-    }
-
-    pub fn ok(&mut self) {
-        self.console_line
-            .write(PrintConsoleLine::new("[ok]".into()));
-    }
-
-    pub fn failed(&mut self) {
-        self.console_line
-            .write(PrintConsoleLine::new("[failed]".into()));
-    }
-
-    pub fn reply(&mut self, msg: impl Into<String>) {
-        self.console_line.write(PrintConsoleLine::new(msg.into()));
-    }
-
-    pub fn reply_ok(&mut self, msg: impl Into<String>) {
-        self.console_line.write(PrintConsoleLine::new(msg.into()));
-        self.ok();
-    }
-
-    pub fn reply_failed(&mut self, msg: impl Into<String>) {
-        self.console_line.write(PrintConsoleLine::new(msg.into()));
-        self.failed();
-    }
-}
 
 impl ConsoleState {
     pub fn toggle(&mut self) {
