@@ -12,7 +12,8 @@ pub fn render_console(
     config: &ConsoleConfiguration,
     command_writer: &mut EventWriter<ConsoleCommandEntered>,
 ) {
-    if ui.input(|i| i.key_pressed(egui::Key::Backtick)) {
+    let backtick_pressed = ui.input(|i| i.key_pressed(egui::Key::Backtick));
+    if backtick_pressed {
         console_state.toggle();
     }
 
@@ -98,6 +99,11 @@ pub fn render_console(
                             .font(egui::TextStyle::Monospace)
                             .desired_width(ui.available_width()),
                     );
+
+                    // Auto-focus when console is opened with backtick
+                    if backtick_pressed && console_state.expanded {
+                        response.request_focus();
+                    }
 
                     // Render inline autocompletion suggestion
                     if let Some(suggestion) = &current_suggestion {
