@@ -8,6 +8,7 @@ pub struct ConsoleState {
     pub history: Vec<String>,
     pub history_index: Option<usize>,
     pub scroll_to_bottom: bool,
+    pub expanded: bool,
 }
 
 impl Default for ConsoleState {
@@ -18,6 +19,7 @@ impl Default for ConsoleState {
             history: Vec::new(),
             history_index: None,
             scroll_to_bottom: true,
+            expanded: false,
         };
         
         state.add_message("Welcome to Falling Sand Editor Console".to_string());
@@ -29,6 +31,10 @@ impl Default for ConsoleState {
 }
 
 impl ConsoleState {
+    pub fn toggle(&mut self) {
+        self.expanded = !self.expanded;
+    }
+
     pub fn add_message(&mut self, message: String) {
         self.messages.push(message);
         self.scroll_to_bottom = true;
@@ -86,6 +92,11 @@ impl ConsoleState {
 }
 
 pub fn render_console(ui: &mut egui::Ui, console_state: &mut ConsoleState) {
+    // Check for toggle hotkey (backtick)
+    if ui.input(|i| i.key_pressed(egui::Key::Backtick)) {
+        console_state.toggle();
+    }
+
     let available_height = ui.available_height();
     
     egui::Frame::new()
@@ -94,28 +105,32 @@ pub fn render_console(ui: &mut egui::Ui, console_state: &mut ConsoleState) {
         .inner_margin(egui::Margin::same(8))
         .show(ui, |ui| {
             ui.vertical(|ui| {
-                let text_height = available_height - 40.0;
+                // Only show messages and history when expanded
+                if console_state.expanded {
+                    let text_height = available_height - 40.0;
+                    
+                    egui::ScrollArea::vertical()
+                        .auto_shrink([false, false])
+                        .max_height(text_height)
+                        .stick_to_bottom(console_state.scroll_to_bottom)
+                        .show(ui, |ui| {
+                            for message in &console_state.messages {
+                                ui.label(
+                                    egui::RichText::new(message)
+                                        .monospace()
+                                        .color(egui::Color32::from_rgb(200, 200, 200))
+                                );
+                            }
+                            
+                            if console_state.scroll_to_bottom {
+                                console_state.scroll_to_bottom = false;
+                            }
+                        });
+                    
+                    ui.separator();
+                }
                 
-                egui::ScrollArea::vertical()
-                    .auto_shrink([false, false])
-                    .max_height(text_height)
-                    .stick_to_bottom(console_state.scroll_to_bottom)
-                    .show(ui, |ui| {
-                        for message in &console_state.messages {
-                            ui.label(
-                                egui::RichText::new(message)
-                                    .monospace()
-                                    .color(egui::Color32::from_rgb(200, 200, 200))
-                            );
-                        }
-                        
-                        if console_state.scroll_to_bottom {
-                            console_state.scroll_to_bottom = false;
-                        }
-                    });
-                
-                ui.separator();
-                
+                // Always show the prompt
                 ui.horizontal(|ui| {
                     ui.label(
                         egui::RichText::new(">")
@@ -139,6 +154,10 @@ pub fn render_console(ui: &mut egui::Ui, console_state: &mut ConsoleState) {
                             let command = console_state.input.clone();
                             console_state.input.clear();
                             console_state.execute_command(command);
+                            // Auto-expand when command is executed
+                            if !console_state.expanded {
+                                console_state.expanded = true;
+                            }
                         }
                         
                         if ui.input(|i| i.key_pressed(egui::Key::ArrowUp)) {

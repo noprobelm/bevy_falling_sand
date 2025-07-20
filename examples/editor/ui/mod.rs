@@ -93,10 +93,12 @@ fn render(mut contexts: EguiContexts, mut console_state: ResMut<ConsoleState>) {
         });
 
     egui::CentralPanel::default().show(ctx, |ui| {
+        let console_height = if console_state.expanded { 200.0 } else { 40.0 };
+        
         egui::TopBottomPanel::bottom("Console panel")
             .resizable(false)
-            .min_height(200.0)
-            .max_height(200.0)
+            .min_height(console_height)
+            .max_height(console_height)
             .show_inside(ui, |ui| {
                 render_console(ui, &mut console_state);
             });
