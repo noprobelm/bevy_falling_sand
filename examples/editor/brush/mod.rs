@@ -2,8 +2,7 @@ mod helpers;
 
 use helpers::*;
 
-use bevy::{input::common_conditions::input_pressed, platform::collections::HashSet, prelude::*};
-use bevy_falling_sand::prelude::Particle;
+use bevy::{input::common_conditions::input_pressed, prelude::*};
 
 use crate::{cursor::CursorPosition, particles::SelectedParticle};
 
@@ -118,7 +117,7 @@ fn spawn_particles(
             let particle = selected.clone();
 
             if (cursor_position.previous - cursor_position.previous_previous).length() < 1.0 {
-                spawn_line(
+                helpers::spawn_line(
                     &mut commands,
                     particle.0.clone(),
                     cursor_position.previous,
@@ -215,122 +214,4 @@ fn spawn_particles(
     }
 
     Ok(())
-}
-
-fn spawn_circle(commands: &mut Commands, particle: Particle, center: Vec2, radius: usize) {
-    let mut points: HashSet<IVec2> = HashSet::default();
-
-    let min_x = (center.x - radius as f32).floor() as i32;
-    let max_x = (center.x + radius as f32).ceil() as i32;
-    let min_y = (center.y - radius as f32).floor() as i32;
-    let max_y = (center.y + radius as f32).ceil() as i32;
-
-    for x in min_x..=max_x {
-        for y in min_y..=max_y {
-            let point = Vec2::new(x as f32, y as f32);
-            if (point - center).length() <= radius as f32 {
-                points.insert(point.as_ivec2());
-            }
-        }
-    }
-
-    commands.spawn_batch(points.into_iter().map(move |point| {
-        (
-            particle.clone(),
-            Transform::from_xyz(point.x as f32, point.y as f32, 0.0),
-        )
-    }));
-}
-
-fn spawn_capsule(
-    commands: &mut Commands,
-    particle: Particle,
-    start: Vec2,
-    end: Vec2,
-    radius: usize,
-    half_length: f32,
-) {
-    let capsule = Capsule2d {
-        radius: radius as f32,
-        half_length,
-    };
-
-    let points = points_within_capsule(&capsule, start, end);
-    commands.spawn_batch(points.into_iter().map(move |point| {
-        (
-            particle.clone(),
-            Transform::from_xyz(point.x as f32, point.y as f32, 0.0),
-        )
-    }));
-}
-
-fn spawn_line(commands: &mut Commands, particle: Particle, center: Vec2, brush_size: usize) {
-    let min_x = -(brush_size as i32) / 2;
-    let max_x = (brush_size as f32 / 2.0) as i32;
-
-    commands.spawn_batch((min_x * 3..=max_x * 3).map(move |x| {
-        (
-            particle.clone(),
-            Transform::from_xyz((center.x + x as f32).round(), center.y.round(), 0.0),
-        )
-    }));
-}
-
-fn spawn_line_interpolated(
-    commands: &mut Commands,
-    particle: Particle,
-    start: Vec2,
-    end: Vec2,
-    brush_size: usize,
-) {
-    let mut points: HashSet<IVec2> = HashSet::default();
-    let direction = (end - start).normalize();
-    let length = (end - start).length();
-    let min_x = -(brush_size as i32) / 2;
-    let max_x = (brush_size as f32 / 2.0) as i32;
-
-    // Sample points along the interpolated line
-    let num_samples = (length.ceil() as usize).max(1);
-    for i in 0..=num_samples {
-        let t = i as f32 / num_samples.max(1) as f32;
-        let sample_point = start + direction * length * t;
-
-        // For each sample point, spawn a line
-        for x in min_x * 3..=max_x * 3 {
-            let position = Vec2::new((sample_point.x + x as f32).round(), sample_point.y.round());
-            points.insert(position.as_ivec2());
-        }
-    }
-
-    commands.spawn_batch(points.into_iter().map(move |point| {
-        (
-            particle.clone(),
-            Transform::from_xyz(point.x as f32, point.y as f32, 0.0),
-        )
-    }));
-}
-
-fn spawn_cursor_interpolated(commands: &mut Commands, particle: Particle, start: Vec2, end: Vec2) {
-    let mut points: HashSet<IVec2> = HashSet::default();
-    let direction = (end - start).normalize();
-    let length = (end - start).length();
-
-    // Sample points along the interpolated path
-    let num_samples = (length.ceil() as usize).max(1);
-    for i in 0..=num_samples {
-        let t = i as f32 / num_samples.max(1) as f32;
-        let sample_point = start + direction * length * t;
-
-        points.insert(IVec2::new(
-            sample_point.x.round() as i32,
-            sample_point.y.round() as i32,
-        ));
-    }
-
-    commands.spawn_batch(points.into_iter().map(move |point| {
-        (
-            particle.clone(),
-            Transform::from_xyz(point.x as f32, point.y as f32, 0.0),
-        )
-    }));
 }
