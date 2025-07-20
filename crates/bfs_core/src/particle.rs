@@ -214,18 +214,18 @@ impl ParticleTypeMap {
     }
 }
 
-/// Component that tracks which ParticleTypeId entity a Particle belongs to.
+/// Component that tracks which ParticleType entity a Particle belongs to.
 /// This replaces the Parent/Child relationship for custom particle management.
 #[derive(Clone, Debug, Eq, PartialEq, Component, Reflect, Serialize, Deserialize)]
 #[reflect(Component)]
 pub struct AttachedToParticleType(pub Entity);
 
-/// Component that tracks all Particle entities belonging to a ParticleTypeId.
+/// Component that tracks all Particle entities belonging to a ParticleType.
 /// This replaces the Children component for custom particle management.
 #[derive(Clone, Debug, Default, Component, Reflect)]
 #[reflect(Component)]
 pub struct ParticleInstances {
-    /// The list of particle entity instances belonging to this ParticleTypeId.
+    /// The list of particle entity instances belonging to this ParticleType.
     pub instances: Vec<Entity>,
 }
 
