@@ -10,9 +10,14 @@ impl ParticleEditor {
         ui.heading("Particle Editor");
         ui.separator();
 
+        // Use the original columns approach - it works fine with adequate width
         ui.columns(2, |columns| {
+            columns[0].set_min_width(columns[0].available_width());
+            columns[0].set_max_width(columns[0].available_width());
             self.render_particle_list(&mut columns[0]);
-            columns[1].separator();
+            
+            columns[1].set_min_width(columns[1].available_width());
+            columns[1].set_max_width(columns[1].available_width());
             self.render_particle_properties(&mut columns[1]);
         });
     }

@@ -36,7 +36,6 @@ impl Plugin for UiPlugin {
     }
 }
 
-
 fn render(
     mut contexts: EguiContexts,
     mut console_state: ResMut<ConsoleState>,
@@ -61,91 +60,71 @@ fn render(
 
     let left_response = egui::SidePanel::left("Left panel")
         .resizable(false)
+        .min_width(450.0)
+        .max_width(450.0)
         .show(ctx, |ui| {
+            // Fill the entire panel with the background color
             ui.painter().rect_filled(
                 ui.available_rect_before_wrap(),
                 0.0,
                 egui::Color32::from_rgb(30, 30, 30),
             );
+            
+            ui.vertical(|ui| {
+                ui.spacing_mut().item_spacing.y = 8.0;
+                
+                // Calculate exact 50/50 split
+                let total_height = ui.available_height();
+                let spacing = 8.0;
+                let panel_height = (total_height - spacing) / 2.0;
+                
+                // Top half - Particle Editor (exactly 50%)
+                ui.group(|ui| {
+                    ui.set_height(panel_height);
+                    ParticleEditor.render(ui);
+                });
 
-            let available_rect = ui.available_rect_before_wrap();
-            let spacing = 8.0;
-            let panel_height = (available_rect.height() - spacing) / 2.0;
-            let panel_bg = egui::Color32::from_rgb(46, 46, 46);
-
-            let top_response = ui.allocate_response(
-                egui::vec2(available_rect.width(), panel_height),
-                egui::Sense::hover(),
-            );
-
-            ui.scope_builder(egui::UiBuilder::new().max_rect(top_response.rect), |ui| {
-                ui.set_clip_rect(top_response.rect);
-                egui::Frame::NONE
-                    .fill(panel_bg)
-                    .corner_radius(4.0)
-                    .inner_margin(egui::Margin::same(8))
-                    .show(ui, |ui| {
-                        ui.set_min_height(panel_height - 16.0);
-                        ui.set_max_height(panel_height - 16.0);
-                        ParticleEditor.render(ui);
-                    });
+                // Bottom half - Layers Panel (exactly 50%)
+                ui.group(|ui| {
+                    ui.set_height(panel_height);
+                    LayersPanel.render(ui);
+                });
             });
-
-            ui.add_space(spacing);
-
-            let bottom_response = ui.allocate_response(
-                egui::vec2(available_rect.width(), panel_height),
-                egui::Sense::hover(),
-            );
-
-            ui.scope_builder(
-                egui::UiBuilder::new().max_rect(bottom_response.rect),
-                |ui| {
-                    ui.set_clip_rect(bottom_response.rect);
-                    egui::Frame::NONE
-                        .fill(panel_bg)
-                        .corner_radius(4.0)
-                        .inner_margin(egui::Margin::same(8))
-                        .show(ui, |ui| {
-                            ui.set_min_height(panel_height - 16.0);
-                            ui.set_max_height(panel_height - 16.0);
-                            LayersPanel.render(ui);
-                        });
-                },
-            );
         });
 
     if left_response.response.hovered() {
         ui_state.mouse_over_ui = true;
     }
 
-    egui::CentralPanel::default().show(ctx, |ui| {
-        ui.painter().rect_filled(
-            ui.available_rect_before_wrap(),
-            0.0,
-            egui::Color32::from_rgb(30, 30, 30),
-        );
+    // Use a bottom panel for the console instead of taking up the entire central area
+    let console_height = if console_state.expanded {
+        console_state.height
+    } else {
+        40.0
+    };
 
-        let console_height = if console_state.expanded {
-            console_state.height
-        } else {
-            40.0
-        };
-
-        let available_rect = ui.available_rect_before_wrap();
-        let console_rect = egui::Rect::from_min_size(
-            egui::pos2(
-                available_rect.left(),
-                available_rect.bottom() - console_height,
-            ),
-            egui::vec2(available_rect.width(), console_height),
-        );
-
-        let _response = ui.allocate_rect(console_rect, egui::Sense::hover());
-        ui.scope_builder(egui::UiBuilder::new().max_rect(console_rect), |ui| {
-            ui.set_clip_rect(console_rect);
+    let console_response = egui::TopBottomPanel::bottom("Console panel")
+        .exact_height(console_height)
+        .show(ctx, |ui| {
             render_console(ui, &mut console_state, &cache, &config, &mut command_writer);
         });
-    });
-}
 
+    if console_response.response.hovered() {
+        ui_state.mouse_over_ui = true;
+    }
+
+    // The central panel is now free for the game canvas - make it transparent
+    egui::CentralPanel::default()
+        .frame(egui::Frame::NONE) // No background frame
+        .show(ctx, |ui| {
+            // This area is now free for the Bevy game world to show through
+            // We can detect mouse interaction but don't draw anything
+            let rect = ui.available_rect_before_wrap();
+            let response = ui.allocate_rect(rect, egui::Sense::click());
+            
+            // Only set mouse_over_ui to true if we're actually over UI elements, not the canvas
+            if response.hovered() {
+                // Don't set mouse_over_ui = true here - this area should be for the canvas
+            }
+        });
+}

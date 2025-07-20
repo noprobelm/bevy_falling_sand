@@ -63,7 +63,7 @@ struct BrushResizeEvent(pub usize);
 fn setup(mut commands: Commands) {
     commands.spawn((
         Brush,
-        BrushSize(80),
+        BrushSize(2),
         BrushColor(Color::Srgba(Srgba::new(1., 1., 1., 0.3))),
     ));
 }
