@@ -56,6 +56,7 @@ pub struct ConsoleState {
     pub height: f32,
     pub suggestions: Vec<String>,
     pub suggestion_index: Option<usize>,
+    pub needs_initial_focus: bool,
 }
 
 impl Default for ConsoleState {
@@ -69,6 +70,7 @@ impl Default for ConsoleState {
             height: 300.0,
             suggestions: Vec::new(),
             suggestion_index: None,
+            needs_initial_focus: true,
         };
 
         state.add_message("--- Bevy Falling Sand Editor Console ---".to_string());

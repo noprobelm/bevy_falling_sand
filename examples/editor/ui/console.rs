@@ -100,9 +100,10 @@ pub fn render_console(
                             .desired_width(ui.available_width()),
                     );
 
-                    // Auto-focus when console is opened with backtick
-                    if backtick_pressed && console_state.expanded {
+                    // Auto-focus when console is opened with backtick or on initial load
+                    if (backtick_pressed && console_state.expanded) || console_state.needs_initial_focus {
                         response.request_focus();
+                        console_state.needs_initial_focus = false;
                     }
 
                     // Render inline autocompletion suggestion
