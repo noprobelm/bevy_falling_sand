@@ -7,7 +7,6 @@ pub struct ConsoleState {
     pub input: String,
     pub history: Vec<String>,
     pub history_index: Option<usize>,
-    pub scroll_to_bottom: bool,
     pub expanded: bool,
 }
 
@@ -18,14 +17,13 @@ impl Default for ConsoleState {
             input: String::new(),
             history: Vec::new(),
             history_index: None,
-            scroll_to_bottom: true,
             expanded: false,
         };
-        
+
         state.add_message("Welcome to Falling Sand Editor Console".to_string());
         state.add_message("Type 'help' for available commands".to_string());
         state.add_message(String::new());
-        
+
         state
     }
 }
@@ -37,7 +35,6 @@ impl ConsoleState {
 
     pub fn add_message(&mut self, message: String) {
         self.messages.push(message);
-        self.scroll_to_bottom = true;
     }
 
     pub fn execute_command(&mut self, command: String) {
@@ -97,80 +94,81 @@ pub fn render_console(ui: &mut egui::Ui, console_state: &mut ConsoleState) {
         console_state.toggle();
     }
 
+    // Check for Enter key to submit command (global check)
+    if ui.input(|i| i.key_pressed(egui::Key::Enter)) && !console_state.input.is_empty() {
+        let command = console_state.input.clone();
+        console_state.input.clear();
+        console_state.execute_command(command);
+        // Auto-expand when command is executed
+        if !console_state.expanded {
+            console_state.expanded = true;
+        }
+    }
+
     let available_height = ui.available_height();
-    
+
     egui::Frame::new()
-        .fill(egui::Color32::from_rgb(20, 20, 20))
-        .stroke(egui::Stroke::new(1.0, egui::Color32::from_rgb(60, 60, 60)))
+        .fill(egui::Color32::from_rgb(46, 46, 46))
+        .corner_radius(4.0)
         .inner_margin(egui::Margin::same(8))
         .show(ui, |ui| {
             ui.vertical(|ui| {
                 // Only show messages and history when expanded
                 if console_state.expanded {
                     let text_height = available_height - 40.0;
-                    
+
                     egui::ScrollArea::vertical()
                         .auto_shrink([false, false])
                         .max_height(text_height)
-                        .stick_to_bottom(console_state.scroll_to_bottom)
+                        .stick_to_bottom(true)
                         .show(ui, |ui| {
                             for message in &console_state.messages {
                                 ui.label(
                                     egui::RichText::new(message)
                                         .monospace()
-                                        .color(egui::Color32::from_rgb(200, 200, 200))
+                                        .color(egui::Color32::from_rgb(200, 200, 200)),
                                 );
                             }
-                            
-                            if console_state.scroll_to_bottom {
-                                console_state.scroll_to_bottom = false;
-                            }
                         });
-                    
+
                     ui.separator();
                 }
-                
+
                 // Always show the prompt
                 ui.horizontal(|ui| {
                     ui.label(
                         egui::RichText::new(">")
                             .monospace()
-                            .color(egui::Color32::from_rgb(100, 200, 100))
+                            .color(egui::Color32::from_rgb(100, 200, 100)),
                     );
-                    
+
                     let response = ui.add(
                         egui::TextEdit::singleline(&mut console_state.input)
                             .font(egui::TextStyle::Monospace)
-                            .desired_width(ui.available_width())
-                            .lock_focus(true)
+                            .desired_width(ui.available_width()),
                     );
-                    
+
                     if response.changed() {
                         console_state.history_index = None;
                     }
-                    
+
+                    // Handle arrow keys for history navigation
                     if response.has_focus() {
-                        if ui.input(|i| i.key_pressed(egui::Key::Enter)) {
-                            let command = console_state.input.clone();
-                            console_state.input.clear();
-                            console_state.execute_command(command);
-                            // Auto-expand when command is executed
-                            if !console_state.expanded {
-                                console_state.expanded = true;
-                            }
-                        }
-                        
                         if ui.input(|i| i.key_pressed(egui::Key::ArrowUp)) {
                             console_state.navigate_history(true);
                         }
-                        
+
                         if ui.input(|i| i.key_pressed(egui::Key::ArrowDown)) {
                             console_state.navigate_history(false);
                         }
                     }
-                    
-                    response.request_focus();
+
+                    // Always try to maintain focus on the input
+                    if !response.has_focus() {
+                        response.request_focus();
+                    }
                 });
             });
         });
 }
+
