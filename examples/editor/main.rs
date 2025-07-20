@@ -4,6 +4,7 @@ mod camera;
 mod console;
 mod cursor;
 mod keybindings;
+mod particles;
 mod ui;
 
 use app_state::StatesPlugin;
@@ -11,6 +12,7 @@ use bevy_falling_sand::prelude::FallingSandPlugin;
 use brush::*;
 use camera::*;
 use cursor::*;
+use particles::*;
 use ui::*;
 
 use bevy::{prelude::*, window::WindowMode};
@@ -27,6 +29,7 @@ fn main() {
                 ..default()
             }),
             FallingSandPlugin::default(),
+            ParticleSetupPlugin,
             CursorPlugin,
             CameraPlugin,
             BrushPlugin,

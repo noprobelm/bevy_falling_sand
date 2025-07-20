@@ -28,18 +28,15 @@ fn detect_ui_interaction(
     let ctx = contexts.ctx_mut();
 
     let is_over_area = ctx.is_pointer_over_area();
-    println!("State: {:?}, is_pointer_over_area: {}", current_state.get(), is_over_area);
-    
+
     match current_state.get() {
         AppState::Ui => {
             if !is_over_area {
-                println!("Switching to Canvas");
                 next_state.set(AppState::Canvas);
             }
         }
         AppState::Canvas => {
             if is_over_area {
-                println!("Switching to Ui");
                 next_state.set(AppState::Ui);
             }
         }
