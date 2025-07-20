@@ -15,7 +15,7 @@ impl ParticleEditor {
             columns[0].set_min_width(columns[0].available_width());
             columns[0].set_max_width(columns[0].available_width());
             self.render_particle_list(&mut columns[0]);
-            
+
             columns[1].set_min_width(columns[1].available_width());
             columns[1].set_max_width(columns[1].available_width());
             self.render_particle_properties(&mut columns[1]);
@@ -33,7 +33,7 @@ impl ParticleEditor {
                     // Temporarily increase spacing for collapsing headers
                     let original_indent = ui.spacing().indent;
                     ui.spacing_mut().indent = 16.0;
-                    
+
                     egui::CollapsingHeader::new(category)
                         .default_open(false)
                         .show(ui, |ui| {
@@ -52,7 +52,7 @@ impl ParticleEditor {
                                 if ui.button(particle_name).clicked() {}
                             }
                         });
-                    
+
                     // Restore original spacing after the collapsing header
                     ui.spacing_mut().indent = original_indent;
                 }
