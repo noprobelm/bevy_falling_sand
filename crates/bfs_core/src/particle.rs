@@ -19,8 +19,6 @@ impl Plugin for ParticleCorePlugin {
         app.register_type::<Particle>()
             .register_type::<ParticleType>()
             .register_type::<ParticlePosition>()
-            .register_type::<AttachedToParticleType>()
-            .register_type::<ParticleInstances>()
             .init_resource::<ParticleSimulationRun>()
             .configure_sets(
                 Update,
@@ -136,7 +134,7 @@ impl Component for ParticleType {
             let particle_type = world.get::<Self>(context.entity).unwrap();
             let name = particle_type.name.clone();
 
-            // Add ParticleInstances component
+            // Add ParticleInstances component - relationships will handle synchronization
             world
                 .commands()
                 .entity(context.entity)
@@ -202,52 +200,62 @@ impl ParticleTypeMap {
     }
 }
 
-/// Component that tracks which ParticleTypeId entity a Particle belongs to.
-/// This replaces the Parent/Child relationship for custom particle management.
-#[derive(Clone, Debug, Eq, PartialEq, Component, Reflect, Serialize, Deserialize)]
-#[reflect(Component)]
+/// Relationship component that tracks which ParticleType entity a Particle belongs to.
+/// This is the relationship source pointing to the target ParticleType entity.
+#[derive(Component)]
+#[relationship(relationship_target = ParticleInstances)]
 pub struct AttachedToParticleType(pub Entity);
 
-/// Component that tracks all Particle entities belonging to a ParticleTypeId.
-/// This replaces the Children component for custom particle management.
-#[derive(Clone, Debug, Default, Component, Reflect)]
-#[reflect(Component)]
-pub struct ParticleInstances {
-    /// The list of particle entity instances belonging to this ParticleTypeId.
-    pub instances: Vec<Entity>,
-}
+/// RelationshipTarget component that tracks all Particle entities belonging to a ParticleType.
+/// This component is automatically maintained by Bevy's relationship system.
+#[derive(Component)]
+#[relationship_target(relationship = AttachedToParticleType, linked_spawn)]
+pub struct ParticleInstances(Vec<Entity>);
 
 impl ParticleInstances {
+    /// Create a new empty ParticleInstances collection.
+    pub fn new() -> Self {
+        Self(Vec::new())
+    }
+
     /// Add a particle instance to this type.
+    /// Note: With Bevy relationships, this is handled automatically
     pub fn add(&mut self, entity: Entity) {
-        if !self.instances.contains(&entity) {
-            self.instances.push(entity);
+        if !self.0.contains(&entity) {
+            self.0.push(entity);
         }
     }
 
     /// Remove a particle instance from this type.
+    /// Note: With Bevy relationships, this is handled automatically
     pub fn remove(&mut self, entity: Entity) {
-        self.instances.retain(|&e| e != entity);
+        self.0.retain(|&e| e != entity);
     }
 
     /// Get all particle instances.
     pub fn iter(&self) -> std::slice::Iter<Entity> {
-        self.instances.iter()
+        self.0.iter()
     }
 
     /// Get the number of instances.
     pub fn len(&self) -> usize {
-        self.instances.len()
+        self.0.len()
     }
 
     /// Check if there are no instances.
     pub fn is_empty(&self) -> bool {
-        self.instances.is_empty()
+        self.0.is_empty()
     }
 
     /// Clear all instances.
     pub fn clear(&mut self) {
-        self.instances.clear();
+        self.0.clear();
+    }
+}
+
+impl Default for ParticleInstances {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -283,15 +291,8 @@ impl Component for Particle {
                 map.remove(&position);
             }
 
-            // Clean up relationship when particle is removed
-            if let Some(attached_to) = world.get::<AttachedToParticleType>(context.entity) {
-                let parent_entity = attached_to.0;
-                if let Some(mut particle_instances) =
-                    world.get_mut::<ParticleInstances>(parent_entity)
-                {
-                    particle_instances.remove(context.entity);
-                }
-            }
+            // Bevy's relationship system automatically handles cleanup of AttachedToParticleType
+            // and synchronization with ParticleInstances when entities are removed
         });
     }
 }
@@ -353,7 +354,6 @@ fn condition_ev_simulation_step_received(
 #[allow(clippy::needless_pass_by_value)]
 fn handle_new_particles(
     mut commands: Commands,
-    mut particle_type_query: Query<&mut ParticleInstances, With<ParticleType>>,
     particle_query: Query<(&Particle, &Transform, Entity), Changed<Particle>>,
     mut map: ResMut<ParticleMap>,
     type_map: Res<ParticleTypeMap>,
@@ -379,14 +379,14 @@ fn handle_new_particles(
         }
 
         if let Some(parent_handle) = type_map.get(&particle_type.name) {
-            if let Ok(mut particle_instances) = particle_type_query.get_mut(*parent_handle) {
-                entities.push(entity);
-                particle_instances.add(entity);
-                commands.entity(entity).insert((
-                    ParticlePosition(coordinates),
-                    AttachedToParticleType(*parent_handle),
-                ));
-            }
+            entities.push(entity);
+            
+            // Use Bevy's relationship system - the ParticleInstances will be 
+            // automatically updated when we add the AttachedToParticleType component
+            commands.entity(entity).insert((
+                ParticlePosition(coordinates),
+                AttachedToParticleType(*parent_handle),
+            ));
         } else {
             warn!(
                 "Attempted to spawn particle without valid parent type: '{:?}'",
@@ -429,6 +429,8 @@ fn ev_reset_particle_children(
 
 /// System to clean up orphaned particle instances from ParticleInstances components
 /// when particles are despawned outside of the normal flow.
+/// Note: With Bevy's relationship system, this cleanup should be automatic,
+/// but we keep this as a safety net for edge cases.
 #[allow(clippy::needless_pass_by_value)]
 fn cleanup_orphaned_particle_instances(
     mut particle_type_query: Query<&mut ParticleInstances, With<ParticleType>>,
@@ -436,7 +438,7 @@ fn cleanup_orphaned_particle_instances(
 ) {
     for mut particle_instances in particle_type_query.iter_mut() {
         particle_instances
-            .instances
+            .0
             .retain(|&entity| particle_query.get(entity).is_ok());
     }
 }
