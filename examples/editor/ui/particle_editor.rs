@@ -48,33 +48,37 @@ impl ParticleEditor {
                             // Restore original spacing inside the collapsing content
                             ui.spacing_mut().indent = original_indent;
                             let examples: Vec<&str> = match category {
-                                _ => vec![], // "Walls" => wall_query
-                                             //     .iter()
-                                             //     .map(|particle_type| particle_type.name.as_str())
-                                             //     .collect(),
-                                             // "Solids" => solid_query
-                                             //     .iter()
-                                             //     .map(|particle_type| particle_type.name.as_str())
-                                             //     .collect(),
-                                             // "Movable Solids" => movable_solid_query
-                                             //     .iter()
-                                             //     .map(|particle_type| particle_type.name.as_str())
-                                             //     .collect(),
-                                             //
-                                             // "Liquids" => liquid_query
-                                             //     .iter()
-                                             //     .map(|particle_type| particle_type.name.as_str())
-                                             //     .collect(),
-                                             //
-                                             // "Gases" => gas_query
-                                             //     .iter()
-                                             //     .map(|particle_type| particle_type.name.as_str())
-                                             //     .collect(),
-                                             // "Other" => other_query
-                                             //     .iter()
-                                             //     .map(|particle_type| particle_type.name.as_str())
-                                             //     .collect(),
-                                             // _ => vec![],
+                                "Walls" => particle_materials
+                                    .walls()
+                                    .iter()
+                                    .map(|particle_type| particle_type.name.as_ref())
+                                    .collect(),
+                                "Solids" => particle_materials
+                                    .solids()
+                                    .iter()
+                                    .map(|particle_type| particle_type.name.as_ref())
+                                    .collect(),
+                                "Movable Solids" => particle_materials
+                                    .movable_solids()
+                                    .iter()
+                                    .map(|particle_type| particle_type.name.as_ref())
+                                    .collect(),
+                                "Liquids" => particle_materials
+                                    .liquids()
+                                    .iter()
+                                    .map(|particle_type| particle_type.name.as_ref())
+                                    .collect(),
+                                "Gases" => particle_materials
+                                    .gases()
+                                    .iter()
+                                    .map(|particle_type| particle_type.name.as_ref())
+                                    .collect(),
+                                "Other" => particle_materials
+                                    .other()
+                                    .iter()
+                                    .map(|particle_type| particle_type.name.as_ref())
+                                    .collect(),
+                                _ => vec![],
                             };
 
                             for particle_name in examples {

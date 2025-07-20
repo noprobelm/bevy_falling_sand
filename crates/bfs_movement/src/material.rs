@@ -336,6 +336,32 @@ pub struct ParticleMaterialsParam<'w, 's> {
     >,
 }
 
+impl<'w, 's> ParticleMaterialsParam<'w, 's> {
+    pub fn walls(&self) -> Vec<&ParticleType> {
+        self.walls.iter().collect()
+    }
+
+    pub fn solids(&self) -> Vec<&ParticleType> {
+        self.solids.iter().collect()
+    }
+
+    pub fn movable_solids(&self) -> Vec<&ParticleType> {
+        self.movable_solids.iter().collect()
+    }
+
+    pub fn liquids(&self) -> Vec<&ParticleType> {
+        self.liquids.iter().collect()
+    }
+
+    pub fn gases(&self) -> Vec<&ParticleType> {
+        self.gases.iter().collect()
+    }
+
+    pub fn other(&self) -> Vec<&ParticleType> {
+        self.other.iter().collect()
+    }
+}
+
 fn ev_clear_dynamic_particles(
     mut ev_clear_dynamic_particles: EventReader<ClearDynamicParticlesEvent>,
     mut ev_clear_particle_type_children: EventWriter<ClearParticleTypeChildrenEvent>,
@@ -345,8 +371,9 @@ fn ev_clear_dynamic_particles(
         dynamic_particle_types_query
             .iter()
             .for_each(|particle_type| {
-                ev_clear_particle_type_children
-                    .write(ClearParticleTypeChildrenEvent(particle_type.name.to_string()));
+                ev_clear_particle_type_children.write(ClearParticleTypeChildrenEvent(
+                    particle_type.name.to_string(),
+                ));
             });
     });
 }
@@ -360,8 +387,9 @@ fn ev_clear_static_particles(
         static_particle_types_query
             .iter()
             .for_each(|particle_type| {
-                ev_clear_particle_type_children
-                    .write(ClearParticleTypeChildrenEvent(particle_type.name.to_string()));
+                ev_clear_particle_type_children.write(ClearParticleTypeChildrenEvent(
+                    particle_type.name.to_string(),
+                ));
             });
     });
 }
