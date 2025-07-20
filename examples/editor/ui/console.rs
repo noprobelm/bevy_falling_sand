@@ -18,7 +18,7 @@ impl Default for ConsoleState {
             input: String::new(),
             history: Vec::new(),
             history_index: None,
-            expanded: false,
+            expanded: true,
             height: 300.0,
         };
 
