@@ -4,9 +4,9 @@ mod particle_editor;
 mod top_bar;
 
 use crate::console::{
-    commands,
+    ConsolePlugin,
     core::{
-        ConsoleCache, ConsoleCommandEntered, ConsoleConfiguration, ConsoleState, PrintConsoleLine,
+        ConsoleCache, ConsoleCommandEntered, ConsoleConfiguration, ConsoleState,
     },
 };
 use console::render_console;
@@ -21,25 +21,13 @@ pub struct UiPlugin;
 
 impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(EguiPlugin {
-            enable_multipass_for_primary_context: false,
-        })
-        .init_resource::<ConsoleState>()
-        .init_resource::<ConsoleConfiguration>()
-        .init_resource::<ConsoleCache>()
-        .add_event::<ConsoleCommandEntered>()
-        .add_event::<PrintConsoleLine>()
-        .add_systems(Startup, crate::console::core::init_commands)
-        .add_systems(
-            Update,
-            (
-                commands::help_command,
-                commands::clear_command,
-                commands::echo_command,
-                commands::exit_command,
-                console::receive_console_line,
-            ),
-        )
+        app.add_plugins((
+            EguiPlugin {
+                enable_multipass_for_primary_context: false,
+            },
+            ConsolePlugin,
+        ))
+        .add_systems(Update, console::receive_console_line)
         .add_systems(
             EguiContextPass,
             render.after(bevy_egui::EguiPreUpdateSet::InitContexts),
