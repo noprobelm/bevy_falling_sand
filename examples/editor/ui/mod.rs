@@ -36,6 +36,7 @@ impl Plugin for UiPlugin {
                 commands::help_command,
                 commands::clear_command,
                 commands::echo_command,
+                commands::exit_command,
                 console::receive_console_line,
             ),
         )
