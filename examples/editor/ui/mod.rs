@@ -122,14 +122,7 @@ fn render(
         );
 
         let console_height = if console_state.expanded {
-            let base_height = console_state.height;
-            // Add extra height for suggestions
-            let suggestion_height = if !console_state.suggestions.is_empty() {
-                20.0 + (console_state.suggestions.len() as f32 * 20.0)
-            } else {
-                0.0
-            };
-            base_height + suggestion_height
+            console_state.height
         } else {
             40.0
         };

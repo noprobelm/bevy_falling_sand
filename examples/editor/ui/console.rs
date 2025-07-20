@@ -301,19 +301,6 @@ pub fn render_console(
                                 ui.label(egui::RichText::new(message).monospace().color(color));
                             }
                             
-                            // Show suggestions in the message area where we know text is visible
-                            if !console_state.suggestions.is_empty() {
-                                ui.label(egui::RichText::new("--- Suggestions ---").monospace().color(egui::Color32::YELLOW));
-                                for (i, suggestion) in console_state.suggestions.iter().enumerate() {
-                                    let is_highlighted = Some(i) == console_state.suggestion_index;
-                                    let color = if is_highlighted {
-                                        egui::Color32::from_rgb(100, 255, 100)
-                                    } else {
-                                        egui::Color32::from_rgb(200, 200, 200)
-                                    };
-                                    ui.label(egui::RichText::new(format!("  {}", suggestion)).monospace().color(color));
-                                }
-                            }
                         });
 
                     ui.separator();
@@ -326,11 +313,57 @@ pub fn render_console(
                             .color(egui::Color32::from_rgb(100, 200, 100)),
                     );
 
+                    // Create the input field with inline autocompletion
+                    let current_suggestion = if !console_state.suggestions.is_empty() {
+                        console_state.suggestion_index
+                            .and_then(|i| console_state.suggestions.get(i))
+                            .or_else(|| console_state.suggestions.first())
+                            .cloned()
+                    } else {
+                        None
+                    };
+
                     let response = ui.add(
                         egui::TextEdit::singleline(&mut console_state.input)
                             .font(egui::TextStyle::Monospace)
                             .desired_width(ui.available_width()),
                     );
+
+                    // Render inline autocompletion suggestion
+                    if let Some(suggestion) = &current_suggestion {
+                        if suggestion.starts_with(&console_state.input) && !console_state.input.is_empty() {
+                            let remaining_text = &suggestion[console_state.input.len()..];
+                            if !remaining_text.is_empty() {
+                                // Calculate position for the suggestion text more accurately
+                                let font_id = egui::FontId::monospace(14.0);
+                                let text_galley = ui.fonts(|f| {
+                                    f.layout_no_wrap(
+                                        console_state.input.clone(),
+                                        font_id.clone(),
+                                        egui::Color32::WHITE,
+                                    )
+                                });
+                                
+                                // Position relative to the text edit field's content area
+                                let text_edit_content_rect = response.rect;
+                                let text_start_x = text_edit_content_rect.left() + 4.0; // Small padding inside text edit
+                                let text_y = text_edit_content_rect.center().y - (text_galley.size().y / 2.0);
+                                
+                                let suggestion_pos = egui::Pos2::new(
+                                    text_start_x + text_galley.size().x,
+                                    text_y
+                                );
+                                
+                                ui.painter().text(
+                                    suggestion_pos,
+                                    egui::Align2::LEFT_TOP,
+                                    remaining_text,
+                                    font_id,
+                                    egui::Color32::from_rgb(120, 120, 120), // Grayed out
+                                );
+                            }
+                        }
+                    }
 
                     if response.changed() {
                         console_state.history_index = 0;
@@ -338,11 +371,20 @@ pub fn render_console(
                         println!("Input changed to: '{}', suggestions: {:?}", console_state.input, console_state.suggestions);
                     }
 
-                    // Handle Enter key submission - check this before focus is lost
-                    if response.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
+                    // Handle Enter key submission - auto-complete if suggestion exists
+                    if response.has_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
+                        // Auto-complete with current suggestion if available
+                        if let Some(suggestion) = &current_suggestion {
+                            if suggestion.starts_with(&console_state.input) && !console_state.input.is_empty() {
+                                console_state.input = suggestion.clone();
+                            }
+                        }
+                        
                         if !console_state.input.trim().is_empty() {
                             let command = console_state.input.clone();
                             console_state.input.clear();
+                            console_state.suggestions.clear(); // Clear suggestions after command
+                            console_state.suggestion_index = None;
                             console_state.execute_command(command, config, command_writer);
                             console_state.history_index = 0;
                             // Auto-expand when command is executed
@@ -354,7 +396,7 @@ pub fn render_console(
                         response.request_focus();
                     }
 
-                    // Handle Tab key for autocompletion
+                    // Handle Tab key for cycling through suggestions
                     if response.has_focus() && ui.input(|i| i.key_pressed(egui::Key::Tab)) && !console_state.suggestions.is_empty() {
                         match &mut console_state.suggestion_index {
                             Some(index) => {
@@ -364,12 +406,8 @@ pub fn render_console(
                                 console_state.suggestion_index = Some(0);
                             }
                         }
-                        // Update input with selected suggestion
-                        if let Some(index) = console_state.suggestion_index {
-                            if index < console_state.suggestions.len() {
-                                console_state.input = console_state.suggestions[index].clone();
-                            }
-                        }
+                        // Don't auto-complete on Tab, just cycle through suggestions for inline display
+                        response.request_focus(); // Keep focus
                     }
 
                     if response.has_focus() {
