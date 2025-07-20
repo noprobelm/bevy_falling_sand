@@ -29,7 +29,7 @@ fn render(mut contexts: EguiContexts) {
         });
     });
 
-    egui::SidePanel::left("left_panel")
+    egui::SidePanel::left("Left panel")
         .resizable(false)
         .show(ctx, |ui| {
             // Fill background
