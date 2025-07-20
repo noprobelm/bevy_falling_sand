@@ -24,7 +24,6 @@ impl Default for ConsoleState {
 
         state.add_message("--- Bevy Falling Sand Editor Console ---".to_string());
         state.add_message("Type 'help' for available commands".to_string());
-        state.add_message(String::new());
 
         state
     }
@@ -91,13 +90,13 @@ impl ConsoleState {
 }
 
 pub fn render_console(ui: &mut egui::Ui, console_state: &mut ConsoleState) {
-    // Check for toggle hotkey (backtick)
     if ui.input(|i| i.key_pressed(egui::Key::Backtick)) {
         console_state.toggle();
     }
 
-    // Check for Enter key to submit command (global check)
+    // Check for Enter key to submit command when console has focus
     if ui.input(|i| i.key_pressed(egui::Key::Enter)) && !console_state.input.is_empty() {
+        // We'll check if the input actually has focus inside the UI logic
         let command = console_state.input.clone();
         console_state.input.clear();
         console_state.execute_command(command);
@@ -109,15 +108,15 @@ pub fn render_console(ui: &mut egui::Ui, console_state: &mut ConsoleState) {
 
     let available_height = ui.available_height();
 
-    egui::Frame::new()
+    let _frame_response = egui::Frame::new()
         .fill(egui::Color32::from_rgb(46, 46, 46))
         .corner_radius(4.0)
         .inner_margin(egui::Margin::same(8))
         .show(ui, |ui| {
+            let console_is_hovered = ui.rect_contains_pointer(ui.max_rect());
+
             ui.vertical(|ui| {
-                // Only show messages and history when expanded
                 if console_state.expanded {
-                    // Add resize handle at the top
                     let resize_response = ui.allocate_response(
                         egui::Vec2::new(ui.available_width(), 8.0),
                         egui::Sense::drag(),
@@ -129,12 +128,10 @@ pub fn render_console(ui: &mut egui::Ui, console_state: &mut ConsoleState) {
                             (console_state.height - drag_delta).clamp(80.0, 600.0);
                     }
 
-                    // Change cursor when hovering over resize handle
                     if resize_response.hovered() {
                         ui.ctx().set_cursor_icon(egui::CursorIcon::ResizeVertical);
                     }
 
-                    // Draw resize handle indicator
                     let handle_rect = resize_response.rect;
                     let handle_center = handle_rect.center();
                     ui.painter().hline(
@@ -148,7 +145,7 @@ pub fn render_console(ui: &mut egui::Ui, console_state: &mut ConsoleState) {
                         egui::Stroke::new(1.0, egui::Color32::from_rgb(100, 100, 100)),
                     );
 
-                    let text_height = available_height - 50.0; // Account for resize handle
+                    let text_height = available_height - 50.0;
 
                     egui::ScrollArea::vertical()
                         .auto_shrink([false, false])
@@ -167,7 +164,6 @@ pub fn render_console(ui: &mut egui::Ui, console_state: &mut ConsoleState) {
                     ui.separator();
                 }
 
-                // Always show the prompt
                 ui.horizontal(|ui| {
                     ui.label(
                         egui::RichText::new(">")
@@ -185,7 +181,6 @@ pub fn render_console(ui: &mut egui::Ui, console_state: &mut ConsoleState) {
                         console_state.history_index = None;
                     }
 
-                    // Handle arrow keys for history navigation
                     if response.has_focus() {
                         if ui.input(|i| i.key_pressed(egui::Key::ArrowUp)) {
                             console_state.navigate_history(true);
@@ -196,8 +191,7 @@ pub fn render_console(ui: &mut egui::Ui, console_state: &mut ConsoleState) {
                         }
                     }
 
-                    // Always try to maintain focus on the input
-                    if !response.has_focus() {
+                    if console_is_hovered && !response.has_focus() {
                         response.request_focus();
                     }
                 });
