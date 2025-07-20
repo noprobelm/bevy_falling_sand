@@ -97,7 +97,8 @@ pub fn render_console(
                     let response = ui.add(
                         egui::TextEdit::singleline(&mut console_state.input)
                             .font(egui::TextStyle::Monospace)
-                            .desired_width(ui.available_width()),
+                            .desired_width(ui.available_width())
+                            .lock_focus(true),
                     );
 
                     // Auto-focus when console is opened with backtick or on initial load
@@ -159,9 +160,10 @@ pub fn render_console(
 
                     // Handle Enter key submission - check before focus is lost
                     if response.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
-                        // Auto-complete with current suggestion if available
+                        // Auto-complete with current suggestion if available and we have an active suggestion index
                         if let Some(suggestion) = &current_suggestion {
-                            if suggestion.starts_with(&console_state.input)
+                            if console_state.suggestion_index.is_some() 
+                                && suggestion.starts_with(&console_state.input)
                                 && !console_state.input.is_empty()
                             {
                                 console_state.input = suggestion.clone();
@@ -184,21 +186,50 @@ pub fn render_console(
                         response.request_focus();
                     }
 
-                    // Handle Tab key for cycling through suggestions
-                    if response.has_focus()
-                        && ui.input(|i| i.key_pressed(egui::Key::Tab))
-                        && !console_state.suggestions.is_empty()
-                    {
-                        match &mut console_state.suggestion_index {
-                            Some(index) => {
-                                *index = (*index + 1) % console_state.suggestions.len();
+                    // Handle Tab key for auto-completion - consume the key to prevent egui's default handling
+                    if response.has_focus() {
+                        let mut tab_handled = false;
+                        
+                        ui.input_mut(|i| {
+                            if i.key_pressed(egui::Key::Tab) && !console_state.suggestions.is_empty() {
+                                if !i.modifiers.shift {
+                                    // Tab: cycle forward through suggestions
+                                    match &mut console_state.suggestion_index {
+                                        Some(index) => {
+                                            *index = (*index + 1) % console_state.suggestions.len();
+                                        }
+                                        None => {
+                                            console_state.suggestion_index = Some(0);
+                                        }
+                                    }
+                                } else {
+                                    // Shift+Tab: cycle backwards through suggestions
+                                    match &mut console_state.suggestion_index {
+                                        Some(index) => {
+                                            if *index == 0 {
+                                                *index = console_state.suggestions.len() - 1;
+                                            } else {
+                                                *index -= 1;
+                                            }
+                                        }
+                                        None => {
+                                            console_state.suggestion_index = Some(console_state.suggestions.len() - 1);
+                                        }
+                                    }
+                                }
+                                tab_handled = true;
+                                
+                                // Consume the Tab key to prevent egui's default focus handling
+                                i.consume_key(egui::Modifiers::NONE, egui::Key::Tab);
+                                if i.modifiers.shift {
+                                    i.consume_key(egui::Modifiers::SHIFT, egui::Key::Tab);
+                                }
                             }
-                            None => {
-                                console_state.suggestion_index = Some(0);
-                            }
+                        });
+                        
+                        if tab_handled {
+                            response.request_focus(); // Keep focus
                         }
-                        // Don't auto-complete on Tab, just cycle through suggestions for inline display
-                        response.request_focus(); // Keep focus
                     }
 
                     if response.has_focus() {
