@@ -63,6 +63,17 @@ impl ParticleEditor {
         ui.heading("Particle Editor");
         ui.separator();
 
+        // Get the current particle name for duplication before splitting into columns
+        let current_particle_name = if let Some(editor_entity) = current_editor.selected_entity {
+            if let Ok(editor_data) = editor_data_query.get(editor_entity) {
+                Some(editor_data.name.clone())
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
         // Use the original columns approach - it works fine with adequate width
         ui.columns(2, |columns| {
             columns[0].set_min_width(columns[0].available_width());
@@ -77,6 +88,7 @@ impl ParticleEditor {
                 apply_editor_and_reset_events,
                 reset_particle_children_events,
                 particle_type_map,
+                current_particle_name,
             );
 
             columns[1].set_min_width(columns[1].available_width());
@@ -94,8 +106,9 @@ impl ParticleEditor {
         current_editor: &CurrentEditorSelection,
         apply_editor_events: &mut EventWriter<ApplyEditorChanges>,
         apply_editor_and_reset_events: &mut EventWriter<ApplyEditorChangesAndReset>,
-        reset_particle_children_events: &mut EventWriter<ResetParticleChildrenEvent>,
-        particle_type_map: &ParticleTypeMap,
+        _reset_particle_children_events: &mut EventWriter<ResetParticleChildrenEvent>,
+        _particle_type_map: &ParticleTypeMap,
+        current_particle_name: Option<String>,
     ) {
         egui::ScrollArea::vertical()
             .id_salt("particle_list_scroll")
@@ -169,7 +182,9 @@ impl ParticleEditor {
                 ui.add_space(8.0);
                 ui.vertical(|ui| {
                     if ui.button("New Particle").clicked() {
-                        create_particle_events.write(CreateNewParticle);
+                        create_particle_events.write(CreateNewParticle { 
+                            duplicate_from: current_particle_name.clone(),
+                        });
                     }
                     if ui.button("Save Particle").clicked() {
                         if let Some(editor_entity) = current_editor.selected_entity {

@@ -8,7 +8,6 @@ use bevy::{
 use bevy_falling_sand::prelude::*;
 use std::time::Duration;
 use crate::particles::SelectedParticle;
-use crate::app_state::InitializationState;
 
 /// Event to load an existing particle type into the editor
 #[derive(Event, Debug, Clone)]
@@ -18,7 +17,10 @@ pub struct LoadParticleIntoEditor {
 
 /// Event to create a new particle in the editor
 #[derive(Event, Debug, Clone)]
-pub struct CreateNewParticle;
+pub struct CreateNewParticle {
+    /// Optional source particle to duplicate from
+    pub duplicate_from: Option<String>,
+}
 
 /// Event to save the currently edited particle
 #[derive(Event, Debug, Clone)]
@@ -457,8 +459,18 @@ pub fn handle_load_particle_into_editor(
         With<ParticleType>,
     >,
     mut current_editor: ResMut<CurrentEditorSelection>,
+    selected_particle: Option<ResMut<SelectedParticle>>,
 ) {
+    // Get a mutable reference to selected_particle outside the loop to avoid move issues
+    let mut selected_particle_mut = selected_particle;
+    
     for event in load_events.read() {
+        // Update the global SelectedParticle resource if it exists
+        if let Some(ref mut selected_particle) = selected_particle_mut {
+            let static_name: &'static str = Box::leak(event.particle_name.clone().into_boxed_str());
+            selected_particle.0 = Particle::new(static_name);
+        }
+        
         // Check if we already have an editor entity for this particle
         if let Some(&editor_entity) = particle_editor_registry.get(&event.particle_name) {
             current_editor.selected_entity = Some(editor_entity);
@@ -486,16 +498,88 @@ pub fn handle_create_new_particle(
     mut create_events: EventReader<CreateNewParticle>,
     mut particle_editor_registry: ResMut<ParticleEditorRegistry>,
     mut current_editor: ResMut<CurrentEditorSelection>,
+    mut particle_type_map: ResMut<ParticleTypeMap>,
+    selected_particle: Option<ResMut<SelectedParticle>>,
+    particle_query: Query<
+        (
+            Option<&Density>,
+            Option<&Velocity>,
+            Option<&Momentum>,
+            Option<&ColorProfile>,
+            Option<&ChangesColor>,
+            Option<&Burns>,
+            Option<&Fire>,
+            Option<&Wall>,
+            Option<&Solid>,
+            Option<&MovableSolid>,
+            Option<&Liquid>,
+            Option<&Gas>,
+        ),
+        With<ParticleType>,
+    >,
 ) {
-    for _event in create_events.read() {
-        let editor_data = ParticleEditorData::default();
-        let unique_name = generate_unique_particle_name(&particle_editor_registry);
-        let mut editor_data = editor_data;
-        editor_data.name = unique_name.clone();
+    // Get a mutable reference to selected_particle outside the loop to avoid move issues
+    let mut selected_particle_mut = selected_particle;
+    
+    for event in create_events.read() {
+        let editor_data = if let Some(ref duplicate_from) = event.duplicate_from {
+            // Try to duplicate from an existing particle
+            if let Some(&particle_entity) = particle_type_map.get(duplicate_from) {
+                if let Some(mut duplicated_data) = ParticleEditorData::from_particle_type(
+                    duplicate_from.clone(),
+                    &particle_query,
+                    particle_entity,
+                ) {
+                    // Generate unique name for the duplicate
+                    let unique_name = generate_unique_particle_name_with_base(&particle_type_map, "New Particle");
+                    duplicated_data.name = unique_name;
+                    duplicated_data.is_new = true;
+                    duplicated_data.is_modified = false;
+                    duplicated_data
+                } else {
+                    // Fallback to default if duplication fails
+                    let mut default_data = ParticleEditorData::default();
+                    let unique_name = generate_unique_particle_name_with_base(&particle_type_map, "New Particle");
+                    default_data.name = unique_name;
+                    default_data
+                }
+            } else {
+                // Fallback to default if source particle not found
+                let mut default_data = ParticleEditorData::default();
+                let unique_name = generate_unique_particle_name_with_base(&particle_type_map, "New Particle");
+                default_data.name = unique_name;
+                default_data
+            }
+        } else {
+            // Create default new particle
+            let mut editor_data = ParticleEditorData::default();
+            let unique_name = generate_unique_particle_name_with_base(&particle_type_map, "New Particle");
+            editor_data.name = unique_name;
+            editor_data
+        };
 
-        let editor_entity = commands.spawn(editor_data).id();
-        particle_editor_registry.insert(unique_name, editor_entity);
+        // Immediately spawn the particle type into the ParticleTypeMap so it appears in the list
+        apply_editor_data_to_particle_type(
+            &mut commands,
+            &editor_data,
+            &mut particle_type_map,
+            true, // Always create new since this is a new particle
+        );
+
+        // Mark the editor data as saved since we just created the particle type
+        let mut final_editor_data = editor_data;
+        final_editor_data.mark_saved();
+
+        // Create the editor entity
+        let editor_entity = commands.spawn(final_editor_data.clone()).id();
+        particle_editor_registry.insert(final_editor_data.name.clone(), editor_entity);
         current_editor.selected_entity = Some(editor_entity);
+
+        // Update the global SelectedParticle resource if it exists
+        if let Some(ref mut selected_particle) = selected_particle_mut {
+            let static_name: &'static str = Box::leak(final_editor_data.name.clone().into_boxed_str());
+            selected_particle.0 = Particle::new(static_name);
+        }
     }
 }
 
@@ -541,6 +625,19 @@ fn generate_unique_particle_name(registry: &ParticleEditorRegistry) -> String {
     while registry.contains(&name) {
         name = format!("{} {}", base_name, counter);
         counter += 1;
+    }
+
+    name
+}
+
+/// Helper function to generate unique particle names with custom base, checking against ParticleTypeMap
+fn generate_unique_particle_name_with_base(particle_type_map: &ParticleTypeMap, base_name: &str) -> String {
+    let mut counter = 1;
+    let mut name = base_name.to_string();
+
+    while particle_type_map.contains(&name) {
+        counter += 1;
+        name = format!("{} {}", base_name, counter);
     }
 
     name

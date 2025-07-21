@@ -1,6 +1,6 @@
 use crate::{app_state::AppState, cursor::CursorPosition, particles::SelectedParticle};
 use bevy::{input::common_conditions::input_pressed, platform::collections::HashSet, prelude::*};
-use bevy_falling_sand::prelude::Particle;
+use bevy_falling_sand::prelude::{Particle, ParticleSimulationSet};
 
 pub(crate) struct BrushPlugin;
 
@@ -19,7 +19,8 @@ impl Plugin for BrushPlugin {
                     spawn_particles
                         .run_if(input_pressed(MouseButton::Left))
                         .run_if(in_state(BrushSpawnState::Spawn))
-                        .run_if(in_state(AppState::Canvas)),
+                        .run_if(in_state(AppState::Canvas))
+                        .before(ParticleSimulationSet),
                 ),
             );
     }
@@ -361,4 +362,3 @@ fn spawn_cursor_interpolated(commands: &mut Commands, particle: Particle, start:
         )
     }));
 }
-

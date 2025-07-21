@@ -8,7 +8,7 @@ mod particles;
 mod ui;
 
 use app_state::StatesPlugin;
-use bevy_falling_sand::prelude::FallingSandPlugin;
+use bevy_falling_sand::prelude::{FallingSandDebugPlugin, FallingSandPlugin};
 use brush::*;
 use camera::*;
 use cursor::*;
@@ -29,6 +29,7 @@ fn main() {
                 ..default()
             }),
             FallingSandPlugin::default(),
+            FallingSandDebugPlugin,
             ParticleSetupPlugin,
             CursorPlugin,
             CameraPlugin,
