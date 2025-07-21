@@ -167,10 +167,10 @@ impl ParticleEditor {
                 }
 
                 ui.add_space(8.0);
-                if ui.button("New Particle").clicked() {
-                    create_particle_events.write(CreateNewParticle);
-                }
-                ui.horizontal(|ui| {
+                ui.vertical(|ui| {
+                    if ui.button("New Particle").clicked() {
+                        create_particle_events.write(CreateNewParticle);
+                    }
                     if ui.button("Save Particle").clicked() {
                         if let Some(editor_entity) = current_editor.selected_entity {
                             // For now, we'll let the system determine if it's new based on the editor data
