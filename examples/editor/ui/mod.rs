@@ -9,7 +9,6 @@ use crate::{
         core::{ConsoleCache, ConsoleCommandEntered, ConsoleConfiguration, ConsoleState},
         ConsolePlugin,
     },
-    particles::SelectedParticle,
 };
 use bevy_falling_sand::prelude::{
     ParticleMaterialsParam, ParticleTypeMap, ResetParticleChildrenEvent,
@@ -21,7 +20,8 @@ use particle_editor::{
     LoadParticleIntoEditor, ParticleEditorData,
 };
 use particle_editor::{ParticleEditor, ParticleEditorPlugin};
-use top_bar::UiTopBar;
+use top_bar::{UiTopBar, ParticleFilesPlugin};
+pub use top_bar::particle_files::ParticleFileDialog;
 
 use bevy::prelude::*;
 pub(super) use bevy_egui::*;
@@ -36,25 +36,24 @@ impl Plugin for UiPlugin {
             },
             ConsolePlugin,
             ParticleEditorPlugin,
+            ParticleFilesPlugin,
         ))
         .add_systems(Update, console::receive_console_line)
         .add_systems(
             EguiContextPass,
-            render
-                .before(bevy_egui::EguiPreUpdateSet::InitContexts)
-                .run_if(in_state(InitializationState::Finished)),
+            (render_ui_panels).run_if(in_state(InitializationState::Finished)),
         );
     }
 }
 
-fn render(
+fn render_ui_panels(
+    mut commands: Commands,
     mut contexts: EguiContexts,
     mut console_state: ResMut<ConsoleState>,
     cache: Res<ConsoleCache>,
     config: Res<ConsoleConfiguration>,
     mut command_writer: EventWriter<ConsoleCommandEntered>,
     particle_materials: ParticleMaterialsParam,
-    _selected_particle: Res<SelectedParticle>,
     current_editor: Res<CurrentEditorSelection>,
     mut editor_data_query: Query<&mut ParticleEditorData>,
     mut load_particle_events: EventWriter<LoadParticleIntoEditor>,
@@ -63,26 +62,41 @@ fn render(
     mut apply_editor_and_reset_events: EventWriter<ApplyEditorChangesAndReset>,
     mut reset_particle_children_events: EventWriter<ResetParticleChildrenEvent>,
     particle_type_map: Res<ParticleTypeMap>,
+    particle_file_dialog: Res<ParticleFileDialog>,
 ) {
     let ctx = contexts.ctx_mut();
 
+    // All egui panels must be declared in the same context to coordinate layout properly
+    // Order matters: Top -> Side -> Bottom to avoid overlaps
+    
+    // Top panel - must be declared first
     let _top_response = egui::TopBottomPanel::top("Top panel").show(ctx, |ui| {
         egui::menu::bar(ui, |ui| {
-            UiTopBar.render(ui);
+            UiTopBar.render(ui, &mut commands);
+            
+            // Show particle file status messages
+            if let Some(ref error) = particle_file_dialog.last_error {
+                ui.separator();
+                ui.colored_label(egui::Color32::RED, format!("Error: {}", error));
+            }
+            
+            if let Some(ref success) = particle_file_dialog.last_success {
+                ui.separator();
+                ui.colored_label(egui::Color32::GREEN, success);
+            }
         });
     });
-
+    
+    // Side panel - must be declared before bottom panel to avoid overlap
     let _left_response = egui::SidePanel::left("Left panel")
         .resizable(false)
-        .exact_width(700.0) // Increased to compensate for internal margins
+        .exact_width(700.0)
         .show(ctx, |ui| {
-            // Remove all margins and padding to use full width
             ui.spacing_mut().indent = 0.0;
             ui.spacing_mut().button_padding = egui::Vec2::ZERO;
             ui.spacing_mut().menu_margin = egui::Margin::ZERO;
             ui.spacing_mut().indent_ends_with_horizontal_line = false;
 
-            // Fill the entire panel with the background color
             ui.painter()
                 .rect_filled(ui.max_rect(), 0.0, egui::Color32::from_rgb(30, 30, 30));
 
@@ -90,12 +104,10 @@ fn render(
                 ui.set_width(ui.available_width());
                 ui.spacing_mut().item_spacing.y = 8.0;
 
-                // Calculate exact 50/50 split
                 let total_height = ui.available_height();
                 let spacing = 8.0;
                 let panel_height = (total_height - spacing) / 2.0;
 
-                // Top half - Particle Editor (exactly 50%)
                 ui.group(|ui| {
                     ui.set_width(ui.available_width());
                     ui.set_height(panel_height);
@@ -113,7 +125,6 @@ fn render(
                     );
                 });
 
-                // Bottom half - Layers Panel (exactly 50%)
                 ui.group(|ui| {
                     ui.set_width(ui.available_width());
                     ui.set_height(panel_height);
@@ -122,7 +133,7 @@ fn render(
             });
         });
 
-    // Use a bottom panel for the console instead of taking up the entire central area
+    // Bottom panel - must be declared last
     let console_height = if console_state.expanded {
         console_state.height
     } else {
@@ -131,10 +142,9 @@ fn render(
 
     let _console_response = egui::TopBottomPanel::bottom("Console panel")
         .exact_height(console_height)
-        .frame(egui::Frame::NONE) // Let the console handle its own background
+        .frame(egui::Frame::NONE)
         .show(ctx, |ui| {
             render_console(ui, &mut console_state, &cache, &config, &mut command_writer);
         });
-
-    // Don't use a central panel at all - let the canvas area be completely free of egui
 }
+
