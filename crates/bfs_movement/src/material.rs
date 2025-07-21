@@ -337,26 +337,32 @@ pub struct ParticleMaterialsParam<'w, 's> {
 }
 
 impl<'w, 's> ParticleMaterialsParam<'w, 's> {
+    /// Returns all particle types that have the `Wall` component.
     pub fn walls(&self) -> Vec<&ParticleType> {
         self.walls.iter().collect()
     }
 
+    /// Returns all particle types that have the `Solid` component.
     pub fn solids(&self) -> Vec<&ParticleType> {
         self.solids.iter().collect()
     }
 
+    /// Returns all particle types that have the `MovableSolid` component.
     pub fn movable_solids(&self) -> Vec<&ParticleType> {
         self.movable_solids.iter().collect()
     }
 
+    /// Returns all particle types that have the `Liquid` component.
     pub fn liquids(&self) -> Vec<&ParticleType> {
         self.liquids.iter().collect()
     }
 
+    /// Returns all particle types that have the `Gas` component.
     pub fn gases(&self) -> Vec<&ParticleType> {
         self.gases.iter().collect()
     }
 
+    /// Returns all particle types that have none of the material components.
     pub fn other(&self) -> Vec<&ParticleType> {
         self.other.iter().collect()
     }

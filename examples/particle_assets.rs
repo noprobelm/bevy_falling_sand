@@ -60,4 +60,3 @@ fn check_asset_loading(
         }
     }
 }
-
