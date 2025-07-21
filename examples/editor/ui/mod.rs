@@ -14,7 +14,8 @@ use crate::{
 use bevy_falling_sand::prelude::ParticleMaterialsParam;
 use console::render_console;
 use layers_panel::LayersPanel;
-use particle_editor::ParticleEditor;
+use particle_editor::{ParticleEditor, ParticleEditorPlugin};
+use particle_editor::{CurrentEditorSelection, LoadParticleIntoEditor, CreateNewParticle, ParticleEditorData};
 use top_bar::UiTopBar;
 
 use bevy::prelude::*;
@@ -29,6 +30,7 @@ impl Plugin for UiPlugin {
                 enable_multipass_for_primary_context: false,
             },
             ConsolePlugin,
+            ParticleEditorPlugin,
         ))
         .add_systems(Update, console::receive_console_line)
         .add_systems(
@@ -48,6 +50,10 @@ fn render(
     mut command_writer: EventWriter<ConsoleCommandEntered>,
     particle_materials: ParticleMaterialsParam,
     selected_particle: Res<SelectedParticle>,
+    current_editor: Res<CurrentEditorSelection>,
+    mut editor_data_query: Query<&mut ParticleEditorData>,
+    mut load_particle_events: EventWriter<LoadParticleIntoEditor>,
+    mut create_particle_events: EventWriter<CreateNewParticle>,
 ) {
     let ctx = contexts.ctx_mut();
 
@@ -84,7 +90,14 @@ fn render(
                 ui.group(|ui| {
                     ui.set_width(ui.available_width());
                     ui.set_height(panel_height);
-                    ParticleEditor.render(ui, &particle_materials, &selected_particle);
+                    ParticleEditor.render(
+                        ui, 
+                        &particle_materials, 
+                        &current_editor, 
+                        &mut editor_data_query, 
+                        &mut load_particle_events, 
+                        &mut create_particle_events
+                    );
                 });
 
                 // Bottom half - Layers Panel (exactly 50%)
