@@ -1,7 +1,6 @@
 mod app_state;
 mod brush;
 mod camera;
-mod console;
 mod cursor;
 mod keybindings;
 mod particles;

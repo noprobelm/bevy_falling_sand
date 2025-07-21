@@ -167,7 +167,7 @@ impl ConsoleState {
 
 // Initialization system to populate command registry
 pub fn init_commands(mut config: ResMut<ConsoleConfiguration>, mut cache: ResMut<ConsoleCache>) {
-    use crate::console::commands::{ClearCommand, EchoCommand, ExitCommand, HelpCommand};
+    use super::commands::{ClearCommand, EchoCommand, ExitCommand, HelpCommand};
 
     // Register help command
     let help_cmd = HelpCommand::command().no_binary_name(true);

@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use clap::Parser;
 
-use crate::console::core::{ConsoleCommandEntered, ConsoleState, NamedCommand};
+use super::super::core::{ConsoleCommandEntered, ConsoleState, NamedCommand};
 
 #[derive(Parser, Resource)]
 #[command(name = "clear", about = "Clear the console output")]

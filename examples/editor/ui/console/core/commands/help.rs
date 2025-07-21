@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use clap::Parser;
 
-use crate::console::core::{
+use super::super::core::{
     ConsoleCommandEntered, ConsoleConfiguration, NamedCommand, PrintConsoleLine,
 };
 

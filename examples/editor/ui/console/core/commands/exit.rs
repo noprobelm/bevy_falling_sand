@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use clap::Parser;
 
-use crate::console::core::{ConsoleCommandEntered, NamedCommand};
+use super::super::core::{ConsoleCommandEntered, NamedCommand};
 
 #[derive(Parser, Resource)]
 #[command(name = "exit", about = "Exit the application")]

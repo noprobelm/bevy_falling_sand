@@ -1,19 +1,15 @@
-pub mod console;
+mod console;
 mod layers_panel;
 mod particle_editor;
 mod top_bar;
 
 use crate::{
     app_state::InitializationState,
-    console::{
-        core::{ConsoleCache, ConsoleCommandEntered, ConsoleConfiguration, ConsoleState},
-        ConsolePlugin,
-    },
 };
 use bevy_falling_sand::prelude::{
     ParticleMaterialsParam, ParticleTypeMap, ResetParticleChildrenEvent,
 };
-use console::render_console;
+use console::{render_console, ConsoleCache, ConsoleCommandEntered, ConsoleConfiguration, ConsolePlugin, ConsoleState};
 use layers_panel::LayersPanel;
 use particle_editor::{
     ApplyEditorChanges, ApplyEditorChangesAndReset, CreateNewParticle, CurrentEditorSelection,

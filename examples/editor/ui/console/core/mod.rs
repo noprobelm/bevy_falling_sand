@@ -3,7 +3,7 @@ pub mod core;
 
 use bevy::prelude::*;
 use commands::*;
-use core::*;
+pub use core::*;
 
 pub struct ConsolePlugin;
 
