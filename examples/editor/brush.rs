@@ -1,4 +1,4 @@
-use crate::{app_state::AppState, cursor::CursorPosition, particles::SelectedParticle};
+use crate::{app_state::AppState, cursor::{CursorPosition, update_cursor_position}, particles::SelectedParticle};
 use bevy::{input::common_conditions::input_pressed, platform::collections::HashSet, prelude::*};
 use bevy_falling_sand::prelude::{Particle, ParticleSimulationSet};
 
@@ -20,7 +20,8 @@ impl Plugin for BrushPlugin {
                         .run_if(input_pressed(MouseButton::Left))
                         .run_if(in_state(BrushSpawnState::Spawn))
                         .run_if(in_state(AppState::Canvas))
-                        .before(ParticleSimulationSet),
+                        .before(ParticleSimulationSet)
+                        .after(update_cursor_position),
                 ),
             );
     }
