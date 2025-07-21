@@ -122,7 +122,9 @@ impl ParticleData {
 
     /// Spawn this particle data as a [`ParticleTypeId`] entity with all appropriate components.
     pub fn spawn_particle_type(&self, commands: &mut Commands) -> Entity {
-        let mut entity_commands = commands.spawn(ParticleType::from_string(self.name.clone()));
+        // Convert owned string to static string using Box::leak for particle type registration
+        let static_name: &'static str = Box::leak(self.name.clone().into_boxed_str());
+        let mut entity_commands = commands.spawn(ParticleType::new(static_name));
 
         // Add movement components
         if let Some(density) = self.density {
@@ -186,7 +188,7 @@ impl ParticleData {
 
             let reaction = burns_data.reaction.as_ref().map(|r| {
                 bfs_reactions::Reacting::new(
-                    bfs_core::Particle::from_string(r.produces.clone()),
+                    bfs_core::Particle::new(Box::leak(r.produces.clone().into_boxed_str())),
                     r.chance_to_produce,
                 )
             });
