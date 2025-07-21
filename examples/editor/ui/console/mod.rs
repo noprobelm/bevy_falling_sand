@@ -7,7 +7,7 @@ use core::{
     ConsoleCache, ConsoleCommandEntered, ConsoleConfiguration, ConsoleState, PrintConsoleLine,
 };
 
-pub use core::{ConsolePlugin};
+pub use core::ConsolePlugin;
 
 pub struct Console;
 
@@ -144,12 +144,15 @@ impl Console {
                                     // Get the exact text edit margins
                                     let text_edit_margin = ui.spacing().button_padding.x;
                                     let text_edit_content_rect = response.rect;
-                                    let text_start_x = text_edit_content_rect.left() + text_edit_margin;
+                                    let text_start_x =
+                                        text_edit_content_rect.left() + text_edit_margin;
                                     let text_y = text_edit_content_rect.center().y
                                         - (text_galley.size().y / 2.0);
 
-                                    let suggestion_pos =
-                                        egui::Pos2::new(text_start_x + text_galley.size().x, text_y);
+                                    let suggestion_pos = egui::Pos2::new(
+                                        text_start_x + text_galley.size().x,
+                                        text_y,
+                                    );
 
                                     ui.painter().text(
                                         suggestion_pos,
@@ -171,7 +174,7 @@ impl Console {
                         if response.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
                             // Auto-complete with current suggestion if available and we have an active suggestion index
                             if let Some(suggestion) = &current_suggestion {
-                                if console_state.suggestion_index.is_some() 
+                                if console_state.suggestion_index.is_some()
                                     && suggestion.starts_with(&console_state.input)
                                     && !console_state.input.is_empty()
                                 {
@@ -198,14 +201,17 @@ impl Console {
                         // Handle Tab key for auto-completion - consume the key to prevent egui's default handling
                         if response.has_focus() {
                             let mut tab_handled = false;
-                            
+
                             ui.input_mut(|i| {
-                                if i.key_pressed(egui::Key::Tab) && !console_state.suggestions.is_empty() {
+                                if i.key_pressed(egui::Key::Tab)
+                                    && !console_state.suggestions.is_empty()
+                                {
                                     if !i.modifiers.shift {
                                         // Tab: cycle forward through suggestions
                                         match &mut console_state.suggestion_index {
                                             Some(index) => {
-                                                *index = (*index + 1) % console_state.suggestions.len();
+                                                *index =
+                                                    (*index + 1) % console_state.suggestions.len();
                                             }
                                             None => {
                                                 console_state.suggestion_index = Some(0);
@@ -222,12 +228,13 @@ impl Console {
                                                 }
                                             }
                                             None => {
-                                                console_state.suggestion_index = Some(console_state.suggestions.len() - 1);
+                                                console_state.suggestion_index =
+                                                    Some(console_state.suggestions.len() - 1);
                                             }
                                         }
                                     }
                                     tab_handled = true;
-                                    
+
                                     // Consume the Tab key to prevent egui's default focus handling
                                     i.consume_key(egui::Modifiers::NONE, egui::Key::Tab);
                                     if i.modifiers.shift {
@@ -235,7 +242,7 @@ impl Console {
                                     }
                                 }
                             });
-                            
+
                             if tab_handled {
                                 response.request_focus(); // Keep focus
                             }
@@ -268,3 +275,4 @@ pub fn receive_console_line(
         console_state.add_message(event.line.clone());
     }
 }
+
