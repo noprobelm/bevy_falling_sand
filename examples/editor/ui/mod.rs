@@ -9,7 +9,8 @@ use crate::{
 use bevy_falling_sand::prelude::{
     ParticleMaterialsParam, ParticleTypeMap, ResetParticleChildrenEvent,
 };
-use console::{render_console, ConsoleCache, ConsoleCommandEntered, ConsoleConfiguration, ConsolePlugin, ConsoleState};
+use console::{Console, ConsolePlugin};
+use console::core::{ConsoleCache, ConsoleCommandEntered, ConsoleConfiguration, ConsoleState};
 use layers_panel::LayersPanel;
 use particle_editor::{
     ApplyEditorChanges, ApplyEditorChangesAndReset, CreateNewParticle, CurrentEditorSelection,
@@ -140,7 +141,7 @@ fn render_ui_panels(
         .exact_height(console_height)
         .frame(egui::Frame::NONE)
         .show(ctx, |ui| {
-            render_console(ui, &mut console_state, &cache, &config, &mut command_writer);
+            Console.render(ui, &mut console_state, &cache, &config, &mut command_writer);
         });
 }
 
