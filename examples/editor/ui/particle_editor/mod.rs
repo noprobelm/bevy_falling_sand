@@ -26,6 +26,10 @@ impl Plugin for ParticleEditorPlugin {
             .add_event::<ApplyEditorChanges>()
             .add_event::<ApplyEditorChangesAndReset>()
             .add_systems(
+                OnEnter(crate::app_state::InitializationState::Finished),
+                setup_initial_particle_selection,
+            )
+            .add_systems(
                 Update,
                 (
                     sync_particle_editor_registry,

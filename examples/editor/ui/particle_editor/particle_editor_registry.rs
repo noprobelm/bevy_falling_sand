@@ -7,6 +7,8 @@ use bevy::{
 };
 use bevy_falling_sand::prelude::*;
 use std::time::Duration;
+use crate::particles::SelectedParticle;
+use crate::app_state::InitializationState;
 
 /// Event to load an existing particle type into the editor
 #[derive(Event, Debug, Clone)]
@@ -665,6 +667,18 @@ fn apply_editor_data_to_particle_type(
 }
 
 /// System to handle applying editor changes and resetting particle children
+pub fn setup_initial_particle_selection(
+    selected_particle: Res<SelectedParticle>,
+    mut load_particle_events: EventWriter<LoadParticleIntoEditor>,
+) {
+    let particle_name = selected_particle.0.name.to_string();
+    
+    // Send event to load the initially selected particle into the editor
+    load_particle_events.write(LoadParticleIntoEditor {
+        particle_name,
+    });
+}
+
 pub fn handle_apply_editor_changes_and_reset(
     mut commands: Commands,
     mut apply_events: EventReader<ApplyEditorChangesAndReset>,
