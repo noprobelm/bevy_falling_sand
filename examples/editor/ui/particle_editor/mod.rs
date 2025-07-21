@@ -1,9 +1,19 @@
+mod particle_editor_fields;
+
 use bevy::prelude::*;
 use bevy_egui::egui;
 use bevy_falling_sand::prelude::ParticleMaterialsParam;
 
 use crate::particles::SelectedParticle;
+use particle_editor_fields::*;
 
+pub struct ParticleEditorPlugin;
+
+impl Plugin for ParticleEditorPlugin {
+    fn build(&self, app: &mut App) {
+        app.init_resource::<ParticleEditorTypeMap>();
+    }
+}
 pub struct ParticleEditor;
 
 impl ParticleEditor {
