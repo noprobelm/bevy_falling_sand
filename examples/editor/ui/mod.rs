@@ -3,9 +3,13 @@ mod layers_panel;
 mod particle_editor;
 mod top_bar;
 
-use crate::console::{
-    core::{ConsoleCache, ConsoleCommandEntered, ConsoleConfiguration, ConsoleState},
-    ConsolePlugin,
+use crate::{
+    app_state::InitializationState,
+    console::{
+        core::{ConsoleCache, ConsoleCommandEntered, ConsoleConfiguration, ConsoleState},
+        ConsolePlugin,
+    },
+    particles::SelectedParticle,
 };
 use bevy_falling_sand::prelude::ParticleMaterialsParam;
 use console::render_console;
@@ -29,7 +33,9 @@ impl Plugin for UiPlugin {
         .add_systems(Update, console::receive_console_line)
         .add_systems(
             EguiContextPass,
-            render.before(bevy_egui::EguiPreUpdateSet::InitContexts),
+            render
+                .before(bevy_egui::EguiPreUpdateSet::InitContexts)
+                .run_if(in_state(InitializationState::Finished)),
         );
     }
 }
@@ -41,6 +47,7 @@ fn render(
     config: Res<ConsoleConfiguration>,
     mut command_writer: EventWriter<ConsoleCommandEntered>,
     particle_materials: ParticleMaterialsParam,
+    selected_particle: Res<SelectedParticle>,
 ) {
     let ctx = contexts.ctx_mut();
 
@@ -77,7 +84,7 @@ fn render(
                 ui.group(|ui| {
                     ui.set_width(ui.available_width());
                     ui.set_height(panel_height);
-                    ParticleEditor.render(ui, &particle_materials);
+                    ParticleEditor.render(ui, &particle_materials, &selected_particle);
                 });
 
                 // Bottom half - Layers Panel (exactly 50%)

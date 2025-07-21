@@ -2,10 +2,17 @@ use bevy::prelude::*;
 use bevy_egui::egui;
 use bevy_falling_sand::prelude::ParticleMaterialsParam;
 
+use crate::particles::SelectedParticle;
+
 pub struct ParticleEditor;
 
 impl ParticleEditor {
-    pub fn render(&self, ui: &mut egui::Ui, particle_materials: &ParticleMaterialsParam) {
+    pub fn render(
+        &self,
+        ui: &mut egui::Ui,
+        particle_materials: &ParticleMaterialsParam,
+        selected_particle: &SelectedParticle,
+    ) {
         let text_color = egui::Color32::from_rgb(204, 204, 204);
         ui.visuals_mut().override_text_color = Some(text_color);
 
@@ -16,11 +23,11 @@ impl ParticleEditor {
         ui.columns(2, |columns| {
             columns[0].set_min_width(columns[0].available_width());
             columns[0].set_max_width(columns[0].available_width());
-            self.render_particle_list(&mut columns[0], &particle_materials);
+            self.render_particle_list(&mut columns[0], particle_materials);
 
             columns[1].set_min_width(columns[1].available_width());
             columns[1].set_max_width(columns[1].available_width());
-            self.render_particle_properties(&mut columns[1]);
+            self.render_particle_properties(&mut columns[1], selected_particle);
         });
     }
 
@@ -96,11 +103,11 @@ impl ParticleEditor {
             });
     }
 
-    fn render_particle_properties(&self, ui: &mut egui::Ui) {
+    fn render_particle_properties(&self, ui: &mut egui::Ui, selected_particle: &SelectedParticle) {
         egui::ScrollArea::vertical()
             .id_salt("particle_properties_scroll")
             .show(ui, |ui| {
-                let mut name = "Sand".to_string();
+                let mut name = selected_particle.0.name.to_string();
                 ui.text_edit_singleline(&mut name);
 
                 ui.horizontal(|ui| {
