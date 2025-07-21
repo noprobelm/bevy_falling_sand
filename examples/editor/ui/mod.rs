@@ -1,22 +1,24 @@
 mod console;
 mod layers_panel;
 mod particle_editor;
+pub mod particle_search;
 mod top_bar;
 
-use crate::{
-    app_state::InitializationState,
-};
 use bevy_falling_sand::prelude::{
     ParticleMaterialsParam, ParticleTypeMap, ResetParticleChildrenEvent,
 };
 use console::{Console, ConsolePlugin};
-use console::core::{ConsoleCache, ConsoleCommandEntered, ConsoleConfiguration, ConsoleState};
+use console::core::{ConsoleCache, ConsoleCommandEntered, ConsoleConfiguration};
+
+// Re-export for external modules
+pub use console::core::ConsoleState;
 use layers_panel::LayersPanel;
 use particle_editor::{
     ApplyEditorChanges, ApplyEditorChangesAndReset, CreateNewParticle, CurrentEditorSelection,
     LoadParticleIntoEditor, ParticleEditorData,
 };
 use particle_editor::{ParticleEditor, ParticleEditorPlugin};
+use particle_search::{ParticleSearch, ParticleSearchState, ParticleSearchCache, update_particle_search_cache, handle_particle_search_input};
 use top_bar::{UiTopBar, ParticleFilesPlugin};
 pub use top_bar::particle_files::ParticleFileDialog;
 
@@ -35,31 +37,57 @@ impl Plugin for UiPlugin {
             ParticleEditorPlugin,
             ParticleFilesPlugin,
         ))
-        .add_systems(Update, console::receive_console_line)
+        .init_resource::<ParticleSearchState>()
+        .init_resource::<ParticleSearchCache>()
+        .add_systems(Update, (
+            console::receive_console_line,
+            update_particle_search_cache,
+        ))
         .add_systems(
             EguiContextPass,
-            (render_ui_panels).run_if(in_state(InitializationState::Finished)),
+            (render_ui_panels, render_particle_search, handle_particle_search_input),
         );
     }
 }
 
+type UiSystemParams<'w, 's> = (
+    Commands<'w, 's>,
+    EguiContexts<'w, 's>,
+    ResMut<'w, console::core::ConsoleState>,
+    Res<'w, ConsoleCache>,
+    Res<'w, ConsoleConfiguration>,
+    EventWriter<'w, ConsoleCommandEntered>,
+    ParticleMaterialsParam<'w, 's>,
+    Res<'w, CurrentEditorSelection>,
+    Query<'w, 's, &'static mut ParticleEditorData>,
+    EventWriter<'w, LoadParticleIntoEditor>,
+    EventWriter<'w, CreateNewParticle>,
+    EventWriter<'w, ApplyEditorChanges>,
+    EventWriter<'w, ApplyEditorChangesAndReset>,
+    EventWriter<'w, ResetParticleChildrenEvent>,
+    Res<'w, ParticleTypeMap>,
+    Res<'w, ParticleFileDialog>,
+);
+
 fn render_ui_panels(
-    mut commands: Commands,
-    mut contexts: EguiContexts,
-    mut console_state: ResMut<ConsoleState>,
-    cache: Res<ConsoleCache>,
-    config: Res<ConsoleConfiguration>,
-    mut command_writer: EventWriter<ConsoleCommandEntered>,
-    particle_materials: ParticleMaterialsParam,
-    current_editor: Res<CurrentEditorSelection>,
-    mut editor_data_query: Query<&mut ParticleEditorData>,
-    mut load_particle_events: EventWriter<LoadParticleIntoEditor>,
-    mut create_particle_events: EventWriter<CreateNewParticle>,
-    mut apply_editor_events: EventWriter<ApplyEditorChanges>,
-    mut apply_editor_and_reset_events: EventWriter<ApplyEditorChangesAndReset>,
-    mut reset_particle_children_events: EventWriter<ResetParticleChildrenEvent>,
-    particle_type_map: Res<ParticleTypeMap>,
-    particle_file_dialog: Res<ParticleFileDialog>,
+    (
+        mut commands,
+        mut contexts,
+        mut console_state,
+        cache,
+        config,
+        mut command_writer,
+        particle_materials,
+        current_editor,
+        mut editor_data_query,
+        mut load_particle_events,
+        mut create_particle_events,
+        mut apply_editor_events,
+        mut apply_editor_and_reset_events,
+        mut reset_particle_children_events,
+        particle_type_map,
+        particle_file_dialog,
+    ): UiSystemParams,
 ) {
     let ctx = contexts.ctx_mut();
 
@@ -143,5 +171,37 @@ fn render_ui_panels(
         .show(ctx, |ui| {
             Console.render(ui, &mut console_state, &cache, &config, &mut command_writer);
         });
+}
+
+type ParticleSearchParams<'w, 's> = (
+    EguiContexts<'w, 's>,
+    ResMut<'w, ParticleSearchState>,
+    Res<'w, ParticleSearchCache>,
+    EventWriter<'w, LoadParticleIntoEditor>,
+);
+
+fn render_particle_search(
+    (
+        mut contexts,
+        mut particle_search_state,
+        particle_search_cache,
+        mut load_particle_events,
+    ): ParticleSearchParams,
+) {
+    let ctx = contexts.ctx_mut();
+    
+    // Particle search overlay (rendered after panels to appear on top)
+    let mut particle_search_ui = egui::Ui::new(
+        ctx.clone(),
+        egui::Id::new("particle_search"),
+        egui::UiBuilder::new().max_rect(ctx.screen_rect()),
+    );
+    
+    ParticleSearch.render(
+        &mut particle_search_ui,
+        &mut particle_search_state,
+        &particle_search_cache,
+        &mut load_particle_events,
+    );
 }
 

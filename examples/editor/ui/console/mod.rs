@@ -106,7 +106,8 @@ impl Console {
                             egui::TextEdit::singleline(&mut console_state.input)
                                 .font(egui::TextStyle::Monospace)
                                 .desired_width(ui.available_width())
-                                .lock_focus(true),
+                                .lock_focus(true)
+                                .id(egui::Id::new("console_input")),
                         );
 
                         // Auto-focus when console is opened with backtick or on initial load

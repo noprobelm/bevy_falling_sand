@@ -66,7 +66,7 @@ impl Default for ConsoleState {
             input: String::new(),
             history: VecDeque::from([String::new()]),
             history_index: 0,
-            expanded: true,
+            expanded: false,
             height: 300.0,
             suggestions: Vec::new(),
             suggestion_index: None,
