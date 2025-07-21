@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use bevy_egui::{EguiContextPass, EguiContexts};
+use bevy_falling_sand::prelude::{DebugDirtyRects, DebugParticleCount, DebugParticleMap};
 
 pub struct StatesPlugin;
 
@@ -8,6 +9,7 @@ impl Plugin for StatesPlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<AppState>()
             .init_state::<InitializationState>()
+            .add_systems(Startup, remove_debug_overlays)
             .add_systems(EguiContextPass, detect_ui_interaction)
             .add_systems(OnEnter(AppState::Canvas), hide_cursor)
             .add_systems(OnEnter(AppState::Ui), show_cursor);
@@ -61,4 +63,10 @@ pub fn show_cursor(mut primary_window: Query<&mut Window, With<PrimaryWindow>>) 
     if let Ok(mut window) = primary_window.single_mut() {
         window.cursor_options.visible = true;
     }
+}
+
+fn remove_debug_overlays(mut commands: Commands) {
+    commands.remove_resource::<DebugParticleMap>();
+    commands.remove_resource::<DebugDirtyRects>();
+    commands.remove_resource::<DebugParticleCount>();
 }
