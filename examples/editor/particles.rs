@@ -33,12 +33,15 @@ fn check_particles_defs_initialized(
         return;
     }
 
-    let name = map
-        .get_key_value("Dirt Wall")
-        .map(|(k, _)| k.as_str())
-        .or_else(|| map.keys().next().map(String::as_str))
-        .expect("ParticleTypeMap is not empty, so this should never fail");
-
-    commands.insert_resource(SelectedParticle(Particle::new(name)));
+    // Check if "Dirt Wall" exists, otherwise use the first available particle
+    if map.contains("Dirt Wall") {
+        commands.insert_resource(SelectedParticle(Particle::new("Dirt Wall")));
+    } else {
+        // Get the first key and intern it to make it static
+        let first_name = map.keys().next()
+            .expect("ParticleTypeMap is not empty, so this should never fail");
+        let static_name: &'static str = Box::leak(first_name.to_string().into_boxed_str());
+        commands.insert_resource(SelectedParticle(Particle::new(static_name)));
+    }
     next_state.set(InitializationState::Finished);
 }
