@@ -2,14 +2,16 @@ mod particle_editor_registry;
 
 use bevy::prelude::*;
 use bevy_egui::egui;
-use bevy_falling_sand::prelude::{ParticleMaterialsParam, ParticleTypeMap};
+use bevy_falling_sand::prelude::{
+    ParticleMaterialsParam, ParticleTypeMap, ResetParticleChildrenEvent,
+};
 
 use particle_editor_registry::*;
 
 // Re-export for external use
 pub use particle_editor_registry::{
-    CurrentEditorSelection, LoadParticleIntoEditor, CreateNewParticle, 
-    ParticleEditorData, MaterialState, BurnsConfig, FireConfig, ApplyEditorChanges
+    ApplyEditorChanges, ApplyEditorChangesAndReset, BurnsConfig, CreateNewParticle,
+    CurrentEditorSelection, FireConfig, LoadParticleIntoEditor, MaterialState, ParticleEditorData,
 };
 
 pub struct ParticleEditorPlugin;
@@ -22,6 +24,7 @@ impl Plugin for ParticleEditorPlugin {
             .add_event::<CreateNewParticle>()
             .add_event::<SaveParticleFromEditor>()
             .add_event::<ApplyEditorChanges>()
+            .add_event::<ApplyEditorChangesAndReset>()
             .add_systems(
                 Update,
                 (
@@ -29,6 +32,7 @@ impl Plugin for ParticleEditorPlugin {
                     handle_load_particle_into_editor,
                     handle_create_new_particle,
                     handle_apply_editor_changes,
+                    handle_apply_editor_changes_and_reset,
                 ),
             );
     }
@@ -45,6 +49,8 @@ impl ParticleEditor {
         load_particle_events: &mut EventWriter<LoadParticleIntoEditor>,
         create_particle_events: &mut EventWriter<CreateNewParticle>,
         apply_editor_events: &mut EventWriter<ApplyEditorChanges>,
+        apply_editor_and_reset_events: &mut EventWriter<ApplyEditorChangesAndReset>,
+        reset_particle_children_events: &mut EventWriter<ResetParticleChildrenEvent>,
         particle_type_map: &ParticleTypeMap,
     ) {
         let text_color = egui::Color32::from_rgb(204, 204, 204);
@@ -57,7 +63,17 @@ impl ParticleEditor {
         ui.columns(2, |columns| {
             columns[0].set_min_width(columns[0].available_width());
             columns[0].set_max_width(columns[0].available_width());
-            self.render_particle_list(&mut columns[0], particle_materials, load_particle_events, create_particle_events, current_editor, apply_editor_events, particle_type_map);
+            self.render_particle_list(
+                &mut columns[0],
+                particle_materials,
+                load_particle_events,
+                create_particle_events,
+                current_editor,
+                apply_editor_events,
+                apply_editor_and_reset_events,
+                reset_particle_children_events,
+                particle_type_map,
+            );
 
             columns[1].set_min_width(columns[1].available_width());
             columns[1].set_max_width(columns[1].available_width());
@@ -66,13 +82,15 @@ impl ParticleEditor {
     }
 
     fn render_particle_list(
-        &self, 
-        ui: &mut egui::Ui, 
+        &self,
+        ui: &mut egui::Ui,
         particle_materials: &ParticleMaterialsParam,
         load_particle_events: &mut EventWriter<LoadParticleIntoEditor>,
         create_particle_events: &mut EventWriter<CreateNewParticle>,
         current_editor: &CurrentEditorSelection,
         apply_editor_events: &mut EventWriter<ApplyEditorChanges>,
+        apply_editor_and_reset_events: &mut EventWriter<ApplyEditorChangesAndReset>,
+        reset_particle_children_events: &mut EventWriter<ResetParticleChildrenEvent>,
         particle_type_map: &ParticleTypeMap,
     ) {
         egui::ScrollArea::vertical()
@@ -148,22 +166,32 @@ impl ParticleEditor {
                 if ui.button("New Particle").clicked() {
                     create_particle_events.write(CreateNewParticle);
                 }
-                if ui.button("Save Particle").clicked() {
-                    if let Some(editor_entity) = current_editor.selected_entity {
-                        // For now, we'll let the system determine if it's new based on the editor data
-                        // The system can check the editor data's is_new flag or name against particle_type_map
-                        apply_editor_events.write(ApplyEditorChanges {
-                            editor_entity,
-                            create_new: true, // This will be corrected by the system based on actual editor data
-                        });
+                ui.horizontal(|ui| {
+                    if ui.button("Save Particle").clicked() {
+                        if let Some(editor_entity) = current_editor.selected_entity {
+                            // For now, we'll let the system determine if it's new based on the editor data
+                            // The system can check the editor data's is_new flag or name against particle_type_map
+                            apply_editor_events.write(ApplyEditorChanges {
+                                editor_entity,
+                                create_new: true, // This will be corrected by the system based on actual editor data
+                            });
+                        }
                     }
-                }
+                    if ui.button("Save Particle & Reset Children").clicked() {
+                        if let Some(editor_entity) = current_editor.selected_entity {
+                            apply_editor_and_reset_events.write(ApplyEditorChangesAndReset {
+                                editor_entity,
+                                create_new: true, // This will be corrected by the system based on actual editor data
+                            });
+                        }
+                    }
+                });
             });
     }
 
     fn render_particle_properties(
-        &self, 
-        ui: &mut egui::Ui, 
+        &self,
+        ui: &mut egui::Ui,
         current_editor: &CurrentEditorSelection,
         editor_data_query: &mut Query<&mut ParticleEditorData>,
     ) {
@@ -184,7 +212,7 @@ impl ParticleEditor {
                 }
             });
     }
-    
+
     fn render_editor_data(&self, ui: &mut egui::Ui, editor_data: &mut ParticleEditorData) {
         // Name field
         ui.horizontal(|ui| {
@@ -197,22 +225,42 @@ impl ParticleEditor {
             ui.label("State:");
             let current_state_text = match editor_data.material_state {
                 MaterialState::Wall => "Wall",
-                MaterialState::Solid => "Solid", 
+                MaterialState::Solid => "Solid",
                 MaterialState::MovableSolid => "Movable Solid",
                 MaterialState::Liquid => "Liquid",
                 MaterialState::Gas => "Gas",
                 MaterialState::Other => "Other",
             };
-            
+
             egui::ComboBox::from_label("")
                 .selected_text(current_state_text)
                 .show_ui(ui, |ui| {
-                    ui.selectable_value(&mut editor_data.material_state, MaterialState::Wall, "Wall");
-                    ui.selectable_value(&mut editor_data.material_state, MaterialState::Solid, "Solid");
-                    ui.selectable_value(&mut editor_data.material_state, MaterialState::MovableSolid, "Movable Solid");
-                    ui.selectable_value(&mut editor_data.material_state, MaterialState::Liquid, "Liquid");
+                    ui.selectable_value(
+                        &mut editor_data.material_state,
+                        MaterialState::Wall,
+                        "Wall",
+                    );
+                    ui.selectable_value(
+                        &mut editor_data.material_state,
+                        MaterialState::Solid,
+                        "Solid",
+                    );
+                    ui.selectable_value(
+                        &mut editor_data.material_state,
+                        MaterialState::MovableSolid,
+                        "Movable Solid",
+                    );
+                    ui.selectable_value(
+                        &mut editor_data.material_state,
+                        MaterialState::Liquid,
+                        "Liquid",
+                    );
                     ui.selectable_value(&mut editor_data.material_state, MaterialState::Gas, "Gas");
-                    ui.selectable_value(&mut editor_data.material_state, MaterialState::Other, "Other");
+                    ui.selectable_value(
+                        &mut editor_data.material_state,
+                        MaterialState::Other,
+                        "Other",
+                    );
                 });
         });
 
@@ -222,7 +270,10 @@ impl ParticleEditor {
         ui.horizontal(|ui| {
             ui.label("Density:");
             let mut density_f32 = editor_data.density as f32;
-            if ui.add(egui::Slider::new(&mut density_f32, 1.0..=1000.0).step_by(1.0)).changed() {
+            if ui
+                .add(egui::Slider::new(&mut density_f32, 1.0..=1000.0).step_by(1.0))
+                .changed()
+            {
                 editor_data.density = density_f32 as u32;
             }
         });
@@ -230,7 +281,10 @@ impl ParticleEditor {
         ui.horizontal(|ui| {
             ui.label("Max Velocity:");
             let mut velocity_f32 = editor_data.max_velocity as f32;
-            if ui.add(egui::Slider::new(&mut velocity_f32, 1.0..=5.0).step_by(1.0)).changed() {
+            if ui
+                .add(egui::Slider::new(&mut velocity_f32, 1.0..=5.0).step_by(1.0))
+                .changed()
+            {
                 editor_data.max_velocity = velocity_f32 as u8;
             }
         });
@@ -241,12 +295,18 @@ impl ParticleEditor {
         });
 
         // Fluidity for liquids and gases
-        if matches!(editor_data.material_state, MaterialState::Liquid | MaterialState::Gas) {
+        if matches!(
+            editor_data.material_state,
+            MaterialState::Liquid | MaterialState::Gas
+        ) {
             ui.horizontal(|ui| {
                 ui.label("Fluidity:");
                 let mut fluidity_value = editor_data.fluidity.unwrap_or(3);
                 let mut fluidity_f32 = fluidity_value as f32;
-                if ui.add(egui::Slider::new(&mut fluidity_f32, 1.0..=5.0).step_by(1.0)).changed() {
+                if ui
+                    .add(egui::Slider::new(&mut fluidity_f32, 1.0..=5.0).step_by(1.0))
+                    .changed()
+                {
                     editor_data.fluidity = Some(fluidity_f32 as u8);
                 }
             });
@@ -258,7 +318,9 @@ impl ParticleEditor {
         ui.horizontal(|ui| {
             ui.label("Colors");
             if ui.button("➕").clicked() {
-                editor_data.color_palette.push(Color::srgba_u8(255, 255, 255, 255));
+                editor_data
+                    .color_palette
+                    .push(Color::srgba_u8(255, 255, 255, 255));
             }
         });
 
@@ -266,30 +328,31 @@ impl ParticleEditor {
         for (i, color) in editor_data.color_palette.iter_mut().enumerate() {
             ui.horizontal(|ui| {
                 let srgba = color.to_srgba();
-                ui.label(format!("R: {:.0} G: {:.0} B: {:.0} A: {:.0}", 
+                ui.label(format!(
+                    "R: {:.0} G: {:.0} B: {:.0} A: {:.0}",
                     srgba.red * 255.0,
                     srgba.green * 255.0,
                     srgba.blue * 255.0,
                     srgba.alpha * 255.0
                 ));
-                
+
                 let mut color32 = egui::Color32::from_rgba_unmultiplied(
                     (srgba.red * 255.0) as u8,
                     (srgba.green * 255.0) as u8,
                     (srgba.blue * 255.0) as u8,
                     (srgba.alpha * 255.0) as u8,
                 );
-                
+
                 if ui.color_edit_button_srgba(&mut color32).changed() {
                     *color = Color::srgba_u8(color32.r(), color32.g(), color32.b(), color32.a());
                 }
-                
+
                 if ui.button("❌").clicked() {
                     to_remove = Some(i);
                 }
             });
         }
-        
+
         if let Some(remove_index) = to_remove {
             editor_data.color_palette.remove(remove_index);
         }
@@ -305,7 +368,7 @@ impl ParticleEditor {
                     editor_data.changes_color = None;
                 }
             }
-            
+
             if let Some(ref mut chance) = editor_data.changes_color {
                 ui.add(egui::Slider::new(chance, 0.0..=1.0));
             }
@@ -376,7 +439,10 @@ impl ParticleEditor {
 
                 ui.horizontal(|ui| {
                     ui.label("Chance to spread:");
-                    ui.add(egui::Slider::new(&mut fire_config.chance_to_spread, 0.0..=1.0));
+                    ui.add(egui::Slider::new(
+                        &mut fire_config.chance_to_spread,
+                        0.0..=1.0,
+                    ));
                 });
             }
         }

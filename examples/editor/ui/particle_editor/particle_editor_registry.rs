@@ -31,6 +31,13 @@ pub struct ApplyEditorChanges {
     pub create_new: bool,
 }
 
+/// Event to apply editor changes and reset particle children
+#[derive(Event, Debug, Clone)]
+pub struct ApplyEditorChangesAndReset {
+    pub editor_entity: Entity,
+    pub create_new: bool,
+}
+
 /// Holds all editable data for a particle type in the editor
 #[derive(Clone, Debug, Component)]
 pub struct ParticleEditorData {
@@ -655,6 +662,45 @@ fn apply_editor_data_to_particle_type(
     }
 
     entity
+}
+
+/// System to handle applying editor changes and resetting particle children
+pub fn handle_apply_editor_changes_and_reset(
+    mut commands: Commands,
+    mut apply_events: EventReader<ApplyEditorChangesAndReset>,
+    mut editor_data_query: Query<&mut ParticleEditorData>,
+    mut particle_type_map: ResMut<ParticleTypeMap>,
+    mut particle_editor_registry: ResMut<ParticleEditorRegistry>,
+    mut reset_particle_children_events: EventWriter<bevy_falling_sand::prelude::ResetParticleChildrenEvent>,
+) {
+    for event in apply_events.read() {
+        if let Ok(mut editor_data) = editor_data_query.get_mut(event.editor_entity) {
+            // Determine if this should create a new particle or update existing one
+            // Use editor data's is_new flag and check if particle exists in type map
+            let create_new = editor_data.is_new || !particle_type_map.contains(&editor_data.name);
+            
+            // Convert editor data to actual particle components
+            let particle_entity = apply_editor_data_to_particle_type(
+                &mut commands,
+                &editor_data,
+                &mut particle_type_map,
+                create_new,
+            );
+
+            // Update registry if name changed or it's a new particle
+            if create_new {
+                particle_editor_registry.insert(editor_data.name.clone(), event.editor_entity);
+            }
+            
+            // Mark the editor data as saved
+            editor_data.mark_saved();
+            
+            // Send reset particle children event
+            reset_particle_children_events.write(bevy_falling_sand::prelude::ResetParticleChildrenEvent {
+                entity: particle_entity,
+            });
+        }
+    }
 }
 
 /// Resource to track the currently selected editor entity
