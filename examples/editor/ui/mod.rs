@@ -11,11 +11,16 @@ use crate::{
     },
     particles::SelectedParticle,
 };
-use bevy_falling_sand::prelude::{ParticleMaterialsParam, ParticleTypeMap, ResetParticleChildrenEvent};
+use bevy_falling_sand::prelude::{
+    ParticleMaterialsParam, ParticleTypeMap, ResetParticleChildrenEvent,
+};
 use console::render_console;
 use layers_panel::LayersPanel;
+use particle_editor::{
+    ApplyEditorChanges, ApplyEditorChangesAndReset, CreateNewParticle, CurrentEditorSelection,
+    LoadParticleIntoEditor, ParticleEditorData,
+};
 use particle_editor::{ParticleEditor, ParticleEditorPlugin};
-use particle_editor::{CurrentEditorSelection, LoadParticleIntoEditor, CreateNewParticle, ParticleEditorData, ApplyEditorChanges, ApplyEditorChangesAndReset};
 use top_bar::UiTopBar;
 
 use bevy::prelude::*;
@@ -69,7 +74,7 @@ fn render(
 
     let _left_response = egui::SidePanel::left("Left panel")
         .resizable(false)
-        .exact_width(550.0) // Increased to compensate for internal margins
+        .exact_width(700.0) // Increased to compensate for internal margins
         .show(ctx, |ui| {
             // Remove all margins and padding to use full width
             ui.spacing_mut().indent = 0.0;
@@ -95,16 +100,16 @@ fn render(
                     ui.set_width(ui.available_width());
                     ui.set_height(panel_height);
                     ParticleEditor.render(
-                        ui, 
-                        &particle_materials, 
-                        &current_editor, 
-                        &mut editor_data_query, 
-                        &mut load_particle_events, 
+                        ui,
+                        &particle_materials,
+                        &current_editor,
+                        &mut editor_data_query,
+                        &mut load_particle_events,
                         &mut create_particle_events,
                         &mut apply_editor_events,
                         &mut apply_editor_and_reset_events,
                         &mut reset_particle_children_events,
-                        &particle_type_map
+                        &particle_type_map,
                     );
                 });
 
