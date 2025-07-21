@@ -2,14 +2,14 @@ mod particle_editor_registry;
 
 use bevy::prelude::*;
 use bevy_egui::egui;
-use bevy_falling_sand::prelude::ParticleMaterialsParam;
+use bevy_falling_sand::prelude::{ParticleMaterialsParam, ParticleTypeMap};
 
 use particle_editor_registry::*;
 
 // Re-export for external use
 pub use particle_editor_registry::{
     CurrentEditorSelection, LoadParticleIntoEditor, CreateNewParticle, 
-    ParticleEditorData, MaterialState, BurnsConfig, FireConfig
+    ParticleEditorData, MaterialState, BurnsConfig, FireConfig, ApplyEditorChanges
 };
 
 pub struct ParticleEditorPlugin;
@@ -44,6 +44,8 @@ impl ParticleEditor {
         editor_data_query: &mut Query<&mut ParticleEditorData>,
         load_particle_events: &mut EventWriter<LoadParticleIntoEditor>,
         create_particle_events: &mut EventWriter<CreateNewParticle>,
+        apply_editor_events: &mut EventWriter<ApplyEditorChanges>,
+        particle_type_map: &ParticleTypeMap,
     ) {
         let text_color = egui::Color32::from_rgb(204, 204, 204);
         ui.visuals_mut().override_text_color = Some(text_color);
@@ -55,7 +57,7 @@ impl ParticleEditor {
         ui.columns(2, |columns| {
             columns[0].set_min_width(columns[0].available_width());
             columns[0].set_max_width(columns[0].available_width());
-            self.render_particle_list(&mut columns[0], particle_materials, load_particle_events, create_particle_events);
+            self.render_particle_list(&mut columns[0], particle_materials, load_particle_events, create_particle_events, current_editor, apply_editor_events, particle_type_map);
 
             columns[1].set_min_width(columns[1].available_width());
             columns[1].set_max_width(columns[1].available_width());
@@ -69,6 +71,9 @@ impl ParticleEditor {
         particle_materials: &ParticleMaterialsParam,
         load_particle_events: &mut EventWriter<LoadParticleIntoEditor>,
         create_particle_events: &mut EventWriter<CreateNewParticle>,
+        current_editor: &CurrentEditorSelection,
+        apply_editor_events: &mut EventWriter<ApplyEditorChanges>,
+        particle_type_map: &ParticleTypeMap,
     ) {
         egui::ScrollArea::vertical()
             .id_salt("particle_list_scroll")
@@ -144,7 +149,14 @@ impl ParticleEditor {
                     create_particle_events.write(CreateNewParticle);
                 }
                 if ui.button("Save Particle").clicked() {
-                    // Will connect this later as requested
+                    if let Some(editor_entity) = current_editor.selected_entity {
+                        // For now, we'll let the system determine if it's new based on the editor data
+                        // The system can check the editor data's is_new flag or name against particle_type_map
+                        apply_editor_events.write(ApplyEditorChanges {
+                            editor_entity,
+                            create_new: true, // This will be corrected by the system based on actual editor data
+                        });
+                    }
                 }
             });
     }

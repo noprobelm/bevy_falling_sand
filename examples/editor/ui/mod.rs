@@ -11,11 +11,11 @@ use crate::{
     },
     particles::SelectedParticle,
 };
-use bevy_falling_sand::prelude::ParticleMaterialsParam;
+use bevy_falling_sand::prelude::{ParticleMaterialsParam, ParticleTypeMap};
 use console::render_console;
 use layers_panel::LayersPanel;
 use particle_editor::{ParticleEditor, ParticleEditorPlugin};
-use particle_editor::{CurrentEditorSelection, LoadParticleIntoEditor, CreateNewParticle, ParticleEditorData};
+use particle_editor::{CurrentEditorSelection, LoadParticleIntoEditor, CreateNewParticle, ParticleEditorData, ApplyEditorChanges};
 use top_bar::UiTopBar;
 
 use bevy::prelude::*;
@@ -49,11 +49,13 @@ fn render(
     config: Res<ConsoleConfiguration>,
     mut command_writer: EventWriter<ConsoleCommandEntered>,
     particle_materials: ParticleMaterialsParam,
-    selected_particle: Res<SelectedParticle>,
+    _selected_particle: Res<SelectedParticle>,
     current_editor: Res<CurrentEditorSelection>,
     mut editor_data_query: Query<&mut ParticleEditorData>,
     mut load_particle_events: EventWriter<LoadParticleIntoEditor>,
     mut create_particle_events: EventWriter<CreateNewParticle>,
+    mut apply_editor_events: EventWriter<ApplyEditorChanges>,
+    particle_type_map: Res<ParticleTypeMap>,
 ) {
     let ctx = contexts.ctx_mut();
 
@@ -96,7 +98,9 @@ fn render(
                         &current_editor, 
                         &mut editor_data_query, 
                         &mut load_particle_events, 
-                        &mut create_particle_events
+                        &mut create_particle_events,
+                        &mut apply_editor_events,
+                        &particle_type_map
                     );
                 });
 
