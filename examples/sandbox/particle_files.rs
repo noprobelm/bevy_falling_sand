@@ -268,6 +268,7 @@ fn save_particles_to_file(
                 particle_data.fire = Some(bfs_assets::FireData {
                     burn_radius: fire.burn_radius,
                     chance_to_spread: fire.chance_to_spread,
+                    destroys_on_spread: fire.destroys_on_spread,
                 });
             }
 
@@ -277,6 +278,7 @@ fn save_particles_to_file(
                     duration: burns.duration.as_millis() as u64,
                     tick_rate: burns.tick_rate.as_millis() as u64,
                     chance_destroy_per_tick: burns.chance_destroy_per_tick,
+                    ignites_on_spawn: Some(burns.ignites_on_spawn),
                     reaction: burns.reaction.as_ref().map(|r| bfs_assets::ReactionData {
                         produces: r.produces.name.to_string(),
                         chance_to_produce: r.chance_to_produce,
@@ -300,6 +302,7 @@ fn save_particles_to_file(
                     spreads: burns.spreads.as_ref().map(|fire| bfs_assets::FireData {
                         burn_radius: fire.burn_radius,
                         chance_to_spread: fire.chance_to_spread,
+                        destroys_on_spread: fire.destroys_on_spread,
                     }),
                 };
                 particle_data.burns = Some(burns_data);

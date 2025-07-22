@@ -54,6 +54,8 @@ pub struct FireData {
     pub burn_radius: f32,
     /// Chance to spread fire per tick.
     pub chance_to_spread: f64,
+    /// Whether the entity is destroyed upon spreading to another particle.
+    pub destroys_on_spread: bool,
 }
 
 /// Serializable burning duration data.
@@ -80,6 +82,8 @@ pub struct BurnsData {
     pub colors: Option<Vec<String>>,
     /// Fire spread properties while burning.
     pub spreads: Option<FireData>,
+    /// Whether the particle ignites immediately when spawned.
+    pub ignites_on_spawn: Option<bool>,
 }
 
 /// Serializable reaction data.
@@ -178,7 +182,7 @@ impl ParticleData {
             entity_commands.insert(Fire {
                 burn_radius: fire_data.burn_radius,
                 chance_to_spread: fire_data.chance_to_spread,
-                destroys_on_spread: false,
+                destroys_on_spread: fire_data.destroys_on_spread,
             });
         }
 
@@ -216,7 +220,7 @@ impl ParticleData {
             let spreads = burns_data.spreads.as_ref().map(|s| Fire {
                 burn_radius: s.burn_radius,
                 chance_to_spread: s.chance_to_spread,
-                destroys_on_spread: false,
+                destroys_on_spread: s.destroys_on_spread,
             });
 
             entity_commands.insert(Burns::new(
@@ -226,7 +230,7 @@ impl ParticleData {
                 reaction,
                 color,
                 spreads,
-                false, // ignites_on_spawn - could be made configurable
+                burns_data.ignites_on_spawn.unwrap_or(false),
             ));
         }
 

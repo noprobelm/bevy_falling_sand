@@ -281,12 +281,14 @@ impl ParticleEditorData {
             fire: self.fire_config.as_ref().map(|fc| FireData {
                 burn_radius: fc.burn_radius,
                 chance_to_spread: fc.chance_to_spread,
+                destroys_on_spread: fc.destroys_on_spread,
             }),
             burning: None, // Calculated from burns
             burns: self.burns_config.as_ref().map(|bc| BurnsData {
                 duration: bc.duration.as_millis() as u64,
                 tick_rate: bc.tick_rate.as_millis() as u64,
                 chance_destroy_per_tick: bc.chance_destroy_per_tick,
+                ignites_on_spawn: Some(bc.ignites_on_spawn),
                 reaction: bc.reaction.as_ref().map(|r| ReactionData {
                     produces: r.produces.clone(),
                     chance_to_produce: r.chance_to_produce,
@@ -309,6 +311,7 @@ impl ParticleEditorData {
                 spreads: bc.spreads_fire.as_ref().map(|sf| FireData {
                     burn_radius: sf.burn_radius,
                     chance_to_spread: sf.chance_to_spread,
+                    destroys_on_spread: sf.destroys_on_spread,
                 }),
             }),
         }
