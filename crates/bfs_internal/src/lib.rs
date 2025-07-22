@@ -12,6 +12,10 @@
 
 /// Provides bundles for commonly used particle types.
 pub mod bundles;
+/// File I/O utilities for particle data
+pub mod file_utils;
+/// Central particle registry for serialization
+pub mod particle_registry;
 /// Prelude for commonly accessed constructs
 pub mod prelude;
 

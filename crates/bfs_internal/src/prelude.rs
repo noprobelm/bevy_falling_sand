@@ -1,4 +1,6 @@
 pub use crate::bundles::*;
+pub use crate::file_utils::*;
+pub use crate::particle_registry::*;
 
 pub use crate::core::*;
 

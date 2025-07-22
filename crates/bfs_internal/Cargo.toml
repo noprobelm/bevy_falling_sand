@@ -16,3 +16,4 @@ bfs_physics = { path = "../bfs_physics" }
 bfs_assets = { path = "../bfs_assets" }
 bevy_turborand = "0.11.0"
 serde = "1.0.210"
+ron = "0.8"

@@ -1758,6 +1758,7 @@ dependencies = [
  "bfs_reactions",
  "bfs_scenes",
  "bfs_spatial",
+ "ron",
  "serde",
 ]
 
