@@ -5,7 +5,7 @@ use bevy_falling_sand::prelude::{
     Particle, ParticleMap, ParticleSimulationSet, RemoveParticleEvent,
 };
 
-use super::{update_cursor_position, AppState, CursorCoords, SelectedBrushParticle};
+use super::ui::{update_cursor_position, AppState, CursorCoords, SelectedBrushParticle};
 
 pub(super) struct BrushPlugin;
 

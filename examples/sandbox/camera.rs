@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::AppState;
+use crate::ui::AppState;
 
 pub(super) struct CameraPlugin;
 

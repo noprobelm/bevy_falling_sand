@@ -51,8 +51,6 @@ bevy.workspace = true
 bevy_egui = "0.34.1"
 bevy_turborand = "0.11.0"
 ron = "0.8"
-rfd = "0.15"
-futures-lite = "2.0"
 clap = { version = "4.5", features = ["derive"] }
 shlex = "1.3"
 trie-rs = "0.2"

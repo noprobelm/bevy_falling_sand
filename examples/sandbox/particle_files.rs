@@ -2,29 +2,28 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 
 use bevy::prelude::*;
-use bevy::tasks::{AsyncComputeTaskPool, Task};
 use bevy_egui::egui;
 use bfs_assets::{ParticleData, ParticleDefinitions};
 use bfs_color::ColorProfile;
 use bfs_core::{ParticleType, ParticleTypeMap};
 use bfs_movement::{Density, Momentum, Velocity};
 use bfs_reactions::{Burns, Fire};
-use futures_lite::future;
-use rfd::AsyncFileDialog;
 use ron::ser::{to_string_pretty, PrettyConfig};
+
+// Import the file browser
+use crate::ui::file_browser::{FileBrowser, FileBrowserState};
 
 pub(super) struct ParticleFilesPlugin;
 
 impl Plugin for ParticleFilesPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<ParticleFileDialog>()
+            .insert_resource(FileBrowserState::new("assets/particles", "ron", "Particle Files"))
             .add_event::<SaveParticlesEvent>()
             .add_event::<LoadParticlesEvent>()
             .add_systems(
                 Update,
                 (
-                    poll_save_dialog_task,
-                    poll_load_dialog_task,
                     save_particles_to_file,
                     load_particles_from_file,
                 ),
@@ -34,20 +33,12 @@ impl Plugin for ParticleFilesPlugin {
 
 #[derive(Resource, Default)]
 pub struct ParticleFileDialog {
-    pub show_save_dialog: bool,
-    pub show_load_dialog: bool,
     pub last_error: Option<String>,
     pub last_success: Option<String>,
 }
 
-#[derive(Component)]
-struct SaveDialogTask(Task<Option<PathBuf>>);
-
-#[derive(Component)]
-struct LoadDialogTask(Task<Option<PathBuf>>);
-
 #[derive(Event)]
-pub struct SaveParticlesEvent;
+pub struct SaveParticlesEvent(pub PathBuf);
 
 #[derive(Event)]
 pub struct LoadParticlesEvent(pub PathBuf);
@@ -58,21 +49,21 @@ impl ParticleFileManagementUI {
     pub fn render(
         &self,
         ui: &mut egui::Ui,
-        commands: &mut Commands,
         dialog_state: &mut ResMut<ParticleFileDialog>,
+        browser_state: &mut ResMut<FileBrowserState>,
+        ev_save_particles: &mut EventWriter<SaveParticlesEvent>,
+        ev_load_particles: &mut EventWriter<LoadParticlesEvent>,
     ) {
         ui.separator();
         ui.label("Particle Files");
 
         ui.horizontal_wrapped(|ui| {
             if ui.button("SAVE PARTICLES").clicked() {
-                dialog_state.show_save_dialog = true;
-                spawn_save_dialog(commands);
+                browser_state.show_save("Save Particle Set");
             }
 
             if ui.button("LOAD PARTICLES").clicked() {
-                dialog_state.show_load_dialog = true;
-                spawn_load_dialog(commands);
+                browser_state.show_load("Load Particle Set");
             }
         });
 
@@ -84,94 +75,31 @@ impl ParticleFileManagementUI {
         if let Some(ref success) = dialog_state.last_success {
             ui.colored_label(egui::Color32::GREEN, success);
         }
+
+        // Render file browser dialogs
+        let file_browser = FileBrowser;
+        
+        file_browser.render_save_dialog(
+            ui,
+            browser_state,
+            |path| {
+                ev_save_particles.write(SaveParticlesEvent(path));
+            },
+        );
+        
+        file_browser.render_load_dialog(
+            ui,
+            browser_state,
+            |path| {
+                ev_load_particles.write(LoadParticlesEvent(path));
+            },
+        );
     }
 }
-
-fn spawn_save_dialog(commands: &mut Commands) {
-    let thread_pool = AsyncComputeTaskPool::get();
-    let task = thread_pool.spawn(async move {
-        AsyncFileDialog::new()
-            .set_title("Save Particle Definitions")
-            .add_filter("RON files", &["ron"])
-            .set_file_name("my_particles.ron")
-            .save_file()
-            .await
-            .map(|handle| handle.path().to_owned())
-    });
-    commands.spawn(SaveDialogTask(task));
-}
-
-fn spawn_load_dialog(commands: &mut Commands) {
-    let thread_pool = AsyncComputeTaskPool::get();
-    let task = thread_pool.spawn(async move {
-        AsyncFileDialog::new()
-            .set_title("Load Particle Definitions")
-            .add_filter("RON files", &["ron"])
-            .pick_file()
-            .await
-            .map(|handle| handle.path().to_owned())
-    });
-    commands.spawn(LoadDialogTask(task));
-}
-
-fn poll_save_dialog_task(
-    mut commands: Commands,
-    mut save_tasks: Query<(Entity, &mut SaveDialogTask)>,
-    mut ev_save_particles: EventWriter<SaveParticlesEvent>,
-    mut dialog_state: ResMut<ParticleFileDialog>,
-) {
-    for (entity, mut task) in save_tasks.iter_mut() {
-        if let Some(result) = future::block_on(future::poll_once(&mut task.0)) {
-            dialog_state.show_save_dialog = false;
-            commands.entity(entity).despawn();
-
-            match result {
-                Some(path) => {
-                    dialog_state.last_error = None;
-                    ev_save_particles.write(SaveParticlesEvent);
-                    // Store the path for the save operation
-                    commands.insert_resource(SavePath(path));
-                }
-                None => {
-                    dialog_state.last_error = Some("Save dialog cancelled".to_string());
-                }
-            }
-        }
-    }
-}
-
-fn poll_load_dialog_task(
-    mut commands: Commands,
-    mut load_tasks: Query<(Entity, &mut LoadDialogTask)>,
-    mut ev_load_particles: EventWriter<LoadParticlesEvent>,
-    mut dialog_state: ResMut<ParticleFileDialog>,
-) {
-    for (entity, mut task) in load_tasks.iter_mut() {
-        if let Some(result) = future::block_on(future::poll_once(&mut task.0)) {
-            dialog_state.show_load_dialog = false;
-            commands.entity(entity).despawn();
-
-            match result {
-                Some(path) => {
-                    dialog_state.last_error = None;
-                    ev_load_particles.write(LoadParticlesEvent(path));
-                }
-                None => {
-                    dialog_state.last_error = Some("Load dialog cancelled".to_string());
-                }
-            }
-        }
-    }
-}
-
-#[derive(Resource)]
-struct SavePath(PathBuf);
 
 fn save_particles_to_file(
-    mut commands: Commands,
     mut ev_save_particles: EventReader<SaveParticlesEvent>,
     _particle_type_map: Res<ParticleTypeMap>,
-    save_path: Option<Res<SavePath>>,
     mut dialog_state: ResMut<ParticleFileDialog>,
     particle_query: Query<(
         &ParticleType,
@@ -189,12 +117,7 @@ fn save_particles_to_file(
         Option<&bfs_color::ChangesColor>,
     )>,
 ) {
-    for _ in ev_save_particles.read() {
-        let Some(save_path) = save_path.as_ref() else {
-            dialog_state.last_error = Some("No save path specified".to_string());
-            continue;
-        };
-
+    for SaveParticlesEvent(save_path) in ev_save_particles.read() {
         let mut particle_definitions = HashMap::new();
 
         // Collect all particle types and convert them to ParticleData
@@ -313,12 +236,12 @@ fn save_particles_to_file(
 
         // Serialize to RON and save
         match to_string_pretty(&particle_definitions, PrettyConfig::default()) {
-            Ok(ron_content) => match std::fs::write(&save_path.0, ron_content) {
+            Ok(ron_content) => match std::fs::write(save_path, ron_content) {
                 Ok(()) => {
                     dialog_state.last_success = Some(format!(
                         "Saved {} particles to {}",
                         particle_definitions.len(),
-                        save_path.0.display()
+                        save_path.display()
                     ));
                     dialog_state.last_error = None;
                 }
@@ -330,8 +253,6 @@ fn save_particles_to_file(
                 dialog_state.last_error = Some(format!("Failed to serialize particles: {}", e));
             }
         }
-
-        commands.remove_resource::<SavePath>();
     }
 }
 
@@ -377,4 +298,3 @@ fn load_particles_from_file(
         }
     }
 }
-

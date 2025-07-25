@@ -1,4 +1,5 @@
 mod console;
+pub mod file_browser;
 mod particle_editor;
 pub mod particle_search;
 mod statistics_panel;
@@ -6,7 +7,7 @@ mod top_bar;
 
 use bevy::diagnostic::{DiagnosticsStore, FrameTimeDiagnosticsPlugin};
 use bevy_falling_sand::prelude::{
-    ActiveParticleCount, DynamicParticleCount, LoadSceneAssetEvent, LoadSceneEvent, ParticleTypeMap, 
+    ActiveParticleCount, DynamicParticleCount, LoadSceneEvent, ParticleTypeMap, 
     ParticleTypeMaterialsParam, ResetParticleChildrenEvent, SaveSceneEvent, TotalParticleCount, WallParticleCount,
 };
 use console::core::{ConsoleCache, ConsoleCommandEntered, ConsoleConfiguration};
@@ -26,7 +27,9 @@ use particle_search::{
 use statistics_panel::StatisticsPanel;
 pub use top_bar::particle_files::ParticleFileDialog;
 use top_bar::{ParticleFilesPlugin, UiTopBar};
-use crate::scenes::{SceneManagementUI, SceneSelectionDialog, ParticleSceneFilePath};
+use top_bar::particle_files::ParticleFileBrowser;
+use crate::scenes::{SceneManagementUI, SceneFileBrowserState};
+use crate::ui::file_browser::FileBrowserState;
 
 use bevy::prelude::*;
 pub(super) use bevy_egui::*;
@@ -106,12 +109,12 @@ fn render_ui_panels(
     total_particle_count: Res<TotalParticleCount>,
     active_particle_count: Res<ActiveParticleCount>,
     diagnostics: Res<DiagnosticsStore>,
-    mut scene_selection_dialog: ResMut<SceneSelectionDialog>,
-    mut scene_path: ResMut<ParticleSceneFilePath>,
+    mut scene_browser_state: ResMut<SceneFileBrowserState>,
     mut ev_save_scene: EventWriter<SaveSceneEvent>,
     mut ev_load_scene: EventWriter<LoadSceneEvent>,
-    mut ev_load_scene_asset: EventWriter<LoadSceneAssetEvent>,
-    asset_server: Res<AssetServer>,
+    mut particle_file_browser_state: ResMut<FileBrowserState>,
+    mut ev_save_particles: EventWriter<top_bar::particle_files::SaveParticlesEvent>,
+    mut ev_load_particles: EventWriter<top_bar::particle_files::LoadParticlesEvent>,
 ) {
     let ctx = contexts.ctx_mut();
 
@@ -121,7 +124,7 @@ fn render_ui_panels(
     // Top panel - must be declared first
     let _top_response = egui::TopBottomPanel::top("Top panel").show(ctx, |ui| {
         egui::menu::bar(ui, |ui| {
-            UiTopBar.render(ui, &mut commands);
+            UiTopBar.render(ui, &mut commands, &mut particle_file_browser_state);
 
             // Show particle file status messages
             if let Some(ref error) = particle_file_dialog.last_error {
@@ -217,12 +220,21 @@ fn render_ui_panels(
             egui::Id::new("scene_management"),
             egui::UiBuilder::new().max_rect(ctx.screen_rect()),
         ),
-        &mut scene_selection_dialog,
-        &mut scene_path,
+        &mut scene_browser_state,
         &mut ev_save_scene,
         &mut ev_load_scene,
-        &mut ev_load_scene_asset,
-        &asset_server,
+    );
+    
+    // Render particle file browser dialogs
+    ParticleFileBrowser.render(
+        &mut egui::Ui::new(
+            ctx.clone(),
+            egui::Id::new("particle_file_browser"),
+            egui::UiBuilder::new().max_rect(ctx.screen_rect()),
+        ),
+        &mut particle_file_browser_state,
+        &mut ev_save_particles,
+        &mut ev_load_particles,
     );
 }
 

@@ -12,7 +12,7 @@ use camera::*;
 use particle_files::*;
 use scenes::*;
 use setup::*;
-use ui::*;
+use ui::UIPlugin;
 
 use bevy::{prelude::*, window::WindowMode};
 use bevy_egui::EguiPlugin;
