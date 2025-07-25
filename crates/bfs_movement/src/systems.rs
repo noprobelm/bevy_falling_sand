@@ -8,7 +8,6 @@ use bfs_core::{Particle, ParticleMap, ParticlePosition, ParticleSimulationSet};
 
 type ObstructedDirections = [bool; 9];
 
-#[inline(always)]
 const fn direction_to_index(dir: IVec2) -> usize {
     ((dir.y + 1) * 3 + (dir.x + 1)) as usize
 }
