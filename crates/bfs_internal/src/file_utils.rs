@@ -5,30 +5,43 @@ use std::path::Path;
 
 use crate::particle_registry::{ParticleRegistry, ParticleRegistryExt};
 
-/// Events for particle file operations
+/// Event to request saving particle files to disk
 #[derive(Event)]
 pub struct SaveParticleFileEvent {
+    /// Path where the particle file should be saved
     pub path: String,
+    /// List of particle entities to save
     pub entities: Vec<Entity>,
 }
 
+/// Event to request loading particle files from disk
 #[derive(Event)]
 pub struct LoadParticleFileEvent {
+    /// Path of the particle file to load
     pub path: String,
 }
 
+/// Event fired after a particle file save attempt completes
 #[derive(Event)]
 pub struct ParticleFileSavedEvent {
+    /// Path where the file was saved
     pub path: String,
+    /// Whether the save operation was successful
     pub success: bool,
+    /// Error message if the save operation failed
     pub error: Option<String>,
 }
 
+/// Event fired after a particle file load attempt completes
 #[derive(Event)]
 pub struct ParticleFileLoadedEvent {
+    /// Path of the file that was loaded
     pub path: String,
+    /// Whether the load operation was successful
     pub success: bool,
+    /// Number of particles loaded from the file
     pub particle_count: usize,
+    /// Error message if the load operation failed
     pub error: Option<String>,
 }
 
