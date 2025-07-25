@@ -2,7 +2,8 @@ use std::path::{Path, PathBuf};
 
 use bevy::prelude::*;
 use bevy_egui::egui;
-use bevy_falling_sand::prelude::{LoadSceneEvent, SaveSceneEvent};
+use bevy_falling_sand::prelude::{LoadSceneEvent, SaveSceneEvent, LoadSceneAssetEvent};
+use bfs_assets::ParticleSceneAsset;
 
 pub(super) struct ScenesPlugin;
 
@@ -28,7 +29,7 @@ pub struct ParticleSceneFilePath(pub PathBuf);
 impl Default for ParticleSceneFilePath {
     fn default() -> ParticleSceneFilePath {
         let mut example_path = Path::new(env!("CARGO_MANIFEST_DIR")).to_path_buf();
-        example_path.push("examples/assets/scenes/hourglass.ron");
+        example_path.push("assets/scenes/hourglass.ron");
 
         ParticleSceneFilePath(example_path)
     }
@@ -44,6 +45,8 @@ impl SceneManagementUI {
         scene_path: &mut ResMut<ParticleSceneFilePath>,
         ev_save_scene: &mut EventWriter<SaveSceneEvent>,
         ev_load_scene: &mut EventWriter<LoadSceneEvent>,
+        ev_load_scene_asset: &mut EventWriter<LoadSceneAssetEvent>,
+        asset_server: &Res<AssetServer>,
     ) {
         // Only render dialogs, not buttons - buttons are in the File menu
         if dialog_state.show_save_dialog {
@@ -71,9 +74,21 @@ impl SceneManagementUI {
         }
 
         if dialog_state.show_load_dialog {
-            // Fetch all `.ron` files in the directory
-            let ron_files: Vec<String> = std::fs::read_dir(&scene_path.0.parent().unwrap())
-                .unwrap()
+            // Built-in scenes (loaded from assets)
+            let built_in_scenes = vec![
+                ("Hourglass", "scenes/hourglass.ron"),
+                ("Box", "scenes/box.ron"),
+                ("Smaller Box", "scenes/smaller_box.ron"),
+                ("Platforms", "scenes/platforms.ron"),
+                ("Dividers", "scenes/dividers.ron"),
+                ("Tree", "scenes/tree.ron"),
+                ("Benchmark", "scenes/benchmark.ron"),
+                ("Bevy Falling Sand", "scenes/bevy_falling_sand.ron"),
+            ];
+
+            // Also check for user-created scenes in the current directory
+            let user_files: Vec<String> = std::fs::read_dir(&scene_path.0.parent().unwrap())
+                .unwrap_or_else(|_| std::fs::read_dir(".").unwrap())
                 .filter_map(|entry| {
                     let path = entry.unwrap().path();
                     if path.extension() == Some(std::ffi::OsStr::new("ron")) {
@@ -94,25 +109,49 @@ impl SceneManagementUI {
                     egui::ComboBox::from_label("Available Scenes")
                         .selected_text(dialog_state.load_input_text.clone())
                         .show_ui(ui, |ui| {
-                            for file_name in &ron_files {
-                                let display_name =
-                                    file_name.strip_suffix(".ron").unwrap_or(file_name);
+                            // Built-in scenes
+                            ui.label("Built-in Scenes:");
+                            for (display_name, asset_path) in &built_in_scenes {
                                 if ui
                                     .selectable_value(
                                         &mut dialog_state.load_input_text,
-                                        file_name.clone(),
-                                        display_name,
+                                        format!("asset:{}", asset_path),
+                                        *display_name,
                                     )
                                     .changed()
-                                {
-                                    // Automatically update the scene path when a file is selected
-                                    scene_path.0.set_file_name(file_name.clone());
+                                {}
+                            }
+
+                            if !user_files.is_empty() {
+                                ui.separator();
+                                ui.label("User Scenes:");
+                                for file_name in &user_files {
+                                    let display_name =
+                                        file_name.strip_suffix(".ron").unwrap_or(file_name);
+                                    if ui
+                                        .selectable_value(
+                                            &mut dialog_state.load_input_text,
+                                            format!("file:{}", file_name),
+                                            display_name,
+                                        )
+                                        .changed()
+                                    {
+                                        scene_path.0.set_file_name(file_name.clone());
+                                    }
                                 }
                             }
                         });
 
                     if ui.button("Load").clicked() {
-                        ev_load_scene.write(LoadSceneEvent(scene_path.0.clone()));
+                        if dialog_state.load_input_text.starts_with("asset:") {
+                            // Load from asset
+                            let asset_path = dialog_state.load_input_text.strip_prefix("asset:").unwrap();
+                            let handle: Handle<ParticleSceneAsset> = asset_server.load(asset_path);
+                            ev_load_scene_asset.write(LoadSceneAssetEvent(handle));
+                        } else if dialog_state.load_input_text.starts_with("file:") {
+                            // Load from file
+                            ev_load_scene.write(LoadSceneEvent(scene_path.0.clone()));
+                        }
                         dialog_state.show_load_dialog = false; // Close after loading
                     }
                     if ui.button("Cancel").clicked() {

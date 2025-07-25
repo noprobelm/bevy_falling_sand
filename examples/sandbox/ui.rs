@@ -427,11 +427,13 @@ pub fn render_side_panel(
         Option<Res<DebugParticleCount>>,
         Res<TotalParticleCount>,
     ),
-    (mut scene_selection_dialog, mut scene_path, mut ev_save_scene, mut ev_load_scene): (
+    (mut scene_selection_dialog, mut scene_path, mut ev_save_scene, mut ev_load_scene, mut ev_load_scene_asset, asset_server): (
         ResMut<SceneSelectionDialog>,
         ResMut<ParticleSceneFilePath>,
         EventWriter<SaveSceneEvent>,
         EventWriter<LoadSceneEvent>,
+        EventWriter<LoadSceneAssetEvent>,
+        Res<AssetServer>,
     ),
     (current_movement_source, mut next_movement_source): (
         Res<State<MovementSource>>,
@@ -469,6 +471,8 @@ pub fn render_side_panel(
                 &mut scene_path,
                 &mut ev_save_scene,
                 &mut ev_load_scene,
+                &mut ev_load_scene_asset,
+                &asset_server,
             );
             ParticleFileManagementUI.render(ui, &mut commands, &mut particle_file_dialog);
             MovementControlUI.render(ui, current_movement_source.get(), &mut next_movement_source);

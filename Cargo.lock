@@ -1801,6 +1801,7 @@ name = "bfs_scenes"
 version = "0.1.0"
 dependencies = [
  "bevy",
+ "bfs_assets",
  "bfs_core",
  "ron",
  "serde",

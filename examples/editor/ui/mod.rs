@@ -6,8 +6,8 @@ mod top_bar;
 
 use bevy::diagnostic::{DiagnosticsStore, FrameTimeDiagnosticsPlugin};
 use bevy_falling_sand::prelude::{
-    ActiveParticleCount, DynamicParticleCount, LoadSceneEvent, ParticleTypeMap, ParticleTypeMaterialsParam, 
-    ResetParticleChildrenEvent, SaveSceneEvent, TotalParticleCount, WallParticleCount,
+    ActiveParticleCount, DynamicParticleCount, LoadSceneEvent, LoadSceneAssetEvent, ParticleTypeMap, 
+    ParticleTypeMaterialsParam, ResetParticleChildrenEvent, SaveSceneEvent, TotalParticleCount, WallParticleCount,
 };
 use console::core::{ConsoleCache, ConsoleCommandEntered, ConsoleConfiguration};
 use console::{Console, ConsolePlugin};
@@ -110,6 +110,8 @@ fn render_ui_panels(
     mut scene_path: ResMut<ParticleSceneFilePath>,
     mut ev_save_scene: EventWriter<SaveSceneEvent>,
     mut ev_load_scene: EventWriter<LoadSceneEvent>,
+    mut ev_load_scene_asset: EventWriter<LoadSceneAssetEvent>,
+    asset_server: Res<AssetServer>,
 ) {
     let ctx = contexts.ctx_mut();
 
@@ -219,6 +221,8 @@ fn render_ui_panels(
         &mut scene_path,
         &mut ev_save_scene,
         &mut ev_load_scene,
+        &mut ev_load_scene_asset,
+        &asset_server,
     );
 }
 
