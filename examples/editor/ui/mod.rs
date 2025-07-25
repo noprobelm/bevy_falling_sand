@@ -1,26 +1,29 @@
 mod console;
-mod layers_panel;
 mod particle_editor;
 pub mod particle_search;
+mod statistics_panel;
 mod top_bar;
 
 use bevy_falling_sand::prelude::{
     ParticleMaterialsParam, ParticleTypeMap, ResetParticleChildrenEvent,
 };
-use console::{Console, ConsolePlugin};
 use console::core::{ConsoleCache, ConsoleCommandEntered, ConsoleConfiguration};
+use console::{Console, ConsolePlugin};
 
 // Re-export for external modules
 pub use console::core::ConsoleState;
-use layers_panel::LayersPanel;
 use particle_editor::{
     ApplyEditorChanges, ApplyEditorChangesAndReset, CreateNewParticle, CurrentEditorSelection,
     LoadParticleIntoEditor, ParticleEditorData,
 };
 use particle_editor::{ParticleEditor, ParticleEditorPlugin};
-use particle_search::{ParticleSearch, ParticleSearchState, ParticleSearchCache, update_particle_search_cache, handle_particle_search_input};
-use top_bar::{UiTopBar, ParticleFilesPlugin};
+use particle_search::{
+    handle_particle_search_input, update_particle_search_cache, ParticleSearch,
+    ParticleSearchCache, ParticleSearchState,
+};
+use statistics_panel::StatisticsPanel;
 pub use top_bar::particle_files::ParticleFileDialog;
+use top_bar::{ParticleFilesPlugin, UiTopBar};
 
 use bevy::prelude::*;
 pub(super) use bevy_egui::*;
@@ -39,13 +42,18 @@ impl Plugin for UiPlugin {
         ))
         .init_resource::<ParticleSearchState>()
         .init_resource::<ParticleSearchCache>()
-        .add_systems(Update, (
-            console::receive_console_line,
-            update_particle_search_cache,
-        ))
+        .init_resource::<StatisticsPanel>()
+        .add_systems(
+            Update,
+            (console::receive_console_line, update_particle_search_cache),
+        )
         .add_systems(
             EguiContextPass,
-            (render_ui_panels, render_particle_search, handle_particle_search_input),
+            (
+                render_ui_panels,
+                render_particle_search,
+                handle_particle_search_input,
+            ),
         );
     }
 }
@@ -88,30 +96,31 @@ fn render_ui_panels(
         particle_type_map,
         particle_file_dialog,
     ): UiSystemParams,
+    statistics_panel: Res<StatisticsPanel>,
 ) {
     let ctx = contexts.ctx_mut();
 
     // All egui panels must be declared in the same context to coordinate layout properly
     // Order matters: Top -> Side -> Bottom to avoid overlaps
-    
+
     // Top panel - must be declared first
     let _top_response = egui::TopBottomPanel::top("Top panel").show(ctx, |ui| {
         egui::menu::bar(ui, |ui| {
             UiTopBar.render(ui, &mut commands);
-            
+
             // Show particle file status messages
             if let Some(ref error) = particle_file_dialog.last_error {
                 ui.separator();
                 ui.colored_label(egui::Color32::RED, format!("Error: {}", error));
             }
-            
+
             if let Some(ref success) = particle_file_dialog.last_success {
                 ui.separator();
                 ui.colored_label(egui::Color32::GREEN, success);
             }
         });
     });
-    
+
     // Side panel - must be declared before bottom panel to avoid overlap
     let _left_response = egui::SidePanel::left("Left panel")
         .resizable(false)
@@ -153,7 +162,7 @@ fn render_ui_panels(
                 ui.group(|ui| {
                     ui.set_width(ui.available_width());
                     ui.set_height(panel_height);
-                    LayersPanel.render(ui);
+                    statistics_panel.as_ref().render(ui);
                 });
             });
         });
@@ -189,14 +198,14 @@ fn render_particle_search(
     ): ParticleSearchParams,
 ) {
     let ctx = contexts.ctx_mut();
-    
+
     // Particle search overlay (rendered after panels to appear on top)
     let mut particle_search_ui = egui::Ui::new(
         ctx.clone(),
         egui::Id::new("particle_search"),
         egui::UiBuilder::new().max_rect(ctx.screen_rect()),
     );
-    
+
     ParticleSearch.render(
         &mut particle_search_ui,
         &mut particle_search_state,
@@ -204,4 +213,3 @@ fn render_particle_search(
         &mut load_particle_events,
     );
 }
-
