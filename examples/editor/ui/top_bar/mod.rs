@@ -2,7 +2,7 @@ pub mod particle_files;
 
 use super::*;
 use particle_files::{spawn_save_dialog, spawn_load_dialog};
-use crate::scenes::{spawn_save_scene_dialog, spawn_load_scene_dialog};
+use crate::scenes::{spawn_load_scene_dialog, spawn_save_scene_dialog};
 
 pub use particle_files::ParticleFilesPlugin;
 

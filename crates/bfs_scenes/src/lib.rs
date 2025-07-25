@@ -23,9 +23,9 @@ pub struct FallingSandScenesPlugin;
 
 impl Plugin for FallingSandScenesPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<LoadSceneEvent>()
+        app.add_event::<LoadSceneAssetEvent>()
             .add_event::<SaveSceneEvent>()
-            .add_event::<LoadSceneAssetEvent>()
+            .add_event::<LoadSceneEvent>()
             .add_systems(
                 Update,
                 (
@@ -60,6 +60,7 @@ pub struct SaveSceneEvent(pub PathBuf);
 /// Triggers systems to load particles from a file.
 #[derive(Event)]
 pub struct LoadSceneEvent(pub PathBuf);
+
 
 /// Triggers systems to load particles from an asset handle.
 #[derive(Event)]

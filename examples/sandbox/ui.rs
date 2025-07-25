@@ -427,11 +427,8 @@ pub fn render_side_panel(
         Option<Res<DebugParticleCount>>,
         Res<TotalParticleCount>,
     ),
-    (mut scene_selection_dialog, mut scene_path, mut ev_save_scene, mut ev_load_scene, mut ev_load_scene_asset, asset_server): (
+    (mut scene_selection_dialog, mut ev_load_scene_asset, asset_server): (
         ResMut<SceneSelectionDialog>,
-        ResMut<ParticleSceneFilePath>,
-        EventWriter<SaveSceneEvent>,
-        EventWriter<LoadSceneEvent>,
         EventWriter<LoadSceneAssetEvent>,
         Res<AssetServer>,
     ),
@@ -468,9 +465,6 @@ pub fn render_side_panel(
             SceneManagementUI.render(
                 ui,
                 &mut scene_selection_dialog,
-                &mut scene_path,
-                &mut ev_save_scene,
-                &mut ev_load_scene,
                 &mut ev_load_scene_asset,
                 &asset_server,
             );

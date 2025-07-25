@@ -1,9 +1,8 @@
-use std::path::{Path, PathBuf};
 
 use bevy::prelude::*;
 use bevy_egui::egui;
-use bevy_falling_sand::prelude::{LoadSceneEvent, SaveSceneEvent, LoadSceneAssetEvent};
-use bfs_assets::ParticleSceneAsset;
+use bevy_falling_sand::prelude::{LoadSceneAssetEvent, LoadSceneEvent, SaveSceneEvent};
+use std::path::PathBuf;
 
 pub(super) struct ScenesPlugin;
 
@@ -17,21 +16,23 @@ impl bevy::prelude::Plugin for ScenesPlugin {
 
 #[derive(Resource, Default)]
 pub struct SceneSelectionDialog {
-    pub show_save_dialog: bool,
     pub show_load_dialog: bool,
-    pub save_input_text: String,
+    pub show_save_dialog: bool,
     pub load_input_text: String,
+    pub save_input_text: String,
+    pub selected_scene: Option<String>,
 }
 
 #[derive(Resource)]
-pub struct ParticleSceneFilePath(pub PathBuf);
+pub struct ParticleSceneFilePath {
+    pub path: PathBuf,
+}
 
 impl Default for ParticleSceneFilePath {
-    fn default() -> ParticleSceneFilePath {
-        let mut example_path = Path::new(env!("CARGO_MANIFEST_DIR")).to_path_buf();
-        example_path.push("assets/scenes/hourglass.ron");
-
-        ParticleSceneFilePath(example_path)
+    fn default() -> Self {
+        Self {
+            path: PathBuf::from("assets/scenes/custom_scene.ron"),
+        }
     }
 }
 
@@ -49,114 +50,144 @@ impl SceneManagementUI {
         asset_server: &Res<AssetServer>,
     ) {
         // Only render dialogs, not buttons - buttons are in the File menu
+
         if dialog_state.show_save_dialog {
+            // Get all scenes from assets/scenes directory for the save dialog too
+            let all_scenes: Vec<(String, String)> = std::fs::read_dir("assets/scenes")
+                .map(|entries| {
+                    entries
+                        .filter_map(|entry| {
+                            let entry = entry.ok()?;
+                            let path = entry.path();
+                            if path.extension()? == "ron" {
+                                let file_name = path.file_name()?.to_str()?;
+                                let display_name = file_name.trim_end_matches(".ron");
+                                let full_path = format!("assets/scenes/{}", file_name);
+                                Some((display_name.to_string(), full_path))
+                            } else {
+                                None
+                            }
+                        })
+                        .collect()
+                })
+                .unwrap_or_default();
+
             egui::Window::new("Save Scene")
                 .collapsible(false)
-                .resizable(false)
+                .resizable(true)
+                .default_size([400.0, 300.0])
                 .show(ui.ctx(), |ui| {
-                    ui.label("Enter a name to save the current scene:");
-                    ui.text_edit_singleline(&mut dialog_state.save_input_text);
-                    ui.horizontal_wrapped(|ui| {
-                        if ui.button("Save").clicked() {
-                            let mut file_name = dialog_state.save_input_text.clone();
-                            if !file_name.ends_with(".ron") {
-                                file_name.push_str(".ron");
+                    ui.horizontal(|ui| {
+                        ui.label("Scene name:");
+                        ui.text_edit_singleline(&mut dialog_state.save_input_text);
+                    });
+                    
+                    ui.separator();
+                    ui.label("Existing scenes:");
+                    
+                    egui::ScrollArea::vertical()
+                        .max_height(150.0)
+                        .show(ui, |ui| {
+                            for (display_name, _) in &all_scenes {
+                                if ui.selectable_label(
+                                    dialog_state.selected_scene.as_ref() == Some(display_name),
+                                    display_name
+                                ).clicked() {
+                                    dialog_state.selected_scene = Some(display_name.clone());
+                                    dialog_state.save_input_text = display_name.clone();
+                                }
                             }
-                            scene_path.0.set_file_name(file_name);
-                            ev_save_scene.write(SaveSceneEvent(scene_path.0.clone()));
-                            dialog_state.show_save_dialog = false; // Close after saving
+                        });
+                    
+                    ui.separator();
+                    ui.horizontal(|ui| {
+                        if ui.button("Save").clicked() {
+                            if !dialog_state.save_input_text.is_empty() {
+                                let mut path = PathBuf::from("assets/scenes");
+                                path.push(&dialog_state.save_input_text);
+                                path.set_extension("ron");
+                                ev_save_scene.write(SaveSceneEvent(path));
+                            }
+                            dialog_state.show_save_dialog = false;
+                            dialog_state.selected_scene = None;
                         }
                         if ui.button("Cancel").clicked() {
                             dialog_state.show_save_dialog = false;
+                            dialog_state.selected_scene = None;
                         }
                     });
                 });
         }
 
         if dialog_state.show_load_dialog {
-            // Built-in scenes (loaded from assets)
-            let built_in_scenes = vec![
-                ("Hourglass", "scenes/hourglass.ron"),
-                ("Box", "scenes/box.ron"),
-                ("Smaller Box", "scenes/smaller_box.ron"),
-                ("Platforms", "scenes/platforms.ron"),
-                ("Dividers", "scenes/dividers.ron"),
-                ("Tree", "scenes/tree.ron"),
-                ("Benchmark", "scenes/benchmark.ron"),
-                ("Bevy Falling Sand", "scenes/bevy_falling_sand.ron"),
-            ];
-
-            // Also check for user-created scenes in the current directory
-            let user_files: Vec<String> = std::fs::read_dir(&scene_path.0.parent().unwrap())
-                .unwrap_or_else(|_| std::fs::read_dir(".").unwrap())
-                .filter_map(|entry| {
-                    let path = entry.unwrap().path();
-                    if path.extension() == Some(std::ffi::OsStr::new("ron")) {
-                        path.file_name()
-                            .and_then(|name| name.to_str().map(String::from))
-                    } else {
-                        None
-                    }
+            // Get all scenes from assets/scenes directory
+            let all_scenes: Vec<(String, String)> = std::fs::read_dir("assets/scenes")
+                .map(|entries| {
+                    entries
+                        .filter_map(|entry| {
+                            let entry = entry.ok()?;
+                            let path = entry.path();
+                            if path.extension()? == "ron" {
+                                let file_name = path.file_name()?.to_str()?;
+                                let display_name = file_name.trim_end_matches(".ron");
+                                let full_path = format!("assets/scenes/{}", file_name);
+                                Some((display_name.to_string(), full_path))
+                            } else {
+                                None
+                            }
+                        })
+                        .collect()
                 })
-                .collect();
+                .unwrap_or_default();
 
             egui::Window::new("Load Scene")
                 .collapsible(false)
-                .resizable(false)
+                .resizable(true)
+                .default_size([400.0, 300.0])
                 .show(ui.ctx(), |ui| {
-                    ui.label("Select the scene to load:");
-
-                    egui::ComboBox::from_label("Available Scenes")
-                        .selected_text(dialog_state.load_input_text.clone())
-                        .show_ui(ui, |ui| {
-                            // Built-in scenes
-                            ui.label("Built-in Scenes:");
-                            for (display_name, asset_path) in &built_in_scenes {
-                                if ui
-                                    .selectable_value(
-                                        &mut dialog_state.load_input_text,
-                                        format!("asset:{}", asset_path),
-                                        *display_name,
-                                    )
-                                    .changed()
-                                {}
-                            }
-
-                            if !user_files.is_empty() {
-                                ui.separator();
-                                ui.label("User Scenes:");
-                                for file_name in &user_files {
-                                    let display_name =
-                                        file_name.strip_suffix(".ron").unwrap_or(file_name);
-                                    if ui
-                                        .selectable_value(
-                                            &mut dialog_state.load_input_text,
-                                            format!("file:{}", file_name),
-                                            display_name,
-                                        )
-                                        .changed()
-                                    {
-                                        scene_path.0.set_file_name(file_name.clone());
-                                    }
+                    ui.label("Select a scene to load:");
+                    ui.separator();
+                    
+                    egui::ScrollArea::vertical()
+                        .max_height(200.0)
+                        .show(ui, |ui| {
+                            for (display_name, file_path) in &all_scenes {
+                                let is_selected = dialog_state.selected_scene.as_ref() == Some(display_name);
+                                
+                                if ui.selectable_label(is_selected, display_name).clicked() {
+                                    dialog_state.selected_scene = Some(display_name.clone());
+                                    dialog_state.load_input_text = file_path.clone();
+                                }
+                                
+                                // Double-click to load
+                                if is_selected && ui.input(|i| i.pointer.button_double_clicked(egui::PointerButton::Primary)) {
+                                    ev_load_scene.write(LoadSceneEvent(PathBuf::from(file_path)));
+                                    dialog_state.show_load_dialog = false;
+                                    dialog_state.selected_scene = None;
+                                    break;
                                 }
                             }
                         });
-
-                    if ui.button("Load").clicked() {
-                        if dialog_state.load_input_text.starts_with("asset:") {
-                            // Load from asset
-                            let asset_path = dialog_state.load_input_text.strip_prefix("asset:").unwrap();
-                            let handle: Handle<ParticleSceneAsset> = asset_server.load(asset_path);
-                            ev_load_scene_asset.write(LoadSceneAssetEvent(handle));
-                        } else if dialog_state.load_input_text.starts_with("file:") {
-                            // Load from file
-                            ev_load_scene.write(LoadSceneEvent(scene_path.0.clone()));
+                    
+                    ui.separator();
+                    if let Some(selected) = &dialog_state.selected_scene {
+                        ui.label(format!("Selected: {}", selected));
+                    }
+                    
+                    ui.horizontal(|ui| {
+                        let load_enabled = dialog_state.selected_scene.is_some();
+                        if ui.add_enabled(load_enabled, egui::Button::new("Load")).clicked() {
+                            if !dialog_state.load_input_text.is_empty() {
+                                ev_load_scene.write(LoadSceneEvent(PathBuf::from(&dialog_state.load_input_text)));
+                            }
+                            dialog_state.show_load_dialog = false;
+                            dialog_state.selected_scene = None;
                         }
-                        dialog_state.show_load_dialog = false; // Close after loading
-                    }
-                    if ui.button("Cancel").clicked() {
-                        dialog_state.show_load_dialog = false;
-                    }
+                        if ui.button("Cancel").clicked() {
+                            dialog_state.show_load_dialog = false;
+                            dialog_state.selected_scene = None;
+                        }
+                    });
                 });
         }
     }
@@ -164,31 +195,31 @@ impl SceneManagementUI {
 
 fn handle_scene_dialog_markers(
     mut commands: Commands,
-    save_markers: Query<Entity, With<ShowSaveSceneDialogMarker>>,
     load_markers: Query<Entity, With<ShowLoadSceneDialogMarker>>,
+    save_markers: Query<Entity, With<ShowSaveSceneDialogMarker>>,
     mut dialog_state: ResMut<SceneSelectionDialog>,
 ) {
-    for entity in save_markers.iter() {
-        dialog_state.show_save_dialog = true;
-        commands.entity(entity).despawn();
-    }
-    
     for entity in load_markers.iter() {
         dialog_state.show_load_dialog = true;
         commands.entity(entity).despawn();
     }
-}
-
-pub fn spawn_save_scene_dialog(commands: &mut Commands) {
-    commands.spawn_empty().insert(ShowSaveSceneDialogMarker);
+    
+    for entity in save_markers.iter() {
+        dialog_state.show_save_dialog = true;
+        commands.entity(entity).despawn();
+    }
 }
 
 pub fn spawn_load_scene_dialog(commands: &mut Commands) {
     commands.spawn_empty().insert(ShowLoadSceneDialogMarker);
 }
 
-#[derive(Component)]
-struct ShowSaveSceneDialogMarker;
+pub fn spawn_save_scene_dialog(commands: &mut Commands) {
+    commands.spawn_empty().insert(ShowSaveSceneDialogMarker);
+}
 
 #[derive(Component)]
 struct ShowLoadSceneDialogMarker;
+
+#[derive(Component)]
+struct ShowSaveSceneDialogMarker;

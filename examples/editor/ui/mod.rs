@@ -6,7 +6,7 @@ mod top_bar;
 
 use bevy::diagnostic::{DiagnosticsStore, FrameTimeDiagnosticsPlugin};
 use bevy_falling_sand::prelude::{
-    ActiveParticleCount, DynamicParticleCount, LoadSceneEvent, LoadSceneAssetEvent, ParticleTypeMap, 
+    ActiveParticleCount, DynamicParticleCount, LoadSceneAssetEvent, LoadSceneEvent, ParticleTypeMap, 
     ParticleTypeMaterialsParam, ResetParticleChildrenEvent, SaveSceneEvent, TotalParticleCount, WallParticleCount,
 };
 use console::core::{ConsoleCache, ConsoleCommandEntered, ConsoleConfiguration};
