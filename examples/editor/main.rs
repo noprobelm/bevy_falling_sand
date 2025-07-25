@@ -4,6 +4,7 @@ mod camera;
 mod cursor;
 mod keybindings;
 mod particles;
+mod scenes;
 mod ui;
 
 use app_state::StatesPlugin;
@@ -12,6 +13,7 @@ use brush::*;
 use camera::*;
 use cursor::*;
 use particles::*;
+use scenes::*;
 use ui::*;
 
 use bevy::{prelude::*, window::WindowMode};
@@ -34,6 +36,7 @@ fn main() {
             CameraPlugin,
             BrushPlugin,
             StatesPlugin,
+            ScenesPlugin,
             UiPlugin,
         ))
         .insert_resource(ClearColor(Color::srgba(0.17, 0.16, 0.15, 1.0)))

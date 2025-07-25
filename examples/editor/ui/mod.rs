@@ -6,8 +6,8 @@ mod top_bar;
 
 use bevy::diagnostic::{DiagnosticsStore, FrameTimeDiagnosticsPlugin};
 use bevy_falling_sand::prelude::{
-    ActiveParticleCount, DynamicParticleCount, ParticleTypeMap, ParticleTypeMaterialsParam, ResetParticleChildrenEvent,
-    TotalParticleCount, WallParticleCount,
+    ActiveParticleCount, DynamicParticleCount, LoadSceneEvent, ParticleTypeMap, ParticleTypeMaterialsParam, 
+    ResetParticleChildrenEvent, SaveSceneEvent, TotalParticleCount, WallParticleCount,
 };
 use console::core::{ConsoleCache, ConsoleCommandEntered, ConsoleConfiguration};
 use console::{Console, ConsolePlugin};
@@ -26,6 +26,7 @@ use particle_search::{
 use statistics_panel::StatisticsPanel;
 pub use top_bar::particle_files::ParticleFileDialog;
 use top_bar::{ParticleFilesPlugin, UiTopBar};
+use crate::scenes::{SceneManagementUI, SceneSelectionDialog, ParticleSceneFilePath};
 
 use bevy::prelude::*;
 pub(super) use bevy_egui::*;
@@ -105,6 +106,10 @@ fn render_ui_panels(
     total_particle_count: Res<TotalParticleCount>,
     active_particle_count: Res<ActiveParticleCount>,
     diagnostics: Res<DiagnosticsStore>,
+    mut scene_selection_dialog: ResMut<SceneSelectionDialog>,
+    mut scene_path: ResMut<ParticleSceneFilePath>,
+    mut ev_save_scene: EventWriter<SaveSceneEvent>,
+    mut ev_load_scene: EventWriter<LoadSceneEvent>,
 ) {
     let ctx = contexts.ctx_mut();
 
@@ -202,6 +207,19 @@ fn render_ui_panels(
         .show(ctx, |ui| {
             Console.render(ui, &mut console_state, &cache, &config, &mut command_writer);
         });
+
+    // Render scene management dialogs
+    SceneManagementUI.render(
+        &mut egui::Ui::new(
+            ctx.clone(),
+            egui::Id::new("scene_management"),
+            egui::UiBuilder::new().max_rect(ctx.screen_rect()),
+        ),
+        &mut scene_selection_dialog,
+        &mut scene_path,
+        &mut ev_save_scene,
+        &mut ev_load_scene,
+    );
 }
 
 type ParticleSearchParams<'w, 's> = (

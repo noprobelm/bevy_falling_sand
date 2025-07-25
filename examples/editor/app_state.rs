@@ -21,8 +21,8 @@ impl Plugin for StatesPlugin {
 
 #[derive(States, Reflect, Default, Debug, Clone, Eq, PartialEq, Hash)]
 pub enum AppState {
-    #[default]
     Canvas,
+    #[default]
     Ui,
 }
 
