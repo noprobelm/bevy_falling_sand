@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 bevy.workspace = true
+bfs_assets = { path = "../bfs_assets" }
 bfs_core = { path = "../bfs_core" }
 ron = "0.8.1"
 serde = "1.0.210"
