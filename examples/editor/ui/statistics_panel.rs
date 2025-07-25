@@ -25,7 +25,15 @@ impl Default for StatisticsPanel {
 }
 
 impl StatisticsPanel {
-    pub fn render(&self, ui: &mut egui::Ui) {
+    pub fn render(
+        &self,
+        ui: &mut egui::Ui,
+        fps: f32,
+        dynamic_particles: u32,
+        wall_particles: u32,
+        total_particles: u32,
+        active_particles: u32,
+    ) {
         let text_color = egui::Color32::from_rgb(204, 204, 204);
         ui.visuals_mut().override_text_color = Some(text_color);
 
@@ -33,48 +41,66 @@ impl StatisticsPanel {
         ui.separator();
         ui.add_space(8.0);
 
-        // Create a nice grid layout for the statistics
-        egui::Grid::new("statistics_grid")
+        // Performance Section
+        ui.add(egui::Label::new(egui::RichText::new("Performance").heading().size(16.0)));
+        ui.separator();
+        egui::Grid::new("performance_grid")
             .num_columns(2)
             .spacing([20.0, 8.0])
             .striped(false)
             .show(ui, |ui| {
-                // FPS
                 ui.label("FPS:");
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    ui.label(format!("{:.1}", self.fps));
+                    ui.label(format!("{}", fps.round() as i32));
                 });
                 ui.end_row();
+            });
 
-                // Total particles
-                ui.label("Total Particles:");
+        ui.add_space(8.0);
+
+        // Particles Section
+        ui.add(egui::Label::new(egui::RichText::new("Particles").heading().size(16.0)));
+        ui.separator();
+        egui::Grid::new("particles_grid")
+            .num_columns(2)
+            .spacing([20.0, 8.0])
+            .striped(false)
+            .show(ui, |ui| {
+                ui.label("Total:");
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    ui.label(format!("{}", self.total_particles));
+                    ui.label(format!("{}", total_particles));
                 });
                 ui.end_row();
 
-                // Dynamic particles
-                ui.label("Dynamic Particles:");
+                ui.label("Wall:");
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    ui.label(format!("{}", self.dynamic_particles));
+                    ui.label(format!("{}", wall_particles));
                 });
                 ui.end_row();
 
-                // Wall particles
-                ui.label("Wall Particles:");
+                ui.label("Dynamic:");
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    ui.label(format!("{}", self.wall_particles));
+                    ui.label(format!("{}", dynamic_particles));
                 });
                 ui.end_row();
 
-                // Active particles
-                ui.label("Active Particles:");
+                ui.label("Active:");
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    ui.label(format!("{}", self.active_particles));
+                    ui.label(format!("{}", active_particles));
                 });
                 ui.end_row();
+            });
 
-                // Dynamic rigid bodies
+        ui.add_space(8.0);
+
+        // Avian 2D Section
+        ui.add(egui::Label::new(egui::RichText::new("Avian 2D").heading().size(16.0)));
+        ui.separator();
+        egui::Grid::new("avian_grid")
+            .num_columns(2)
+            .spacing([20.0, 8.0])
+            .striped(false)
+            .show(ui, |ui| {
                 ui.label("Dynamic Rigid Bodies:");
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     ui.label(format!("{}", self.dynamic_rigid_bodies));

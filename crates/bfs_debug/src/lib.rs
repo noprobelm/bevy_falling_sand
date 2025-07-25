@@ -11,8 +11,8 @@
 //! chunks, dirty rectangles, and more.
 use bevy::prelude::*;
 
-use bfs_core::{Particle, ParticleMap, ParticleSimulationSet};
-use bfs_movement::Wall;
+use bfs_core::{Particle, ParticleMap, ParticlePosition, ParticleSimulationSet};
+use bfs_movement::ParticleMaterialsParam;
 
 /// Adds the constructs and systems necessary for debugging the Falling Sand simulation.
 pub struct FallingSandDebugPlugin;
@@ -20,7 +20,9 @@ pub struct FallingSandDebugPlugin;
 impl Plugin for FallingSandDebugPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<DynamicParticleCount>()
+            .init_resource::<WallParticleCount>()
             .init_resource::<TotalParticleCount>()
+            .init_resource::<ActiveParticleCount>()
             .init_resource::<ActiveChunkColor>()
             .init_resource::<InactiveChunkColor>()
             .init_resource::<DirtyRectColor>()
@@ -38,7 +40,12 @@ impl Plugin for FallingSandDebugPlugin {
                         .after(ParticleSimulationSet)
                         .after(color_active_chunks)
                         .run_if(resource_exists::<DebugDirtyRects>),
-                    (count_dynamic_particles, count_total_particles)
+                    (
+                        count_dynamic_particles,
+                        count_wall_particles,
+                        count_total_particles,
+                        count_active_particles,
+                    )
                         .after(ParticleSimulationSet)
                         .run_if(resource_exists::<DebugParticleCount>),
                 ),
@@ -62,12 +69,20 @@ pub struct DebugParticleMap;
 pub struct DebugDirtyRects;
 
 #[derive(Default, Resource)]
-/// Resource to hold the numebr of dynamic particles in the simulation.
+/// Resource to hold the number of dynamic particles in the simulation.
 pub struct DynamicParticleCount(pub u64);
+
+/// Resource to hold the number of wall particles in the simulation.
+#[derive(Default, Resource)]
+pub struct WallParticleCount(pub u64);
 
 #[derive(Default, Resource)]
 /// Resource to hold the total number of particles in the simulation.
 pub struct TotalParticleCount(pub u64);
+
+#[derive(Default, Resource)]
+/// Resource to hold the number of active particles in the simulation.
+pub struct ActiveParticleCount(pub u64);
 
 #[derive(Resource)]
 /// Resource to hold the color we render active chunks as.
@@ -149,14 +164,35 @@ fn color_active_chunks(
 
 fn count_dynamic_particles(
     mut dynamic_particle_count: ResMut<DynamicParticleCount>,
-    particle_query: Query<&Particle, With<Wall>>,
+    materials: ParticleMaterialsParam,
 ) {
-    dynamic_particle_count.0 = particle_query.iter().fold(0, |acc, _| acc + 1);
+    let mut num_dynamic = 0;
+    num_dynamic += materials.num_solids();
+    num_dynamic += materials.num_movable_solids();
+    num_dynamic += materials.num_liquids();
+    num_dynamic += materials.num_gases();
+    num_dynamic += materials.num_other();
+
+    dynamic_particle_count.0 = num_dynamic;
+}
+
+fn count_wall_particles(
+    mut wall_particle_count: ResMut<WallParticleCount>,
+    materials: ParticleMaterialsParam,
+) {
+    wall_particle_count.0 = materials.num_walls();
 }
 
 fn count_total_particles(
     mut total_particle_count: ResMut<TotalParticleCount>,
     particle_query: Query<&Particle>,
 ) {
-    total_particle_count.0 = particle_query.iter().fold(0, |acc, _| acc + 1);
+    total_particle_count.0 = particle_query.iter().len() as u64;
+}
+
+fn count_active_particles(
+    mut active_particle_count: ResMut<ActiveParticleCount>,
+    particle_query: Query<&Particle, Changed<ParticlePosition>>,
+) {
+    active_particle_count.0 = particle_query.iter().fold(0, |acc, _| acc + 1);
 }

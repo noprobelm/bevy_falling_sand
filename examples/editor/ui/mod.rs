@@ -4,8 +4,10 @@ pub mod particle_search;
 mod statistics_panel;
 mod top_bar;
 
+use bevy::diagnostic::{DiagnosticsStore, FrameTimeDiagnosticsPlugin};
 use bevy_falling_sand::prelude::{
-    ParticleMaterialsParam, ParticleTypeMap, ResetParticleChildrenEvent,
+    ActiveParticleCount, DynamicParticleCount, ParticleTypeMap, ParticleTypeMaterialsParam, ResetParticleChildrenEvent,
+    TotalParticleCount, WallParticleCount,
 };
 use console::core::{ConsoleCache, ConsoleCommandEntered, ConsoleConfiguration};
 use console::{Console, ConsolePlugin};
@@ -39,6 +41,7 @@ impl Plugin for UiPlugin {
             ConsolePlugin,
             ParticleEditorPlugin,
             ParticleFilesPlugin,
+            FrameTimeDiagnosticsPlugin::default(),
         ))
         .init_resource::<ParticleSearchState>()
         .init_resource::<ParticleSearchCache>()
@@ -65,7 +68,7 @@ type UiSystemParams<'w, 's> = (
     Res<'w, ConsoleCache>,
     Res<'w, ConsoleConfiguration>,
     EventWriter<'w, ConsoleCommandEntered>,
-    ParticleMaterialsParam<'w, 's>,
+    ParticleTypeMaterialsParam<'w, 's>,
     Res<'w, CurrentEditorSelection>,
     Query<'w, 's, &'static mut ParticleEditorData>,
     EventWriter<'w, LoadParticleIntoEditor>,
@@ -97,6 +100,11 @@ fn render_ui_panels(
         particle_file_dialog,
     ): UiSystemParams,
     statistics_panel: Res<StatisticsPanel>,
+    dynamic_particle_count: Res<DynamicParticleCount>,
+    wall_particle_count: Res<WallParticleCount>,
+    total_particle_count: Res<TotalParticleCount>,
+    active_particle_count: Res<ActiveParticleCount>,
+    diagnostics: Res<DiagnosticsStore>,
 ) {
     let ctx = contexts.ctx_mut();
 
@@ -162,7 +170,21 @@ fn render_ui_panels(
                 ui.group(|ui| {
                     ui.set_width(ui.available_width());
                     ui.set_height(panel_height);
-                    statistics_panel.as_ref().render(ui);
+
+                    // Get FPS from diagnostics
+                    let fps = diagnostics
+                        .get(&FrameTimeDiagnosticsPlugin::FPS)
+                        .and_then(|fps| fps.smoothed())
+                        .unwrap_or(0.0) as f32;
+
+                    statistics_panel.as_ref().render(
+                        ui,
+                        fps,
+                        dynamic_particle_count.0 as u32,
+                        wall_particle_count.0 as u32,
+                        total_particle_count.0 as u32,
+                        active_particle_count.0 as u32,
+                    );
                 });
             });
         });

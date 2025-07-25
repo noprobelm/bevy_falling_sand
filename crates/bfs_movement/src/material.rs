@@ -5,7 +5,7 @@ use bevy::{
     },
     prelude::*,
 };
-use bfs_core::{ClearParticleTypeChildrenEvent, ParticleType};
+use bfs_core::{ClearParticleTypeChildrenEvent, Particle, ParticleType};
 use serde::{Deserialize, Serialize};
 
 use crate::Moved;
@@ -314,9 +314,9 @@ pub struct ClearDynamicParticlesEvent;
 #[derive(Event)]
 pub struct ClearStaticParticlesEvent;
 
-/// System param to fetch particles that fall into each category
+/// System param to fetch particle types by material type.
 #[derive(SystemParam)]
-pub struct ParticleMaterialsParam<'w, 's> {
+pub struct ParticleTypeMaterialsParam<'w, 's> {
     walls: Query<'w, 's, &'static ParticleType, With<Wall>>,
     solids: Query<'w, 's, &'static ParticleType, With<Solid>>,
     movable_solids: Query<'w, 's, &'static ParticleType, With<MovableSolid>>,
@@ -336,35 +336,173 @@ pub struct ParticleMaterialsParam<'w, 's> {
     >,
 }
 
-impl<'w, 's> ParticleMaterialsParam<'w, 's> {
+impl ParticleTypeMaterialsParam<'_, '_> {
     /// Returns all particle types that have the `Wall` component.
+    #[must_use]
     pub fn walls(&self) -> Vec<&ParticleType> {
         self.walls.iter().collect()
     }
 
+    /// Return the number of wall particles
+    #[must_use]
+    pub fn num_walls(&self) -> u64 {
+        self.walls.iter().len() as u64
+    }
+
     /// Returns all particle types that have the `Solid` component.
+    #[must_use]
     pub fn solids(&self) -> Vec<&ParticleType> {
         self.solids.iter().collect()
     }
 
+    /// Return the number of solid particles
+    #[must_use]
+    pub fn num_solids(&self) -> u64 {
+        self.solids.iter().len() as u64
+    }
+
     /// Returns all particle types that have the `MovableSolid` component.
+    #[must_use]
     pub fn movable_solids(&self) -> Vec<&ParticleType> {
         self.movable_solids.iter().collect()
     }
 
+    /// Return the number of movable solid particles
+    #[must_use]
+    pub fn num_movable_solids(&self) -> u64 {
+        self.movable_solids.iter().len() as u64
+    }
+
     /// Returns all particle types that have the `Liquid` component.
+    #[must_use]
     pub fn liquids(&self) -> Vec<&ParticleType> {
         self.liquids.iter().collect()
     }
 
+    /// Return the number of liquid particles
+    #[must_use]
+    pub fn num_liquids(&self) -> u64 {
+        self.liquids.iter().len() as u64
+    }
+
     /// Returns all particle types that have the `Gas` component.
+    #[must_use]
     pub fn gases(&self) -> Vec<&ParticleType> {
         self.gases.iter().collect()
     }
 
+    /// Return the number of gas particles
+    #[must_use]
+    pub fn num_gases(&self) -> u64 {
+        self.gases.iter().len() as u64
+    }
+
     /// Returns all particle types that have none of the material components.
+    #[must_use]
     pub fn other(&self) -> Vec<&ParticleType> {
         self.other.iter().collect()
+    }
+
+    /// Return the number of other particles
+    #[must_use]
+    pub fn num_other(&self) -> u64 {
+        self.other.iter().len() as u64
+    }
+}
+
+/// System param to fetch particle types by material type.
+#[derive(SystemParam)]
+pub struct ParticleMaterialsParam<'w, 's> {
+    walls: Query<'w, 's, &'static Particle, With<Wall>>,
+    solids: Query<'w, 's, &'static Particle, With<Solid>>,
+    movable_solids: Query<'w, 's, &'static Particle, With<MovableSolid>>,
+    liquids: Query<'w, 's, &'static Particle, With<Liquid>>,
+    gases: Query<'w, 's, &'static Particle, With<Gas>>,
+    other: Query<
+        'w,
+        's,
+        &'static Particle,
+        (
+            Without<Wall>,
+            Without<Solid>,
+            Without<MovableSolid>,
+            Without<Liquid>,
+            Without<Gas>,
+        ),
+    >,
+}
+
+impl ParticleMaterialsParam<'_, '_> {
+    /// Returns all particle types that have the `Wall` component.
+    #[must_use]
+    pub fn walls(&self) -> Vec<&Particle> {
+        self.walls.iter().collect()
+    }
+
+    /// Return the number of wall particles
+    #[must_use]
+    pub fn num_walls(&self) -> u64 {
+        self.walls.iter().len() as u64
+    }
+
+    /// Returns all particle types that have the `Solid` component.
+    #[must_use]
+    pub fn solids(&self) -> Vec<&Particle> {
+        self.solids.iter().collect()
+    }
+
+    /// Return the number of solid particles
+    #[must_use]
+    pub fn num_solids(&self) -> u64 {
+        self.solids.iter().len() as u64
+    }
+
+    /// Returns all particle types that have the `MovableSolid` component.
+    #[must_use]
+    pub fn movable_solids(&self) -> Vec<&Particle> {
+        self.movable_solids.iter().collect()
+    }
+
+    /// Return the number of movable solid particles
+    #[must_use]
+    pub fn num_movable_solids(&self) -> u64 {
+        self.movable_solids.iter().len() as u64
+    }
+
+    /// Returns all particle types that have the `Liquid` component.
+    #[must_use]
+    pub fn liquids(&self) -> Vec<&Particle> {
+        self.liquids.iter().collect()
+    }
+
+    /// Return the number of liquid particles
+    #[must_use]
+    pub fn num_liquids(&self) -> u64 {
+        self.liquids.iter().len() as u64
+    }
+
+    /// Returns all particle types that have the `Gas` component.
+    #[must_use]
+    pub fn gases(&self) -> Vec<&Particle> {
+        self.gases.iter().collect()
+    }
+
+    /// Return the number of gas particles
+    #[must_use]
+    pub fn num_gases(&self) -> u64 {
+        self.gases.iter().len() as u64
+    }
+
+    /// Returns all particle types that have none of the material components.
+    #[must_use]
+    pub fn other(&self) -> Vec<&Particle> {
+        self.other.iter().collect()
+    }
+
+    /// Return the number of other particles
+    #[must_use]
+    pub fn num_other(&self) -> u64 {
+        self.other.iter().len() as u64
     }
 }
 

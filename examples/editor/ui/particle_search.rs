@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy_egui::egui;
-use bevy_falling_sand::prelude::ParticleMaterialsParam;
+use bevy_falling_sand::prelude::ParticleTypeMaterialsParam;
 
 use super::particle_editor::LoadParticleIntoEditor;
 
@@ -53,9 +53,10 @@ impl ParticleSearchState {
 
         if !self.input.is_empty() {
             let query = self.input.to_lowercase();
-            
+
             // Only use actual particle names, with case-insensitive matching
-            let mut matches: Vec<String> = cache.all_particles
+            let mut matches: Vec<String> = cache
+                .all_particles
                 .iter()
                 .filter(|particle| {
                     let particle_lower = particle.to_lowercase();
@@ -63,14 +64,14 @@ impl ParticleSearchState {
                 })
                 .cloned()
                 .collect();
-            
+
             // Sort by relevance: prefix matches first, then by length
             matches.sort_by(|a, b| {
                 let a_lower = a.to_lowercase();
                 let b_lower = b.to_lowercase();
                 let a_starts = a_lower.starts_with(&query);
                 let b_starts = b_lower.starts_with(&query);
-                
+
                 match (a_starts, b_starts) {
                     (true, false) => std::cmp::Ordering::Less,
                     (false, true) => std::cmp::Ordering::Greater,
@@ -155,13 +156,13 @@ impl ParticleSearch {
             .anchor(egui::Align2::CENTER_TOP, egui::Vec2::new(0.0, 50.0))
             .show(ui.ctx(), |ui| {
                 ui.set_min_width(400.0);
-                
+
                 // Search input
                 let response = ui.add(
                     egui::TextEdit::singleline(&mut state.input)
                         .hint_text("Type particle name...")
                         .desired_width(ui.available_width())
-                        .lock_focus(true)
+                        .lock_focus(true),
                 );
 
                 // Auto-focus on activation
@@ -186,7 +187,8 @@ impl ParticleSearch {
                     }
 
                     // Tab for auto-completion
-                    if ui.input(|i| i.key_pressed(egui::Key::Tab)) && !state.suggestions.is_empty() {
+                    if ui.input(|i| i.key_pressed(egui::Key::Tab)) && !state.suggestions.is_empty()
+                    {
                         if let Some(suggestion) = state.get_selected_suggestion() {
                             state.input = suggestion.clone();
                             state.update_suggestions(cache);
@@ -195,8 +197,9 @@ impl ParticleSearch {
                 }
 
                 // Handle Enter key when losing focus or when explicitly pressed
-                if (response.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter))) || 
-                   (response.has_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter))) {
+                if (response.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)))
+                    || (response.has_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)))
+                {
                     if !state.suggestions.is_empty() {
                         if let Some(selected) = state.select_current_suggestion() {
                             load_particle_events.write(LoadParticleIntoEditor {
@@ -210,15 +213,15 @@ impl ParticleSearch {
                 // Suggestions list
                 if !state.suggestions.is_empty() {
                     ui.separator();
-                    
+
                     egui::ScrollArea::vertical()
                         .max_height(200.0)
                         .show(ui, |ui| {
                             for (i, particle) in state.suggestions.iter().enumerate() {
                                 let is_selected = state.suggestion_index == Some(i);
-                                
+
                                 let response = ui.selectable_label(is_selected, particle);
-                                
+
                                 if response.clicked() {
                                     load_particle_events.write(LoadParticleIntoEditor {
                                         particle_name: particle.clone(),
@@ -256,11 +259,11 @@ impl ParticleSearch {
 
 // System to update particle cache when new particles are loaded
 pub fn update_particle_search_cache(
-    particle_materials: ParticleMaterialsParam,
+    particle_materials: ParticleTypeMaterialsParam,
     mut cache: ResMut<ParticleSearchCache>,
 ) {
     let mut all_particles = Vec::new();
-    
+
     // Collect all particle names from all categories
     for particle_type in particle_materials.walls() {
         all_particles.push(particle_type.name.to_string());
@@ -300,13 +303,14 @@ pub fn handle_particle_search_input(
     // KeyN to activate search (matching sandbox behavior)
     // Only activate if not already active and console input doesn't have keyboard focus
     let console_input_id = bevy_egui::egui::Id::new("console_input");
-    let console_has_focus = contexts.ctx_mut().memory(|mem| {
-        mem.focused() == Some(console_input_id)
-    });
-    
+    let console_has_focus = contexts
+        .ctx_mut()
+        .memory(|mem| mem.focused() == Some(console_input_id));
+
     if keyboard_input.just_pressed(KeyCode::KeyN) {
         if !search_state.active && !console_has_focus {
             search_state.activate();
         }
     }
 }
+

@@ -7,7 +7,7 @@ mod particles;
 mod ui;
 
 use app_state::StatesPlugin;
-use bevy_falling_sand::prelude::{FallingSandDebugPlugin, FallingSandPlugin};
+use bevy_falling_sand::prelude::{DebugParticleCount, FallingSandDebugPlugin, FallingSandPlugin};
 use brush::*;
 use camera::*;
 use cursor::*;
@@ -37,5 +37,6 @@ fn main() {
             UiPlugin,
         ))
         .insert_resource(ClearColor(Color::srgba(0.17, 0.16, 0.15, 1.0)))
+        .init_resource::<DebugParticleCount>()
         .run();
 }

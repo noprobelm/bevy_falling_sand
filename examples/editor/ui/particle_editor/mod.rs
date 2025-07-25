@@ -3,7 +3,7 @@ mod particle_editor_registry;
 use bevy::prelude::*;
 use bevy_egui::egui;
 use bevy_falling_sand::prelude::{
-    ParticleMaterialsParam, ParticleTypeMap, ResetParticleChildrenEvent,
+    ParticleTypeMap, ParticleTypeMaterialsParam, ResetParticleChildrenEvent,
 };
 
 use particle_editor_registry::*;
@@ -47,7 +47,7 @@ impl ParticleEditor {
     pub fn render(
         &self,
         ui: &mut egui::Ui,
-        particle_materials: &ParticleMaterialsParam,
+        particle_materials: &ParticleTypeMaterialsParam,
         current_editor: &CurrentEditorSelection,
         editor_data_query: &mut Query<&mut ParticleEditorData>,
         load_particle_events: &mut EventWriter<LoadParticleIntoEditor>,
@@ -100,7 +100,7 @@ impl ParticleEditor {
     fn render_particle_list(
         &self,
         ui: &mut egui::Ui,
-        particle_materials: &ParticleMaterialsParam,
+        particle_materials: &ParticleTypeMaterialsParam,
         load_particle_events: &mut EventWriter<LoadParticleIntoEditor>,
         create_particle_events: &mut EventWriter<CreateNewParticle>,
         current_editor: &CurrentEditorSelection,
@@ -182,7 +182,7 @@ impl ParticleEditor {
                 ui.add_space(8.0);
                 ui.vertical(|ui| {
                     if ui.button("New Particle").clicked() {
-                        create_particle_events.write(CreateNewParticle { 
+                        create_particle_events.write(CreateNewParticle {
                             duplicate_from: current_particle_name.clone(),
                         });
                     }
@@ -435,7 +435,7 @@ impl ParticleEditor {
                     }
                 }
             });
-            
+
             // Chance to destroy per tick
             ui.horizontal(|ui| {
                 ui.label("Destroy Chance:");
@@ -447,15 +447,18 @@ impl ParticleEditor {
                         burns_config.chance_destroy_per_tick = None;
                     }
                 }
-                
+
                 if let Some(ref mut chance) = burns_config.chance_destroy_per_tick {
                     ui.add(egui::Slider::new(chance, 0.0..=1.0));
                 }
             });
-            
+
             // Reaction configuration
             let mut has_reaction = burns_config.reaction.is_some();
-            if ui.checkbox(&mut has_reaction, "Produces particle when burning").changed() {
+            if ui
+                .checkbox(&mut has_reaction, "Produces particle when burning")
+                .changed()
+            {
                 if has_reaction {
                     burns_config.reaction = Some(ReactionConfig {
                         produces: "Smoke".to_string(),
@@ -465,22 +468,28 @@ impl ParticleEditor {
                     burns_config.reaction = None;
                 }
             }
-            
+
             if let Some(ref mut reaction) = burns_config.reaction {
                 ui.horizontal(|ui| {
                     ui.label("Produces:");
                     ui.text_edit_singleline(&mut reaction.produces);
                 });
-                
+
                 ui.horizontal(|ui| {
                     ui.label("Chance:");
-                    ui.add(egui::Slider::new(&mut reaction.chance_to_produce, 0.0..=1.0));
+                    ui.add(egui::Slider::new(
+                        &mut reaction.chance_to_produce,
+                        0.0..=1.0,
+                    ));
                 });
             }
-            
+
             // Burning colors
             let mut has_burning_colors = burns_config.burning_colors.is_some();
-            if ui.checkbox(&mut has_burning_colors, "Custom burning colors").changed() {
+            if ui
+                .checkbox(&mut has_burning_colors, "Custom burning colors")
+                .changed()
+            {
                 if has_burning_colors {
                     burns_config.burning_colors = Some(vec![
                         Color::srgba_u8(255, 89, 0, 255),
@@ -491,14 +500,14 @@ impl ParticleEditor {
                     burns_config.burning_colors = None;
                 }
             }
-            
+
             if let Some(ref mut burning_colors) = burns_config.burning_colors {
                 ui.label("Burning Colors:");
-                
+
                 if ui.button("➕ Add Color").clicked() {
                     burning_colors.push(Color::srgba_u8(255, 128, 0, 255));
                 }
-                
+
                 let mut to_remove = None;
                 for (i, color) in burning_colors.iter_mut().enumerate() {
                     ui.horizontal(|ui| {
@@ -509,17 +518,18 @@ impl ParticleEditor {
                             (srgba.blue * 255.0) as u8,
                             (srgba.alpha * 255.0) as u8,
                         );
-                        
+
                         if ui.color_edit_button_srgba(&mut color32).changed() {
-                            *color = Color::srgba_u8(color32.r(), color32.g(), color32.b(), color32.a());
+                            *color =
+                                Color::srgba_u8(color32.r(), color32.g(), color32.b(), color32.a());
                         }
-                        
+
                         if ui.button("❌").clicked() {
                             to_remove = Some(i);
                         }
                     });
                 }
-                
+
                 if let Some(remove_index) = to_remove {
                     burning_colors.remove(remove_index);
                 }
@@ -552,15 +562,15 @@ impl ParticleEditor {
                         0.0..=1.0,
                     ));
                 });
-                
+
                 ui.checkbox(&mut fire_config.destroys_on_spread, "Destroys on spread");
             }
-            
+
             ui.checkbox(&mut burns_config.ignites_on_spawn, "Ignites on spawn");
         }
-        
+
         ui.separator();
-        
+
         // Fire emission properties
         let mut has_fire = editor_data.fire_config.is_some();
         if ui.checkbox(&mut has_fire, "Emits Fire").changed() {
@@ -574,13 +584,13 @@ impl ParticleEditor {
                 editor_data.fire_config = None;
             }
         }
-        
+
         if let Some(ref mut fire_config) = editor_data.fire_config {
             ui.horizontal(|ui| {
                 ui.label("Burn Radius:");
                 ui.add(egui::Slider::new(&mut fire_config.burn_radius, 1.0..=100.0));
             });
-            
+
             ui.horizontal(|ui| {
                 ui.label("Chance to spread:");
                 ui.add(egui::Slider::new(
@@ -588,7 +598,7 @@ impl ParticleEditor {
                     0.0..=1.0,
                 ));
             });
-            
+
             ui.checkbox(&mut fire_config.destroys_on_spread, "Destroys on spread");
         }
     }

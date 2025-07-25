@@ -1,9 +1,9 @@
+use crate::ui::particle_search::ParticleSearchState;
+use crate::ui::ConsoleState;
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use bevy_egui::{EguiContextPass, EguiContexts};
 use bevy_falling_sand::prelude::{DebugDirtyRects, DebugParticleCount, DebugParticleMap};
-use crate::ui::particle_search::ParticleSearchState;
-use crate::ui::ConsoleState;
 
 pub struct StatesPlugin;
 
@@ -54,12 +54,14 @@ fn detect_ui_interaction(
     let search_is_active = particle_search_state.map_or(false, |state| state.active);
     let console_is_expanded = console_state.map_or(false, |state| state.expanded);
     let has_keyboard_focus = ctx.wants_keyboard_input();
-    
+
     // UI should be active if:
     // - Pointer is over a UI area
     // - Search is active AND has keyboard focus (to allow dismissing search to return to canvas)
     // - Console is expanded AND has keyboard focus (to allow painting while console is visible but not focused)
-    let should_be_ui = is_over_area || (search_is_active && has_keyboard_focus) || (console_is_expanded && has_keyboard_focus);
+    let should_be_ui = is_over_area
+        || (search_is_active && has_keyboard_focus)
+        || (console_is_expanded && has_keyboard_focus);
 
     match current_state.get() {
         AppState::Ui => {
@@ -112,5 +114,4 @@ pub fn show_cursor(mut primary_window: Query<&mut Window, With<PrimaryWindow>>) 
 fn remove_debug_overlays(mut commands: Commands) {
     commands.remove_resource::<DebugParticleMap>();
     commands.remove_resource::<DebugDirtyRects>();
-    commands.remove_resource::<DebugParticleCount>();
 }
