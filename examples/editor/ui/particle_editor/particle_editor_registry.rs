@@ -215,86 +215,6 @@ impl ParticleEditorData {
         })
     }
 
-    pub fn to_particle_data(&self) -> ParticleData {
-        let colors = self
-            .color_palette
-            .iter()
-            .map(|color| {
-                let srgba = color.to_srgba();
-                format!(
-                    "#{:02x}{:02x}{:02x}{:02x}",
-                    (srgba.red * 255.0) as u8,
-                    (srgba.green * 255.0) as u8,
-                    (srgba.blue * 255.0) as u8,
-                    (srgba.alpha * 255.0) as u8
-                )
-            })
-            .collect();
-
-        let (liquid, gas, movable_solid, solid, wall) = match self.material_state {
-            MaterialState::Liquid => (self.fluidity, None, None, None, None),
-            MaterialState::Gas => (None, self.fluidity, None, None, None),
-            MaterialState::MovableSolid => (None, None, Some(true), None, None),
-            MaterialState::Solid => (None, None, None, Some(true), None),
-            MaterialState::Wall => (None, None, None, None, Some(true)),
-            MaterialState::Other => (None, None, None, None, None),
-        };
-
-        ParticleData {
-            name: self.name.clone(),
-            density: Some(self.density),
-            max_velocity: Some(self.max_velocity),
-            momentum: if self.has_momentum { Some(true) } else { None },
-            liquid,
-            gas,
-            movable_solid,
-            solid,
-            wall,
-            colors: Some(colors),
-            changes_colors: self.changes_color,
-            fire: self.fire_config.as_ref().map(|fc| FireData {
-                burn_radius: fc.burn_radius,
-                chance_to_spread: fc.chance_to_spread,
-                destroys_on_spread: fc.destroys_on_spread,
-            }),
-            burning: None, // Calculated from burns
-            burns: self.burns_config.as_ref().map(|bc| BurnsData {
-                duration: bc.duration.as_millis() as u64,
-                tick_rate: bc.tick_rate.as_millis() as u64,
-                chance_destroy_per_tick: bc.chance_destroy_per_tick,
-                ignites_on_spawn: Some(bc.ignites_on_spawn),
-                reaction: bc.reaction.as_ref().map(|r| ReactionData {
-                    produces: r.produces.clone(),
-                    chance_to_produce: r.chance_to_produce,
-                }),
-                colors: bc.burning_colors.as_ref().map(|colors| {
-                    colors
-                        .iter()
-                        .map(|color| {
-                            let srgba = color.to_srgba();
-                            format!(
-                                "#{:02x}{:02x}{:02x}{:02x}",
-                                (srgba.red * 255.0) as u8,
-                                (srgba.green * 255.0) as u8,
-                                (srgba.blue * 255.0) as u8,
-                                (srgba.alpha * 255.0) as u8
-                            )
-                        })
-                        .collect()
-                }),
-                spreads: bc.spreads_fire.as_ref().map(|sf| FireData {
-                    burn_radius: sf.burn_radius,
-                    chance_to_spread: sf.chance_to_spread,
-                    destroys_on_spread: sf.destroys_on_spread,
-                }),
-            }),
-        }
-    }
-
-    pub fn mark_modified(&mut self) {
-        self.is_modified = true;
-    }
-
     pub fn mark_saved(&mut self) {
         self.is_modified = false;
         self.is_new = false;
@@ -315,16 +235,8 @@ impl ParticleEditorRegistry {
         self.map.iter()
     }
 
-    pub fn keys(&self) -> impl Iterator<Item = &String> {
-        self.map.keys()
-    }
-
     pub fn insert(&mut self, name: String, entity: Entity) -> Option<Entity> {
         self.map.insert(name, entity)
-    }
-
-    pub fn entry(&mut self, name: String) -> Entry<'_, String, Entity, FixedHasher> {
-        self.map.entry(name)
     }
 
     pub fn get(&self, name: &str) -> Option<&Entity> {
@@ -333,14 +245,6 @@ impl ParticleEditorRegistry {
 
     pub fn remove(&mut self, name: &str) -> Option<Entity> {
         self.map.remove(name)
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.map.is_empty()
-    }
-
-    pub fn clear(&mut self) {
-        self.map.clear();
     }
 }
 
