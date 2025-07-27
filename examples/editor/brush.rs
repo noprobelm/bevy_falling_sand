@@ -18,7 +18,6 @@ impl Plugin for BrushPlugin {
             .init_resource::<MaxBrushSize>()
             .init_state::<BrushTypeState>()
             .init_state::<BrushSpawnState>()
-            .add_event::<BrushResizeEvent>()
             .add_systems(Startup, setup)
             .add_systems(
                 Update,
@@ -73,14 +72,14 @@ enum BrushSpawnState {
 
 #[derive(Default, Clone, Hash, Eq, PartialEq, Debug, States)]
 enum BrushTypeState {
+    #[allow(unused)]
     Line,
+    #[allow(unused)]
     #[default]
     Circle,
+    #[allow(unused)]
     Cursor,
 }
-
-#[derive(Event)]
-struct BrushResizeEvent(pub usize);
 
 fn setup(mut commands: Commands) {
     commands.spawn((
