@@ -52,7 +52,7 @@ impl Plugin for ParticleCorePlugin {
 
 /// A trait for RNG utilities used in particle systems.
 pub trait ParticleRng: Component {
-    /// The type of the internal RNG (must implement the required methods).
+    /// The type of the internal RNG
     type InnerRng: DelegatedRng;
 
     /// Get mutable access to the inner RNG.
