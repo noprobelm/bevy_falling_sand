@@ -1,6 +1,8 @@
 use bevy::{input::common_conditions::input_just_pressed, prelude::*};
 use bevy_falling_sand::prelude::*;
 
+use crate::app_state::AppState;
+
 pub(super) struct QuickActionsPlugin;
 
 impl Plugin for QuickActionsPlugin {
@@ -11,6 +13,7 @@ impl Plugin for QuickActionsPlugin {
                 toggle_particle_map_overlay.run_if(input_just_pressed(KeyCode::F1)),
                 toggle_dirty_rects_overlay.run_if(input_just_pressed(KeyCode::F2)),
                 toggle_particle_movement_logic.run_if(input_just_pressed(KeyCode::F3)),
+                toggle_simulation_run.run_if(input_just_pressed(KeyCode::Space)),
             ),
         );
     }
@@ -48,6 +51,26 @@ fn toggle_particle_movement_logic(
         }
         MovementSource::Particles => {
             movement_state_next.set(MovementSource::Chunks);
+        }
+    }
+}
+
+pub fn toggle_simulation_run(
+    mut commands: Commands,
+    simulation_pause: Option<Res<ParticleSimulationRun>>,
+    app_state: Res<State<AppState>>,
+    mut time: ResMut<Time<Virtual>>,
+) {
+    if app_state.get() == &AppState::Canvas {
+        if simulation_pause.is_some() {
+            commands.remove_resource::<ParticleSimulationRun>();
+        } else {
+            commands.init_resource::<ParticleSimulationRun>();
+        }
+        if time.is_paused() {
+            time.unpause();
+        } else {
+            time.pause();
         }
     }
 }
