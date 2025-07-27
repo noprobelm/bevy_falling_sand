@@ -39,14 +39,7 @@ impl Plugin for ParticleCorePlugin {
                 PreUpdate,
                 handle_new_particles.in_set(ParticleRegistrationSet),
             )
-            .add_systems(
-                PreUpdate,
-                (
-                    ev_reset_particle,
-                    ev_reset_particle_children,
-                    cleanup_orphaned_particle_instances,
-                ),
-            );
+            .add_systems(PreUpdate, (ev_reset_particle, ev_reset_particle_children));
     }
 }
 
@@ -524,20 +517,4 @@ fn ev_reset_particle_children(
             });
         }
     });
-}
-
-/// System to clean up orphaned particle instances from ParticleInstances components
-/// when particles are despawned outside of the normal flow.
-/// Note: With Bevy's relationship system, this cleanup should be automatic,
-/// but we keep this as a safety net for edge cases.
-#[allow(clippy::needless_pass_by_value)]
-fn cleanup_orphaned_particle_instances(
-    mut particle_type_query: Query<&mut ParticleInstances, With<ParticleType>>,
-    particle_query: Query<Entity, With<Particle>>,
-) {
-    for mut particle_instances in particle_type_query.iter_mut() {
-        particle_instances
-            .0
-            .retain(|&entity| particle_query.get(entity).is_ok());
-    }
 }
