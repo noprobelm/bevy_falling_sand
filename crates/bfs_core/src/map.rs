@@ -17,7 +17,7 @@ impl Plugin for ParticleMapPlugin {
             .add_event::<ClearParticleTypeChildrenEvent>()
             .add_systems(Startup, setup_particle_map)
             .add_systems(
-                PostUpdate,
+                PreUpdate,
                 (
                     reset_chunks.in_set(ParticleSimulationSet),
                     ev_clear_particle_type_children,
