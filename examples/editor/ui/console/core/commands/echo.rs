@@ -15,4 +15,4 @@ impl NamedCommand for EchoCommand {
     }
 }
 
-pub fn echo_command(mut cmd: EventReader<ConsoleCommandEntered>) {}
+pub fn echo_command() {}
