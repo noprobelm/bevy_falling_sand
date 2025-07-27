@@ -14,8 +14,12 @@ pub(super) struct SystemsPlugin;
 impl Plugin for SystemsPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
-            Update,
-            (handle_burning, handle_fire.after(handle_burning)).in_set(ParticleSimulationSet),
+            PostUpdate,
+            (
+                handle_burning.in_set(ParticleSimulationSet),
+                handle_fire.after(handle_burning),
+            )
+                .in_set(ParticleSimulationSet),
         );
     }
 }

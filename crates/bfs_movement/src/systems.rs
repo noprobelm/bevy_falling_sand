@@ -26,7 +26,7 @@ impl Plugin for SystemsPlugin {
         app.init_state::<MovementSource>()
             .init_resource::<MovementState>()
             .add_systems(
-                Update,
+                PostUpdate,
                 (
                     handle_movement_by_chunks
                         .in_set(ParticleSimulationSet)
