@@ -1,8 +1,8 @@
 mod console;
 pub mod file_browser;
-mod overlays;
 mod particle_editor;
 pub mod particle_search;
+mod quick_actions;
 mod statistics_panel;
 mod top_bar;
 
@@ -14,7 +14,7 @@ use bevy_falling_sand::prelude::{
 };
 use console::core::{ConsoleCache, ConsoleCommandEntered, ConsoleConfiguration};
 use console::{Console, ConsolePlugin};
-use overlays::*;
+use quick_actions::*;
 
 use crate::scenes::{SceneFileBrowserState, SceneManagementUI};
 use crate::ui::file_browser::FileBrowserState;
@@ -48,7 +48,7 @@ impl Plugin for UiPlugin {
             ParticleEditorPlugin,
             ParticleFilesPlugin,
             FrameTimeDiagnosticsPlugin::default(),
-            OverlaysPlugin,
+            QuickActionsPlugin,
         ))
         .init_resource::<ParticleSearchState>()
         .init_resource::<ParticleSearchCache>()
