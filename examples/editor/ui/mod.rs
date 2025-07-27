@@ -1,5 +1,6 @@
 mod console;
 pub mod file_browser;
+mod overlays;
 mod particle_editor;
 pub mod particle_search;
 mod statistics_panel;
@@ -7,12 +8,16 @@ mod top_bar;
 
 use bevy::diagnostic::{DiagnosticsStore, FrameTimeDiagnosticsPlugin};
 use bevy_falling_sand::prelude::{
-    ActiveParticleCount, DynamicParticleCount, LoadSceneEvent, ParticleTypeMap, 
-    ParticleTypeMaterialsParam, ResetParticleChildrenEvent, SaveSceneEvent, TotalParticleCount, WallParticleCount,
+    ActiveParticleCount, DynamicParticleCount, LoadSceneEvent, ParticleTypeMap,
+    ParticleTypeMaterialsParam, ResetParticleChildrenEvent, SaveSceneEvent, TotalParticleCount,
+    WallParticleCount,
 };
 use console::core::{ConsoleCache, ConsoleCommandEntered, ConsoleConfiguration};
 use console::{Console, ConsolePlugin};
+use overlays::*;
 
+use crate::scenes::{SceneFileBrowserState, SceneManagementUI};
+use crate::ui::file_browser::FileBrowserState;
 pub use console::core::ConsoleState;
 use particle_editor::{
     ApplyEditorChanges, ApplyEditorChangesAndReset, CreateNewParticle, CurrentEditorSelection,
@@ -24,11 +29,9 @@ use particle_search::{
     ParticleSearchCache, ParticleSearchState,
 };
 use statistics_panel::StatisticsPanel;
+use top_bar::particle_files::ParticleFileBrowser;
 pub use top_bar::particle_files::ParticleFileDialog;
 use top_bar::{ParticleFilesPlugin, UiTopBar};
-use top_bar::particle_files::ParticleFileBrowser;
-use crate::scenes::{SceneManagementUI, SceneFileBrowserState};
-use crate::ui::file_browser::FileBrowserState;
 
 use bevy::prelude::*;
 pub(super) use bevy_egui::*;
@@ -45,6 +48,7 @@ impl Plugin for UiPlugin {
             ParticleEditorPlugin,
             ParticleFilesPlugin,
             FrameTimeDiagnosticsPlugin::default(),
+            OverlaysPlugin,
         ))
         .init_resource::<ParticleSearchState>()
         .init_resource::<ParticleSearchCache>()
@@ -214,7 +218,7 @@ fn render_ui_panels(
         &mut ev_save_scene,
         &mut ev_load_scene,
     );
-    
+
     ParticleFileBrowser.render(
         &mut egui::Ui::new(
             ctx.clone(),
