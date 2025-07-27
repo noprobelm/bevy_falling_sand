@@ -42,15 +42,15 @@ fn toggle_dirty_rects_overlay(
 }
 
 fn toggle_particle_movement_logic(
-    movement_state_current: Res<State<MovementSource>>,
-    mut movement_state_next: ResMut<NextState<MovementSource>>,
+    particle_movement_state_current: Res<State<MovementSource>>,
+    mut particle_movement_state_next: ResMut<NextState<MovementSource>>,
 ) {
-    match movement_state_current.get() {
+    match particle_movement_state_current.get() {
         MovementSource::Chunks => {
-            movement_state_next.set(MovementSource::Particles);
+            particle_movement_state_next.set(MovementSource::Particles);
         }
         MovementSource::Particles => {
-            movement_state_next.set(MovementSource::Chunks);
+            particle_movement_state_next.set(MovementSource::Chunks);
         }
     }
 }
