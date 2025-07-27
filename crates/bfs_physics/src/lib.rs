@@ -30,7 +30,7 @@ impl Plugin for FallingSandPhysicsPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(PhysicsPlugins::default().with_length_unit(self.length_unit))
             .insert_resource(Gravity(self.rigid_body_gravity))
-            .init_resource::<WallPerimeterPositions>()
+            .init_resource::<WallMeshData>()
             .init_resource::<WallTerrainColliders>()
             .init_resource::<MovableSolidMeshData>()
             .init_resource::<MovableSolidTerrainColliders>()
@@ -99,7 +99,9 @@ impl Grid {
 }
 
 #[derive(Resource, Default, Debug)]
-struct WallPerimeterPositions(bevy::platform::collections::HashMap<usize, (Vec<Vec<Vec2>>, Vec<Vec<[u32; 2]>>)>);
+struct WallMeshData {
+    chunks: bevy::platform::collections::HashMap<usize, (Vec<Vec<Vector>>, Vec<Vec<[u32; 3]>>)>,
+}
 
 #[derive(Resource, Default, Debug)]
 struct WallTerrainColliders(bevy::platform::collections::HashMap<usize, Vec<Entity>>);
@@ -124,9 +126,9 @@ struct SolidTerrainColliders(bevy::platform::collections::HashMap<usize, Vec<Ent
 fn spawn_wall_terrain_colliders(
     mut commands: Commands,
     mut colliders: ResMut<WallTerrainColliders>,
-    perimeter_positions: Res<WallPerimeterPositions>,
+    mesh_data: Res<WallMeshData>,
 ) {
-    if !perimeter_positions.is_changed() {
+    if !mesh_data.is_changed() {
         return;
     }
 
@@ -138,20 +140,23 @@ fn spawn_wall_terrain_colliders(
     }
     colliders.0.clear();
 
-    for (&chunk_index, (vertices_list, indices_list)) in &perimeter_positions.0 {
+    for (&chunk_index, (vertices_list, indices_list)) in &mesh_data.chunks {
         let mut chunk_entities = Vec::new();
         
-        for (i, vertices) in vertices_list.iter().enumerate() {
-            if let Some(indices) = indices_list.get(i) {
-                let entity = commands
-                    .spawn((
-                        RigidBody::Static,
-                        Collider::polyline(vertices.clone(), Some(indices.clone())),
-                    ))
-                    .id();
-
-                chunk_entities.push(entity);
+        for (vertices, indices) in vertices_list.iter().zip(indices_list) {
+            if indices.is_empty() || vertices.is_empty() {
+                warn!("Skipping empty trimesh collider (no vertices or triangles)");
+                continue;
             }
+
+            let entity = commands
+                .spawn((
+                    RigidBody::Static,
+                    Collider::trimesh(vertices.clone(), indices.clone()),
+                ))
+                .id();
+
+            chunk_entities.push(entity);
         }
         
         if !chunk_entities.is_empty() {
@@ -249,7 +254,7 @@ fn recalculate_static_bodies_for_dirty_chunks(
     wall_query: Query<&ParticlePosition, With<Wall>>,
     movable_solid_query: Query<(&ParticlePosition, &Moved), With<MovableSolid>>,
     solid_query: Query<(&ParticlePosition, &Moved), With<Solid>>,
-    mut wall_positions: ResMut<WallPerimeterPositions>,
+    mut wall_mesh_data: ResMut<WallMeshData>,
     mut movable_solid_mesh_data: ResMut<MovableSolidMeshData>,
     mut solid_mesh_data: ResMut<SolidMeshData>,
     particle_map: Res<ParticleMap>,
@@ -274,7 +279,7 @@ fn recalculate_static_bodies_for_dirty_chunks(
 
     // Clear data for all dirty chunks
     for &chunk_index in &dirty_chunks {
-        wall_positions.0.remove(&chunk_index);
+        wall_mesh_data.chunks.remove(&chunk_index);
         movable_solid_mesh_data.chunks.remove(&chunk_index);
         solid_mesh_data.chunks.remove(&chunk_index);
     }
@@ -283,7 +288,7 @@ fn recalculate_static_bodies_for_dirty_chunks(
     for &chunk_index in &dirty_chunks {
         if let Some(chunk) = particle_map.iter_chunks().nth(chunk_index) {
             // Process walls
-            let wall_positions_in_chunk: Vec<IVec2> = chunk
+            let wall_positions: Vec<IVec2> = chunk
                 .iter()
                 .filter_map(|(pos, entity)| {
                     if wall_query.contains(*entity) {
@@ -294,29 +299,10 @@ fn recalculate_static_bodies_for_dirty_chunks(
                 })
                 .collect();
 
-            if !wall_positions_in_chunk.is_empty() {
-                let min = wall_positions_in_chunk.iter().fold(IVec2::new(i32::MAX, i32::MAX), |min, &c| min.min(c));
-                let max = wall_positions_in_chunk.iter().fold(IVec2::new(i32::MIN, i32::MIN), |max, &c| max.max(c));
-
-                let mut grid = Grid::new(min, max);
-                for &position in &wall_positions_in_chunk {
-                    grid.set(position);
-                }
-
-                let edges = extract_perimeter_edges(&grid);
-                if !edges.is_empty() {
-                    let mut vertices = Vec::new();
-                    for edge in &edges {
-                        vertices.push(edge[0]);
-                        vertices.push(edge[1]);
-                    }
-
-                    let indices: Vec<[u32; 2]> = (0..vertices.len() as u32)
-                        .step_by(2)
-                        .map(|i| [i, i + 1])
-                        .collect();
-
-                    wall_positions.0.insert(chunk_index, (vec![vertices], vec![indices]));
+            if !wall_positions.is_empty() {
+                let (vertices_list, indices_list) = process_solid_positions(wall_positions);
+                if !vertices_list.is_empty() {
+                    wall_mesh_data.chunks.insert(chunk_index, (vertices_list, indices_list));
                 }
             }
 
