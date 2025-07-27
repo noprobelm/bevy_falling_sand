@@ -9,15 +9,27 @@ pub struct StatesPlugin;
 
 impl Plugin for StatesPlugin {
     fn build(&self, app: &mut App) {
-        app.init_state::<AppState>()
+        app.configure_sets(Update, AppStateDetectionSet)
+            .init_state::<AppState>()
             .init_state::<UiState>()
+            .init_state::<CanvasState>()
             .init_state::<InitializationState>()
             .add_systems(Startup, remove_debug_overlays)
-            .add_systems(EguiContextPass, (detect_ui_interaction, manage_ui_states))
+            .add_systems(
+                EguiContextPass,
+                (
+                    detect_ui_interaction,
+                    manage_ui_states,
+                    manage_canvas_states.run_if(in_state(AppState::Canvas)),
+                ),
+            )
             .add_systems(OnEnter(AppState::Canvas), hide_cursor)
             .add_systems(OnEnter(AppState::Ui), show_cursor);
     }
 }
+
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct AppStateDetectionSet;
 
 #[derive(States, Reflect, Default, Debug, Clone, Eq, PartialEq, Hash)]
 pub enum AppState {
@@ -32,6 +44,13 @@ pub enum UiState {
     Normal,
     Console,
     ParticleSearch,
+}
+
+#[derive(States, Reflect, Default, Debug, Clone, Eq, PartialEq, Hash)]
+pub enum CanvasState {
+    #[default]
+    Interact,
+    Edit,
 }
 
 #[derive(States, Reflect, Default, Debug, Clone, Eq, PartialEq, Hash)]
@@ -92,6 +111,18 @@ fn manage_ui_states(
 
     if current_ui_state.get() != &desired_state {
         next_ui_state.set(desired_state);
+    }
+}
+
+fn manage_canvas_states(
+    current_canvas_state: Res<State<CanvasState>>,
+    mut next_canvas_state: ResMut<NextState<CanvasState>>,
+    keys: Res<ButtonInput<KeyCode>>,
+) {
+    if keys.pressed(KeyCode::AltLeft) && current_canvas_state.get() == &CanvasState::Interact {
+        next_canvas_state.set(CanvasState::Edit);
+    } else if !keys.pressed(KeyCode::AltLeft) && current_canvas_state.get() == &CanvasState::Edit {
+        next_canvas_state.set(CanvasState::Interact);
     }
 }
 

@@ -1,6 +1,6 @@
 use bevy::{input::mouse::MouseWheel, prelude::*};
 
-use crate::app_state::AppState;
+use crate::app_state::{AppState, AppStateDetectionSet, CanvasState};
 
 pub(super) struct CameraPlugin;
 
@@ -9,7 +9,10 @@ impl Plugin for CameraPlugin {
         app.add_systems(Startup, setup_camera);
         app.add_systems(
             Update,
-            (pan_camera, zoom_camera).run_if(in_state(AppState::Canvas)),
+            (pan_camera, zoom_camera)
+                .run_if(in_state(AppState::Canvas))
+                .run_if(in_state(CanvasState::Interact))
+                .before(AppStateDetectionSet),
         );
     }
 }

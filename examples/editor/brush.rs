@@ -1,10 +1,13 @@
 use crate::{
-    app_state::AppState,
+    app_state::{AppState, CanvasState},
     cursor::{update_cursor_position, CursorPosition},
     particles::SelectedParticle,
 };
 use bevy::{
-    input::common_conditions::{input_just_pressed, input_pressed},
+    input::{
+        common_conditions::{input_just_pressed, input_pressed},
+        mouse::MouseWheel,
+    },
     platform::collections::HashSet,
     prelude::*,
 };
@@ -24,6 +27,9 @@ impl Plugin for BrushPlugin {
                 (
                     update_brush_gizmos,
                     toggle_brush_spawn_state.run_if(input_just_pressed(MouseButton::Right)),
+                    resize_brush
+                        .run_if(in_state(AppState::Canvas))
+                        .run_if(in_state(CanvasState::Edit)),
                     spawn_particles
                         .run_if(input_pressed(MouseButton::Left))
                         .run_if(in_state(BrushSpawnState::Spawn))
@@ -125,6 +131,24 @@ fn toggle_brush_spawn_state(
         BrushSpawnState::Spawn => brush_spawn_state_next.set(BrushSpawnState::Despawn),
         BrushSpawnState::Despawn => brush_spawn_state_next.set(BrushSpawnState::Spawn),
     }
+}
+
+fn resize_brush(
+    mut evr_mouse_wheel: EventReader<MouseWheel>,
+    mut brush_size_query: Query<&mut BrushSize>,
+    max_brush_size: Res<MaxBrushSize>,
+) -> Result {
+    if !evr_mouse_wheel.is_empty() {
+        let mut brush_size = brush_size_query.single_mut()?;
+        evr_mouse_wheel.read().for_each(|ev| {
+            if ev.y < 0. && 1 <= brush_size.0.wrapping_sub(1) {
+                brush_size.0 -= 1;
+            } else if ev.y > 0. && brush_size.0.wrapping_add(1) <= max_brush_size.0 {
+                brush_size.0 += 1;
+            }
+        });
+    }
+    Ok(())
 }
 
 fn spawn_particles(
