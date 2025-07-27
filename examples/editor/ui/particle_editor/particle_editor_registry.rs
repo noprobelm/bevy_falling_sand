@@ -1,11 +1,5 @@
 use crate::particles::SelectedParticle;
-use bevy::{
-    platform::{
-        collections::{hash_map::Entry, HashMap},
-        hash::FixedHasher,
-    },
-    prelude::*,
-};
+use bevy::{platform::collections::HashMap, prelude::*};
 use bevy_falling_sand::prelude::*;
 use std::time::Duration;
 
@@ -33,7 +27,6 @@ pub struct ApplyEditorChanges {
 #[derive(Event, Debug, Clone)]
 pub struct ApplyEditorChangesAndReset {
     pub editor_entity: Entity,
-    pub create_new: bool,
 }
 
 #[derive(Clone, Debug, Component)]
