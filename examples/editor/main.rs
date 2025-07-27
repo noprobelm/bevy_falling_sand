@@ -2,7 +2,6 @@ mod app_state;
 mod brush;
 mod camera;
 mod cursor;
-mod keybindings;
 mod particles;
 mod scenes;
 mod ui;
