@@ -380,6 +380,8 @@ impl ParticleEditor {
                 editor_data.burns_config = Some(BurnsConfig {
                     duration: std::time::Duration::from_millis(1000),
                     tick_rate: std::time::Duration::from_millis(100),
+                    duration_str: "1000".to_string(),
+                    tick_rate_str: "100".to_string(),
                     chance_destroy_per_tick: None,
                     reaction: None,
                     burning_colors: None,
@@ -394,10 +396,8 @@ impl ParticleEditor {
         if let Some(ref mut burns_config) = editor_data.burns_config {
             ui.horizontal(|ui| {
                 ui.label("Duration (ms):");
-                let duration_ms = burns_config.duration.as_millis() as u64;
-                let mut duration_str = duration_ms.to_string();
-                if ui.text_edit_singleline(&mut duration_str).lost_focus() {
-                    if let Ok(new_duration) = duration_str.parse::<u64>() {
+                if ui.text_edit_singleline(&mut burns_config.duration_str).changed() {
+                    if let Ok(new_duration) = burns_config.duration_str.parse::<u64>() {
                         burns_config.duration = std::time::Duration::from_millis(new_duration);
                     }
                 }
@@ -405,10 +405,8 @@ impl ParticleEditor {
 
             ui.horizontal(|ui| {
                 ui.label("Tick Rate (ms):");
-                let tick_rate_ms = burns_config.tick_rate.as_millis() as u64;
-                let mut tick_rate_str = tick_rate_ms.to_string();
-                if ui.text_edit_singleline(&mut tick_rate_str).lost_focus() {
-                    if let Ok(new_tick_rate) = tick_rate_str.parse::<u64>() {
+                if ui.text_edit_singleline(&mut burns_config.tick_rate_str).changed() {
+                    if let Ok(new_tick_rate) = burns_config.tick_rate_str.parse::<u64>() {
                         burns_config.tick_rate = std::time::Duration::from_millis(new_tick_rate);
                     }
                 }

@@ -64,6 +64,8 @@ pub enum MaterialState {
 pub struct BurnsConfig {
     pub duration: Duration,
     pub tick_rate: Duration,
+    pub duration_str: String,
+    pub tick_rate_str: String,
     pub chance_destroy_per_tick: Option<f64>,
     pub reaction: Option<ReactionConfig>,
     pub burning_colors: Option<Vec<Color>>,
@@ -167,6 +169,8 @@ impl ParticleEditorData {
         let burns_config = burns.map(|burns| BurnsConfig {
             duration: burns.duration,
             tick_rate: burns.tick_rate,
+            duration_str: burns.duration.as_millis().to_string(),
+            tick_rate_str: burns.tick_rate.as_millis().to_string(),
             chance_destroy_per_tick: burns.chance_destroy_per_tick,
             reaction: burns.reaction.as_ref().map(|r| ReactionConfig {
                 produces: r.produces.name.to_string(),
