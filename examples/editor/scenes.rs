@@ -1,28 +1,16 @@
-
+use crate::ui::file_browser::{FileBrowser, FileBrowserState};
 use bevy::prelude::*;
 use bevy_egui::egui;
 use bevy_falling_sand::prelude::{LoadSceneEvent, SaveSceneEvent};
-use crate::ui::file_browser::{FileBrowser, FileBrowserState};
 use std::path::PathBuf;
 
 pub(super) struct ScenesPlugin;
 
 impl bevy::prelude::Plugin for ScenesPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
-        app.init_resource::<SceneSelectionDialog>()
-            .init_resource::<ParticleSceneFilePath>()
-            .init_resource::<SceneFileBrowserState>()
+        app.init_resource::<SceneFileBrowserState>()
             .add_systems(Update, handle_scene_dialog_markers);
     }
-}
-
-#[derive(Resource, Default)]
-pub struct SceneSelectionDialog {
-    pub show_load_dialog: bool,
-    pub show_save_dialog: bool,
-    pub load_input_text: String,
-    pub save_input_text: String,
-    pub selected_scene: Option<String>,
 }
 
 #[derive(Resource)]
@@ -31,19 +19,6 @@ pub struct SceneFileBrowserState(pub FileBrowserState);
 impl Default for SceneFileBrowserState {
     fn default() -> Self {
         Self(FileBrowserState::new("assets/scenes", "ron", "Scene Files"))
-    }
-}
-
-#[derive(Resource)]
-pub struct ParticleSceneFilePath {
-    pub path: PathBuf,
-}
-
-impl Default for ParticleSceneFilePath {
-    fn default() -> Self {
-        Self {
-            path: PathBuf::from("assets/scenes/custom_scene.ron"),
-        }
     }
 }
 
@@ -58,22 +33,14 @@ impl SceneManagementUI {
         ev_load_scene: &mut EventWriter<LoadSceneEvent>,
     ) {
         let file_browser = FileBrowser;
-        
-        file_browser.render_save_dialog(
-            ui,
-            &mut scene_browser_state.0,
-            |path| {
-                ev_save_scene.write(SaveSceneEvent(path));
-            },
-        );
-        
-        file_browser.render_load_dialog(
-            ui,
-            &mut scene_browser_state.0,
-            |path| {
-                ev_load_scene.write(LoadSceneEvent(path));
-            },
-        );
+
+        file_browser.render_save_dialog(ui, &mut scene_browser_state.0, |path| {
+            ev_save_scene.write(SaveSceneEvent(path));
+        });
+
+        file_browser.render_load_dialog(ui, &mut scene_browser_state.0, |path| {
+            ev_load_scene.write(LoadSceneEvent(path));
+        });
     }
 }
 
@@ -87,7 +54,7 @@ fn handle_scene_dialog_markers(
         scene_browser_state.0.show_load("Load Scene");
         commands.entity(entity).despawn();
     }
-    
+
     for entity in save_markers.iter() {
         scene_browser_state.0.show_save("Save Scene");
         commands.entity(entity).despawn();
@@ -107,3 +74,4 @@ struct ShowLoadSceneDialogMarker;
 
 #[derive(Component)]
 struct ShowSaveSceneDialogMarker;
+
