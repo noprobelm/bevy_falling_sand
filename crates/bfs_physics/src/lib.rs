@@ -38,12 +38,7 @@ impl Plugin for FallingSandPhysicsPlugin {
             .init_resource::<SolidTerrainColliders>()
             .add_systems(
                 Update,
-                (
-                    recalculate_static_bodies_for_dirty_chunks,
-                    spawn_wall_terrain_colliders,
-                    spawn_movable_solid_terrain_colliders,
-                    spawn_solid_terrain_colliders,
-                )
+                recalculate_and_spawn_static_bodies_for_dirty_chunks
                     .in_set(ParticleSimulationSet),
             );
     }
@@ -122,141 +117,18 @@ struct SolidMeshData {
 #[derive(Resource, Default, Debug)]
 struct SolidTerrainColliders(bevy::platform::collections::HashMap<usize, Vec<Entity>>);
 
-#[allow(clippy::needless_pass_by_value)]
-fn spawn_wall_terrain_colliders(
+
+fn recalculate_and_spawn_static_bodies_for_dirty_chunks(
     mut commands: Commands,
-    mut colliders: ResMut<WallTerrainColliders>,
-    mesh_data: Res<WallMeshData>,
-) {
-    if !mesh_data.is_changed() {
-        return;
-    }
-
-    // Clear and rebuild all colliders for chunks that have data
-    for entities in colliders.0.values_mut() {
-        for entity in entities.drain(..) {
-            commands.entity(entity).despawn();
-        }
-    }
-    colliders.0.clear();
-
-    for (&chunk_index, (vertices_list, indices_list)) in &mesh_data.chunks {
-        let mut chunk_entities = Vec::new();
-        
-        for (vertices, indices) in vertices_list.iter().zip(indices_list) {
-            if indices.is_empty() || vertices.is_empty() {
-                warn!("Skipping empty trimesh collider (no vertices or triangles)");
-                continue;
-            }
-
-            let entity = commands
-                .spawn((
-                    RigidBody::Static,
-                    Collider::trimesh(vertices.clone(), indices.clone()),
-                ))
-                .id();
-
-            chunk_entities.push(entity);
-        }
-        
-        if !chunk_entities.is_empty() {
-            colliders.0.insert(chunk_index, chunk_entities);
-        }
-    }
-}
-
-#[allow(clippy::needless_pass_by_value)]
-fn spawn_movable_solid_terrain_colliders(
-    mut commands: Commands,
-    mut colliders: ResMut<MovableSolidTerrainColliders>,
-    mesh_data: Res<MovableSolidMeshData>,
-) {
-    if !mesh_data.is_changed() {
-        return;
-    }
-
-    // Clear and rebuild all colliders for chunks that have data
-    for entities in colliders.0.values_mut() {
-        for entity in entities.drain(..) {
-            commands.entity(entity).despawn();
-        }
-    }
-    colliders.0.clear();
-
-    for (&chunk_index, (vertices_list, indices_list)) in &mesh_data.chunks {
-        let mut chunk_entities = Vec::new();
-        
-        for (vertices, indices) in vertices_list.iter().zip(indices_list) {
-            if indices.is_empty() || vertices.is_empty() {
-                warn!("Skipping empty trimesh collider (no vertices or triangles)");
-                continue;
-            }
-
-            let entity = commands
-                .spawn((
-                    RigidBody::Static,
-                    Collider::trimesh(vertices.clone(), indices.clone()),
-                ))
-                .id();
-
-            chunk_entities.push(entity);
-        }
-        
-        if !chunk_entities.is_empty() {
-            colliders.0.insert(chunk_index, chunk_entities);
-        }
-    }
-}
-
-fn spawn_solid_terrain_colliders(
-    mut commands: Commands,
-    mut colliders: ResMut<SolidTerrainColliders>,
-    mesh_data: Res<SolidMeshData>,
-) {
-    if !mesh_data.is_changed() {
-        return;
-    }
-
-    // Clear and rebuild all colliders for chunks that have data
-    for entities in colliders.0.values_mut() {
-        for entity in entities.drain(..) {
-            commands.entity(entity).despawn();
-        }
-    }
-    colliders.0.clear();
-
-    for (&chunk_index, (vertices_list, indices_list)) in &mesh_data.chunks {
-        let mut chunk_entities = Vec::new();
-        
-        for (vertices, indices) in vertices_list.iter().zip(indices_list) {
-            if indices.is_empty() || vertices.is_empty() {
-                warn!("Skipping empty trimesh collider (no vertices or triangles)");
-                continue;
-            }
-
-            let entity = commands
-                .spawn((
-                    RigidBody::Static,
-                    Collider::trimesh(vertices.clone(), indices.clone()),
-                ))
-                .id();
-
-            chunk_entities.push(entity);
-        }
-        
-        if !chunk_entities.is_empty() {
-            colliders.0.insert(chunk_index, chunk_entities);
-        }
-    }
-}
-
-fn recalculate_static_bodies_for_dirty_chunks(
     wall_query: Query<&ParticlePosition, With<Wall>>,
     movable_solid_query: Query<(&ParticlePosition, &Moved), With<MovableSolid>>,
     solid_query: Query<(&ParticlePosition, &Moved), With<Solid>>,
     mut wall_mesh_data: ResMut<WallMeshData>,
     mut movable_solid_mesh_data: ResMut<MovableSolidMeshData>,
     mut solid_mesh_data: ResMut<SolidMeshData>,
+    mut wall_colliders: ResMut<WallTerrainColliders>,
+    mut movable_solid_colliders: ResMut<MovableSolidTerrainColliders>,
+    mut solid_colliders: ResMut<SolidTerrainColliders>,
     particle_map: Res<ParticleMap>,
 ) {
 
@@ -277,11 +149,29 @@ fn recalculate_static_bodies_for_dirty_chunks(
         return;
     }
 
-    // Clear data for all dirty chunks
+    // Clear mesh data and colliders for dirty chunks only
     for &chunk_index in &dirty_chunks {
+        // Clear mesh data
         wall_mesh_data.chunks.remove(&chunk_index);
         movable_solid_mesh_data.chunks.remove(&chunk_index);
         solid_mesh_data.chunks.remove(&chunk_index);
+        
+        // Clear and despawn existing colliders for this specific chunk
+        if let Some(entities) = wall_colliders.0.remove(&chunk_index) {
+            for entity in entities {
+                commands.entity(entity).despawn();
+            }
+        }
+        if let Some(entities) = movable_solid_colliders.0.remove(&chunk_index) {
+            for entity in entities {
+                commands.entity(entity).despawn();
+            }
+        }
+        if let Some(entities) = solid_colliders.0.remove(&chunk_index) {
+            for entity in entities {
+                commands.entity(entity).despawn();
+            }
+        }
     }
 
     // Rebuild data for all dirty chunks
@@ -302,7 +192,24 @@ fn recalculate_static_bodies_for_dirty_chunks(
             if !wall_positions.is_empty() {
                 let (vertices_list, indices_list) = process_solid_positions(wall_positions);
                 if !vertices_list.is_empty() {
-                    wall_mesh_data.chunks.insert(chunk_index, (vertices_list, indices_list));
+                    wall_mesh_data.chunks.insert(chunk_index, (vertices_list.clone(), indices_list.clone()));
+                    
+                    // Spawn colliders for this chunk
+                    let mut chunk_entities = Vec::new();
+                    for (vertices, indices) in vertices_list.iter().zip(&indices_list) {
+                        if !indices.is_empty() && !vertices.is_empty() {
+                            let entity = commands
+                                .spawn((
+                                    RigidBody::Static,
+                                    Collider::trimesh(vertices.clone(), indices.clone()),
+                                ))
+                                .id();
+                            chunk_entities.push(entity);
+                        }
+                    }
+                    if !chunk_entities.is_empty() {
+                        wall_colliders.0.insert(chunk_index, chunk_entities);
+                    }
                 }
             }
 
@@ -325,7 +232,24 @@ fn recalculate_static_bodies_for_dirty_chunks(
             if !movable_solid_positions.is_empty() {
                 let (vertices_list, indices_list) = process_solid_positions(movable_solid_positions);
                 if !vertices_list.is_empty() {
-                    movable_solid_mesh_data.chunks.insert(chunk_index, (vertices_list, indices_list));
+                    movable_solid_mesh_data.chunks.insert(chunk_index, (vertices_list.clone(), indices_list.clone()));
+                    
+                    // Spawn colliders for this chunk
+                    let mut chunk_entities = Vec::new();
+                    for (vertices, indices) in vertices_list.iter().zip(&indices_list) {
+                        if !indices.is_empty() && !vertices.is_empty() {
+                            let entity = commands
+                                .spawn((
+                                    RigidBody::Static,
+                                    Collider::trimesh(vertices.clone(), indices.clone()),
+                                ))
+                                .id();
+                            chunk_entities.push(entity);
+                        }
+                    }
+                    if !chunk_entities.is_empty() {
+                        movable_solid_colliders.0.insert(chunk_index, chunk_entities);
+                    }
                 }
             }
 
@@ -348,7 +272,24 @@ fn recalculate_static_bodies_for_dirty_chunks(
             if !solid_positions.is_empty() {
                 let (vertices_list, indices_list) = process_solid_positions(solid_positions);
                 if !vertices_list.is_empty() {
-                    solid_mesh_data.chunks.insert(chunk_index, (vertices_list, indices_list));
+                    solid_mesh_data.chunks.insert(chunk_index, (vertices_list.clone(), indices_list.clone()));
+                    
+                    // Spawn colliders for this chunk
+                    let mut chunk_entities = Vec::new();
+                    for (vertices, indices) in vertices_list.iter().zip(&indices_list) {
+                        if !indices.is_empty() && !vertices.is_empty() {
+                            let entity = commands
+                                .spawn((
+                                    RigidBody::Static,
+                                    Collider::trimesh(vertices.clone(), indices.clone()),
+                                ))
+                                .id();
+                            chunk_entities.push(entity);
+                        }
+                    }
+                    if !chunk_entities.is_empty() {
+                        solid_colliders.0.insert(chunk_index, chunk_entities);
+                    }
                 }
             }
         }
