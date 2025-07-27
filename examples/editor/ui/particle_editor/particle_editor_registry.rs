@@ -14,14 +14,11 @@ pub struct CreateNewParticle {
 }
 
 #[derive(Event, Debug, Clone)]
-pub struct SaveParticleFromEditor {
-    pub editor_entity: Entity,
-}
+pub struct SaveParticleFromEditor;
 
 #[derive(Event, Debug, Clone)]
 pub struct ApplyEditorChanges {
     pub editor_entity: Entity,
-    pub create_new: bool,
 }
 
 #[derive(Event, Debug, Clone)]

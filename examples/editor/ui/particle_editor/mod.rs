@@ -182,18 +182,13 @@ impl ParticleEditor {
                     }
                     if ui.button("Save Particle").clicked() {
                         if let Some(editor_entity) = current_editor.selected_entity {
-                            apply_editor_events.write(ApplyEditorChanges {
-                                editor_entity,
-                                create_new: true,
-                            });
+                            apply_editor_events.write(ApplyEditorChanges { editor_entity });
                         }
                     }
                     if ui.button("Save Particle & Reset Children").clicked() {
                         if let Some(editor_entity) = current_editor.selected_entity {
-                            apply_editor_and_reset_events.write(ApplyEditorChangesAndReset {
-                                editor_entity,
-                                create_new: true,
-                            });
+                            apply_editor_and_reset_events
+                                .write(ApplyEditorChangesAndReset { editor_entity });
                         }
                     }
                 });
@@ -399,7 +394,7 @@ impl ParticleEditor {
         if let Some(ref mut burns_config) = editor_data.burns_config {
             ui.horizontal(|ui| {
                 ui.label("Duration (ms):");
-                let mut duration_ms = burns_config.duration.as_millis() as u64;
+                let duration_ms = burns_config.duration.as_millis() as u64;
                 let mut duration_str = duration_ms.to_string();
                 if ui.text_edit_singleline(&mut duration_str).lost_focus() {
                     if let Ok(new_duration) = duration_str.parse::<u64>() {
@@ -410,7 +405,7 @@ impl ParticleEditor {
 
             ui.horizontal(|ui| {
                 ui.label("Tick Rate (ms):");
-                let mut tick_rate_ms = burns_config.tick_rate.as_millis() as u64;
+                let tick_rate_ms = burns_config.tick_rate.as_millis() as u64;
                 let mut tick_rate_str = tick_rate_ms.to_string();
                 if ui.text_edit_singleline(&mut tick_rate_str).lost_focus() {
                     if let Ok(new_tick_rate) = tick_rate_str.parse::<u64>() {
