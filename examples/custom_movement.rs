@@ -2,7 +2,6 @@ mod utils;
 
 use bevy::{input::common_conditions::input_just_pressed, prelude::*, window::PrimaryWindow};
 use bevy_falling_sand::prelude::*;
-use std::time::Duration;
 use utils::{
     boundary::SetupBoundary,
     brush::{ParticleSpawnList, SelectedBrushParticle},
@@ -14,7 +13,7 @@ fn main() {
     App::new()
         .add_plugins((
             DefaultPlugins,
-            FallingSandPlugin::default().with_spatial_refresh_frequency(Duration::from_millis(40)),
+            FallingSandPlugin::default(),
             FallingSandDebugPlugin,
             utils::states::StatesPlugin,
             utils::cursor::CursorPlugin,

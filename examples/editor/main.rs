@@ -6,7 +6,6 @@ mod particles;
 mod scenes;
 mod ui;
 
-use std::time::Duration;
 
 use app_state::StatesPlugin;
 use bevy_falling_sand::prelude::{DebugParticleCount, FallingSandDebugPlugin, FallingSandPlugin};
@@ -30,7 +29,7 @@ fn main() {
                 }),
                 ..default()
             }),
-            FallingSandPlugin::default().with_spatial_refresh_frequency(Duration::from_millis(200)),
+            FallingSandPlugin::default(),
             FallingSandDebugPlugin,
             ParticleSetupPlugin,
             CursorPlugin,

@@ -26,7 +26,6 @@ members = [
   "crates/bfs_movement",
   "crates/bfs_debug",
   "crates/bfs_color",
-  "crates/bfs_spatial",
   "crates/bfs_reactions",
   "crates/bfs_physics",
   "crates/bfs_reactions",
@@ -44,7 +43,6 @@ bfs_core = { path = "crates/bfs_core" }
 bfs_color = { path = "crates/bfs_color" }
 bfs_movement = { path = "crates/bfs_movement" }
 bfs_reactions = { path = "crates/bfs_reactions" }
-bfs_spatial = { path = "crates/bfs_spatial" }
 bevy.workspace = true
 
 [dev-dependencies]

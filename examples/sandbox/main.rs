@@ -5,7 +5,6 @@ mod scenes;
 mod setup;
 mod ui;
 
-use std::time::Duration;
 
 use brush::*;
 use camera::*;
@@ -34,7 +33,6 @@ fn main() {
             },
             FallingSandPlugin::default()
                 .with_length_unit(8.0)
-                .with_spatial_refresh_frequency(Duration::from_millis(50))
                 .with_gravity(Vec2::NEG_Y * 50.0),
             FallingSandDebugPlugin,
             CameraPlugin,

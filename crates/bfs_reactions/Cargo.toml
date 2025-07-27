@@ -7,6 +7,4 @@ edition = "2021"
 bevy.workspace = true
 bevy_turborand = "0.11.0"
 bfs_color = { path = "../bfs_color" }
-bfs_spatial = { path = "../bfs_spatial" }
 bfs_core = { path = "../bfs_core" }
-bevy_spatial = "0.11.0"

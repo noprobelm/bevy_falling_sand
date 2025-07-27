@@ -17,8 +17,7 @@
 //!
 //! ## Minimal Example
 //!
-//! Add the full plugin and specify length units (for [avian2d]) and the kdtree refresh frequency
-//! (for [bevy_spatial])
+//! Add the full plugin and specify length units (for [avian2d])
 //!
 //! ```
 //! use bevy::prelude::*;
@@ -27,8 +26,7 @@
 //! fn main() {
 //!    App::new().add_plugins((DefaultPlugins,
 //!    FallingSandPlugin::default()
-//!        .with_length_unit(8.0)
-//!        .with_spatial_refresh_frequency(std::time::Duration::from_millis(50)),
+//!        .with_length_unit(8.0),
 //!        ))
 //!        .run();
 //! }
@@ -45,7 +43,6 @@
 //!
 //! [Falling Sand]: https://en.wikipedia.org/wiki/Falling-sand_game
 //! [avian2d]: https://docs.rs/avian2d/latest/avian2d/
-//! [bevy_spatial]: https://docs.rs/bevy_spatial/latest/bevy_spatial/
 //! [Bevy]: https://docs.rs/bevy/latest/bevy/
 use bevy::prelude::*;
 pub use bfs_internal::*;

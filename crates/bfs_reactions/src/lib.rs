@@ -13,7 +13,6 @@ mod systems;
 
 use bevy::prelude::*;
 
-pub use bevy_spatial::*;
 pub use particle_definitions::*;
 use systems::SystemsPlugin;
 

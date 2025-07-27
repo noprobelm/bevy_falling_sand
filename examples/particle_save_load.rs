@@ -9,7 +9,7 @@ use bevy_falling_sand::prelude::*;
 use bfs_assets::{FallingSandAssetsPlugin, ParticleDefinitionsAsset, ParticleDefinitionsHandle};
 use bfs_core::{Particle, ParticleTypeMap};
 use ron::ser::{to_string_pretty, PrettyConfig};
-use std::{collections::HashMap, time::Duration};
+use std::collections::HashMap;
 use utils::status_ui::{StatusUIPlugin, FpsText};
 
 fn main() {
@@ -18,9 +18,6 @@ fn main() {
             DefaultPlugins,
             FallingSandMinimalPlugin,
             FallingSandReactionsPlugin,
-            FallingSandSpatialPlugin {
-                frequency: Duration::from_millis(50),
-            },
             FallingSandMovementPlugin,
             FallingSandColorPlugin,
             FallingSandAssetsPlugin,

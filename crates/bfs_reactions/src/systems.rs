@@ -1,11 +1,9 @@
 use super::ReactionRng;
 use bevy::prelude::*;
-use bevy_spatial::SpatialAccess;
 use bfs_color::{ChangesColor, ResetParticleColorEvent};
 use bfs_core::{
-    Particle, ParticlePosition, ParticleRng, ParticleSimulationSet, RemoveParticleEvent,
+    Particle, ParticleMap, ParticlePosition, ParticleRng, ParticleSimulationSet, RemoveParticleEvent,
 };
-use bfs_spatial::ParticleTree;
 
 use crate::{Burning, Burns, Fire};
 
@@ -29,30 +27,27 @@ fn handle_fire(
     mut commands: Commands,
     mut fire_query: Query<(&Fire, &ParticlePosition, &mut ReactionRng)>,
     burns_query: Query<(Entity, &Burns), (With<Particle>, Without<Burning>)>,
-    particle_tree: Res<ParticleTree>,
+    particle_map: Res<ParticleMap>,
 ) {
     fire_query.iter_mut().for_each(|(fire, position, mut rng)| {
         let mut destroy_fire: bool = false;
         if !rng.chance(fire.chance_to_spread) {
             return;
         }
-        particle_tree
-            .within_distance(position.0.as_vec2(), fire.burn_radius)
-            .iter()
+        particle_map
+            .within_radius(position.0, fire.burn_radius)
             .for_each(|(_, entity)| {
-                if let Some(entity) = entity {
-                    if let Ok((entity, burns)) = burns_query.get(*entity) {
-                        commands.entity(entity).insert(burns.to_burning());
-                        if let Some(colors) = &burns.color {
-                            commands.entity(entity).insert(colors.clone());
-                            commands.entity(entity).insert(ChangesColor::new(0.75));
-                        }
-                        if let Some(fire) = &burns.spreads {
-                            commands.entity(entity).insert(*fire);
-                        }
-                        if fire.destroys_on_spread {
-                            destroy_fire = true;
-                        }
+                if let Ok((entity, burns)) = burns_query.get(*entity) {
+                    commands.entity(entity).insert(burns.to_burning());
+                    if let Some(colors) = &burns.color {
+                        commands.entity(entity).insert(colors.clone());
+                        commands.entity(entity).insert(ChangesColor::new(0.75));
+                    }
+                    if let Some(fire) = &burns.spreads {
+                        commands.entity(entity).insert(*fire);
+                    }
+                    if fire.destroys_on_spread {
+                        destroy_fire = true;
                     }
                 }
             });
