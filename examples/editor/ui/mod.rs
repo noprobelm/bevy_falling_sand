@@ -13,7 +13,6 @@ use bevy_falling_sand::prelude::{
 use console::core::{ConsoleCache, ConsoleCommandEntered, ConsoleConfiguration};
 use console::{Console, ConsolePlugin};
 
-// Re-export for external modules
 pub use console::core::ConsoleState;
 use particle_editor::{
     ApplyEditorChanges, ApplyEditorChangesAndReset, CreateNewParticle, CurrentEditorSelection,
@@ -118,15 +117,10 @@ fn render_ui_panels(
 ) {
     let ctx = contexts.ctx_mut();
 
-    // All egui panels must be declared in the same context to coordinate layout properly
-    // Order matters: Top -> Side -> Bottom to avoid overlaps
-
-    // Top panel - must be declared first
     let _top_response = egui::TopBottomPanel::top("Top panel").show(ctx, |ui| {
         egui::menu::bar(ui, |ui| {
             UiTopBar.render(ui, &mut commands, &mut particle_file_browser_state);
 
-            // Show particle file status messages
             if let Some(ref error) = particle_file_dialog.last_error {
                 ui.separator();
                 ui.colored_label(egui::Color32::RED, format!("Error: {}", error));
@@ -139,7 +133,6 @@ fn render_ui_panels(
         });
     });
 
-    // Side panel - must be declared before bottom panel to avoid overlap
     let _left_response = egui::SidePanel::left("Left panel")
         .resizable(false)
         .exact_width(700.0)
@@ -181,7 +174,6 @@ fn render_ui_panels(
                     ui.set_width(ui.available_width());
                     ui.set_height(panel_height);
 
-                    // Get FPS from diagnostics
                     let fps = diagnostics
                         .get(&FrameTimeDiagnosticsPlugin::FPS)
                         .and_then(|fps| fps.smoothed())
@@ -199,7 +191,6 @@ fn render_ui_panels(
             });
         });
 
-    // Bottom panel - must be declared last
     let console_height = if console_state.expanded {
         console_state.height
     } else {
@@ -213,7 +204,6 @@ fn render_ui_panels(
             Console.render(ui, &mut console_state, &cache, &config, &mut command_writer);
         });
 
-    // Render scene management dialogs
     SceneManagementUI.render(
         &mut egui::Ui::new(
             ctx.clone(),
@@ -225,7 +215,6 @@ fn render_ui_panels(
         &mut ev_load_scene,
     );
     
-    // Render particle file browser dialogs
     ParticleFileBrowser.render(
         &mut egui::Ui::new(
             ctx.clone(),
@@ -255,7 +244,6 @@ fn render_particle_search(
 ) {
     let ctx = contexts.ctx_mut();
 
-    // Particle search overlay (rendered after panels to appear on top)
     let mut particle_search_ui = egui::Ui::new(
         ctx.clone(),
         egui::Id::new("particle_search"),

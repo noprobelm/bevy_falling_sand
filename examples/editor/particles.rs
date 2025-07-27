@@ -33,11 +33,9 @@ fn check_particles_defs_initialized(
         return;
     }
 
-    // Check if "Dirt Wall" exists, otherwise use the first available particle
     if map.contains("Dirt Wall") {
         commands.insert_resource(SelectedParticle(Particle::new("Dirt Wall")));
     } else {
-        // Get the first key and intern it to make it static
         let first_name = map.keys().next()
             .expect("ParticleTypeMap is not empty, so this should never fail");
         let static_name: &'static str = Box::leak(first_name.to_string().into_boxed_str());

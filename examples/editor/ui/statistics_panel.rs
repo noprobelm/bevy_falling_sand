@@ -1,28 +1,8 @@
 use bevy::prelude::*;
 use bevy_egui::egui;
 
-#[derive(Resource)]
-pub struct StatisticsPanel {
-    pub fps: f32,
-    pub total_particles: u32,
-    pub dynamic_particles: u32,
-    pub wall_particles: u32,
-    pub active_particles: u32,
-    pub dynamic_rigid_bodies: u32,
-}
-
-impl Default for StatisticsPanel {
-    fn default() -> Self {
-        Self {
-            fps: 0.0,
-            total_particles: 0,
-            dynamic_particles: 0,
-            wall_particles: 0,
-            active_particles: 0,
-            dynamic_rigid_bodies: 0,
-        }
-    }
-}
+#[derive(Resource, Default)]
+pub struct StatisticsPanel;
 
 impl StatisticsPanel {
     pub fn render(
@@ -41,8 +21,9 @@ impl StatisticsPanel {
         ui.separator();
         ui.add_space(8.0);
 
-        // Performance Section
-        ui.add(egui::Label::new(egui::RichText::new("Performance").heading().size(16.0)));
+        ui.add(egui::Label::new(
+            egui::RichText::new("Performance").heading().size(16.0),
+        ));
         ui.separator();
         egui::Grid::new("performance_grid")
             .num_columns(2)
@@ -58,8 +39,9 @@ impl StatisticsPanel {
 
         ui.add_space(8.0);
 
-        // Particles Section
-        ui.add(egui::Label::new(egui::RichText::new("Particles").heading().size(16.0)));
+        ui.add(egui::Label::new(
+            egui::RichText::new("Particles").heading().size(16.0),
+        ));
         ui.separator();
         egui::Grid::new("particles_grid")
             .num_columns(2)
@@ -93,8 +75,9 @@ impl StatisticsPanel {
 
         ui.add_space(8.0);
 
-        // Avian 2D Section
-        ui.add(egui::Label::new(egui::RichText::new("Avian 2D").heading().size(16.0)));
+        ui.add(egui::Label::new(
+            egui::RichText::new("Avian 2D").heading().size(16.0),
+        ));
         ui.separator();
         egui::Grid::new("avian_grid")
             .num_columns(2)
@@ -103,9 +86,10 @@ impl StatisticsPanel {
             .show(ui, |ui| {
                 ui.label("Dynamic Rigid Bodies:");
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    ui.label(format!("{}", self.dynamic_rigid_bodies));
+                    ui.label("0");
                 });
                 ui.end_row();
             });
     }
 }
+

@@ -14,7 +14,6 @@ pub struct FileBrowserState {
 }
 
 fn get_project_root_path(relative_path: &str) -> String {
-    // Use CARGO_MANIFEST_DIR to get the project root, then append the relative path
     let manifest_dir = env!("CARGO_MANIFEST_DIR");
     format!("{}/{}", manifest_dir, relative_path)
 }
@@ -58,7 +57,6 @@ impl FileBrowser {
             return;
         }
 
-        // Get all files from the directory
         let all_files: Vec<(String, String)> = std::fs::read_dir(&state.current_directory)
             .map(|entries| {
                 entries
@@ -137,7 +135,6 @@ impl FileBrowser {
             return;
         }
 
-        // Get all files from the directory
         let all_files: Vec<(String, String)> = std::fs::read_dir(&state.current_directory)
             .map(|entries| {
                 entries
@@ -175,7 +172,6 @@ impl FileBrowser {
                                 state.selected_file = Some(display_name.clone());
                             }
                             
-                            // Double-click to load
                             if is_selected && ui.input(|i| i.pointer.button_double_clicked(egui::PointerButton::Primary)) {
                                 on_load(PathBuf::from(file_path));
                                 state.show_load_dialog = false;

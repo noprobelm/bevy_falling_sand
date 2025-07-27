@@ -218,7 +218,6 @@ fn spawn_particles(
         BrushTypeState::Cursor => {
             let particle = selected.clone();
 
-            // Interpolate between previous positions if movement is significant
             if (cursor_position.previous - cursor_position.previous_previous).length() >= 1.0 {
                 spawn_cursor_interpolated(
                     &mut commands,
@@ -253,7 +252,6 @@ fn despawn_particles(
 
     match brush_type_state.get() {
         BrushTypeState::Line => {
-            // Despawn for previous position
             if (cursor_position.previous - cursor_position.previous_previous).length() < 1.0 {
                 despawn_line(
                     &mut evw_remove_particle,
@@ -269,7 +267,6 @@ fn despawn_particles(
                 );
             }
 
-            // Despawn for current position
             if (cursor_position.current - cursor_position.previous).length() < 1.0 {
                 despawn_line(
                     &mut evw_remove_particle,
@@ -286,7 +283,6 @@ fn despawn_particles(
             }
         }
         BrushTypeState::Circle => {
-            // Despawn for previous position
             if (cursor_position.previous - cursor_position.previous_previous).length() < 1.0 {
                 despawn_circle(
                     &mut evw_remove_particle,
@@ -303,7 +299,6 @@ fn despawn_particles(
                 );
             }
 
-            // Despawn for current position
             if (cursor_position.current - cursor_position.previous).length() < 1.0 {
                 despawn_circle(
                     &mut evw_remove_particle,
@@ -321,7 +316,6 @@ fn despawn_particles(
             }
         }
         BrushTypeState::Cursor => {
-            // Interpolate between previous positions if movement is significant
             if (cursor_position.previous - cursor_position.previous_previous).length() >= 1.0 {
                 despawn_cursor_interpolated(
                     &mut evw_remove_particle,
@@ -444,13 +438,11 @@ fn spawn_line_interpolated(
     let min_x = -(brush_size as i32) / 2;
     let max_x = (brush_size as f32 / 2.0) as i32;
 
-    // Sample points along the interpolated line
     let num_samples = (length.ceil() as usize).max(1);
     for i in 0..=num_samples {
         let t = i as f32 / num_samples.max(1) as f32;
         let sample_point = start + direction * length * t;
 
-        // For each sample point, spawn a line
         for x in min_x * 3..=max_x * 3 {
             let position = Vec2::new((sample_point.x + x as f32).round(), sample_point.y.round());
             points.insert(position.as_ivec2());
@@ -470,7 +462,6 @@ fn spawn_cursor_interpolated(commands: &mut Commands, particle: Particle, start:
     let direction = (end - start).normalize();
     let length = (end - start).length();
 
-    // Sample points along the interpolated path
     let num_samples = (length.ceil() as usize).max(1);
     for i in 0..=num_samples {
         let t = i as f32 / num_samples.max(1) as f32;
@@ -572,13 +563,11 @@ fn despawn_line_interpolated(
     let min_x = -(brush_size as i32) / 2;
     let max_x = (brush_size as f32 / 2.0) as i32;
 
-    // Sample points along the interpolated line
     let num_samples = (length.ceil() as usize).max(1);
     for i in 0..=num_samples {
         let t = i as f32 / num_samples.max(1) as f32;
         let sample_point = start + direction * length * t;
 
-        // For each sample point, despawn a line
         for x in min_x * 3..=max_x * 3 {
             let position = Vec2::new((sample_point.x + x as f32).round(), sample_point.y.round());
             points.insert(position.as_ivec2());
@@ -602,7 +591,6 @@ fn despawn_cursor_interpolated(
     let direction = (end - start).normalize();
     let length = (end - start).length();
 
-    // Sample points along the interpolated path
     let num_samples = (length.ceil() as usize).max(1);
     for i in 0..=num_samples {
         let t = i as f32 / num_samples.max(1) as f32;

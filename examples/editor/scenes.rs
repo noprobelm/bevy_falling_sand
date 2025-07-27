@@ -25,7 +25,6 @@ pub struct SceneSelectionDialog {
     pub selected_scene: Option<String>,
 }
 
-// We'll keep a separate browser state for scenes
 #[derive(Resource)]
 pub struct SceneFileBrowserState(pub FileBrowserState);
 

@@ -103,7 +103,6 @@ fn save_particles_to_file(
 
         let mut particle_definitions = HashMap::new();
 
-        // Collect all particle types and convert them to ParticleData
         for (
             particle_type_id,
             density,
@@ -137,7 +136,6 @@ fn save_particles_to_file(
                 burns: None,
             };
 
-            // Set material type
             if wall.is_some() {
                 particle_data.wall = Some(true);
             } else if let Some(liquid) = liquid {
@@ -150,7 +148,6 @@ fn save_particles_to_file(
                 particle_data.solid = Some(true);
             }
 
-            // Convert colors
             if let Some(color_profile) = color_profile {
                 let color_strings: Vec<String> = color_profile
                     .palette
@@ -169,7 +166,6 @@ fn save_particles_to_file(
                 particle_data.colors = Some(color_strings);
             }
 
-            // Convert fire data
             if let Some(fire) = fire {
                 particle_data.fire = Some(bfs_assets::FireData {
                     burn_radius: fire.burn_radius,
@@ -178,7 +174,6 @@ fn save_particles_to_file(
                 });
             }
 
-            // Convert burns data
             if let Some(burns) = burns {
                 let burns_data = bfs_assets::BurnsData {
                     duration: burns.duration.as_millis() as u64,
@@ -217,7 +212,6 @@ fn save_particles_to_file(
             particle_definitions.insert(particle_type_id.name.clone(), particle_data);
         }
 
-        // Serialize to RON and save
         match to_string_pretty(&particle_definitions, PrettyConfig::default()) {
             Ok(ron_content) => match std::fs::write(save_path, ron_content) {
                 Ok(()) => {
@@ -251,12 +245,10 @@ fn load_particles_from_file(
             Ok(ron_content) => {
                 match ron::from_str::<ParticleDefinitions>(&ron_content) {
                     Ok(particle_definitions) => {
-                        // Clear existing particle types
                         for entity in particle_query.iter() {
                             commands.entity(entity).despawn();
                         }
 
-                        // Spawn new particle types from loaded data
                         let mut loaded_count = 0;
                         for (_name, particle_data) in particle_definitions {
                             particle_data.spawn_particle_type(&mut commands);

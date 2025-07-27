@@ -91,7 +91,6 @@ impl Console {
                                 .color(egui::Color32::from_rgb(100, 200, 100)),
                         );
 
-                        // Create the input field with inline autocompletion
                         let current_suggestion = if !console_state.suggestions.is_empty() {
                             console_state
                                 .suggestion_index
@@ -110,7 +109,6 @@ impl Console {
                                 .id(egui::Id::new("console_input")),
                         );
 
-                        // Auto-focus when console is opened with backtick or on initial load
                         if (backtick_pressed && console_state.expanded)
                             || console_state.needs_initial_focus
                         {
@@ -118,14 +116,12 @@ impl Console {
                             console_state.needs_initial_focus = false;
                         }
 
-                        // Render inline autocompletion suggestion
                         if let Some(suggestion) = &current_suggestion {
                             if suggestion.starts_with(&console_state.input)
                                 && !console_state.input.is_empty()
                             {
                                 let remaining_text = &suggestion[console_state.input.len()..];
                                 if !remaining_text.is_empty() {
-                                    // Calculate position for the suggestion text more accurately
                                     let font_id = ui
                                         .style()
                                         .text_styles
@@ -141,7 +137,6 @@ impl Console {
                                         )
                                     });
 
-                                    // Get the exact text edit margins
                                     let text_edit_margin = ui.spacing().button_padding.x;
                                     let text_edit_content_rect = response.rect;
                                     let text_start_x =
@@ -170,9 +165,7 @@ impl Console {
                             console_state.update_suggestions(cache);
                         }
 
-                        // Handle Enter key submission - check before focus is lost
                         if response.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
-                            // Auto-complete with current suggestion if available and we have an active suggestion index
                             if let Some(suggestion) = &current_suggestion {
                                 if console_state.suggestion_index.is_some()
                                     && suggestion.starts_with(&console_state.input)
@@ -189,16 +182,13 @@ impl Console {
                                 console_state.suggestion_index = None;
                                 console_state.execute_command(command, config, command_writer);
                                 console_state.history_index = 0;
-                                // Auto-expand when command is executed
                                 if !console_state.expanded {
                                     console_state.expanded = true;
                                 }
                             }
-                            // Re-focus the input for next command
                             response.request_focus();
                         }
 
-                        // Handle Tab key for auto-completion - consume the key to prevent egui's default handling
                         if response.has_focus() {
                             let mut tab_handled = false;
 
@@ -207,7 +197,6 @@ impl Console {
                                     && !console_state.suggestions.is_empty()
                                 {
                                     if !i.modifiers.shift {
-                                        // Tab: cycle forward through suggestions
                                         match &mut console_state.suggestion_index {
                                             Some(index) => {
                                                 *index =
@@ -218,7 +207,6 @@ impl Console {
                                             }
                                         }
                                     } else {
-                                        // Shift+Tab: cycle backwards through suggestions
                                         match &mut console_state.suggestion_index {
                                             Some(index) => {
                                                 if *index == 0 {
@@ -235,7 +223,6 @@ impl Console {
                                     }
                                     tab_handled = true;
 
-                                    // Consume the Tab key to prevent egui's default focus handling
                                     i.consume_key(egui::Modifiers::NONE, egui::Key::Tab);
                                     if i.modifiers.shift {
                                         i.consume_key(egui::Modifiers::SHIFT, egui::Key::Tab);

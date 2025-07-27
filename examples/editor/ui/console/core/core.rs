@@ -4,7 +4,6 @@ use shlex::Shlex;
 use std::collections::{BTreeMap, VecDeque};
 use trie_rs::{Trie, TrieBuilder};
 
-// Events for console system
 #[derive(Clone, Debug, Event)]
 pub struct ConsoleCommandEntered {
     pub command_name: String,
@@ -22,7 +21,6 @@ impl PrintConsoleLine {
     }
 }
 
-// Resource for console configuration and commands
 #[derive(Resource)]
 pub struct ConsoleConfiguration {
     pub commands: BTreeMap<&'static str, clap::Command>,
@@ -40,7 +38,6 @@ impl Default for ConsoleConfiguration {
     }
 }
 
-// Command cache for autocompletion
 #[derive(Resource, Default)]
 pub struct ConsoleCache {
     pub commands_trie: Option<Trie<u8>>,
@@ -147,11 +144,9 @@ impl ConsoleState {
 
         if !self.input.is_empty() {
             if let Some(trie) = &cache.commands_trie {
-                // Only search for command names (first word)
                 let trimmed = self.input.trim();
                 let first_word = trimmed.split_whitespace().next().unwrap_or("");
 
-                // Only suggest if we're still typing the first word
                 if !trimmed.contains(' ') && !first_word.is_empty() {
                     self.suggestions = trie
                         .predictive_search(first_word.as_bytes())
@@ -165,27 +160,21 @@ impl ConsoleState {
     }
 }
 
-// Initialization system to populate command registry
 pub fn init_commands(mut config: ResMut<ConsoleConfiguration>, mut cache: ResMut<ConsoleCache>) {
     use super::commands::{ClearCommand, EchoCommand, ExitCommand, HelpCommand};
 
-    // Register help command
     let help_cmd = HelpCommand::command().no_binary_name(true);
     config.commands.insert(HelpCommand::name(), help_cmd);
 
-    // Register clear command
     let clear_cmd = ClearCommand::command().no_binary_name(true);
     config.commands.insert(ClearCommand::name(), clear_cmd);
 
-    // Register exit command
     let exit_cmd = ExitCommand::command().no_binary_name(true);
     config.commands.insert(ExitCommand::name(), exit_cmd);
 
-    // Register echo command
     let echo_cmd = EchoCommand::command().no_binary_name(true);
     config.commands.insert(EchoCommand::name(), echo_cmd);
 
-    // Build command trie for autocompletion
     let mut builder: TrieBuilder<u8> = TrieBuilder::new();
     for name in config.commands.keys() {
         builder.push(name.as_bytes());

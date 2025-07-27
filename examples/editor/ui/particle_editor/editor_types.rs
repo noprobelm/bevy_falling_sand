@@ -40,12 +40,10 @@ impl ParticleEditorTypeMap {
         self.map.get(name)
     }
 
-    /// Remove a particle type from the map
     pub(crate) fn remove(&mut self, name: &str) -> Option<Entity> {
         self.map.remove(name)
     }
 
-    /// Returns 'true' if the particle type map is empty
     pub(crate) fn is_empty(&self) -> bool {
         self.map.is_empty()
     }

@@ -55,10 +55,6 @@ fn detect_ui_interaction(
     let console_is_expanded = console_state.map_or(false, |state| state.expanded);
     let has_keyboard_focus = ctx.wants_keyboard_input();
 
-    // UI should be active if:
-    // - Pointer is over a UI area
-    // - Search is active AND has keyboard focus (to allow dismissing search to return to canvas)
-    // - Console is expanded AND has keyboard focus (to allow painting while console is visible but not focused)
     let should_be_ui = is_over_area
         || (search_is_active && has_keyboard_focus)
         || (console_is_expanded && has_keyboard_focus);

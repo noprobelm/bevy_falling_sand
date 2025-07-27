@@ -8,7 +8,6 @@ use bevy_falling_sand::prelude::{
 
 use particle_editor_registry::*;
 
-// Re-export for external use
 pub use particle_editor_registry::{
     ApplyEditorChanges, ApplyEditorChangesAndReset, BurnsConfig, CreateNewParticle,
     CurrentEditorSelection, FireConfig, LoadParticleIntoEditor, MaterialState, ParticleEditorData,
@@ -63,7 +62,6 @@ impl ParticleEditor {
         ui.heading("Particle Editor");
         ui.separator();
 
-        // Get the current particle name for duplication before splitting into columns
         let current_particle_name = if let Some(editor_entity) = current_editor.selected_entity {
             if let Ok(editor_data) = editor_data_query.get(editor_entity) {
                 Some(editor_data.name.clone())
@@ -74,7 +72,6 @@ impl ParticleEditor {
             None
         };
 
-        // Use the original columns approach - it works fine with adequate width
         ui.columns(2, |columns| {
             columns[0].set_min_width(columns[0].available_width());
             columns[0].set_max_width(columns[0].available_width());
@@ -123,14 +120,12 @@ impl ParticleEditor {
                 ];
 
                 for &category in &CATEGORIES {
-                    // Temporarily increase spacing for collapsing headers
                     let original_indent = ui.spacing().indent;
                     ui.spacing_mut().indent = 16.0;
 
                     egui::CollapsingHeader::new(category)
                         .default_open(false)
                         .show(ui, |ui| {
-                            // Restore original spacing inside the collapsing content
                             ui.spacing_mut().indent = original_indent;
                             let examples: Vec<&str> = match category {
                                 "Walls" => particle_materials
@@ -175,7 +170,6 @@ impl ParticleEditor {
                             }
                         });
 
-                    // Restore original spacing after the collapsing header
                     ui.spacing_mut().indent = original_indent;
                 }
 
@@ -188,11 +182,9 @@ impl ParticleEditor {
                     }
                     if ui.button("Save Particle").clicked() {
                         if let Some(editor_entity) = current_editor.selected_entity {
-                            // For now, we'll let the system determine if it's new based on the editor data
-                            // The system can check the editor data's is_new flag or name against particle_type_map
                             apply_editor_events.write(ApplyEditorChanges {
                                 editor_entity,
-                                create_new: true, // This will be corrected by the system based on actual editor data
+                                create_new: true,
                             });
                         }
                     }
@@ -200,7 +192,7 @@ impl ParticleEditor {
                         if let Some(editor_entity) = current_editor.selected_entity {
                             apply_editor_and_reset_events.write(ApplyEditorChangesAndReset {
                                 editor_entity,
-                                create_new: true, // This will be corrected by the system based on actual editor data
+                                create_new: true,
                             });
                         }
                     }
@@ -217,10 +209,8 @@ impl ParticleEditor {
         egui::ScrollArea::vertical()
             .id_salt("particle_properties_scroll")
             .show(ui, |ui| {
-                // Check if we have a selected editor entity
                 if let Some(editor_entity) = current_editor.selected_entity {
                     if let Ok(mut editor_data) = editor_data_query.get_mut(editor_entity) {
-                        // Access the data through mutable reference
                         self.render_editor_data(ui, &mut editor_data);
                     } else {
                         ui.label("Selected editor entity not found.");
@@ -233,13 +223,11 @@ impl ParticleEditor {
     }
 
     fn render_editor_data(&self, ui: &mut egui::Ui, editor_data: &mut ParticleEditorData) {
-        // Name field
         ui.horizontal(|ui| {
             ui.label("Name:");
             ui.text_edit_singleline(&mut editor_data.name);
         });
 
-        // Material state dropdown
         ui.horizontal(|ui| {
             ui.label("State:");
             let current_state_text = match editor_data.material_state {
@@ -285,7 +273,6 @@ impl ParticleEditor {
 
         ui.separator();
 
-        // Basic properties
         ui.horizontal(|ui| {
             ui.label("Density:");
             let mut density_f32 = editor_data.density as f32;
@@ -313,7 +300,6 @@ impl ParticleEditor {
             ui.checkbox(&mut editor_data.has_momentum, "");
         });
 
-        // Fluidity for liquids and gases
         if matches!(
             editor_data.material_state,
             MaterialState::Liquid | MaterialState::Gas
@@ -333,7 +319,6 @@ impl ParticleEditor {
 
         ui.separator();
 
-        // Colors section
         ui.horizontal(|ui| {
             ui.label("Colors");
             if ui.button("➕").clicked() {
@@ -376,7 +361,6 @@ impl ParticleEditor {
             editor_data.color_palette.remove(remove_index);
         }
 
-        // Changes color
         ui.horizontal(|ui| {
             ui.label("Changes Color Chance:");
             let mut has_changes_color = editor_data.changes_color.is_some();
@@ -395,7 +379,6 @@ impl ParticleEditor {
 
         ui.separator();
 
-        // Burning properties
         let mut has_burns = editor_data.burns_config.is_some();
         if ui.checkbox(&mut has_burns, "Flammable").changed() {
             if has_burns {
@@ -436,7 +419,6 @@ impl ParticleEditor {
                 }
             });
 
-            // Chance to destroy per tick
             ui.horizontal(|ui| {
                 ui.label("Destroy Chance:");
                 let mut has_destroy_chance = burns_config.chance_destroy_per_tick.is_some();
@@ -453,7 +435,6 @@ impl ParticleEditor {
                 }
             });
 
-            // Reaction configuration
             let mut has_reaction = burns_config.reaction.is_some();
             if ui
                 .checkbox(&mut has_reaction, "Produces particle when burning")
@@ -484,7 +465,6 @@ impl ParticleEditor {
                 });
             }
 
-            // Burning colors
             let mut has_burning_colors = burns_config.burning_colors.is_some();
             if ui
                 .checkbox(&mut has_burning_colors, "Custom burning colors")
@@ -535,7 +515,6 @@ impl ParticleEditor {
                 }
             }
 
-            // Fire spreads
             let mut has_fire_spreads = burns_config.spreads_fire.is_some();
             if ui.checkbox(&mut has_fire_spreads, "Fire Spreads").changed() {
                 if has_fire_spreads {
@@ -571,7 +550,6 @@ impl ParticleEditor {
 
         ui.separator();
 
-        // Fire emission properties
         let mut has_fire = editor_data.fire_config.is_some();
         if ui.checkbox(&mut has_fire, "Emits Fire").changed() {
             if has_fire {

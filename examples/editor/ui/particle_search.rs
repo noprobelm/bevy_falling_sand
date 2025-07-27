@@ -54,7 +54,6 @@ impl ParticleSearchState {
         if !self.input.is_empty() {
             let query = self.input.to_lowercase();
 
-            // Only use actual particle names, with case-insensitive matching
             let mut matches: Vec<String> = cache
                 .all_particles
                 .iter()
@@ -65,7 +64,6 @@ impl ParticleSearchState {
                 .cloned()
                 .collect();
 
-            // Sort by relevance: prefix matches first, then by length
             matches.sort_by(|a, b| {
                 let a_lower = a.to_lowercase();
                 let b_lower = b.to_lowercase();
@@ -79,7 +77,6 @@ impl ParticleSearchState {
                 }
             });
 
-            // Limit to top 10 results
             self.suggestions = matches.into_iter().take(10).collect();
 
             if !self.suggestions.is_empty() {
@@ -145,7 +142,6 @@ impl ParticleSearch {
 
         let mut should_close = false;
 
-        // Check for ESC key globally when search is active
         if ui.input(|i| i.key_pressed(egui::Key::Escape)) {
             should_close = true;
         }
@@ -157,7 +153,6 @@ impl ParticleSearch {
             .show(ui.ctx(), |ui| {
                 ui.set_min_width(400.0);
 
-                // Search input
                 let response = ui.add(
                     egui::TextEdit::singleline(&mut state.input)
                         .hint_text("Type particle name...")
@@ -165,18 +160,15 @@ impl ParticleSearch {
                         .lock_focus(true),
                 );
 
-                // Auto-focus on activation
                 if state.needs_initial_focus {
                     response.request_focus();
                     state.needs_initial_focus = false;
                 }
 
-                // Handle input changes
                 if response.changed() {
                     state.update_suggestions(cache);
                 }
 
-                // Handle key presses - check for keys when input has focus
                 if response.has_focus() {
                     if ui.input(|i| i.key_pressed(egui::Key::ArrowUp)) {
                         state.navigate_suggestions(true);
@@ -186,7 +178,6 @@ impl ParticleSearch {
                         state.navigate_suggestions(false);
                     }
 
-                    // Tab for auto-completion
                     if ui.input(|i| i.key_pressed(egui::Key::Tab)) && !state.suggestions.is_empty()
                     {
                         if let Some(suggestion) = state.get_selected_suggestion() {
@@ -196,7 +187,6 @@ impl ParticleSearch {
                     }
                 }
 
-                // Handle Enter key when losing focus or when explicitly pressed
                 if (response.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)))
                     || (response.has_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)))
                 {
@@ -210,7 +200,6 @@ impl ParticleSearch {
                     }
                 }
 
-                // Suggestions list
                 if !state.suggestions.is_empty() {
                     ui.separator();
 
@@ -239,7 +228,6 @@ impl ParticleSearch {
                     ui.label("No particles found");
                 }
 
-                // Instructions
                 ui.separator();
                 ui.horizontal(|ui| {
                     ui.small("↑↓ Navigate");
@@ -257,14 +245,12 @@ impl ParticleSearch {
     }
 }
 
-// System to update particle cache when new particles are loaded
 pub fn update_particle_search_cache(
     particle_materials: ParticleTypeMaterialsParam,
     mut cache: ResMut<ParticleSearchCache>,
 ) {
     let mut all_particles = Vec::new();
 
-    // Collect all particle names from all categories
     for particle_type in particle_materials.walls() {
         all_particles.push(particle_type.name.to_string());
     }
@@ -284,24 +270,19 @@ pub fn update_particle_search_cache(
         all_particles.push(particle_type.name.to_string());
     }
 
-    // Remove duplicates and sort
     all_particles.sort();
     all_particles.dedup();
 
-    // Only update if the list has changed
     if cache.all_particles != all_particles {
         cache.all_particles = all_particles;
     }
 }
 
-// System to handle keyboard shortcut to activate search
 pub fn handle_particle_search_input(
     keyboard_input: Res<ButtonInput<KeyCode>>,
     mut search_state: ResMut<ParticleSearchState>,
     mut contexts: bevy_egui::EguiContexts,
 ) {
-    // KeyN to activate search (matching sandbox behavior)
-    // Only activate if not already active and console input doesn't have keyboard focus
     let console_input_id = bevy_egui::egui::Id::new("console_input");
     let console_has_focus = contexts
         .ctx_mut()
