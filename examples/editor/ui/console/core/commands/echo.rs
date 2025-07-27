@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use clap::Parser;
 
-use super::super::core::{ConsoleCommandEntered, NamedCommand};
+use super::super::core::NamedCommand;
 
 #[derive(Parser, Resource)]
 #[command(name = "echo", about = "Echo some text")]

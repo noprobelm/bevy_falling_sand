@@ -2,7 +2,6 @@ use crate::ui::file_browser::{FileBrowser, FileBrowserState};
 use bevy::prelude::*;
 use bevy_egui::egui;
 use bevy_falling_sand::prelude::{LoadSceneEvent, SaveSceneEvent};
-use std::path::PathBuf;
 
 pub(super) struct ScenesPlugin;
 
@@ -74,4 +73,3 @@ struct ShowLoadSceneDialogMarker;
 
 #[derive(Component)]
 struct ShowSaveSceneDialogMarker;
-

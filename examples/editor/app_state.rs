@@ -3,7 +3,7 @@ use crate::ui::ConsoleState;
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use bevy_egui::{EguiContextPass, EguiContexts};
-use bevy_falling_sand::prelude::{DebugDirtyRects, DebugParticleCount, DebugParticleMap};
+use bevy_falling_sand::prelude::{DebugDirtyRects, DebugParticleMap};
 
 pub struct StatesPlugin;
 
