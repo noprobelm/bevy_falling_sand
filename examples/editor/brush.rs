@@ -51,7 +51,6 @@ impl Plugin for BrushPlugin {
 pub struct BrushGizmos;
 
 #[derive(Component)]
-#[allow(dead_code)]
 struct Brush;
 
 #[derive(Component)]
@@ -78,12 +77,9 @@ enum BrushSpawnState {
 
 #[derive(Default, Clone, Hash, Eq, PartialEq, Debug, States)]
 enum BrushTypeState {
-    #[allow(unused)]
     Line,
-    #[allow(unused)]
     #[default]
     Circle,
-    #[allow(unused)]
     Cursor,
 }
 

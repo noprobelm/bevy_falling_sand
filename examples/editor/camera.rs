@@ -44,7 +44,7 @@ fn setup_camera(mut commands: Commands) {
             target_scale: initial_scale,
             current_scale: initial_scale,
         },
-        ZoomSpeed(8.0), // Adjust this value to control zoom smoothness (higher = faster)
+        ZoomSpeed(8.0),
     ));
 }
 
@@ -112,7 +112,6 @@ fn smooth_zoom(
         return;
     };
 
-    // Interpolate between current and target scale
     let diff = zoom_target.target_scale - zoom_target.current_scale;
     if diff.abs() > 0.0001 {
         let delta = diff * zoom_speed.0 * time.delta_secs();

@@ -17,7 +17,7 @@ impl Plugin for ConsolePlugin {
             .add_systems(Startup, core::init_commands)
             .add_systems(
                 Update,
-                (help_command, clear_command, exit_command, echo_command),
+                (help_command, clear_command, exit_command, echo_command, hierarchical_command_handler),
             );
     }
 }

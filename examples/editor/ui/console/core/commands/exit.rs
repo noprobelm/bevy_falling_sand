@@ -20,7 +20,7 @@ pub fn exit_command(
     mut evw_app_exit: EventWriter<AppExit>,
 ) {
     for command_event in cmd.read() {
-        if command_event.command_name == "exit" {
+        if command_event.command_path.len() == 1 && command_event.command_path[0] == "exit" {
             evw_app_exit.write(AppExit::Success);
         }
     }
