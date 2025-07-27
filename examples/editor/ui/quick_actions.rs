@@ -14,6 +14,7 @@ impl Plugin for QuickActionsPlugin {
                 toggle_dirty_rects_overlay.run_if(input_just_pressed(KeyCode::F2)),
                 toggle_particle_movement_logic.run_if(input_just_pressed(KeyCode::F3)),
                 toggle_simulation_run.run_if(input_just_pressed(KeyCode::Space)),
+                step_simulation.run_if(input_just_pressed(KeyCode::Enter)),
             ),
         );
     }
@@ -55,7 +56,7 @@ fn toggle_particle_movement_logic(
     }
 }
 
-pub fn toggle_simulation_run(
+fn toggle_simulation_run(
     mut commands: Commands,
     simulation_pause: Option<Res<ParticleSimulationRun>>,
     app_state: Res<State<AppState>>,
@@ -63,8 +64,10 @@ pub fn toggle_simulation_run(
 ) {
     if app_state.get() == &AppState::Canvas {
         if simulation_pause.is_some() {
+            println!("Simulation is running");
             commands.remove_resource::<ParticleSimulationRun>();
         } else {
+            println!("Simulation is not running");
             commands.init_resource::<ParticleSimulationRun>();
         }
         if time.is_paused() {
@@ -73,4 +76,8 @@ pub fn toggle_simulation_run(
             time.pause();
         }
     }
+}
+
+fn step_simulation(mut evw_simulation_step: EventWriter<SimulationStepEvent>) {
+    evw_simulation_step.write(SimulationStepEvent);
 }

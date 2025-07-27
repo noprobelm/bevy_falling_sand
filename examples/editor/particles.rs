@@ -36,7 +36,9 @@ fn check_particles_defs_initialized(
     if map.contains("Dirt Wall") {
         commands.insert_resource(SelectedParticle(Particle::new("Dirt Wall")));
     } else {
-        let first_name = map.keys().next()
+        let first_name = map
+            .keys()
+            .next()
             .expect("ParticleTypeMap is not empty, so this should never fail");
         let static_name: &'static str = Box::leak(first_name.to_string().into_boxed_str());
         commands.insert_resource(SelectedParticle(Particle::new(static_name)));
