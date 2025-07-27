@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use bevy_egui::egui;
+use bevy_falling_sand::prelude::MovementSource;
 
 #[derive(Resource, Default)]
 pub struct StatisticsPanel;
@@ -8,6 +9,7 @@ impl StatisticsPanel {
     pub fn render(
         &self,
         ui: &mut egui::Ui,
+        particle_movement_state_current: &MovementSource,
         fps: f32,
         dynamic_particles: u32,
         wall_particles: u32,
@@ -20,6 +22,25 @@ impl StatisticsPanel {
         ui.heading("Statistics");
         ui.separator();
         ui.add_space(8.0);
+
+        ui.add(egui::Label::new(
+            egui::RichText::new("States").heading().size(16.0),
+        ));
+        ui.separator();
+        egui::Grid::new("states_grid")
+            .num_columns(2)
+            .spacing([20.0, 8.0])
+            .striped(false)
+            .show(ui, |ui| {
+                ui.label("Particle Movement Logic:");
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    match particle_movement_state_current {
+                        MovementSource::Particles => ui.label("Particles"),
+                        MovementSource::Chunks => ui.label("Chunks"),
+                    };
+                });
+                ui.end_row();
+            });
 
         ui.add(egui::Label::new(
             egui::RichText::new("Performance").heading().size(16.0),
@@ -92,4 +113,3 @@ impl StatisticsPanel {
             });
     }
 }
-

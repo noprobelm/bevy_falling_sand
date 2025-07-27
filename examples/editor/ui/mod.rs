@@ -8,7 +8,7 @@ mod top_bar;
 
 use bevy::diagnostic::{DiagnosticsStore, FrameTimeDiagnosticsPlugin};
 use bevy_falling_sand::prelude::{
-    ActiveParticleCount, DynamicParticleCount, LoadSceneEvent, ParticleTypeMap,
+    ActiveParticleCount, DynamicParticleCount, LoadSceneEvent, MovementSource, ParticleTypeMap,
     ParticleTypeMaterialsParam, ResetParticleChildrenEvent, SaveSceneEvent, TotalParticleCount,
     WallParticleCount,
 };
@@ -118,6 +118,7 @@ fn render_ui_panels(
     mut particle_file_browser_state: ResMut<FileBrowserState>,
     mut ev_save_particles: EventWriter<top_bar::particle_files::SaveParticlesEvent>,
     mut ev_load_particles: EventWriter<top_bar::particle_files::LoadParticlesEvent>,
+    particle_movement_state_current: Res<State<MovementSource>>,
 ) {
     let ctx = contexts.ctx_mut();
 
@@ -185,6 +186,7 @@ fn render_ui_panels(
 
                     statistics_panel.as_ref().render(
                         ui,
+                        particle_movement_state_current.get(),
                         fps,
                         dynamic_particle_count.0 as u32,
                         wall_particle_count.0 as u32,
