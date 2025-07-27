@@ -301,7 +301,7 @@ impl ParticleEditor {
         ) {
             ui.horizontal(|ui| {
                 ui.label("Fluidity:");
-                let mut fluidity_value = editor_data.fluidity.unwrap_or(3);
+                let fluidity_value = editor_data.fluidity.unwrap_or(3);
                 let mut fluidity_f32 = fluidity_value as f32;
                 if ui
                     .add(egui::Slider::new(&mut fluidity_f32, 1.0..=5.0).step_by(1.0))
