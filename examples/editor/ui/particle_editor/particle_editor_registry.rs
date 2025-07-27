@@ -1,3 +1,4 @@
+use crate::particles::SelectedParticle;
 use bevy::{
     platform::{
         collections::{hash_map::Entry, HashMap},
@@ -7,7 +8,6 @@ use bevy::{
 };
 use bevy_falling_sand::prelude::*;
 use std::time::Duration;
-use crate::particles::SelectedParticle;
 
 #[derive(Event, Debug, Clone)]
 pub struct LoadParticleIntoEditor {
@@ -421,13 +421,13 @@ pub fn handle_load_particle_into_editor(
     selected_particle: Option<ResMut<SelectedParticle>>,
 ) {
     let mut selected_particle_mut = selected_particle;
-    
+
     for event in load_events.read() {
         if let Some(ref mut selected_particle) = selected_particle_mut {
             let static_name: &'static str = Box::leak(event.particle_name.clone().into_boxed_str());
             selected_particle.0 = Particle::new(static_name);
         }
-        
+
         if let Some(&editor_entity) = particle_editor_registry.get(&event.particle_name) {
             current_editor.selected_entity = Some(editor_entity);
             continue;
@@ -473,7 +473,7 @@ pub fn handle_create_new_particle(
     >,
 ) {
     let mut selected_particle_mut = selected_particle;
-    
+
     for event in create_events.read() {
         let editor_data = if let Some(ref duplicate_from) = event.duplicate_from {
             if let Some(&particle_entity) = particle_type_map.get(duplicate_from) {
@@ -482,26 +482,30 @@ pub fn handle_create_new_particle(
                     &particle_query,
                     particle_entity,
                 ) {
-                    let unique_name = generate_unique_particle_name_with_base(&particle_type_map, "New Particle");
+                    let unique_name =
+                        generate_unique_particle_name_with_base(&particle_type_map, "New Particle");
                     duplicated_data.name = unique_name;
                     duplicated_data.is_new = true;
                     duplicated_data.is_modified = false;
                     duplicated_data
                 } else {
                     let mut default_data = ParticleEditorData::default();
-                    let unique_name = generate_unique_particle_name_with_base(&particle_type_map, "New Particle");
+                    let unique_name =
+                        generate_unique_particle_name_with_base(&particle_type_map, "New Particle");
                     default_data.name = unique_name;
                     default_data
                 }
             } else {
                 let mut default_data = ParticleEditorData::default();
-                let unique_name = generate_unique_particle_name_with_base(&particle_type_map, "New Particle");
+                let unique_name =
+                    generate_unique_particle_name_with_base(&particle_type_map, "New Particle");
                 default_data.name = unique_name;
                 default_data
             }
         } else {
             let mut editor_data = ParticleEditorData::default();
-            let unique_name = generate_unique_particle_name_with_base(&particle_type_map, "New Particle");
+            let unique_name =
+                generate_unique_particle_name_with_base(&particle_type_map, "New Particle");
             editor_data.name = unique_name;
             editor_data
         };
@@ -521,7 +525,8 @@ pub fn handle_create_new_particle(
         current_editor.selected_entity = Some(editor_entity);
 
         if let Some(ref mut selected_particle) = selected_particle_mut {
-            let static_name: &'static str = Box::leak(final_editor_data.name.clone().into_boxed_str());
+            let static_name: &'static str =
+                Box::leak(final_editor_data.name.clone().into_boxed_str());
             selected_particle.0 = Particle::new(static_name);
         }
     }
@@ -537,7 +542,7 @@ pub fn handle_apply_editor_changes(
     for event in apply_events.read() {
         if let Ok(mut editor_data) = editor_data_query.get_mut(event.editor_entity) {
             let create_new = editor_data.is_new || !particle_type_map.contains(&editor_data.name);
-            
+
             apply_editor_data_to_particle_type(
                 &mut commands,
                 &editor_data,
@@ -548,26 +553,16 @@ pub fn handle_apply_editor_changes(
             if create_new {
                 particle_editor_registry.insert(editor_data.name.clone(), event.editor_entity);
             }
-            
+
             editor_data.mark_saved();
         }
     }
 }
 
-fn generate_unique_particle_name(registry: &ParticleEditorRegistry) -> String {
-    let base_name = "New Particle";
-    let mut counter = 1;
-    let mut name = base_name.to_string();
-
-    while registry.contains(&name) {
-        name = format!("{} {}", base_name, counter);
-        counter += 1;
-    }
-
-    name
-}
-
-fn generate_unique_particle_name_with_base(particle_type_map: &ParticleTypeMap, base_name: &str) -> String {
+fn generate_unique_particle_name_with_base(
+    particle_type_map: &ParticleTypeMap,
+    base_name: &str,
+) -> String {
     let mut counter = 1;
     let mut name = base_name.to_string();
 
@@ -648,8 +643,7 @@ fn apply_editor_data_to_particle_type(
                 commands.entity(entity).insert(Gas::new(fluidity.into()));
             }
         }
-        MaterialState::Other => {
-        }
+        MaterialState::Other => {}
     }
 
     if let Some(ref burns_config) = editor_data.burns_config {
@@ -694,10 +688,8 @@ pub fn setup_initial_particle_selection(
     mut load_particle_events: EventWriter<LoadParticleIntoEditor>,
 ) {
     let particle_name = selected_particle.0.name.to_string();
-    
-    load_particle_events.write(LoadParticleIntoEditor {
-        particle_name,
-    });
+
+    load_particle_events.write(LoadParticleIntoEditor { particle_name });
 }
 
 pub fn handle_apply_editor_changes_and_reset(
@@ -706,12 +698,14 @@ pub fn handle_apply_editor_changes_and_reset(
     mut editor_data_query: Query<&mut ParticleEditorData>,
     mut particle_type_map: ResMut<ParticleTypeMap>,
     mut particle_editor_registry: ResMut<ParticleEditorRegistry>,
-    mut reset_particle_children_events: EventWriter<bevy_falling_sand::prelude::ResetParticleChildrenEvent>,
+    mut reset_particle_children_events: EventWriter<
+        bevy_falling_sand::prelude::ResetParticleChildrenEvent,
+    >,
 ) {
     for event in apply_events.read() {
         if let Ok(mut editor_data) = editor_data_query.get_mut(event.editor_entity) {
             let create_new = editor_data.is_new || !particle_type_map.contains(&editor_data.name);
-            
+
             let particle_entity = apply_editor_data_to_particle_type(
                 &mut commands,
                 &editor_data,
@@ -722,12 +716,14 @@ pub fn handle_apply_editor_changes_and_reset(
             if create_new {
                 particle_editor_registry.insert(editor_data.name.clone(), event.editor_entity);
             }
-            
+
             editor_data.mark_saved();
-            
-            reset_particle_children_events.write(bevy_falling_sand::prelude::ResetParticleChildrenEvent {
-                entity: particle_entity,
-            });
+
+            reset_particle_children_events.write(
+                bevy_falling_sand::prelude::ResetParticleChildrenEvent {
+                    entity: particle_entity,
+                },
+            );
         }
     }
 }
