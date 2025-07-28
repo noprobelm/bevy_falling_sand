@@ -200,6 +200,11 @@ impl ParticleMap {
         self.chunk_unchecked_mut(position).remove(position)
     }
 
+    /// Iterate through all particle entities in the [`ParticleMap`]
+    pub fn iter_particles(&self) -> impl Iterator<Item = &Entity> {
+        self.chunks.iter().flat_map(|chunk| chunk.map.values())
+    }
+
     /// Iterate through all chunks in the [`ParticleMap`]
     pub fn iter_chunks(&self) -> impl Iterator<Item = &Chunk> {
         self.chunks.iter()
@@ -512,20 +517,12 @@ fn ev_remove_particle(
 fn ev_clear_particle_map(
     mut ev_clear_particle_map: EventReader<ClearParticleMapEvent>,
     mut commands: Commands,
-    mut map: ResMut<ParticleMap>,
-    particle_parent_map: Res<ParticleTypeMap>,
-    mut particle_type_query: Query<&mut ParticleInstances, With<ParticleType>>,
+    map: ResMut<ParticleMap>,
 ) {
     ev_clear_particle_map.read().for_each(|_| {
-        particle_parent_map.iter().for_each(|(_, entity)| {
-            if let Ok(mut particle_instances) = particle_type_query.get_mut(*entity) {
-                for particle_entity in particle_instances.iter() {
-                    commands.entity(*particle_entity).despawn();
-                }
-                particle_instances.clear();
-            }
+        map.iter_particles().for_each(|entity| {
+            commands.entity(*entity).despawn();
         });
-        map.clear();
     });
 }
 
