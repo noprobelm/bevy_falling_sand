@@ -1,5 +1,7 @@
 use bevy::prelude::*;
-use bevy_falling_sand::prelude::ClearDynamicParticlesEvent;
+use bevy_falling_sand::prelude::{
+    ClearDynamicParticlesEvent, ClearParticleMapEvent, ClearStaticParticlesEvent,
+};
 
 use super::super::core::{ConsoleCommand, PrintConsoleLine};
 
@@ -7,7 +9,9 @@ pub struct ParticlesCommandPlugin;
 
 impl Plugin for ParticlesCommandPlugin {
     fn build(&self, app: &mut App) {
-        app.add_observer(on_despawn_dynamic_particles);
+        app.add_observer(on_despawn_dynamic_particles)
+            .add_observer(on_despawn_wall_particles)
+            .add_observer(on_despawn_all_particles);
     }
 }
 
@@ -188,7 +192,11 @@ impl ConsoleCommand for ParticlesDespawnCommand {
     }
 
     fn subcommand_types(&self) -> Vec<Box<dyn ConsoleCommand>> {
-        vec![Box::new(ParticlesDespawnDynamicCommand)]
+        vec![
+            Box::new(ParticlesDespawnDynamicCommand),
+            Box::new(ParticlesDespawnWallsCommand),
+            Box::new(ParticlesDespawnAllCommand),
+        ]
     }
 }
 
@@ -217,9 +225,73 @@ impl ConsoleCommand for ParticlesDespawnDynamicCommand {
     }
 }
 
+#[derive(Default)]
+pub struct ParticlesDespawnWallsCommand;
+
+impl ConsoleCommand for ParticlesDespawnWallsCommand {
+    fn name(&self) -> &'static str {
+        "walls"
+    }
+
+    fn description(&self) -> &'static str {
+        "Despawn wall particles from the world"
+    }
+
+    fn execute_action(
+        &self,
+        _args: &[String],
+        console_writer: &mut EventWriter<PrintConsoleLine>,
+        commands: &mut Commands,
+    ) {
+        console_writer.write(PrintConsoleLine::new(
+            "Despawning all wall particles from the world".to_string(),
+        ));
+        commands.trigger(ClearStaticParticlesEvent);
+    }
+}
+
+#[derive(Default)]
+pub struct ParticlesDespawnAllCommand;
+
+impl ConsoleCommand for ParticlesDespawnAllCommand {
+    fn name(&self) -> &'static str {
+        "all"
+    }
+
+    fn description(&self) -> &'static str {
+        "Despawn all particles from the world"
+    }
+
+    fn execute_action(
+        &self,
+        _args: &[String],
+        console_writer: &mut EventWriter<PrintConsoleLine>,
+        commands: &mut Commands,
+    ) {
+        console_writer.write(PrintConsoleLine::new(
+            "Despawning all particles from the world".to_string(),
+        ));
+        commands.trigger(ClearStaticParticlesEvent);
+    }
+}
+
 fn on_despawn_dynamic_particles(
     _trigger: Trigger<ClearDynamicParticlesEvent>,
     mut evw_clear_dynamic_particles: EventWriter<ClearDynamicParticlesEvent>,
 ) {
     evw_clear_dynamic_particles.write(ClearDynamicParticlesEvent);
+}
+
+fn on_despawn_wall_particles(
+    _trigger: Trigger<ClearStaticParticlesEvent>,
+    mut evw_clear_static_particles: EventWriter<ClearStaticParticlesEvent>,
+) {
+    evw_clear_static_particles.write(ClearStaticParticlesEvent);
+}
+
+fn on_despawn_all_particles(
+    _trigger: Trigger<ClearParticleMapEvent>,
+    mut evw_clear_dynamic_particles: EventWriter<ClearParticleMapEvent>,
+) {
+    evw_clear_dynamic_particles.write(ClearParticleMapEvent);
 }
