@@ -273,6 +273,8 @@ impl ConsoleState {
         if let Some(index) = self.suggestion_index {
             if let Some(suggestion) = self.suggestions.get(index).cloned() {
                 self.apply_suggestion(&suggestion);
+                self.commit_completion();
+                self.input.push(' ');
                 self.needs_cursor_at_end = true;
             }
         }
