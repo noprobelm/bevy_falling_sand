@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::camera::{MainCamera, ZoomSpeed, ZoomTarget};
 
-use super::super::core::{Command, ExitCommandEvent, PrintConsoleLine};
+use super::super::core::{Command, PrintConsoleLine};
 
 pub struct ResetCommandPlugin;
 
@@ -32,7 +32,6 @@ impl Command for ResetCommand {
         path: &[String],
         args: &[String],
         console_writer: &mut EventWriter<PrintConsoleLine>,
-        _exit_writer: &mut EventWriter<ExitCommandEvent>,
         commands: &mut Commands,
     ) {
         match path.len() {
@@ -51,14 +50,12 @@ impl Command for ResetCommand {
                             path,
                             args,
                             console_writer,
-                            _exit_writer,
                             commands,
                         ),
                         "camera" => ResetCameraCommand.execute(
                             path,
                             args,
                             console_writer,
-                            _exit_writer,
                             commands,
                         ),
                         _ => {
@@ -95,7 +92,6 @@ impl Command for ResetParticleCommand {
         path: &[String],
         args: &[String],
         console_writer: &mut EventWriter<PrintConsoleLine>,
-        _exit_writer: &mut EventWriter<ExitCommandEvent>,
         commands: &mut Commands,
     ) {
         match path.len() {
@@ -114,14 +110,12 @@ impl Command for ResetParticleCommand {
                             path,
                             args,
                             console_writer,
-                            _exit_writer,
                             commands,
                         ),
                         "dynamic" => ResetParticleDynamicCommand.execute(
                             path,
                             args,
                             console_writer,
-                            _exit_writer,
                             commands,
                         ),
                         _ => {
@@ -161,7 +155,6 @@ impl Command for ResetCameraCommand {
         _path: &[String],
         _args: &[String],
         console_writer: &mut EventWriter<PrintConsoleLine>,
-        _exit_writer: &mut EventWriter<ExitCommandEvent>,
         commands: &mut Commands,
     ) {
         println!("ResetCameraCommand::execute - triggering ResetCameraEvent");
@@ -189,7 +182,6 @@ impl Command for ResetParticleWallCommand {
         path: &[String],
         args: &[String],
         console_writer: &mut EventWriter<PrintConsoleLine>,
-        _exit_writer: &mut EventWriter<ExitCommandEvent>,
         commands: &mut Commands,
     ) {
         match path.len() {
@@ -207,7 +199,6 @@ impl Command for ResetParticleWallCommand {
                         path,
                         args,
                         console_writer,
-                        _exit_writer,
                         commands,
                     );
                 } else {
@@ -248,7 +239,6 @@ impl Command for ResetParticleDynamicCommand {
         path: &[String],
         args: &[String],
         console_writer: &mut EventWriter<PrintConsoleLine>,
-        _exit_writer: &mut EventWriter<ExitCommandEvent>,
         commands: &mut Commands,
     ) {
         match path.len() {
@@ -266,7 +256,6 @@ impl Command for ResetParticleDynamicCommand {
                         path,
                         args,
                         console_writer,
-                        _exit_writer,
                         commands,
                     );
                 } else {
@@ -307,7 +296,6 @@ impl Command for ResetParticleWallAllCommand {
         _path: &[String],
         _args: &[String],
         console_writer: &mut EventWriter<PrintConsoleLine>,
-        _exit_writer: &mut EventWriter<ExitCommandEvent>,
         _commands: &mut Commands,
     ) {
         println!("Executing: reset particle wall all");
@@ -334,7 +322,6 @@ impl Command for ResetParticleDynamicAllCommand {
         _path: &[String],
         _args: &[String],
         console_writer: &mut EventWriter<PrintConsoleLine>,
-        _exit_writer: &mut EventWriter<ExitCommandEvent>,
         _commands: &mut Commands,
     ) {
         println!("Executing: reset particle dynamic all");

@@ -15,8 +15,6 @@ pub struct PrintConsoleLine {
     pub line: String,
 }
 
-#[derive(Clone, Debug, Event)]
-pub struct ExitCommandEvent;
 
 impl PrintConsoleLine {
     pub fn new(line: String) -> Self {
@@ -108,7 +106,6 @@ pub trait Command: Send + Sync + 'static {
         path: &[String], 
         args: &[String], 
         console_writer: &mut EventWriter<PrintConsoleLine>,
-        exit_writer: &mut EventWriter<ExitCommandEvent>,
         commands: &mut Commands,
     );
     
@@ -602,10 +599,9 @@ impl<T: Command + Default> Command for CommandWrapper<T> {
         path: &[String], 
         args: &[String], 
         console_writer: &mut EventWriter<PrintConsoleLine>,
-        exit_writer: &mut EventWriter<ExitCommandEvent>,
         commands: &mut Commands,
     ) {
-        T::default().execute(path, args, console_writer, exit_writer, commands);
+        T::default().execute(path, args, console_writer, commands);
     }
     
     fn subcommands(&self) -> Vec<Box<dyn Command>> {
@@ -624,7 +620,6 @@ impl<T: Command + Default> Command for CommandWrapper<T> {
 pub fn command_handler(
     mut cmd: EventReader<ConsoleCommandEntered>,
     mut console_writer: EventWriter<PrintConsoleLine>,
-    mut exit_writer: EventWriter<ExitCommandEvent>,
     registry: Res<CommandRegistry>,
     mut commands: Commands,
 ) {
@@ -635,19 +630,11 @@ pub fn command_handler(
 
         let root_command_name = &command_event.command_path[0];
         if let Some(command) = registry.find_command(root_command_name) {
-            command.execute(&command_event.command_path, &command_event.args, &mut console_writer, &mut exit_writer, &mut commands);
+            command.execute(&command_event.command_path, &command_event.args, &mut console_writer, &mut commands);
         }
     }
 }
 
-pub fn handle_exit_command_events(
-    mut exit_events: EventReader<ExitCommandEvent>,
-    mut app_exit: EventWriter<AppExit>,
-) {
-    for _event in exit_events.read() {
-        app_exit.write(AppExit::Success);
-    }
-}
 
 impl ConsoleCache {
     pub fn rebuild_tries(&mut self, config: &ConsoleConfiguration) {

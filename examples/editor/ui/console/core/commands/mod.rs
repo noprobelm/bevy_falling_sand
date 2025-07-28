@@ -1,5 +1,6 @@
 pub mod clear;
 pub mod debug;
+pub mod despawn;
 pub mod echo;
 pub mod exit;
 pub mod help;

@@ -15,7 +15,6 @@ impl Plugin for ConsolePlugin {
             .init_resource::<CommandRegistry>()
             .add_event::<ConsoleCommandEntered>()
             .add_event::<PrintConsoleLine>()
-            .add_event::<ExitCommandEvent>()
             .add_systems(Startup, (core::init_commands, init_command_registry))
             .add_systems(
                 Update,
@@ -25,7 +24,6 @@ impl Plugin for ConsolePlugin {
                     exit_command, 
                     echo_command, 
                     command_handler,
-                    handle_exit_command_events,
                 ),
             );
     }

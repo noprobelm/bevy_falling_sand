@@ -1,7 +1,18 @@
 use bevy::prelude::*;
 use clap::Parser;
 
-use super::super::core::{Command, ConsoleCommandEntered, ExitCommandEvent, NamedCommand, PrintConsoleLine};
+use super::super::core::{Command, ConsoleCommandEntered, NamedCommand, PrintConsoleLine};
+
+pub struct ExitCommandPlugin;
+
+impl Plugin for ExitCommandPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_observer(on_exit_application);
+    }
+}
+
+#[derive(Event)]
+pub struct ExitApplicationEvent;
 
 #[derive(Parser, Resource)]
 #[command(name = "exit", about = "Exit the application")]
@@ -32,11 +43,10 @@ impl Command for ExitConsoleCommand {
         path: &[String],
         _args: &[String],
         _console_writer: &mut EventWriter<PrintConsoleLine>,
-        exit_writer: &mut EventWriter<ExitCommandEvent>,
-        _commands: &mut Commands,
+        commands: &mut Commands,
     ) {
         if path.len() == 1 && path[0] == "exit" {
-            exit_writer.write(ExitCommandEvent);
+            commands.trigger(ExitApplicationEvent);
         }
     }
 }
@@ -55,13 +65,20 @@ impl Command for ExitCommand {
         path: &[String],
         _args: &[String],
         _console_writer: &mut EventWriter<PrintConsoleLine>,
-        exit_writer: &mut EventWriter<ExitCommandEvent>,
-        _commands: &mut Commands,
+        commands: &mut Commands,
     ) {
         if path.len() == 1 && path[0] == "exit" {
-            exit_writer.write(ExitCommandEvent);
+            commands.trigger(ExitApplicationEvent);
         }
     }
+}
+
+fn on_exit_application(
+    _trigger: Trigger<ExitApplicationEvent>,
+    mut app_exit: EventWriter<AppExit>,
+) {
+    println!("Exit command triggered - shutting down application");
+    app_exit.write(AppExit::Success);
 }
 
 pub fn exit_command(

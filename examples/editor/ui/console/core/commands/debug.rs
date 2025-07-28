@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use super::super::core::{Command, ExitCommandEvent, PrintConsoleLine};
+use super::super::core::{Command, PrintConsoleLine};
 
 #[derive(Default)]
 pub struct DebugCommand;
@@ -19,7 +19,6 @@ impl Command for DebugCommand {
         path: &[String],
         args: &[String],
         console_writer: &mut EventWriter<PrintConsoleLine>,
-        _exit_writer: &mut EventWriter<ExitCommandEvent>,
         commands: &mut Commands,
     ) {
         match path.len() {
@@ -39,14 +38,12 @@ impl Command for DebugCommand {
                             path,
                             args,
                             console_writer,
-                            _exit_writer,
                             commands,
                         ),
                         "particles" => DebugParticlesCommand.execute(
                             path,
                             args,
                             console_writer,
-                            _exit_writer,
                             commands,
                         ),
                         _ => {
@@ -86,7 +83,6 @@ impl Command for DebugPhysicsCommand {
         path: &[String],
         _args: &[String],
         console_writer: &mut EventWriter<PrintConsoleLine>,
-        _exit_writer: &mut EventWriter<ExitCommandEvent>,
         _commands: &mut Commands,
     ) {
         match path.len() {
@@ -152,7 +148,6 @@ impl Command for DebugPhysicsEnableCommand {
         _path: &[String],
         _args: &[String],
         console_writer: &mut EventWriter<PrintConsoleLine>,
-        _exit_writer: &mut EventWriter<ExitCommandEvent>,
         _commands: &mut Commands,
     ) {
         println!("Executing: debug physics enable");
@@ -179,7 +174,6 @@ impl Command for DebugPhysicsDisableCommand {
         _path: &[String],
         _args: &[String],
         console_writer: &mut EventWriter<PrintConsoleLine>,
-        _exit_writer: &mut EventWriter<ExitCommandEvent>,
         _commands: &mut Commands,
     ) {
         println!("Executing: debug physics disable");
@@ -206,7 +200,6 @@ impl Command for DebugParticlesCommand {
         path: &[String],
         args: &[String],
         console_writer: &mut EventWriter<PrintConsoleLine>,
-        _exit_writer: &mut EventWriter<ExitCommandEvent>,
         commands: &mut Commands,
     ) {
         match path.len() {
@@ -223,7 +216,6 @@ impl Command for DebugParticlesCommand {
                     path,
                     args,
                     console_writer,
-                    _exit_writer,
                     commands,
                 ),
                 _ => {
@@ -264,7 +256,6 @@ impl Command for DebugParticlesCountCommand {
         _path: &[String],
         _args: &[String],
         console_writer: &mut EventWriter<PrintConsoleLine>,
-        _exit_writer: &mut EventWriter<ExitCommandEvent>,
         _commands: &mut Commands,
     ) {
         println!("Executing: debug particles count");
