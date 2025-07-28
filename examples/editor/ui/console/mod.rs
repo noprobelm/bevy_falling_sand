@@ -99,6 +99,14 @@ impl Console {
                         }
                         
                         let text_edit_id = egui::Id::new("console_input");
+                        
+                        // Filter out backtick characters from input events
+                        ui.input_mut(|i| {
+                            i.events.retain(|event| {
+                                !matches!(event, egui::Event::Text(text) if text.contains('`'))
+                            });
+                        });
+                        
                         let response = ui.add(
                             egui::TextEdit::singleline(&mut console_state.input)
                                 .font(egui::TextStyle::Monospace)
