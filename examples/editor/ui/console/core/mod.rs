@@ -30,18 +30,14 @@ fn init_command_registry(
 ) {
     use commands::{camera::*, exit::ExitConsoleCommand, particles::*, physics::*};
 
-    // Register commands
     registry.register::<ExitConsoleCommand>();
     registry.register::<ParticlesCommand>();
     registry.register::<CameraCommand>();
     registry.register::<PhysicsCommand>();
 
-    // Register in configuration for completion
     config.register_command::<ExitConsoleCommand>();
     config.register_command::<ParticlesCommand>();
     config.register_command::<CameraCommand>();
     config.register_command::<PhysicsCommand>();
-
-    // Rebuild cache after registering new commands
     cache.rebuild_tries(&config);
 }

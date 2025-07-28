@@ -100,22 +100,75 @@ pub trait ConsoleCommand: Send + Sync + 'static {
     fn name(&self) -> &'static str;
     fn description(&self) -> &'static str;
 
+    fn subcommand_types(&self) -> Vec<Box<dyn ConsoleCommand>> {
+        vec![]
+    }
+
+    fn execute_action(
+        &self,
+        _args: &[String],
+        _console_writer: &mut EventWriter<PrintConsoleLine>,
+        _commands: &mut Commands,
+    ) {
+    }
+
     fn execute(
         &self,
         path: &[String],
         args: &[String],
         console_writer: &mut EventWriter<PrintConsoleLine>,
         commands: &mut Commands,
-    );
+    ) {
+        let subcommands = self.subcommand_types();
+        
+        let mut current_depth = 0;
+        for (i, part) in path.iter().enumerate() {
+            if part == self.name() {
+                current_depth = i;
+                break;
+            }
+        }
+
+        if current_depth + 1 >= path.len() {
+            if subcommands.is_empty() {
+                self.execute_action(args, console_writer, commands);
+            } else {
+                console_writer.write(PrintConsoleLine::new(
+                    format!("error: '{}' requires a subcommand", self.name())
+                ));
+                let subcmd_names: Vec<String> = subcommands.iter()
+                    .map(|cmd| cmd.name().to_string())
+                    .collect();
+                console_writer.write(PrintConsoleLine::new(
+                    format!("Available subcommands: {}", subcmd_names.join(", "))
+                ));
+            }
+            return;
+        }
+
+        let next_command = &path[current_depth + 1];
+        for subcmd in subcommands {
+            if subcmd.name() == next_command {
+                subcmd.execute(path, args, console_writer, commands);
+                return;
+            }
+        }
+
+        console_writer.write(PrintConsoleLine::new(format!(
+            "error: Unknown subcommand '{} {}'",
+            self.name(),
+            next_command
+        )));
+    }
 
     fn subcommands(&self) -> Vec<Box<dyn ConsoleCommand>> {
-        vec![]
+        self.subcommand_types()
     }
 
     fn clap_command(&self) -> clap::Command {
         let mut cmd = clap::Command::new(self.name()).about(self.description());
 
-        for subcmd in self.subcommands() {
+        for subcmd in self.subcommand_types() {
             cmd = cmd.subcommand(subcmd.clap_command());
         }
 
@@ -125,7 +178,7 @@ pub trait ConsoleCommand: Send + Sync + 'static {
     fn build_command_node(&self) -> CommandNode {
         let mut node = CommandNode::new(self.name(), self.description());
 
-        let subcommands = self.subcommands();
+        let subcommands = self.subcommand_types();
         if subcommands.is_empty() {
             node = node.executable(self.clap_command());
         } else {
@@ -720,6 +773,4 @@ pub fn init_commands(mut config: ResMut<ConsoleConfiguration>, mut cache: ResMut
 }
 
 fn add_example_commands(_config: &mut ConsoleConfiguration) {
-    // Example commands have been replaced by the new command structure
-    // using particles, camera, and physics commands registered via the registry
 }

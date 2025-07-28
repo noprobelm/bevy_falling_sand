@@ -27,41 +27,7 @@ impl ConsoleCommand for CameraCommand {
         "Camera system operations"
     }
 
-    fn execute(
-        &self,
-        path: &[String],
-        args: &[String],
-        console_writer: &mut EventWriter<PrintConsoleLine>,
-        commands: &mut Commands,
-    ) {
-        match path.len() {
-            1 => {
-                console_writer.write(PrintConsoleLine::new(
-                    "error: 'camera' requires a subcommand".to_string(),
-                ));
-                console_writer.write(PrintConsoleLine::new(
-                    "Available subcommands: reset".to_string(),
-                ));
-            }
-            _ => {
-                if path.len() >= 2 {
-                    match path[1].as_str() {
-                        "reset" => {
-                            CameraResetCommand.execute(path, args, console_writer, commands)
-                        }
-                        _ => {
-                            console_writer.write(PrintConsoleLine::new(format!(
-                                "error: Unknown subcommand 'camera {}'",
-                                path[1]
-                            )));
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    fn subcommands(&self) -> Vec<Box<dyn ConsoleCommand>> {
+    fn subcommand_types(&self) -> Vec<Box<dyn ConsoleCommand>> {
         vec![Box::new(CameraResetCommand)]
     }
 }
@@ -78,9 +44,8 @@ impl ConsoleCommand for CameraResetCommand {
         "Reset camera position and zoom"
     }
 
-    fn execute(
+    fn execute_action(
         &self,
-        _path: &[String],
         _args: &[String],
         console_writer: &mut EventWriter<PrintConsoleLine>,
         commands: &mut Commands,

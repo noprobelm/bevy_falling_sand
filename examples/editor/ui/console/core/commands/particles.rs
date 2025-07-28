@@ -23,47 +23,7 @@ impl ConsoleCommand for ParticlesCommand {
         "Particle system operations"
     }
 
-    fn execute(
-        &self,
-        path: &[String],
-        args: &[String],
-        console_writer: &mut EventWriter<PrintConsoleLine>,
-        commands: &mut Commands,
-    ) {
-        match path.len() {
-            1 => {
-                console_writer.write(PrintConsoleLine::new(
-                    "error: 'particles' requires a subcommand".to_string(),
-                ));
-                console_writer.write(PrintConsoleLine::new(
-                    "Available subcommands: reset, debug, despawn".to_string(),
-                ));
-            }
-            _ => {
-                if path.len() >= 2 {
-                    match path[1].as_str() {
-                        "reset" => {
-                            ParticlesResetCommand.execute(path, args, console_writer, commands)
-                        }
-                        "debug" => {
-                            ParticlesDebugCommand.execute(path, args, console_writer, commands)
-                        }
-                        "despawn" => {
-                            ParticlesDespawnCommand.execute(path, args, console_writer, commands)
-                        }
-                        _ => {
-                            console_writer.write(PrintConsoleLine::new(format!(
-                                "error: Unknown subcommand 'particles {}'",
-                                path[1]
-                            )));
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    fn subcommands(&self) -> Vec<Box<dyn ConsoleCommand>> {
+    fn subcommand_types(&self) -> Vec<Box<dyn ConsoleCommand>> {
         vec![
             Box::new(ParticlesResetCommand),
             Box::new(ParticlesDebugCommand),
@@ -84,47 +44,7 @@ impl ConsoleCommand for ParticlesResetCommand {
         "Reset particle-related components"
     }
 
-    fn execute(
-        &self,
-        path: &[String],
-        args: &[String],
-        console_writer: &mut EventWriter<PrintConsoleLine>,
-        commands: &mut Commands,
-    ) {
-        match path.len() {
-            2 => {
-                console_writer.write(PrintConsoleLine::new(
-                    "error: 'particles reset' requires a subcommand".to_string(),
-                ));
-                console_writer.write(PrintConsoleLine::new(
-                    "Available subcommands: wall, dynamic".to_string(),
-                ));
-            }
-            _ => {
-                if path.len() >= 3 {
-                    match path[2].as_str() {
-                        "wall" => {
-                            ParticlesResetWallCommand.execute(path, args, console_writer, commands)
-                        }
-                        "dynamic" => ParticlesResetDynamicCommand.execute(
-                            path,
-                            args,
-                            console_writer,
-                            commands,
-                        ),
-                        _ => {
-                            console_writer.write(PrintConsoleLine::new(format!(
-                                "error: Unknown subcommand 'particles reset {}'",
-                                path[2]
-                            )));
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    fn subcommands(&self) -> Vec<Box<dyn ConsoleCommand>> {
+    fn subcommand_types(&self) -> Vec<Box<dyn ConsoleCommand>> {
         vec![
             Box::new(ParticlesResetWallCommand),
             Box::new(ParticlesResetDynamicCommand),
@@ -144,42 +64,7 @@ impl ConsoleCommand for ParticlesResetWallCommand {
         "Reset wall particles"
     }
 
-    fn execute(
-        &self,
-        path: &[String],
-        args: &[String],
-        console_writer: &mut EventWriter<PrintConsoleLine>,
-        commands: &mut Commands,
-    ) {
-        match path.len() {
-            3 => {
-                console_writer.write(PrintConsoleLine::new(
-                    "error: 'particles reset wall' requires a subcommand".to_string(),
-                ));
-                console_writer.write(PrintConsoleLine::new(
-                    "Available subcommands: all".to_string(),
-                ));
-            }
-            4 => {
-                if path[3] == "all" {
-                    ParticlesResetWallAllCommand.execute(path, args, console_writer, commands);
-                } else {
-                    console_writer.write(PrintConsoleLine::new(format!(
-                        "error: Unknown command 'particles reset wall {}'",
-                        path[3]
-                    )));
-                }
-            }
-            _ => {
-                console_writer.write(PrintConsoleLine::new(format!(
-                    "error: Invalid command path: {}",
-                    path.join(" ")
-                )));
-            }
-        }
-    }
-
-    fn subcommands(&self) -> Vec<Box<dyn ConsoleCommand>> {
+    fn subcommand_types(&self) -> Vec<Box<dyn ConsoleCommand>> {
         vec![Box::new(ParticlesResetWallAllCommand)]
     }
 }
@@ -196,42 +81,7 @@ impl ConsoleCommand for ParticlesResetDynamicCommand {
         "Reset dynamic particles"
     }
 
-    fn execute(
-        &self,
-        path: &[String],
-        args: &[String],
-        console_writer: &mut EventWriter<PrintConsoleLine>,
-        commands: &mut Commands,
-    ) {
-        match path.len() {
-            3 => {
-                console_writer.write(PrintConsoleLine::new(
-                    "error: 'particles reset dynamic' requires a subcommand".to_string(),
-                ));
-                console_writer.write(PrintConsoleLine::new(
-                    "Available subcommands: all".to_string(),
-                ));
-            }
-            4 => {
-                if path[3] == "all" {
-                    ParticlesResetDynamicAllCommand.execute(path, args, console_writer, commands);
-                } else {
-                    console_writer.write(PrintConsoleLine::new(format!(
-                        "error: Unknown command 'particles reset dynamic {}'",
-                        path[3]
-                    )));
-                }
-            }
-            _ => {
-                console_writer.write(PrintConsoleLine::new(format!(
-                    "error: Invalid command path: {}",
-                    path.join(" ")
-                )));
-            }
-        }
-    }
-
-    fn subcommands(&self) -> Vec<Box<dyn ConsoleCommand>> {
+    fn subcommand_types(&self) -> Vec<Box<dyn ConsoleCommand>> {
         vec![Box::new(ParticlesResetDynamicAllCommand)]
     }
 }
@@ -248,9 +98,8 @@ impl ConsoleCommand for ParticlesResetWallAllCommand {
         "Reset all wall particles"
     }
 
-    fn execute(
+    fn execute_action(
         &self,
-        _path: &[String],
         _args: &[String],
         console_writer: &mut EventWriter<PrintConsoleLine>,
         _commands: &mut Commands,
@@ -274,9 +123,8 @@ impl ConsoleCommand for ParticlesResetDynamicAllCommand {
         "Reset all dynamic particles"
     }
 
-    fn execute(
+    fn execute_action(
         &self,
-        _path: &[String],
         _args: &[String],
         console_writer: &mut EventWriter<PrintConsoleLine>,
         _commands: &mut Commands,
@@ -300,29 +148,33 @@ impl ConsoleCommand for ParticlesDebugCommand {
         "Particle debug options"
     }
 
-    fn execute(
+    fn subcommand_types(&self) -> Vec<Box<dyn ConsoleCommand>> {
+        vec![Box::new(ParticlesDebugCountCommand)]
+    }
+}
+
+#[derive(Default)]
+pub struct ParticlesDebugCountCommand;
+
+impl ConsoleCommand for ParticlesDebugCountCommand {
+    fn name(&self) -> &'static str {
+        "count"
+    }
+
+    fn description(&self) -> &'static str {
+        "Show particle count"
+    }
+
+    fn execute_action(
         &self,
-        path: &[String],
         _args: &[String],
         console_writer: &mut EventWriter<PrintConsoleLine>,
         _commands: &mut Commands,
     ) {
-        match path.len() {
-            2 => {
-                console_writer.write(PrintConsoleLine::new(
-                    "error: 'particles debug' requires a subcommand".to_string(),
-                ));
-                console_writer.write(PrintConsoleLine::new(
-                    "Available subcommands: count".to_string(),
-                ));
-            }
-            _ => {
-                console_writer.write(PrintConsoleLine::new(format!(
-                    "error: Invalid command path: {}",
-                    path.join(" ")
-                )));
-            }
-        }
+        println!("Executing: particles debug count");
+        console_writer.write(PrintConsoleLine::new(
+            "Current particle count: 1234 particles".to_string(),
+        ));
     }
 }
 
@@ -338,49 +190,7 @@ impl ConsoleCommand for ParticlesDespawnCommand {
         "Despawn particles from the world"
     }
 
-    fn execute(
-        &self,
-        path: &[String],
-        _args: &[String],
-        console_writer: &mut EventWriter<PrintConsoleLine>,
-        commands: &mut Commands,
-    ) {
-        match path.len() {
-            2 => {
-                console_writer.write(PrintConsoleLine::new(
-                    "error: 'particles despawn' requires a subcommand".to_string(),
-                ));
-                console_writer.write(PrintConsoleLine::new(
-                    "Available subcommands: dynamic".to_string(),
-                ));
-            }
-            3 => match path[2].as_str() {
-                "dynamic" => {
-                    console_writer.write(PrintConsoleLine::new(
-                        "Despawning all dynamic particles from the world".to_string(),
-                    ));
-                    ParticlesDespawnDynamicCommand.execute(path, _args, console_writer, commands);
-                }
-                _ => {
-                    console_writer.write(PrintConsoleLine::new(format!(
-                        "error: Unknown command 'particles despawn {}'",
-                        path[2]
-                    )));
-                }
-            },
-            _ => {
-                console_writer.write(PrintConsoleLine::new(format!(
-                    "error: Unknown command 'physics debug {}'",
-                    path[2]
-                )));
-            }
-        }
-        console_writer.write(PrintConsoleLine::new(
-            "Despawning particles - not yet implemented".to_string(),
-        ));
-    }
-
-    fn subcommands(&self) -> Vec<Box<dyn ConsoleCommand>> {
+    fn subcommand_types(&self) -> Vec<Box<dyn ConsoleCommand>> {
         vec![Box::new(ParticlesDespawnDynamicCommand)]
     }
 }
@@ -397,13 +207,15 @@ impl ConsoleCommand for ParticlesDespawnDynamicCommand {
         "Despawn dynamic particles from the world"
     }
 
-    fn execute(
+    fn execute_action(
         &self,
-        _path: &[String],
         _args: &[String],
-        _console_writer: &mut EventWriter<PrintConsoleLine>,
+        console_writer: &mut EventWriter<PrintConsoleLine>,
         commands: &mut Commands,
     ) {
+        console_writer.write(PrintConsoleLine::new(
+            "Despawning all dynamic particles from the world".to_string(),
+        ));
         commands.trigger(ClearDynamicParticlesEvent);
     }
 }
