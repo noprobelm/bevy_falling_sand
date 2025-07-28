@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use bevy_falling_sand::prelude::{
-    ClearDynamicParticlesEvent, ClearParticleMapEvent, ClearStaticParticlesEvent,
+    ClearDynamicParticlesEvent, ClearParticleMapEvent, ClearParticleTypeChildrenEvent,
+    ClearStaticParticlesEvent,
 };
 
 use super::super::core::{ConsoleCommand, PrintConsoleLine};
@@ -11,6 +12,7 @@ impl Plugin for ParticlesCommandPlugin {
     fn build(&self, app: &mut App) {
         app.add_observer(on_despawn_dynamic_particles)
             .add_observer(on_despawn_wall_particles)
+            .add_observer(on_despawn_named_particles)
             .add_observer(on_despawn_all_particles);
     }
 }
@@ -196,6 +198,7 @@ impl ConsoleCommand for ParticlesDespawnCommand {
             Box::new(ParticlesDespawnDynamicCommand),
             Box::new(ParticlesDespawnWallsCommand),
             Box::new(ParticlesDespawnAllCommand),
+            Box::new(ParticlesDespawnNamedCommand),
         ]
     }
 }
@@ -275,6 +278,33 @@ impl ConsoleCommand for ParticlesDespawnAllCommand {
     }
 }
 
+#[derive(Default)]
+pub struct ParticlesDespawnNamedCommand;
+
+impl ConsoleCommand for ParticlesDespawnNamedCommand {
+    fn name(&self) -> &'static str {
+        "named"
+    }
+
+    fn description(&self) -> &'static str {
+        "Despawn all particles of specified name from the world"
+    }
+
+    fn execute_action(
+        &self,
+        args: &[String],
+        console_writer: &mut EventWriter<PrintConsoleLine>,
+        commands: &mut Commands,
+    ) {
+        let name = args.join(" ");
+        console_writer.write(PrintConsoleLine::new(format!(
+            "Despawning all '{}' particles from the world",
+            { &name }
+        )));
+        commands.trigger(ClearParticleTypeChildrenEvent(name));
+    }
+}
+
 fn on_despawn_dynamic_particles(
     _trigger: Trigger<ClearDynamicParticlesEvent>,
     mut evw_clear_dynamic_particles: EventWriter<ClearDynamicParticlesEvent>,
@@ -296,4 +326,9 @@ fn on_despawn_all_particles(
     evw_clear_particle_map.write(ClearParticleMapEvent);
 }
 
-fn on_despawn_named_particles() {}
+fn on_despawn_named_particles(
+    trigger: Trigger<ClearParticleTypeChildrenEvent>,
+    mut evw_clear_particle_type_children: EventWriter<ClearParticleTypeChildrenEvent>,
+) {
+    evw_clear_particle_type_children.write(trigger.event().clone());
+}

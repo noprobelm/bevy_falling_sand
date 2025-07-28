@@ -481,11 +481,11 @@ impl Chunk {
     }
 }
 
-#[derive(Event)]
+#[derive(Clone, Event)]
 /// Event used to trigger the removal of all particles in the [`ParticleMap`] resource.
 pub struct ClearParticleMapEvent;
 
-#[derive(Event)]
+#[derive(Clone, Event)]
 /// Event used to trigger the removal of all children under a specified [`ParticleType`].
 pub struct ClearParticleTypeChildrenEvent(pub String);
 
