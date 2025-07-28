@@ -537,7 +537,7 @@ fn ev_despawn_particle(
             if let Some(entity) = map.remove(position) {
                 commands.entity(entity).despawn();
             } else {
-                info!(
+                debug!(
                     "Attempted to despawn particle from position where none exists: {:?}",
                     position
                 );
@@ -547,7 +547,7 @@ fn ev_despawn_particle(
             if particle_query.contains(*entity) {
                 commands.entity(*entity).despawn();
             } else {
-                info!(
+                debug!(
                     "Attempted to despawn non-particle entity using DespawnParticlEvent: {:?}",
                     entity
                 );
