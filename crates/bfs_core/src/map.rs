@@ -16,10 +16,10 @@ impl Plugin for ParticleMapPlugin {
         app.add_event::<ClearParticleMapEvent>()
             .add_event::<ClearParticleTypeChildrenEvent>()
             .add_systems(Startup, setup_particle_map)
+            .add_systems(PostUpdate, reset_chunks.in_set(ParticleSimulationSet))
             .add_systems(
                 PreUpdate,
                 (
-                    reset_chunks.in_set(ParticleSimulationSet),
                     ev_clear_particle_type_children,
                     ev_clear_particle_map,
                     ev_remove_particle,
@@ -335,7 +335,11 @@ impl ParticleMap {
     }
 
     /// Find all particles within a circular radius of a center position
-    pub fn within_radius(&self, center: IVec2, radius: f32) -> impl Iterator<Item = (IVec2, &Entity)> {
+    pub fn within_radius(
+        &self,
+        center: IVec2,
+        radius: f32,
+    ) -> impl Iterator<Item = (IVec2, &Entity)> {
         let radius_i32 = radius.ceil() as i32;
         let min_pos = center - IVec2::splat(radius_i32);
         let max_pos = center + IVec2::splat(radius_i32);
@@ -353,11 +357,19 @@ impl ParticleMap {
         self.within_rect_impl(rect.min, rect.max)
     }
 
-    fn within_rect_impl(&self, min_pos: IVec2, max_pos: IVec2) -> impl Iterator<Item = (IVec2, &Entity)> {
-        let min_chunk_x = ((min_pos.x + self.flat_map_offset_value as i32) >> self.chunk_shift).max(0) as usize;
-        let max_chunk_x = ((max_pos.x + self.flat_map_offset_value as i32) >> self.chunk_shift).min(self.size as i32 - 1) as usize;
-        let min_chunk_y = ((self.flat_map_offset_value as i32 - max_pos.y) >> self.chunk_shift).max(0) as usize;
-        let max_chunk_y = ((self.flat_map_offset_value as i32 - min_pos.y) >> self.chunk_shift).min(self.size as i32 - 1) as usize;
+    fn within_rect_impl(
+        &self,
+        min_pos: IVec2,
+        max_pos: IVec2,
+    ) -> impl Iterator<Item = (IVec2, &Entity)> {
+        let min_chunk_x =
+            ((min_pos.x + self.flat_map_offset_value as i32) >> self.chunk_shift).max(0) as usize;
+        let max_chunk_x = ((max_pos.x + self.flat_map_offset_value as i32) >> self.chunk_shift)
+            .min(self.size as i32 - 1) as usize;
+        let min_chunk_y =
+            ((self.flat_map_offset_value as i32 - max_pos.y) >> self.chunk_shift).max(0) as usize;
+        let max_chunk_y = ((self.flat_map_offset_value as i32 - min_pos.y) >> self.chunk_shift)
+            .min(self.size as i32 - 1) as usize;
 
         (min_chunk_y..=max_chunk_y)
             .flat_map(move |chunk_row| {
@@ -365,9 +377,15 @@ impl ParticleMap {
             })
             .filter_map(move |chunk_index| self.chunks.get(chunk_index))
             .flat_map(move |chunk| {
-                chunk.iter().filter(move |(pos, _)| {
-                    pos.x >= min_pos.x && pos.x <= max_pos.x && pos.y >= min_pos.y && pos.y <= max_pos.y
-                }).map(|(pos, entity)| (*pos, entity))
+                chunk
+                    .iter()
+                    .filter(move |(pos, _)| {
+                        pos.x >= min_pos.x
+                            && pos.x <= max_pos.x
+                            && pos.y >= min_pos.y
+                            && pos.y <= max_pos.y
+                    })
+                    .map(|(pos, entity)| (*pos, entity))
             })
     }
 }
