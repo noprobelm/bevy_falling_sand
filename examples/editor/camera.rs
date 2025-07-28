@@ -22,13 +22,13 @@ impl Plugin for CameraPlugin {
 pub struct MainCamera;
 
 #[derive(Component)]
-struct ZoomTarget {
-    target_scale: f32,
-    current_scale: f32,
+pub struct ZoomTarget {
+    pub target_scale: f32,
+    pub current_scale: f32,
 }
 
 #[derive(Component)]
-struct ZoomSpeed(f32);
+pub struct ZoomSpeed(pub f32);
 
 fn setup_camera(mut commands: Commands) {
     let initial_scale = 0.11;

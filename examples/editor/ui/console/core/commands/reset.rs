@@ -1,6 +1,19 @@
 use bevy::prelude::*;
 
+use crate::camera::{MainCamera, ZoomSpeed, ZoomTarget};
+
 use super::super::core::{Command, ExitCommandEvent, PrintConsoleLine};
+
+pub struct ResetCommandPlugin;
+
+impl Plugin for ResetCommandPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_observer(on_reset_camera);
+    }
+}
+
+#[derive(Event)]
+pub struct ResetCameraEvent;
 
 #[derive(Default)]
 pub struct ResetCommand;
@@ -151,16 +164,11 @@ impl Command for ResetCameraCommand {
         _exit_writer: &mut EventWriter<ExitCommandEvent>,
         commands: &mut Commands,
     ) {
-        println!("Executing: reset camera");
-
-        // Note: With Commands, you can add components but can't query entities directly.
-        // You would typically use Commands in combination with queries passed as parameters,
-        // or implement this logic in a dedicated system that has access to queries.
-        // For now, this shows the Commands parameter is available for component manipulation.
-
+        println!("ResetCameraCommand::execute - triggering ResetCameraEvent");
         console_writer.write(PrintConsoleLine::new(
-            "Reset camera command received. Commands parameter is available for component operations.".to_string(),
+            "Triggering reset camera event...".to_string(),
         ));
+        commands.trigger(ResetCameraEvent);
     }
 }
 
@@ -433,4 +441,32 @@ pub fn handle_reset_command(
             )));
         }
     }
+}
+
+fn on_reset_camera(
+    _trigger: Trigger<ResetCameraEvent>,
+    camera_query: Query<Entity, With<MainCamera>>,
+    mut commands: Commands,
+) -> Result {
+    println!("on_reset_camera observer called!");
+    let initial_scale = 0.11;
+    let entity = camera_query.single()?;
+    println!("Found camera entity: {:?}", entity);
+    commands.entity(entity).insert((
+        Camera2d,
+        Projection::Orthographic(OrthographicProjection {
+            near: -1000.0,
+            scale: initial_scale,
+            ..OrthographicProjection::default_2d()
+        }),
+        MainCamera,
+        ZoomTarget {
+            target_scale: initial_scale,
+            current_scale: initial_scale,
+        },
+        ZoomSpeed(8.0),
+        Transform::default(),
+    ));
+    println!("Camera reset completed successfully");
+    Ok(())
 }

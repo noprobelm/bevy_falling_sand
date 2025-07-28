@@ -14,6 +14,7 @@ use bevy_falling_sand::prelude::{
 };
 use console::core::{ConsoleCache, ConsoleCommandEntered, ConsoleConfiguration};
 use console::{Console, ConsolePlugin};
+use console::core::commands::reset::ResetCommandPlugin;
 use quick_actions::*;
 
 use crate::scenes::{SceneFileBrowserState, SceneManagementUI};
@@ -45,6 +46,7 @@ impl Plugin for UiPlugin {
                 enable_multipass_for_primary_context: false,
             },
             ConsolePlugin,
+            ResetCommandPlugin,
             ParticleEditorPlugin,
             ParticleFilesPlugin,
             FrameTimeDiagnosticsPlugin::default(),
