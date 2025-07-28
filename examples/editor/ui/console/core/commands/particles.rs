@@ -300,9 +300,9 @@ impl ConsoleCommand for ParticlesDebugCommand {
     fn execute(
         &self,
         path: &[String],
-        args: &[String],
+        _args: &[String],
         console_writer: &mut EventWriter<PrintConsoleLine>,
-        commands: &mut Commands,
+        _commands: &mut Commands,
     ) {
         match path.len() {
             2 => {
@@ -313,15 +313,6 @@ impl ConsoleCommand for ParticlesDebugCommand {
                     "Available subcommands: count".to_string(),
                 ));
             }
-            3 => match path[2].as_str() {
-                "count" => ParticlesDebugCountCommand.execute(path, args, console_writer, commands),
-                _ => {
-                    console_writer.write(PrintConsoleLine::new(format!(
-                        "error: Unknown command 'particles debug {}'",
-                        path[2]
-                    )));
-                }
-            },
             _ => {
                 console_writer.write(PrintConsoleLine::new(format!(
                     "error: Invalid command path: {}",
@@ -329,36 +320,6 @@ impl ConsoleCommand for ParticlesDebugCommand {
                 )));
             }
         }
-    }
-
-    fn subcommands(&self) -> Vec<Box<dyn ConsoleCommand>> {
-        vec![Box::new(ParticlesDebugCountCommand)]
-    }
-}
-
-#[derive(Default)]
-pub struct ParticlesDebugCountCommand;
-
-impl ConsoleCommand for ParticlesDebugCountCommand {
-    fn name(&self) -> &'static str {
-        "count"
-    }
-
-    fn description(&self) -> &'static str {
-        "Show particle count"
-    }
-
-    fn execute(
-        &self,
-        _path: &[String],
-        _args: &[String],
-        console_writer: &mut EventWriter<PrintConsoleLine>,
-        _commands: &mut Commands,
-    ) {
-        println!("Executing: particles debug count");
-        console_writer.write(PrintConsoleLine::new(
-            "Current particle count: 1234 particles".to_string(),
-        ));
     }
 }
 
@@ -386,3 +347,4 @@ impl ConsoleCommand for ParticlesDespawnCommand {
         ));
     }
 }
+

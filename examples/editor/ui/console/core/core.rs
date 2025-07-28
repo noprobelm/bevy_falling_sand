@@ -543,10 +543,6 @@ impl ConsoleState {
 }
 
 impl ConsoleConfiguration {
-    pub fn add_command_tree(&mut self, root_name: String, tree: CommandNode) {
-        self.command_tree.insert(root_name, tree);
-    }
-
     pub fn register_command<T: ConsoleCommand + Default>(&mut self) {
         let command = T::default();
         let name = command.name().to_string();
