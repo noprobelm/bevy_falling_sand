@@ -26,7 +26,8 @@ impl Plugin for BrushPlugin {
                 Update,
                 (
                     update_brush_gizmos,
-                    toggle_brush_spawn_state.run_if(input_just_pressed(MouseButton::Right)),
+                    update_brush_type_state.run_if(input_just_pressed(MouseButton::Back)),
+                    update_brush_spawn_state.run_if(input_just_pressed(MouseButton::Right)),
                     resize_brush
                         .run_if(in_state(AppState::Canvas))
                         .run_if(in_state(CanvasState::Edit)),
@@ -119,7 +120,7 @@ fn update_brush_gizmos(
     Ok(())
 }
 
-fn toggle_brush_spawn_state(
+fn update_brush_spawn_state(
     brush_spawn_state: Res<State<BrushSpawnState>>,
     mut brush_spawn_state_next: ResMut<NextState<BrushSpawnState>>,
 ) {
@@ -145,6 +146,17 @@ fn resize_brush(
         });
     }
     Ok(())
+}
+
+fn update_brush_type_state(
+    brush_type_state_current: Res<State<BrushTypeState>>,
+    mut brush_type_state_next: ResMut<NextState<BrushTypeState>>,
+) {
+    match brush_type_state_current.get() {
+        BrushTypeState::Line => brush_type_state_next.set(BrushTypeState::Circle),
+        BrushTypeState::Circle => brush_type_state_next.set(BrushTypeState::Cursor),
+        BrushTypeState::Cursor => brush_type_state_next.set(BrushTypeState::Line),
+    }
 }
 
 fn spawn_particles(
