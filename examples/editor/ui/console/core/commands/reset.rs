@@ -9,11 +9,11 @@ impl Command for ResetCommand {
     fn name(&self) -> &'static str {
         "reset"
     }
-    
+
     fn description(&self) -> &'static str {
         "Reset various system components"
     }
-    
+
     fn execute(
         &self,
         path: &[String],
@@ -33,8 +33,12 @@ impl Command for ResetCommand {
             _ => {
                 if path.len() >= 2 {
                     match path[1].as_str() {
-                        "particle" => ResetParticleCommand.execute(path, args, console_writer, _exit_writer),
-                        "camera" => ResetCameraCommand.execute(path, args, console_writer, _exit_writer),
+                        "particle" => {
+                            ResetParticleCommand.execute(path, args, console_writer, _exit_writer)
+                        }
+                        "camera" => {
+                            ResetCameraCommand.execute(path, args, console_writer, _exit_writer)
+                        }
                         _ => {
                             console_writer.write(PrintConsoleLine::new(format!(
                                 "error: Unknown subcommand 'reset {}'",
@@ -46,12 +50,9 @@ impl Command for ResetCommand {
             }
         }
     }
-    
+
     fn subcommands(&self) -> Vec<Box<dyn Command>> {
-        vec![
-            Box::new(ResetParticleCommand),
-            Box::new(ResetCameraCommand),
-        ]
+        vec![Box::new(ResetParticleCommand), Box::new(ResetCameraCommand)]
     }
 }
 
@@ -62,11 +63,11 @@ impl Command for ResetParticleCommand {
     fn name(&self) -> &'static str {
         "particle"
     }
-    
+
     fn description(&self) -> &'static str {
         "Reset particle-related components"
     }
-    
+
     fn execute(
         &self,
         path: &[String],
@@ -86,8 +87,18 @@ impl Command for ResetParticleCommand {
             _ => {
                 if path.len() >= 3 {
                     match path[2].as_str() {
-                        "wall" => ResetParticleWallCommand.execute(path, args, console_writer, _exit_writer),
-                        "dynamic" => ResetParticleDynamicCommand.execute(path, args, console_writer, _exit_writer),
+                        "wall" => ResetParticleWallCommand.execute(
+                            path,
+                            args,
+                            console_writer,
+                            _exit_writer,
+                        ),
+                        "dynamic" => ResetParticleDynamicCommand.execute(
+                            path,
+                            args,
+                            console_writer,
+                            _exit_writer,
+                        ),
                         _ => {
                             console_writer.write(PrintConsoleLine::new(format!(
                                 "error: Unknown subcommand 'reset particle {}'",
@@ -99,7 +110,7 @@ impl Command for ResetParticleCommand {
             }
         }
     }
-    
+
     fn subcommands(&self) -> Vec<Box<dyn Command>> {
         vec![
             Box::new(ResetParticleWallCommand),
@@ -115,11 +126,11 @@ impl Command for ResetCameraCommand {
     fn name(&self) -> &'static str {
         "camera"
     }
-    
+
     fn description(&self) -> &'static str {
         "Reset camera position and zoom"
     }
-    
+
     fn execute(
         &self,
         _path: &[String],
@@ -141,11 +152,11 @@ impl Command for ResetParticleWallCommand {
     fn name(&self) -> &'static str {
         "wall"
     }
-    
+
     fn description(&self) -> &'static str {
         "Reset wall particles"
     }
-    
+
     fn execute(
         &self,
         path: &[String],
@@ -180,11 +191,9 @@ impl Command for ResetParticleWallCommand {
             }
         }
     }
-    
+
     fn subcommands(&self) -> Vec<Box<dyn Command>> {
-        vec![
-            Box::new(ResetParticleWallAllCommand),
-        ]
+        vec![Box::new(ResetParticleWallAllCommand)]
     }
 }
 
@@ -195,11 +204,11 @@ impl Command for ResetParticleDynamicCommand {
     fn name(&self) -> &'static str {
         "dynamic"
     }
-    
+
     fn description(&self) -> &'static str {
         "Reset dynamic particles"
     }
-    
+
     fn execute(
         &self,
         path: &[String],
@@ -218,7 +227,12 @@ impl Command for ResetParticleDynamicCommand {
             }
             4 => {
                 if path[3] == "all" {
-                    ResetParticleDynamicAllCommand.execute(path, args, console_writer, _exit_writer);
+                    ResetParticleDynamicAllCommand.execute(
+                        path,
+                        args,
+                        console_writer,
+                        _exit_writer,
+                    );
                 } else {
                     console_writer.write(PrintConsoleLine::new(format!(
                         "error: Unknown command 'reset particle dynamic {}'",
@@ -234,11 +248,9 @@ impl Command for ResetParticleDynamicCommand {
             }
         }
     }
-    
+
     fn subcommands(&self) -> Vec<Box<dyn Command>> {
-        vec![
-            Box::new(ResetParticleDynamicAllCommand),
-        ]
+        vec![Box::new(ResetParticleDynamicAllCommand)]
     }
 }
 
@@ -249,11 +261,11 @@ impl Command for ResetParticleWallAllCommand {
     fn name(&self) -> &'static str {
         "all"
     }
-    
+
     fn description(&self) -> &'static str {
         "Reset all wall particles"
     }
-    
+
     fn execute(
         &self,
         _path: &[String],
@@ -275,11 +287,11 @@ impl Command for ResetParticleDynamicAllCommand {
     fn name(&self) -> &'static str {
         "all"
     }
-    
+
     fn description(&self) -> &'static str {
         "Reset all dynamic particles"
     }
-    
+
     fn execute(
         &self,
         _path: &[String],
