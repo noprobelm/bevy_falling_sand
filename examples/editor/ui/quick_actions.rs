@@ -64,10 +64,8 @@ fn toggle_simulation_run(
 ) {
     if app_state.get() == &AppState::Canvas {
         if simulation_pause.is_some() {
-            println!("Simulation is running");
             commands.remove_resource::<ParticleSimulationRun>();
         } else {
-            println!("Simulation is not running");
             commands.init_resource::<ParticleSimulationRun>();
         }
         if time.is_paused() {
