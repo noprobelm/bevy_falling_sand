@@ -271,7 +271,7 @@ impl ConsoleCommand for ParticlesDespawnAllCommand {
         console_writer.write(PrintConsoleLine::new(
             "Despawning all particles from the world".to_string(),
         ));
-        commands.trigger(ClearStaticParticlesEvent);
+        commands.trigger(ClearParticleMapEvent);
     }
 }
 
@@ -291,7 +291,7 @@ fn on_despawn_wall_particles(
 
 fn on_despawn_all_particles(
     _trigger: Trigger<ClearParticleMapEvent>,
-    mut evw_clear_dynamic_particles: EventWriter<ClearParticleMapEvent>,
+    mut evw_clear_particle_map: EventWriter<ClearParticleMapEvent>,
 ) {
-    evw_clear_dynamic_particles.write(ClearParticleMapEvent);
+    evw_clear_particle_map.write(ClearParticleMapEvent);
 }
