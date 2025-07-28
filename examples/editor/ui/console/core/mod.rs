@@ -26,6 +26,7 @@ impl Plugin for ConsolePlugin {
 fn init_command_registry(
     mut registry: ResMut<CommandRegistry>,
     mut config: ResMut<ConsoleConfiguration>,
+    mut cache: ResMut<ConsoleCache>,
 ) {
     use commands::{camera::*, exit::ExitConsoleCommand, particles::*, physics::*};
 
@@ -40,4 +41,7 @@ fn init_command_registry(
     config.register_command::<ParticlesCommand>();
     config.register_command::<CameraCommand>();
     config.register_command::<PhysicsCommand>();
+
+    // Rebuild cache after registering new commands
+    cache.rebuild_tries(&config);
 }
