@@ -33,6 +33,7 @@ impl Command for ExitConsoleCommand {
         _args: &[String],
         _console_writer: &mut EventWriter<PrintConsoleLine>,
         exit_writer: &mut EventWriter<ExitCommandEvent>,
+        _commands: &mut Commands,
     ) {
         if path.len() == 1 && path[0] == "exit" {
             exit_writer.write(ExitCommandEvent);
@@ -55,6 +56,7 @@ impl Command for ExitCommand {
         _args: &[String],
         _console_writer: &mut EventWriter<PrintConsoleLine>,
         exit_writer: &mut EventWriter<ExitCommandEvent>,
+        _commands: &mut Commands,
     ) {
         if path.len() == 1 && path[0] == "exit" {
             exit_writer.write(ExitCommandEvent);

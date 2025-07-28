@@ -109,6 +109,7 @@ pub trait Command: Send + Sync + 'static {
         args: &[String], 
         console_writer: &mut EventWriter<PrintConsoleLine>,
         exit_writer: &mut EventWriter<ExitCommandEvent>,
+        commands: &mut Commands,
     );
     
     fn subcommands(&self) -> Vec<Box<dyn Command>> {
@@ -602,8 +603,9 @@ impl<T: Command + Default> Command for CommandWrapper<T> {
         args: &[String], 
         console_writer: &mut EventWriter<PrintConsoleLine>,
         exit_writer: &mut EventWriter<ExitCommandEvent>,
+        commands: &mut Commands,
     ) {
-        T::default().execute(path, args, console_writer, exit_writer);
+        T::default().execute(path, args, console_writer, exit_writer, commands);
     }
     
     fn subcommands(&self) -> Vec<Box<dyn Command>> {
@@ -624,6 +626,7 @@ pub fn command_handler(
     mut console_writer: EventWriter<PrintConsoleLine>,
     mut exit_writer: EventWriter<ExitCommandEvent>,
     registry: Res<CommandRegistry>,
+    mut commands: Commands,
 ) {
     for command_event in cmd.read() {
         if command_event.command_path.is_empty() {
@@ -632,7 +635,7 @@ pub fn command_handler(
 
         let root_command_name = &command_event.command_path[0];
         if let Some(command) = registry.find_command(root_command_name) {
-            command.execute(&command_event.command_path, &command_event.args, &mut console_writer, &mut exit_writer);
+            command.execute(&command_event.command_path, &command_event.args, &mut console_writer, &mut exit_writer, &mut commands);
         }
     }
 }

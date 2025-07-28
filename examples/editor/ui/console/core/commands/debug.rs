@@ -20,6 +20,7 @@ impl Command for DebugCommand {
         args: &[String],
         console_writer: &mut EventWriter<PrintConsoleLine>,
         _exit_writer: &mut EventWriter<ExitCommandEvent>,
+        commands: &mut Commands,
     ) {
         match path.len() {
             1 => {
@@ -34,8 +35,8 @@ impl Command for DebugCommand {
                 // Route to subcommands
                 if path.len() >= 2 {
                     match path[1].as_str() {
-                        "physics" => DebugPhysicsCommand.execute(path, args, console_writer, _exit_writer),
-                        "particles" => DebugParticlesCommand.execute(path, args, console_writer, _exit_writer),
+                        "physics" => DebugPhysicsCommand.execute(path, args, console_writer, _exit_writer, commands),
+                        "particles" => DebugParticlesCommand.execute(path, args, console_writer, _exit_writer, commands),
                         _ => {
                             console_writer.write(PrintConsoleLine::new(format!(
                                 "error: Unknown subcommand 'debug {}'",
@@ -74,6 +75,7 @@ impl Command for DebugPhysicsCommand {
         args: &[String],
         console_writer: &mut EventWriter<PrintConsoleLine>,
         _exit_writer: &mut EventWriter<ExitCommandEvent>,
+        commands: &mut Commands,
     ) {
         match path.len() {
             2 => {
@@ -139,6 +141,7 @@ impl Command for DebugPhysicsEnableCommand {
         _args: &[String],
         console_writer: &mut EventWriter<PrintConsoleLine>,
         _exit_writer: &mut EventWriter<ExitCommandEvent>,
+        _commands: &mut Commands,
     ) {
         println!("Executing: debug physics enable");
         console_writer.write(PrintConsoleLine::new(
@@ -165,6 +168,7 @@ impl Command for DebugPhysicsDisableCommand {
         _args: &[String],
         console_writer: &mut EventWriter<PrintConsoleLine>,
         _exit_writer: &mut EventWriter<ExitCommandEvent>,
+        _commands: &mut Commands,
     ) {
         println!("Executing: debug physics disable");
         console_writer.write(PrintConsoleLine::new(
@@ -191,6 +195,7 @@ impl Command for DebugParticlesCommand {
         args: &[String],
         console_writer: &mut EventWriter<PrintConsoleLine>,
         _exit_writer: &mut EventWriter<ExitCommandEvent>,
+        commands: &mut Commands,
     ) {
         match path.len() {
             2 => {
@@ -202,7 +207,7 @@ impl Command for DebugParticlesCommand {
                 ));
             }
             3 => match path[2].as_str() {
-                "count" => DebugParticlesCountCommand.execute(path, args, console_writer, _exit_writer),
+                "count" => DebugParticlesCountCommand.execute(path, args, console_writer, _exit_writer, commands),
                 _ => {
                     console_writer.write(PrintConsoleLine::new(format!(
                         "error: Unknown command 'debug particles {}'",
@@ -244,6 +249,7 @@ impl Command for DebugParticlesCountCommand {
         _args: &[String],
         console_writer: &mut EventWriter<PrintConsoleLine>,
         _exit_writer: &mut EventWriter<ExitCommandEvent>,
+        _commands: &mut Commands,
     ) {
         println!("Executing: debug particles count");
         console_writer.write(PrintConsoleLine::new(

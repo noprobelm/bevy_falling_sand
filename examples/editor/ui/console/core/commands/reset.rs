@@ -20,6 +20,7 @@ impl Command for ResetCommand {
         args: &[String],
         console_writer: &mut EventWriter<PrintConsoleLine>,
         _exit_writer: &mut EventWriter<ExitCommandEvent>,
+        commands: &mut Commands,
     ) {
         match path.len() {
             1 => {
@@ -33,12 +34,20 @@ impl Command for ResetCommand {
             _ => {
                 if path.len() >= 2 {
                     match path[1].as_str() {
-                        "particle" => {
-                            ResetParticleCommand.execute(path, args, console_writer, _exit_writer)
-                        }
-                        "camera" => {
-                            ResetCameraCommand.execute(path, args, console_writer, _exit_writer)
-                        }
+                        "particle" => ResetParticleCommand.execute(
+                            path,
+                            args,
+                            console_writer,
+                            _exit_writer,
+                            commands,
+                        ),
+                        "camera" => ResetCameraCommand.execute(
+                            path,
+                            args,
+                            console_writer,
+                            _exit_writer,
+                            commands,
+                        ),
                         _ => {
                             console_writer.write(PrintConsoleLine::new(format!(
                                 "error: Unknown subcommand 'reset {}'",
@@ -74,6 +83,7 @@ impl Command for ResetParticleCommand {
         args: &[String],
         console_writer: &mut EventWriter<PrintConsoleLine>,
         _exit_writer: &mut EventWriter<ExitCommandEvent>,
+        commands: &mut Commands,
     ) {
         match path.len() {
             2 => {
@@ -92,12 +102,14 @@ impl Command for ResetParticleCommand {
                             args,
                             console_writer,
                             _exit_writer,
+                            commands,
                         ),
                         "dynamic" => ResetParticleDynamicCommand.execute(
                             path,
                             args,
                             console_writer,
                             _exit_writer,
+                            commands,
                         ),
                         _ => {
                             console_writer.write(PrintConsoleLine::new(format!(
@@ -137,10 +149,17 @@ impl Command for ResetCameraCommand {
         _args: &[String],
         console_writer: &mut EventWriter<PrintConsoleLine>,
         _exit_writer: &mut EventWriter<ExitCommandEvent>,
+        commands: &mut Commands,
     ) {
         println!("Executing: reset camera");
+
+        // Note: With Commands, you can add components but can't query entities directly.
+        // You would typically use Commands in combination with queries passed as parameters,
+        // or implement this logic in a dedicated system that has access to queries.
+        // For now, this shows the Commands parameter is available for component manipulation.
+
         console_writer.write(PrintConsoleLine::new(
-            "Resetting camera to default position...".to_string(),
+            "Reset camera command received. Commands parameter is available for component operations.".to_string(),
         ));
     }
 }
@@ -163,6 +182,7 @@ impl Command for ResetParticleWallCommand {
         args: &[String],
         console_writer: &mut EventWriter<PrintConsoleLine>,
         _exit_writer: &mut EventWriter<ExitCommandEvent>,
+        commands: &mut Commands,
     ) {
         match path.len() {
             3 => {
@@ -175,7 +195,13 @@ impl Command for ResetParticleWallCommand {
             }
             4 => {
                 if path[3] == "all" {
-                    ResetParticleWallAllCommand.execute(path, args, console_writer, _exit_writer);
+                    ResetParticleWallAllCommand.execute(
+                        path,
+                        args,
+                        console_writer,
+                        _exit_writer,
+                        commands,
+                    );
                 } else {
                     console_writer.write(PrintConsoleLine::new(format!(
                         "error: Unknown command 'reset particle wall {}'",
@@ -215,6 +241,7 @@ impl Command for ResetParticleDynamicCommand {
         args: &[String],
         console_writer: &mut EventWriter<PrintConsoleLine>,
         _exit_writer: &mut EventWriter<ExitCommandEvent>,
+        commands: &mut Commands,
     ) {
         match path.len() {
             3 => {
@@ -232,6 +259,7 @@ impl Command for ResetParticleDynamicCommand {
                         args,
                         console_writer,
                         _exit_writer,
+                        commands,
                     );
                 } else {
                     console_writer.write(PrintConsoleLine::new(format!(
@@ -272,6 +300,7 @@ impl Command for ResetParticleWallAllCommand {
         _args: &[String],
         console_writer: &mut EventWriter<PrintConsoleLine>,
         _exit_writer: &mut EventWriter<ExitCommandEvent>,
+        _commands: &mut Commands,
     ) {
         println!("Executing: reset particle wall all");
         console_writer.write(PrintConsoleLine::new(
@@ -298,6 +327,7 @@ impl Command for ResetParticleDynamicAllCommand {
         _args: &[String],
         console_writer: &mut EventWriter<PrintConsoleLine>,
         _exit_writer: &mut EventWriter<ExitCommandEvent>,
+        _commands: &mut Commands,
     ) {
         println!("Executing: reset particle dynamic all");
         console_writer.write(PrintConsoleLine::new(

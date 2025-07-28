@@ -24,7 +24,6 @@ impl Plugin for ConsolePlugin {
                     clear_command, 
                     exit_command, 
                     echo_command, 
-                    hierarchical_command_handler,
                     command_handler,
                     handle_exit_command_events,
                 ),
