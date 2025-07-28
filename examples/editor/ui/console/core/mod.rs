@@ -12,12 +12,39 @@ impl Plugin for ConsolePlugin {
         app.init_resource::<ConsoleState>()
             .init_resource::<ConsoleConfiguration>()
             .init_resource::<ConsoleCache>()
+            .init_resource::<CommandRegistry>()
             .add_event::<ConsoleCommandEntered>()
             .add_event::<PrintConsoleLine>()
-            .add_systems(Startup, core::init_commands)
+            .add_event::<ExitCommandEvent>()
+            .add_systems(Startup, (core::init_commands, init_command_registry))
             .add_systems(
                 Update,
-                (help_command, clear_command, exit_command, echo_command, hierarchical_command_handler),
+                (
+                    help_command, 
+                    clear_command, 
+                    exit_command, 
+                    echo_command, 
+                    hierarchical_command_handler,
+                    command_handler,
+                    handle_exit_command_events,
+                ),
             );
     }
+}
+
+fn init_command_registry(
+    mut registry: ResMut<CommandRegistry>,
+    mut config: ResMut<ConsoleConfiguration>,
+) {
+    use commands::{debug::*, reset::*, exit::ExitConsoleCommand};
+    
+    // Register commands
+    registry.register::<ExitConsoleCommand>();
+    registry.register::<DebugCommand>();
+    registry.register::<ResetCommand>();
+    
+    // Register in configuration for completion
+    config.register_command::<ExitConsoleCommand>();
+    config.register_command::<DebugCommand>();
+    config.register_command::<ResetCommand>();
 }
