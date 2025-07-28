@@ -9,11 +9,11 @@ impl Command for DebugCommand {
     fn name(&self) -> &'static str {
         "debug"
     }
-    
+
     fn description(&self) -> &'static str {
         "Debug system controls"
     }
-    
+
     fn execute(
         &self,
         path: &[String],
@@ -35,8 +35,20 @@ impl Command for DebugCommand {
                 // Route to subcommands
                 if path.len() >= 2 {
                     match path[1].as_str() {
-                        "physics" => DebugPhysicsCommand.execute(path, args, console_writer, _exit_writer, commands),
-                        "particles" => DebugParticlesCommand.execute(path, args, console_writer, _exit_writer, commands),
+                        "physics" => DebugPhysicsCommand.execute(
+                            path,
+                            args,
+                            console_writer,
+                            _exit_writer,
+                            commands,
+                        ),
+                        "particles" => DebugParticlesCommand.execute(
+                            path,
+                            args,
+                            console_writer,
+                            _exit_writer,
+                            commands,
+                        ),
                         _ => {
                             console_writer.write(PrintConsoleLine::new(format!(
                                 "error: Unknown subcommand 'debug {}'",
@@ -48,7 +60,7 @@ impl Command for DebugCommand {
             }
         }
     }
-    
+
     fn subcommands(&self) -> Vec<Box<dyn Command>> {
         vec![
             Box::new(DebugPhysicsCommand),
@@ -64,11 +76,11 @@ impl Command for DebugPhysicsCommand {
     fn name(&self) -> &'static str {
         "physics"
     }
-    
+
     fn description(&self) -> &'static str {
         "Physics debug options"
     }
-    
+
     fn execute(
         &self,
         path: &[String],
@@ -114,7 +126,7 @@ impl Command for DebugPhysicsCommand {
             }
         }
     }
-    
+
     fn subcommands(&self) -> Vec<Box<dyn Command>> {
         vec![
             Box::new(DebugPhysicsEnableCommand),
@@ -130,11 +142,11 @@ impl Command for DebugPhysicsEnableCommand {
     fn name(&self) -> &'static str {
         "enable"
     }
-    
+
     fn description(&self) -> &'static str {
         "Enable physics debug overlay"
     }
-    
+
     fn execute(
         &self,
         _path: &[String],
@@ -157,11 +169,11 @@ impl Command for DebugPhysicsDisableCommand {
     fn name(&self) -> &'static str {
         "disable"
     }
-    
+
     fn description(&self) -> &'static str {
         "Disable physics debug overlay"
     }
-    
+
     fn execute(
         &self,
         _path: &[String],
@@ -184,11 +196,11 @@ impl Command for DebugParticlesCommand {
     fn name(&self) -> &'static str {
         "particles"
     }
-    
+
     fn description(&self) -> &'static str {
         "Particle debug options"
     }
-    
+
     fn execute(
         &self,
         path: &[String],
@@ -207,7 +219,13 @@ impl Command for DebugParticlesCommand {
                 ));
             }
             3 => match path[2].as_str() {
-                "count" => DebugParticlesCountCommand.execute(path, args, console_writer, _exit_writer, commands),
+                "count" => DebugParticlesCountCommand.execute(
+                    path,
+                    args,
+                    console_writer,
+                    _exit_writer,
+                    commands,
+                ),
                 _ => {
                     console_writer.write(PrintConsoleLine::new(format!(
                         "error: Unknown command 'debug particles {}'",
@@ -223,11 +241,9 @@ impl Command for DebugParticlesCommand {
             }
         }
     }
-    
+
     fn subcommands(&self) -> Vec<Box<dyn Command>> {
-        vec![
-            Box::new(DebugParticlesCountCommand),
-        ]
+        vec![Box::new(DebugParticlesCountCommand)]
     }
 }
 
@@ -238,11 +254,11 @@ impl Command for DebugParticlesCountCommand {
     fn name(&self) -> &'static str {
         "count"
     }
-    
+
     fn description(&self) -> &'static str {
         "Show particle count"
     }
-    
+
     fn execute(
         &self,
         _path: &[String],
@@ -255,80 +271,5 @@ impl Command for DebugParticlesCountCommand {
         console_writer.write(PrintConsoleLine::new(
             "Current particle count: 1234 particles".to_string(),
         ));
-    }
-}
-
-// Legacy function for compatibility during transition - will be removed
-pub fn handle_debug_command(
-    path: &[String],
-    args: &[String],
-    writer: &mut EventWriter<PrintConsoleLine>,
-) {
-    // For legacy compatibility, manually handle the debug command logic
-    match path.len() {
-        1 => {
-            writer.write(PrintConsoleLine::new(
-                "error: 'debug' requires a subcommand".to_string(),
-            ));
-            writer.write(PrintConsoleLine::new(
-                "Available subcommands: physics, particles".to_string(),
-            ));
-        }
-        2 => match path[1].as_str() {
-            "physics" => {
-                writer.write(PrintConsoleLine::new(
-                    "error: 'debug physics' requires a subcommand".to_string(),
-                ));
-                writer.write(PrintConsoleLine::new(
-                    "Available subcommands: enable, disable".to_string(),
-                ));
-            }
-            "particles" => {
-                writer.write(PrintConsoleLine::new(
-                    "error: 'debug particles' requires a subcommand".to_string(),
-                ));
-                writer.write(PrintConsoleLine::new(
-                    "Available subcommands: count".to_string(),
-                ));
-            }
-            _ => {
-                writer.write(PrintConsoleLine::new(format!(
-                    "error: Unknown subcommand 'debug {}'",
-                    path[1]
-                )));
-            }
-        },
-        3 => match (path[1].as_str(), path[2].as_str()) {
-            ("physics", "enable") => {
-                println!("Executing: debug physics enable");
-                writer.write(PrintConsoleLine::new(
-                    "Enabling physics debug overlay...".to_string(),
-                ));
-            }
-            ("physics", "disable") => {
-                println!("Executing: debug physics disable");
-                writer.write(PrintConsoleLine::new(
-                    "Disabling physics debug overlay...".to_string(),
-                ));
-            }
-            ("particles", "count") => {
-                println!("Executing: debug particles count");
-                writer.write(PrintConsoleLine::new(
-                    "Current particle count: 1234 particles".to_string(),
-                ));
-            }
-            _ => {
-                writer.write(PrintConsoleLine::new(format!(
-                    "error: Unknown command path: {}",
-                    path.join(" ")
-                )));
-            }
-        },
-        _ => {
-            writer.write(PrintConsoleLine::new(format!(
-                "error: Invalid command path: {}",
-                path.join(" ")
-            )));
-        }
     }
 }
