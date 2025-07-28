@@ -5,7 +5,7 @@ use bevy::{
     },
     prelude::*,
 };
-use bfs_core::{ClearParticleTypeChildrenEvent, Particle, ParticleType};
+use bfs_core::{ClearParticleTypeChildrenEvent, Particle, ParticleRegistrationSet, ParticleType};
 use serde::{Deserialize, Serialize};
 
 use crate::Moved;
@@ -26,6 +26,10 @@ impl Plugin for MaterialPlugin {
             .add_systems(
                 Update,
                 (ev_clear_dynamic_particles, ev_clear_static_particles),
+            )
+            .add_systems(
+                PreUpdate,
+                tag_movement_particle_types.before(ParticleRegistrationSet),
             );
     }
 }
@@ -60,7 +64,7 @@ impl Component for Wall {
     const STORAGE_TYPE: StorageType = StorageType::Table;
 
     fn register_component_hooks(hooks: &mut bevy::ecs::component::ComponentHooks) {
-        hooks.on_add(|mut world, context| {
+        hooks.on_insert(|mut world, context| {
             if world.get::<Solid>(context.entity).is_some() {
                 world.commands().entity(context.entity).remove::<Solid>();
             }
@@ -109,7 +113,7 @@ impl Component for Solid {
     const STORAGE_TYPE: StorageType = StorageType::Table;
 
     fn register_component_hooks(hooks: &mut bevy::ecs::component::ComponentHooks) {
-        hooks.on_add(|mut world, context| {
+        hooks.on_insert(|mut world, context| {
             if world.get::<Wall>(context.entity).is_some() {
                 world.commands().entity(context.entity).remove::<Wall>();
             }
@@ -160,7 +164,7 @@ impl Component for MovableSolid {
     const STORAGE_TYPE: StorageType = StorageType::Table;
 
     fn register_component_hooks(hooks: &mut bevy::ecs::component::ComponentHooks) {
-        hooks.on_add(|mut world, context| {
+        hooks.on_insert(|mut world, context| {
             if world.get::<Wall>(context.entity).is_some() {
                 world.commands().entity(context.entity).remove::<Wall>();
             }
@@ -172,8 +176,8 @@ impl Component for MovableSolid {
             }
             if world.get::<Gas>(context.entity).is_some() {
                 world.commands().entity(context.entity).remove::<Gas>();
-                world.commands().entity(context.entity).insert(Moved(true));
             }
+            world.commands().entity(context.entity).insert(Moved(true));
         });
     }
 }
@@ -225,7 +229,7 @@ impl Component for Liquid {
     const STORAGE_TYPE: StorageType = StorageType::Table;
 
     fn register_component_hooks(hooks: &mut bevy::ecs::component::ComponentHooks) {
-        hooks.on_add(|mut world, context| {
+        hooks.on_insert(|mut world, context| {
             if world.get::<Wall>(context.entity).is_some() {
                 world.commands().entity(context.entity).remove::<Wall>();
             }
@@ -240,8 +244,8 @@ impl Component for Liquid {
             }
             if world.get::<Gas>(context.entity).is_some() {
                 world.commands().entity(context.entity).remove::<Gas>();
-                world.commands().entity(context.entity).insert(Moved(true));
             }
+            world.commands().entity(context.entity).insert(Moved(true));
         });
     }
 }
@@ -286,7 +290,7 @@ impl Component for Gas {
     const STORAGE_TYPE: StorageType = StorageType::Table;
 
     fn register_component_hooks(hooks: &mut bevy::ecs::component::ComponentHooks) {
-        hooks.on_add(|mut world, context| {
+        hooks.on_insert(|mut world, context| {
             if world.get::<Wall>(context.entity).is_some() {
                 world.commands().entity(context.entity).remove::<Wall>();
             }
@@ -301,8 +305,8 @@ impl Component for Gas {
             }
             if world.get::<Liquid>(context.entity).is_some() {
                 world.commands().entity(context.entity).remove::<Liquid>();
-                world.commands().entity(context.entity).insert(Moved(true));
             }
+            world.commands().entity(context.entity).insert(Moved(true));
         });
     }
 }
@@ -509,7 +513,7 @@ impl ParticleMaterialsParam<'_, '_> {
 fn ev_clear_dynamic_particles(
     mut ev_clear_dynamic_particles: EventReader<ClearDynamicParticlesEvent>,
     mut ev_clear_particle_type_children: EventWriter<ClearParticleTypeChildrenEvent>,
-    dynamic_particle_types_query: Query<&ParticleType, Without<Wall>>,
+    dynamic_particle_types_query: Query<&ParticleType, With<Movement>>,
 ) {
     ev_clear_dynamic_particles.read().for_each(|_| {
         dynamic_particle_types_query
@@ -525,7 +529,7 @@ fn ev_clear_dynamic_particles(
 fn ev_clear_static_particles(
     mut ev_clear_static_particles: EventReader<ClearStaticParticlesEvent>,
     mut ev_clear_particle_type_children: EventWriter<ClearParticleTypeChildrenEvent>,
-    static_particle_types_query: Query<&ParticleType, With<Wall>>,
+    static_particle_types_query: Query<&ParticleType, Without<Movement>>,
 ) {
     ev_clear_static_particles.read().for_each(|_| {
         static_particle_types_query
@@ -535,5 +539,34 @@ fn ev_clear_static_particles(
                     particle_type.name.to_string(),
                 ));
             });
+    });
+}
+
+fn tag_movement_particle_types(
+    mut commands: Commands,
+    solid_query: Query<(Entity, &Solid), (With<ParticleType>, Added<Solid>)>,
+    movable_solid_query: Query<(Entity, &MovableSolid), (With<ParticleType>, Added<MovableSolid>)>,
+    liquid_query: Query<(Entity, &Liquid), (With<ParticleType>, Added<Liquid>)>,
+    gas_query: Query<(Entity, &Gas), (With<ParticleType>, Added<Gas>)>,
+) {
+    solid_query.iter().for_each(|(entity, material)| {
+        commands
+            .entity(entity)
+            .insert(material.to_movement_priority());
+    });
+    movable_solid_query.iter().for_each(|(entity, material)| {
+        commands
+            .entity(entity)
+            .insert(material.to_movement_priority());
+    });
+    liquid_query.iter().for_each(|(entity, material)| {
+        commands
+            .entity(entity)
+            .insert(material.to_movement_priority());
+    });
+    gas_query.iter().for_each(|(entity, material)| {
+        commands
+            .entity(entity)
+            .insert(material.to_movement_priority());
     });
 }

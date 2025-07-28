@@ -237,32 +237,48 @@ impl ParticleEditor {
             egui::ComboBox::from_label("")
                 .selected_text(current_state_text)
                 .show_ui(ui, |ui| {
-                    ui.selectable_value(
+                    if ui.selectable_value(
                         &mut editor_data.material_state,
                         MaterialState::Wall,
                         "Wall",
-                    );
-                    ui.selectable_value(
+                    ).clicked() {
+                        editor_data.fluidity = None;
+                    }
+                    if ui.selectable_value(
                         &mut editor_data.material_state,
                         MaterialState::Solid,
                         "Solid",
-                    );
-                    ui.selectable_value(
+                    ).clicked() {
+                        editor_data.fluidity = None;
+                    }
+                    if ui.selectable_value(
                         &mut editor_data.material_state,
                         MaterialState::MovableSolid,
                         "Movable Solid",
-                    );
-                    ui.selectable_value(
+                    ).clicked() {
+                        editor_data.fluidity = None;
+                    }
+                    if ui.selectable_value(
                         &mut editor_data.material_state,
                         MaterialState::Liquid,
                         "Liquid",
-                    );
-                    ui.selectable_value(&mut editor_data.material_state, MaterialState::Gas, "Gas");
-                    ui.selectable_value(
+                    ).clicked() {
+                        if editor_data.fluidity.is_none() {
+                            editor_data.fluidity = Some(3);
+                        }
+                    }
+                    if ui.selectable_value(&mut editor_data.material_state, MaterialState::Gas, "Gas").clicked() {
+                        if editor_data.fluidity.is_none() {
+                            editor_data.fluidity = Some(3);
+                        }
+                    }
+                    if ui.selectable_value(
                         &mut editor_data.material_state,
                         MaterialState::Other,
                         "Other",
-                    );
+                    ).clicked() {
+                        editor_data.fluidity = None;
+                    }
                 });
         });
 

@@ -532,14 +532,12 @@ fn apply_editor_data_to_particle_type(
             commands.entity(entity).insert(MovableSolid);
         }
         MaterialState::Liquid => {
-            if let Some(fluidity) = editor_data.fluidity {
-                commands.entity(entity).insert(Liquid::new(fluidity.into()));
-            }
+            let fluidity = editor_data.fluidity.unwrap_or(3);
+            commands.entity(entity).insert(Liquid::new(fluidity.into()));
         }
         MaterialState::Gas => {
-            if let Some(fluidity) = editor_data.fluidity {
-                commands.entity(entity).insert(Gas::new(fluidity.into()));
-            }
+            let fluidity = editor_data.fluidity.unwrap_or(3);
+            commands.entity(entity).insert(Gas::new(fluidity.into()));
         }
         MaterialState::Other => {}
     }
