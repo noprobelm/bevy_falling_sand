@@ -84,10 +84,10 @@ impl Command for DebugPhysicsCommand {
     fn execute(
         &self,
         path: &[String],
-        args: &[String],
+        _args: &[String],
         console_writer: &mut EventWriter<PrintConsoleLine>,
         _exit_writer: &mut EventWriter<ExitCommandEvent>,
-        commands: &mut Commands,
+        _commands: &mut Commands,
     ) {
         match path.len() {
             2 => {
