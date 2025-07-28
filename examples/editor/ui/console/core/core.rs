@@ -120,7 +120,7 @@ pub trait ConsoleCommand: Send + Sync + 'static {
         commands: &mut Commands,
     ) {
         let subcommands = self.subcommand_types();
-        
+
         let mut current_depth = 0;
         for (i, part) in path.iter().enumerate() {
             if part == self.name() {
@@ -133,15 +133,18 @@ pub trait ConsoleCommand: Send + Sync + 'static {
             if subcommands.is_empty() {
                 self.execute_action(args, console_writer, commands);
             } else {
-                console_writer.write(PrintConsoleLine::new(
-                    format!("error: '{}' requires a subcommand", self.name())
-                ));
-                let subcmd_names: Vec<String> = subcommands.iter()
+                console_writer.write(PrintConsoleLine::new(format!(
+                    "error: '{}' requires a subcommand",
+                    self.name()
+                )));
+                let subcmd_names: Vec<String> = subcommands
+                    .iter()
                     .map(|cmd| cmd.name().to_string())
                     .collect();
-                console_writer.write(PrintConsoleLine::new(
-                    format!("Available subcommands: {}", subcmd_names.join(", "))
-                ));
+                console_writer.write(PrintConsoleLine::new(format!(
+                    "Available subcommands: {}",
+                    subcmd_names.join(", ")
+                )));
             }
             return;
         }
@@ -774,5 +777,4 @@ pub fn init_commands(mut config: ResMut<ConsoleConfiguration>, mut cache: ResMut
     cache.rebuild_tries(&config);
 }
 
-fn add_example_commands(_config: &mut ConsoleConfiguration) {
-}
+fn add_example_commands(_config: &mut ConsoleConfiguration) {}
