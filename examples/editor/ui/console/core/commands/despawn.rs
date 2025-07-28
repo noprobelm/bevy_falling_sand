@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use super::super::core::{Command, PrintConsoleLine};
+use super::super::core::{ConsoleCommand, PrintConsoleLine};
 
 pub struct DespawnCommandPlugin;
 
@@ -11,7 +11,7 @@ impl Plugin for DespawnCommandPlugin {
 #[derive(Default)]
 pub struct DespawnCommand;
 
-impl Command for DespawnCommand {
+impl ConsoleCommand for DespawnCommand {
     fn name(&self) -> &'static str {
         "despawn"
     }
@@ -32,3 +32,4 @@ impl Command for DespawnCommand {
         ));
     }
 }
+

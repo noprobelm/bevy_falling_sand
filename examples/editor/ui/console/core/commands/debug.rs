@@ -1,11 +1,11 @@
 use bevy::prelude::*;
 
-use super::super::core::{Command, PrintConsoleLine};
+use super::super::core::{ConsoleCommand, PrintConsoleLine};
 
 #[derive(Default)]
 pub struct DebugCommand;
 
-impl Command for DebugCommand {
+impl ConsoleCommand for DebugCommand {
     fn name(&self) -> &'static str {
         "debug"
     }
@@ -34,18 +34,12 @@ impl Command for DebugCommand {
                 // Route to subcommands
                 if path.len() >= 2 {
                     match path[1].as_str() {
-                        "physics" => DebugPhysicsCommand.execute(
-                            path,
-                            args,
-                            console_writer,
-                            commands,
-                        ),
-                        "particles" => DebugParticlesCommand.execute(
-                            path,
-                            args,
-                            console_writer,
-                            commands,
-                        ),
+                        "physics" => {
+                            DebugPhysicsCommand.execute(path, args, console_writer, commands)
+                        }
+                        "particles" => {
+                            DebugParticlesCommand.execute(path, args, console_writer, commands)
+                        }
                         _ => {
                             console_writer.write(PrintConsoleLine::new(format!(
                                 "error: Unknown subcommand 'debug {}'",
@@ -58,7 +52,7 @@ impl Command for DebugCommand {
         }
     }
 
-    fn subcommands(&self) -> Vec<Box<dyn Command>> {
+    fn subcommands(&self) -> Vec<Box<dyn ConsoleCommand>> {
         vec![
             Box::new(DebugPhysicsCommand),
             Box::new(DebugParticlesCommand),
@@ -69,7 +63,7 @@ impl Command for DebugCommand {
 #[derive(Default)]
 pub struct DebugPhysicsCommand;
 
-impl Command for DebugPhysicsCommand {
+impl ConsoleCommand for DebugPhysicsCommand {
     fn name(&self) -> &'static str {
         "physics"
     }
@@ -123,7 +117,7 @@ impl Command for DebugPhysicsCommand {
         }
     }
 
-    fn subcommands(&self) -> Vec<Box<dyn Command>> {
+    fn subcommands(&self) -> Vec<Box<dyn ConsoleCommand>> {
         vec![
             Box::new(DebugPhysicsEnableCommand),
             Box::new(DebugPhysicsDisableCommand),
@@ -134,7 +128,7 @@ impl Command for DebugPhysicsCommand {
 #[derive(Default)]
 pub struct DebugPhysicsEnableCommand;
 
-impl Command for DebugPhysicsEnableCommand {
+impl ConsoleCommand for DebugPhysicsEnableCommand {
     fn name(&self) -> &'static str {
         "enable"
     }
@@ -160,7 +154,7 @@ impl Command for DebugPhysicsEnableCommand {
 #[derive(Default)]
 pub struct DebugPhysicsDisableCommand;
 
-impl Command for DebugPhysicsDisableCommand {
+impl ConsoleCommand for DebugPhysicsDisableCommand {
     fn name(&self) -> &'static str {
         "disable"
     }
@@ -186,7 +180,7 @@ impl Command for DebugPhysicsDisableCommand {
 #[derive(Default)]
 pub struct DebugParticlesCommand;
 
-impl Command for DebugParticlesCommand {
+impl ConsoleCommand for DebugParticlesCommand {
     fn name(&self) -> &'static str {
         "particles"
     }
@@ -212,12 +206,7 @@ impl Command for DebugParticlesCommand {
                 ));
             }
             3 => match path[2].as_str() {
-                "count" => DebugParticlesCountCommand.execute(
-                    path,
-                    args,
-                    console_writer,
-                    commands,
-                ),
+                "count" => DebugParticlesCountCommand.execute(path, args, console_writer, commands),
                 _ => {
                     console_writer.write(PrintConsoleLine::new(format!(
                         "error: Unknown command 'debug particles {}'",
@@ -234,7 +223,7 @@ impl Command for DebugParticlesCommand {
         }
     }
 
-    fn subcommands(&self) -> Vec<Box<dyn Command>> {
+    fn subcommands(&self) -> Vec<Box<dyn ConsoleCommand>> {
         vec![Box::new(DebugParticlesCountCommand)]
     }
 }
@@ -242,7 +231,7 @@ impl Command for DebugParticlesCommand {
 #[derive(Default)]
 pub struct DebugParticlesCountCommand;
 
-impl Command for DebugParticlesCountCommand {
+impl ConsoleCommand for DebugParticlesCountCommand {
     fn name(&self) -> &'static str {
         "count"
     }

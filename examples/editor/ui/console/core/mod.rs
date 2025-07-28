@@ -19,10 +19,10 @@ impl Plugin for ConsolePlugin {
             .add_systems(
                 Update,
                 (
-                    help_command, 
-                    clear_command, 
-                    exit_command, 
-                    echo_command, 
+                    help_command,
+                    clear_command,
+                    exit_command,
+                    echo_command,
                     command_handler,
                 ),
             );
@@ -33,13 +33,13 @@ fn init_command_registry(
     mut registry: ResMut<CommandRegistry>,
     mut config: ResMut<ConsoleConfiguration>,
 ) {
-    use commands::{debug::*, reset::*, exit::ExitConsoleCommand};
-    
+    use commands::{debug::*, exit::ExitConsoleCommand, reset::*};
+
     // Register commands
     registry.register::<ExitConsoleCommand>();
     registry.register::<DebugCommand>();
     registry.register::<ResetCommand>();
-    
+
     // Register in configuration for completion
     config.register_command::<ExitConsoleCommand>();
     config.register_command::<DebugCommand>();

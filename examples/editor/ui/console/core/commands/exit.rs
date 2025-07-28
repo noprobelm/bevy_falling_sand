@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use clap::Parser;
 
-use super::super::core::{Command, ConsoleCommandEntered, NamedCommand, PrintConsoleLine};
+use super::super::core::{ConsoleCommand, ConsoleCommandEntered, NamedCommand, PrintConsoleLine};
 
 pub struct ExitCommandPlugin;
 
@@ -29,15 +29,15 @@ impl NamedCommand for ExitCommand {
 #[derive(Default)]
 pub struct ExitConsoleCommand;
 
-impl Command for ExitConsoleCommand {
+impl ConsoleCommand for ExitConsoleCommand {
     fn name(&self) -> &'static str {
         "exit"
     }
-    
+
     fn description(&self) -> &'static str {
         "Exit the application"
     }
-    
+
     fn execute(
         &self,
         path: &[String],
@@ -51,15 +51,15 @@ impl Command for ExitConsoleCommand {
     }
 }
 
-impl Command for ExitCommand {
+impl ConsoleCommand for ExitCommand {
     fn name(&self) -> &'static str {
         "exit"
     }
-    
+
     fn description(&self) -> &'static str {
         "Exit the application"
     }
-    
+
     fn execute(
         &self,
         path: &[String],

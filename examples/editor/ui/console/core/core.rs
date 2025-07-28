@@ -15,7 +15,6 @@ pub struct PrintConsoleLine {
     pub line: String,
 }
 
-
 impl PrintConsoleLine {
     pub fn new(line: String) -> Self {
         Self { line }
@@ -97,35 +96,35 @@ pub trait NamedCommand {
     fn name() -> &'static str;
 }
 
-pub trait Command: Send + Sync + 'static {
+pub trait ConsoleCommand: Send + Sync + 'static {
     fn name(&self) -> &'static str;
     fn description(&self) -> &'static str;
-    
+
     fn execute(
         &self,
-        path: &[String], 
-        args: &[String], 
+        path: &[String],
+        args: &[String],
         console_writer: &mut EventWriter<PrintConsoleLine>,
         commands: &mut Commands,
     );
-    
-    fn subcommands(&self) -> Vec<Box<dyn Command>> {
+
+    fn subcommands(&self) -> Vec<Box<dyn ConsoleCommand>> {
         vec![]
     }
-    
+
     fn clap_command(&self) -> clap::Command {
         let mut cmd = clap::Command::new(self.name()).about(self.description());
-        
+
         for subcmd in self.subcommands() {
             cmd = cmd.subcommand(subcmd.clap_command());
         }
-        
+
         cmd
     }
-    
+
     fn build_command_node(&self) -> CommandNode {
         let mut node = CommandNode::new(self.name(), self.description());
-        
+
         let subcommands = self.subcommands();
         if subcommands.is_empty() {
             node = node.executable(self.clap_command());
@@ -134,7 +133,7 @@ pub trait Command: Send + Sync + 'static {
                 node = node.with_child(subcmd.build_command_node());
             }
         }
-        
+
         node
     }
 }
@@ -547,8 +546,8 @@ impl ConsoleConfiguration {
     pub fn add_command_tree(&mut self, root_name: String, tree: CommandNode) {
         self.command_tree.insert(root_name, tree);
     }
-    
-    pub fn register_command<T: Command + Default>(&mut self) {
+
+    pub fn register_command<T: ConsoleCommand + Default>(&mut self) {
         let command = T::default();
         let name = command.name().to_string();
         let command_node = command.build_command_node();
@@ -558,26 +557,27 @@ impl ConsoleConfiguration {
 
 #[derive(Resource, Default)]
 pub struct CommandRegistry {
-    pub commands: Vec<Box<dyn Command>>,
+    pub commands: Vec<Box<dyn ConsoleCommand>>,
 }
 
 impl CommandRegistry {
-    pub fn register<T: Command + Default>(&mut self) {
+    pub fn register<T: ConsoleCommand + Default>(&mut self) {
         self.commands.push(Box::new(CommandWrapper::<T>::new()));
     }
-    
-    pub fn find_command(&self, name: &str) -> Option<&dyn Command> {
-        self.commands.iter()
+
+    pub fn find_command(&self, name: &str) -> Option<&dyn ConsoleCommand> {
+        self.commands
+            .iter()
             .find(|cmd| cmd.name() == name)
             .map(|cmd| cmd.as_ref())
     }
 }
 
-struct CommandWrapper<T: Command> {
+struct CommandWrapper<T: ConsoleCommand> {
     _phantom: std::marker::PhantomData<T>,
 }
 
-impl<T: Command> CommandWrapper<T> {
+impl<T: ConsoleCommand> CommandWrapper<T> {
     fn new() -> Self {
         Self {
             _phantom: std::marker::PhantomData,
@@ -585,33 +585,33 @@ impl<T: Command> CommandWrapper<T> {
     }
 }
 
-impl<T: Command + Default> Command for CommandWrapper<T> {
+impl<T: ConsoleCommand + Default> ConsoleCommand for CommandWrapper<T> {
     fn name(&self) -> &'static str {
         T::default().name()
     }
-    
+
     fn description(&self) -> &'static str {
         T::default().description()
     }
-    
+
     fn execute(
         &self,
-        path: &[String], 
-        args: &[String], 
+        path: &[String],
+        args: &[String],
         console_writer: &mut EventWriter<PrintConsoleLine>,
         commands: &mut Commands,
     ) {
         T::default().execute(path, args, console_writer, commands);
     }
-    
-    fn subcommands(&self) -> Vec<Box<dyn Command>> {
+
+    fn subcommands(&self) -> Vec<Box<dyn ConsoleCommand>> {
         T::default().subcommands()
     }
-    
+
     fn clap_command(&self) -> clap::Command {
         T::default().clap_command()
     }
-    
+
     fn build_command_node(&self) -> CommandNode {
         T::default().build_command_node()
     }
@@ -630,11 +630,15 @@ pub fn command_handler(
 
         let root_command_name = &command_event.command_path[0];
         if let Some(command) = registry.find_command(root_command_name) {
-            command.execute(&command_event.command_path, &command_event.args, &mut console_writer, &mut commands);
+            command.execute(
+                &command_event.command_path,
+                &command_event.args,
+                &mut console_writer,
+                &mut commands,
+            );
         }
     }
 }
-
 
 impl ConsoleCache {
     pub fn rebuild_tries(&mut self, config: &ConsoleConfiguration) {
@@ -710,7 +714,9 @@ pub fn init_commands(mut config: ResMut<ConsoleConfiguration>, mut cache: ResMut
     config.commands.insert(ClearCommand::name(), clear_cmd);
 
     let exit_cmd = ExitCommand::command().no_binary_name(true);
-    config.commands.insert(<ExitCommand as NamedCommand>::name(), exit_cmd);
+    config
+        .commands
+        .insert(<ExitCommand as NamedCommand>::name(), exit_cmd);
 
     let echo_cmd = EchoCommand::command().no_binary_name(true);
     config.commands.insert(EchoCommand::name(), echo_cmd);

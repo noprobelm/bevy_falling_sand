@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::camera::{MainCamera, ZoomSpeed, ZoomTarget};
 
-use super::super::core::{Command, PrintConsoleLine};
+use super::super::core::{ConsoleCommand, PrintConsoleLine};
 
 pub struct ResetCommandPlugin;
 
@@ -18,7 +18,7 @@ pub struct ResetCameraEvent;
 #[derive(Default)]
 pub struct ResetCommand;
 
-impl Command for ResetCommand {
+impl ConsoleCommand for ResetCommand {
     fn name(&self) -> &'static str {
         "reset"
     }
@@ -46,18 +46,12 @@ impl Command for ResetCommand {
             _ => {
                 if path.len() >= 2 {
                     match path[1].as_str() {
-                        "particle" => ResetParticleCommand.execute(
-                            path,
-                            args,
-                            console_writer,
-                            commands,
-                        ),
-                        "camera" => ResetCameraCommand.execute(
-                            path,
-                            args,
-                            console_writer,
-                            commands,
-                        ),
+                        "particle" => {
+                            ResetParticleCommand.execute(path, args, console_writer, commands)
+                        }
+                        "camera" => {
+                            ResetCameraCommand.execute(path, args, console_writer, commands)
+                        }
                         _ => {
                             console_writer.write(PrintConsoleLine::new(format!(
                                 "error: Unknown subcommand 'reset {}'",
@@ -70,7 +64,7 @@ impl Command for ResetCommand {
         }
     }
 
-    fn subcommands(&self) -> Vec<Box<dyn Command>> {
+    fn subcommands(&self) -> Vec<Box<dyn ConsoleCommand>> {
         vec![Box::new(ResetParticleCommand), Box::new(ResetCameraCommand)]
     }
 }
@@ -78,7 +72,7 @@ impl Command for ResetCommand {
 #[derive(Default)]
 pub struct ResetParticleCommand;
 
-impl Command for ResetParticleCommand {
+impl ConsoleCommand for ResetParticleCommand {
     fn name(&self) -> &'static str {
         "particle"
     }
@@ -106,12 +100,9 @@ impl Command for ResetParticleCommand {
             _ => {
                 if path.len() >= 3 {
                     match path[2].as_str() {
-                        "wall" => ResetParticleWallCommand.execute(
-                            path,
-                            args,
-                            console_writer,
-                            commands,
-                        ),
+                        "wall" => {
+                            ResetParticleWallCommand.execute(path, args, console_writer, commands)
+                        }
                         "dynamic" => ResetParticleDynamicCommand.execute(
                             path,
                             args,
@@ -130,7 +121,7 @@ impl Command for ResetParticleCommand {
         }
     }
 
-    fn subcommands(&self) -> Vec<Box<dyn Command>> {
+    fn subcommands(&self) -> Vec<Box<dyn ConsoleCommand>> {
         vec![
             Box::new(ResetParticleWallCommand),
             Box::new(ResetParticleDynamicCommand),
@@ -141,7 +132,7 @@ impl Command for ResetParticleCommand {
 #[derive(Default)]
 pub struct ResetCameraCommand;
 
-impl Command for ResetCameraCommand {
+impl ConsoleCommand for ResetCameraCommand {
     fn name(&self) -> &'static str {
         "camera"
     }
@@ -168,7 +159,7 @@ impl Command for ResetCameraCommand {
 #[derive(Default)]
 pub struct ResetParticleWallCommand;
 
-impl Command for ResetParticleWallCommand {
+impl ConsoleCommand for ResetParticleWallCommand {
     fn name(&self) -> &'static str {
         "wall"
     }
@@ -195,12 +186,7 @@ impl Command for ResetParticleWallCommand {
             }
             4 => {
                 if path[3] == "all" {
-                    ResetParticleWallAllCommand.execute(
-                        path,
-                        args,
-                        console_writer,
-                        commands,
-                    );
+                    ResetParticleWallAllCommand.execute(path, args, console_writer, commands);
                 } else {
                     console_writer.write(PrintConsoleLine::new(format!(
                         "error: Unknown command 'reset particle wall {}'",
@@ -217,7 +203,7 @@ impl Command for ResetParticleWallCommand {
         }
     }
 
-    fn subcommands(&self) -> Vec<Box<dyn Command>> {
+    fn subcommands(&self) -> Vec<Box<dyn ConsoleCommand>> {
         vec![Box::new(ResetParticleWallAllCommand)]
     }
 }
@@ -225,7 +211,7 @@ impl Command for ResetParticleWallCommand {
 #[derive(Default)]
 pub struct ResetParticleDynamicCommand;
 
-impl Command for ResetParticleDynamicCommand {
+impl ConsoleCommand for ResetParticleDynamicCommand {
     fn name(&self) -> &'static str {
         "dynamic"
     }
@@ -252,12 +238,7 @@ impl Command for ResetParticleDynamicCommand {
             }
             4 => {
                 if path[3] == "all" {
-                    ResetParticleDynamicAllCommand.execute(
-                        path,
-                        args,
-                        console_writer,
-                        commands,
-                    );
+                    ResetParticleDynamicAllCommand.execute(path, args, console_writer, commands);
                 } else {
                     console_writer.write(PrintConsoleLine::new(format!(
                         "error: Unknown command 'reset particle dynamic {}'",
@@ -274,7 +255,7 @@ impl Command for ResetParticleDynamicCommand {
         }
     }
 
-    fn subcommands(&self) -> Vec<Box<dyn Command>> {
+    fn subcommands(&self) -> Vec<Box<dyn ConsoleCommand>> {
         vec![Box::new(ResetParticleDynamicAllCommand)]
     }
 }
@@ -282,7 +263,7 @@ impl Command for ResetParticleDynamicCommand {
 #[derive(Default)]
 pub struct ResetParticleWallAllCommand;
 
-impl Command for ResetParticleWallAllCommand {
+impl ConsoleCommand for ResetParticleWallAllCommand {
     fn name(&self) -> &'static str {
         "all"
     }
@@ -308,7 +289,7 @@ impl Command for ResetParticleWallAllCommand {
 #[derive(Default)]
 pub struct ResetParticleDynamicAllCommand;
 
-impl Command for ResetParticleDynamicAllCommand {
+impl ConsoleCommand for ResetParticleDynamicAllCommand {
     fn name(&self) -> &'static str {
         "all"
     }
