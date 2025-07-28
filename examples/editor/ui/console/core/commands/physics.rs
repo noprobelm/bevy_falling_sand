@@ -57,7 +57,6 @@ impl ConsoleCommand for PhysicsDebugEnableCommand {
         console_writer: &mut EventWriter<PrintConsoleLine>,
         _commands: &mut Commands,
     ) {
-        println!("Executing: physics debug enable");
         console_writer.write(PrintConsoleLine::new(
             "Enabling physics debug overlay...".to_string(),
         ));
@@ -82,7 +81,6 @@ impl ConsoleCommand for PhysicsDebugDisableCommand {
         console_writer: &mut EventWriter<PrintConsoleLine>,
         _commands: &mut Commands,
     ) {
-        println!("Executing: physics debug disable");
         console_writer.write(PrintConsoleLine::new(
             "Disabling physics debug overlay...".to_string(),
         ));

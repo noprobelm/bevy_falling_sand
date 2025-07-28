@@ -50,7 +50,6 @@ impl ConsoleCommand for CameraResetCommand {
         console_writer: &mut EventWriter<PrintConsoleLine>,
         commands: &mut Commands,
     ) {
-        println!("CameraResetCommand::execute - triggering ResetCameraEvent");
         console_writer.write(PrintConsoleLine::new(
             "Triggering reset camera event...".to_string(),
         ));
@@ -63,10 +62,8 @@ fn on_reset_camera(
     camera_query: Query<Entity, With<MainCamera>>,
     mut commands: Commands,
 ) -> Result {
-    println!("on_reset_camera observer called!");
     let initial_scale = 0.11;
     let entity = camera_query.single()?;
-    println!("Found camera entity: {:?}", entity);
     commands.entity(entity).insert((
         Camera2d,
         Projection::Orthographic(OrthographicProjection {
@@ -82,6 +79,5 @@ fn on_reset_camera(
         ZoomSpeed(8.0),
         Transform::default(),
     ));
-    println!("Camera reset completed successfully");
     Ok(())
 }

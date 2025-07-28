@@ -19,7 +19,6 @@ pub fn clear_command(
 ) {
     for command_event in cmd.read() {
         if command_event.command_path.len() == 1 && command_event.command_path[0] == "clear" {
-            println!("Executing: clear");
             console_state.messages.clear();
             console_state.add_message("--- Bevy Falling Sand Editor Console ---".to_string());
         }

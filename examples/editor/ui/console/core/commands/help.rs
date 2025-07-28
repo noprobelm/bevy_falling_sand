@@ -24,7 +24,6 @@ pub fn help_command(
 ) {
     for command_event in cmd.read() {
         if command_event.command_path.len() == 1 && command_event.command_path[0] == "help" {
-            println!("Executing: help {}", command_event.args.join(" "));
             if let Some(target_cmd) = command_event.args.first() {
                 
                 if let Some(cmd_info) = config.commands.get(target_cmd.as_str()) {

@@ -104,7 +104,6 @@ impl ConsoleCommand for ParticlesResetWallAllCommand {
         console_writer: &mut EventWriter<PrintConsoleLine>,
         _commands: &mut Commands,
     ) {
-        println!("Executing: particles reset wall all");
         console_writer.write(PrintConsoleLine::new(
             "Resetting all wall particles...".to_string(),
         ));
@@ -129,7 +128,6 @@ impl ConsoleCommand for ParticlesResetDynamicAllCommand {
         console_writer: &mut EventWriter<PrintConsoleLine>,
         _commands: &mut Commands,
     ) {
-        println!("Executing: particles reset dynamic all");
         console_writer.write(PrintConsoleLine::new(
             "Resetting all dynamic particles...".to_string(),
         ));
@@ -171,7 +169,6 @@ impl ConsoleCommand for ParticlesDebugCountCommand {
         console_writer: &mut EventWriter<PrintConsoleLine>,
         _commands: &mut Commands,
     ) {
-        println!("Executing: particles debug count");
         console_writer.write(PrintConsoleLine::new(
             "Current particle count: 1234 particles".to_string(),
         ));
@@ -224,6 +221,5 @@ fn on_despawn_dynamic_particles(
     _trigger: Trigger<ClearDynamicParticlesEvent>,
     mut evw_clear_dynamic_particles: EventWriter<ClearDynamicParticlesEvent>,
 ) {
-    println!("Here");
     evw_clear_dynamic_particles.write(ClearDynamicParticlesEvent);
 }

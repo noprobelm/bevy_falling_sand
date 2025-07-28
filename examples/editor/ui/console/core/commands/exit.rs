@@ -77,7 +77,6 @@ fn on_exit_application(
     _trigger: Trigger<ExitApplicationEvent>,
     mut app_exit: EventWriter<AppExit>,
 ) {
-    println!("Exit command triggered - shutting down application");
     app_exit.write(AppExit::Success);
 }
 
