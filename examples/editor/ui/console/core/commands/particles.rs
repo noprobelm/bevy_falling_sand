@@ -1,30 +1,23 @@
 use bevy::prelude::*;
 
-use crate::camera::{MainCamera, ZoomSpeed, ZoomTarget};
-
 use super::super::core::{ConsoleCommand, PrintConsoleLine};
 
-pub struct ResetCommandPlugin;
+pub struct ParticlesCommandPlugin;
 
-impl Plugin for ResetCommandPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_observer(on_reset_camera);
-    }
+impl Plugin for ParticlesCommandPlugin {
+    fn build(&self, _app: &mut App) {}
 }
 
-#[derive(Event)]
-pub struct ResetCameraEvent;
-
 #[derive(Default)]
-pub struct ResetCommand;
+pub struct ParticlesCommand;
 
-impl ConsoleCommand for ResetCommand {
+impl ConsoleCommand for ParticlesCommand {
     fn name(&self) -> &'static str {
-        "reset"
+        "particles"
     }
 
     fn description(&self) -> &'static str {
-        "Reset various system components"
+        "Particle system operations"
     }
 
     fn execute(
@@ -37,24 +30,27 @@ impl ConsoleCommand for ResetCommand {
         match path.len() {
             1 => {
                 console_writer.write(PrintConsoleLine::new(
-                    "error: 'reset' requires a subcommand".to_string(),
+                    "error: 'particles' requires a subcommand".to_string(),
                 ));
                 console_writer.write(PrintConsoleLine::new(
-                    "Available subcommands: particle, camera".to_string(),
+                    "Available subcommands: reset, debug, despawn".to_string(),
                 ));
             }
             _ => {
                 if path.len() >= 2 {
                     match path[1].as_str() {
-                        "particle" => {
-                            ResetParticleCommand.execute(path, args, console_writer, commands)
+                        "reset" => {
+                            ParticlesResetCommand.execute(path, args, console_writer, commands)
                         }
-                        "camera" => {
-                            ResetCameraCommand.execute(path, args, console_writer, commands)
+                        "debug" => {
+                            ParticlesDebugCommand.execute(path, args, console_writer, commands)
+                        }
+                        "despawn" => {
+                            ParticlesDespawnCommand.execute(path, args, console_writer, commands)
                         }
                         _ => {
                             console_writer.write(PrintConsoleLine::new(format!(
-                                "error: Unknown subcommand 'reset {}'",
+                                "error: Unknown subcommand 'particles {}'",
                                 path[1]
                             )));
                         }
@@ -65,16 +61,20 @@ impl ConsoleCommand for ResetCommand {
     }
 
     fn subcommands(&self) -> Vec<Box<dyn ConsoleCommand>> {
-        vec![Box::new(ResetParticleCommand), Box::new(ResetCameraCommand)]
+        vec![
+            Box::new(ParticlesResetCommand),
+            Box::new(ParticlesDebugCommand),
+            Box::new(ParticlesDespawnCommand),
+        ]
     }
 }
 
 #[derive(Default)]
-pub struct ResetParticleCommand;
+pub struct ParticlesResetCommand;
 
-impl ConsoleCommand for ResetParticleCommand {
+impl ConsoleCommand for ParticlesResetCommand {
     fn name(&self) -> &'static str {
-        "particle"
+        "reset"
     }
 
     fn description(&self) -> &'static str {
@@ -91,7 +91,7 @@ impl ConsoleCommand for ResetParticleCommand {
         match path.len() {
             2 => {
                 console_writer.write(PrintConsoleLine::new(
-                    "error: 'reset particle' requires a subcommand".to_string(),
+                    "error: 'particles reset' requires a subcommand".to_string(),
                 ));
                 console_writer.write(PrintConsoleLine::new(
                     "Available subcommands: wall, dynamic".to_string(),
@@ -101,9 +101,9 @@ impl ConsoleCommand for ResetParticleCommand {
                 if path.len() >= 3 {
                     match path[2].as_str() {
                         "wall" => {
-                            ResetParticleWallCommand.execute(path, args, console_writer, commands)
+                            ParticlesResetWallCommand.execute(path, args, console_writer, commands)
                         }
-                        "dynamic" => ResetParticleDynamicCommand.execute(
+                        "dynamic" => ParticlesResetDynamicCommand.execute(
                             path,
                             args,
                             console_writer,
@@ -111,7 +111,7 @@ impl ConsoleCommand for ResetParticleCommand {
                         ),
                         _ => {
                             console_writer.write(PrintConsoleLine::new(format!(
-                                "error: Unknown subcommand 'reset particle {}'",
+                                "error: Unknown subcommand 'particles reset {}'",
                                 path[2]
                             )));
                         }
@@ -123,43 +123,16 @@ impl ConsoleCommand for ResetParticleCommand {
 
     fn subcommands(&self) -> Vec<Box<dyn ConsoleCommand>> {
         vec![
-            Box::new(ResetParticleWallCommand),
-            Box::new(ResetParticleDynamicCommand),
+            Box::new(ParticlesResetWallCommand),
+            Box::new(ParticlesResetDynamicCommand),
         ]
     }
 }
 
 #[derive(Default)]
-pub struct ResetCameraCommand;
+pub struct ParticlesResetWallCommand;
 
-impl ConsoleCommand for ResetCameraCommand {
-    fn name(&self) -> &'static str {
-        "camera"
-    }
-
-    fn description(&self) -> &'static str {
-        "Reset camera position and zoom"
-    }
-
-    fn execute(
-        &self,
-        _path: &[String],
-        _args: &[String],
-        console_writer: &mut EventWriter<PrintConsoleLine>,
-        commands: &mut Commands,
-    ) {
-        println!("ResetCameraCommand::execute - triggering ResetCameraEvent");
-        console_writer.write(PrintConsoleLine::new(
-            "Triggering reset camera event...".to_string(),
-        ));
-        commands.trigger(ResetCameraEvent);
-    }
-}
-
-#[derive(Default)]
-pub struct ResetParticleWallCommand;
-
-impl ConsoleCommand for ResetParticleWallCommand {
+impl ConsoleCommand for ParticlesResetWallCommand {
     fn name(&self) -> &'static str {
         "wall"
     }
@@ -178,7 +151,7 @@ impl ConsoleCommand for ResetParticleWallCommand {
         match path.len() {
             3 => {
                 console_writer.write(PrintConsoleLine::new(
-                    "error: 'reset particle wall' requires a subcommand".to_string(),
+                    "error: 'particles reset wall' requires a subcommand".to_string(),
                 ));
                 console_writer.write(PrintConsoleLine::new(
                     "Available subcommands: all".to_string(),
@@ -186,10 +159,10 @@ impl ConsoleCommand for ResetParticleWallCommand {
             }
             4 => {
                 if path[3] == "all" {
-                    ResetParticleWallAllCommand.execute(path, args, console_writer, commands);
+                    ParticlesResetWallAllCommand.execute(path, args, console_writer, commands);
                 } else {
                     console_writer.write(PrintConsoleLine::new(format!(
-                        "error: Unknown command 'reset particle wall {}'",
+                        "error: Unknown command 'particles reset wall {}'",
                         path[3]
                     )));
                 }
@@ -204,14 +177,14 @@ impl ConsoleCommand for ResetParticleWallCommand {
     }
 
     fn subcommands(&self) -> Vec<Box<dyn ConsoleCommand>> {
-        vec![Box::new(ResetParticleWallAllCommand)]
+        vec![Box::new(ParticlesResetWallAllCommand)]
     }
 }
 
 #[derive(Default)]
-pub struct ResetParticleDynamicCommand;
+pub struct ParticlesResetDynamicCommand;
 
-impl ConsoleCommand for ResetParticleDynamicCommand {
+impl ConsoleCommand for ParticlesResetDynamicCommand {
     fn name(&self) -> &'static str {
         "dynamic"
     }
@@ -230,7 +203,7 @@ impl ConsoleCommand for ResetParticleDynamicCommand {
         match path.len() {
             3 => {
                 console_writer.write(PrintConsoleLine::new(
-                    "error: 'reset particle dynamic' requires a subcommand".to_string(),
+                    "error: 'particles reset dynamic' requires a subcommand".to_string(),
                 ));
                 console_writer.write(PrintConsoleLine::new(
                     "Available subcommands: all".to_string(),
@@ -238,10 +211,10 @@ impl ConsoleCommand for ResetParticleDynamicCommand {
             }
             4 => {
                 if path[3] == "all" {
-                    ResetParticleDynamicAllCommand.execute(path, args, console_writer, commands);
+                    ParticlesResetDynamicAllCommand.execute(path, args, console_writer, commands);
                 } else {
                     console_writer.write(PrintConsoleLine::new(format!(
-                        "error: Unknown command 'reset particle dynamic {}'",
+                        "error: Unknown command 'particles reset dynamic {}'",
                         path[3]
                     )));
                 }
@@ -256,14 +229,14 @@ impl ConsoleCommand for ResetParticleDynamicCommand {
     }
 
     fn subcommands(&self) -> Vec<Box<dyn ConsoleCommand>> {
-        vec![Box::new(ResetParticleDynamicAllCommand)]
+        vec![Box::new(ParticlesResetDynamicAllCommand)]
     }
 }
 
 #[derive(Default)]
-pub struct ResetParticleWallAllCommand;
+pub struct ParticlesResetWallAllCommand;
 
-impl ConsoleCommand for ResetParticleWallAllCommand {
+impl ConsoleCommand for ParticlesResetWallAllCommand {
     fn name(&self) -> &'static str {
         "all"
     }
@@ -279,7 +252,7 @@ impl ConsoleCommand for ResetParticleWallAllCommand {
         console_writer: &mut EventWriter<PrintConsoleLine>,
         _commands: &mut Commands,
     ) {
-        println!("Executing: reset particle wall all");
+        println!("Executing: particles reset wall all");
         console_writer.write(PrintConsoleLine::new(
             "Resetting all wall particles...".to_string(),
         ));
@@ -287,9 +260,9 @@ impl ConsoleCommand for ResetParticleWallAllCommand {
 }
 
 #[derive(Default)]
-pub struct ResetParticleDynamicAllCommand;
+pub struct ParticlesResetDynamicAllCommand;
 
-impl ConsoleCommand for ResetParticleDynamicAllCommand {
+impl ConsoleCommand for ParticlesResetDynamicAllCommand {
     fn name(&self) -> &'static str {
         "all"
     }
@@ -305,37 +278,111 @@ impl ConsoleCommand for ResetParticleDynamicAllCommand {
         console_writer: &mut EventWriter<PrintConsoleLine>,
         _commands: &mut Commands,
     ) {
-        println!("Executing: reset particle dynamic all");
+        println!("Executing: particles reset dynamic all");
         console_writer.write(PrintConsoleLine::new(
             "Resetting all dynamic particles...".to_string(),
         ));
     }
 }
 
-fn on_reset_camera(
-    _trigger: Trigger<ResetCameraEvent>,
-    camera_query: Query<Entity, With<MainCamera>>,
-    mut commands: Commands,
-) -> Result {
-    println!("on_reset_camera observer called!");
-    let initial_scale = 0.11;
-    let entity = camera_query.single()?;
-    println!("Found camera entity: {:?}", entity);
-    commands.entity(entity).insert((
-        Camera2d,
-        Projection::Orthographic(OrthographicProjection {
-            near: -1000.0,
-            scale: initial_scale,
-            ..OrthographicProjection::default_2d()
-        }),
-        MainCamera,
-        ZoomTarget {
-            target_scale: initial_scale,
-            current_scale: initial_scale,
-        },
-        ZoomSpeed(8.0),
-        Transform::default(),
-    ));
-    println!("Camera reset completed successfully");
-    Ok(())
+#[derive(Default)]
+pub struct ParticlesDebugCommand;
+
+impl ConsoleCommand for ParticlesDebugCommand {
+    fn name(&self) -> &'static str {
+        "debug"
+    }
+
+    fn description(&self) -> &'static str {
+        "Particle debug options"
+    }
+
+    fn execute(
+        &self,
+        path: &[String],
+        args: &[String],
+        console_writer: &mut EventWriter<PrintConsoleLine>,
+        commands: &mut Commands,
+    ) {
+        match path.len() {
+            2 => {
+                console_writer.write(PrintConsoleLine::new(
+                    "error: 'particles debug' requires a subcommand".to_string(),
+                ));
+                console_writer.write(PrintConsoleLine::new(
+                    "Available subcommands: count".to_string(),
+                ));
+            }
+            3 => match path[2].as_str() {
+                "count" => ParticlesDebugCountCommand.execute(path, args, console_writer, commands),
+                _ => {
+                    console_writer.write(PrintConsoleLine::new(format!(
+                        "error: Unknown command 'particles debug {}'",
+                        path[2]
+                    )));
+                }
+            },
+            _ => {
+                console_writer.write(PrintConsoleLine::new(format!(
+                    "error: Invalid command path: {}",
+                    path.join(" ")
+                )));
+            }
+        }
+    }
+
+    fn subcommands(&self) -> Vec<Box<dyn ConsoleCommand>> {
+        vec![Box::new(ParticlesDebugCountCommand)]
+    }
+}
+
+#[derive(Default)]
+pub struct ParticlesDebugCountCommand;
+
+impl ConsoleCommand for ParticlesDebugCountCommand {
+    fn name(&self) -> &'static str {
+        "count"
+    }
+
+    fn description(&self) -> &'static str {
+        "Show particle count"
+    }
+
+    fn execute(
+        &self,
+        _path: &[String],
+        _args: &[String],
+        console_writer: &mut EventWriter<PrintConsoleLine>,
+        _commands: &mut Commands,
+    ) {
+        println!("Executing: particles debug count");
+        console_writer.write(PrintConsoleLine::new(
+            "Current particle count: 1234 particles".to_string(),
+        ));
+    }
+}
+
+#[derive(Default)]
+pub struct ParticlesDespawnCommand;
+
+impl ConsoleCommand for ParticlesDespawnCommand {
+    fn name(&self) -> &'static str {
+        "despawn"
+    }
+
+    fn description(&self) -> &'static str {
+        "Despawn particles from the world"
+    }
+
+    fn execute(
+        &self,
+        _path: &[String],
+        _args: &[String],
+        console_writer: &mut EventWriter<PrintConsoleLine>,
+        _commands: &mut Commands,
+    ) {
+        console_writer.write(PrintConsoleLine::new(
+            "Despawning particles - not yet implemented".to_string(),
+        ));
+    }
 }
