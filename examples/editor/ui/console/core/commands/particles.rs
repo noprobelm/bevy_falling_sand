@@ -1,11 +1,14 @@
 use bevy::prelude::*;
+use bevy_falling_sand::prelude::ClearDynamicParticlesEvent;
 
 use super::super::core::{ConsoleCommand, PrintConsoleLine};
 
 pub struct ParticlesCommandPlugin;
 
 impl Plugin for ParticlesCommandPlugin {
-    fn build(&self, _app: &mut App) {}
+    fn build(&self, app: &mut App) {
+        app.add_observer(on_despawn_dynamic_particles);
+    }
 }
 
 #[derive(Default)]
@@ -337,14 +340,78 @@ impl ConsoleCommand for ParticlesDespawnCommand {
 
     fn execute(
         &self,
-        _path: &[String],
+        path: &[String],
         _args: &[String],
         console_writer: &mut EventWriter<PrintConsoleLine>,
-        _commands: &mut Commands,
+        commands: &mut Commands,
     ) {
+        match path.len() {
+            2 => {
+                console_writer.write(PrintConsoleLine::new(
+                    "error: 'particles despawn' requires a subcommand".to_string(),
+                ));
+                console_writer.write(PrintConsoleLine::new(
+                    "Available subcommands: dynamic".to_string(),
+                ));
+            }
+            3 => match path[2].as_str() {
+                "dynamic" => {
+                    console_writer.write(PrintConsoleLine::new(
+                        "Despawning all dynamic particles from the world".to_string(),
+                    ));
+                    ParticlesDespawnDynamicCommand.execute(path, _args, console_writer, commands);
+                }
+                _ => {
+                    console_writer.write(PrintConsoleLine::new(format!(
+                        "error: Unknown command 'particles despawn {}'",
+                        path[2]
+                    )));
+                }
+            },
+            _ => {
+                console_writer.write(PrintConsoleLine::new(format!(
+                    "error: Unknown command 'physics debug {}'",
+                    path[2]
+                )));
+            }
+        }
         console_writer.write(PrintConsoleLine::new(
             "Despawning particles - not yet implemented".to_string(),
         ));
     }
+
+    fn subcommands(&self) -> Vec<Box<dyn ConsoleCommand>> {
+        vec![Box::new(ParticlesDespawnDynamicCommand)]
+    }
 }
 
+#[derive(Default)]
+pub struct ParticlesDespawnDynamicCommand;
+
+impl ConsoleCommand for ParticlesDespawnDynamicCommand {
+    fn name(&self) -> &'static str {
+        "dynamic"
+    }
+
+    fn description(&self) -> &'static str {
+        "Despawn dynamic particles from the world"
+    }
+
+    fn execute(
+        &self,
+        _path: &[String],
+        _args: &[String],
+        _console_writer: &mut EventWriter<PrintConsoleLine>,
+        commands: &mut Commands,
+    ) {
+        commands.trigger(ClearDynamicParticlesEvent);
+    }
+}
+
+fn on_despawn_dynamic_particles(
+    _trigger: Trigger<ClearDynamicParticlesEvent>,
+    mut evw_clear_dynamic_particles: EventWriter<ClearDynamicParticlesEvent>,
+) {
+    println!("Here");
+    evw_clear_dynamic_particles.write(ClearDynamicParticlesEvent);
+}
