@@ -265,6 +265,16 @@ fn spawn_particles(
                     cursor_position.previous,
                     cursor_position.current,
                 );
+            } else {
+                // Spawn particle at current cursor position when not moving
+                commands.spawn((
+                    particle.0.clone(),
+                    Transform::from_xyz(
+                        cursor_position.current.x.round(),
+                        cursor_position.current.y.round(),
+                        0.0,
+                    ),
+                ));
             }
         }
     }
@@ -361,6 +371,15 @@ fn despawn_particles(
                     cursor_position.previous,
                     cursor_position.current,
                 );
+            } else {
+                // Despawn particle at current cursor position when not moving
+                evw_remove_particle.write(RemoveParticleEvent {
+                    position: IVec2::new(
+                        cursor_position.current.x.round() as i32,
+                        cursor_position.current.y.round() as i32,
+                    ),
+                    despawn: true,
+                });
             }
         }
     }
