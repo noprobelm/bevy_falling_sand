@@ -723,53 +723,7 @@ pub fn init_commands(mut config: ResMut<ConsoleConfiguration>, mut cache: ResMut
     cache.rebuild_tries(&config);
 }
 
-fn add_example_commands(config: &mut ConsoleConfiguration) {
-    let reset_cmd = CommandNode::new("reset", "Reset various system components")
-        .with_child(
-            CommandNode::new("particle", "Reset particle-related components")
-                .with_child(
-                    CommandNode::new("wall", "Reset wall particles").with_child(
-                        CommandNode::new("all", "Reset all wall particles").executable(
-                            clap::Command::new("all").about("Reset all wall particles"),
-                        ),
-                    ),
-                )
-                .with_child(
-                    CommandNode::new("dynamic", "Reset dynamic particles").with_child(
-                        CommandNode::new("all", "Reset all dynamic particles").executable(
-                            clap::Command::new("all").about("Reset all dynamic particles"),
-                        ),
-                    ),
-                ),
-        )
-        .with_child(
-            CommandNode::new("camera", "Reset camera position and zoom")
-                .executable(clap::Command::new("camera").about("Reset camera to default position")),
-        );
-
-    config.add_command_tree("reset".to_string(), reset_cmd);
-
-    let debug_cmd = CommandNode::new("debug", "Debug system controls")
-        .with_child(
-            CommandNode::new("physics", "Physics debug options")
-                .with_child(
-                    CommandNode::new("enable", "Enable physics debug overlay").executable(
-                        clap::Command::new("enable").about("Enable physics debug visualization"),
-                    ),
-                )
-                .with_child(
-                    CommandNode::new("disable", "Disable physics debug overlay").executable(
-                        clap::Command::new("disable").about("Disable physics debug visualization"),
-                    ),
-                ),
-        )
-        .with_child(
-            CommandNode::new("particles", "Particle debug options").with_child(
-                CommandNode::new("count", "Show particle count").executable(
-                    clap::Command::new("count").about("Display current particle count"),
-                ),
-            ),
-        );
-
-    config.add_command_tree("debug".to_string(), debug_cmd);
+fn add_example_commands(_config: &mut ConsoleConfiguration) {
+    // Example commands have been replaced by the new command structure
+    // using particles, camera, and physics commands registered via the registry
 }
