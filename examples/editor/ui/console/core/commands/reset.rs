@@ -344,13 +344,11 @@ impl Command for ResetParticleDynamicAllCommand {
     }
 }
 
-// Legacy function for compatibility during transition - will be removed
 pub fn handle_reset_command(
     path: &[String],
     _args: &[String],
     writer: &mut EventWriter<PrintConsoleLine>,
 ) {
-    // For legacy compatibility, manually handle the reset command logic
     match path.len() {
         1 => {
             writer.write(PrintConsoleLine::new(
