@@ -5,7 +5,7 @@ use bevy::prelude::*;
 
 use crate::{
     Particle, ParticleInstances, ParticlePosition, ParticleSimulationSet, ParticleType,
-    ParticleTypeMap, RemoveParticleEvent,
+    ParticleTypeMap,
 };
 
 /// Adds Bevy plugin elements for particle mapping functionality.
@@ -15,6 +15,7 @@ impl Plugin for ParticleMapPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<ClearParticleMapEvent>()
             .add_event::<ClearParticleTypeChildrenEvent>()
+            .add_event::<DespawnParticleEvent>()
             .add_systems(Startup, setup_particle_map)
             .add_systems(PostUpdate, reset_chunks.in_set(ParticleSimulationSet))
             .add_systems(
@@ -22,7 +23,7 @@ impl Plugin for ParticleMapPlugin {
                 (
                     ev_clear_particle_type_children,
                     ev_clear_particle_map,
-                    ev_remove_particle,
+                    ev_despawn_particle,
                 ),
             );
     }
@@ -488,6 +489,34 @@ pub struct ClearParticleMapEvent;
 /// Event used to trigger the removal of all children under a specified [`ParticleType`].
 pub struct ClearParticleTypeChildrenEvent(pub String);
 
+/// Event to send each tiem a Particle is removed from the simulation.
+#[derive(Event)]
+pub struct DespawnParticleEvent {
+    /// Type of particle remove event
+    ev_type: DespawnParticleEventType,
+}
+
+impl DespawnParticleEvent {
+    /// Build event from particle position.
+    pub fn from_position(position: IVec2) -> Self {
+        Self {
+            ev_type: DespawnParticleEventType::Position(position),
+        }
+    }
+
+    /// Build event from particle entity.
+    pub fn from_entity(entity: Entity) -> Self {
+        Self {
+            ev_type: DespawnParticleEventType::Entity(entity),
+        }
+    }
+}
+
+enum DespawnParticleEventType {
+    Position(IVec2),
+    Entity(Entity),
+}
+
 fn setup_particle_map(mut commands: Commands) {
     commands.insert_resource(ParticleMap::default());
 }
@@ -497,17 +526,31 @@ fn reset_chunks(mut map: ResMut<ParticleMap>) {
 }
 
 #[allow(clippy::needless_pass_by_value)]
-fn ev_remove_particle(
-    mut ev_remove_particle: EventReader<RemoveParticleEvent>,
+fn ev_despawn_particle(
+    mut ev_remove_particle: EventReader<DespawnParticleEvent>,
     mut commands: Commands,
     mut map: ResMut<ParticleMap>,
+    particle_query: Query<&Particle>,
 ) {
-    ev_remove_particle.read().for_each(|ev| {
-        if let Some(entity) = map.remove(&ev.position) {
-            if ev.despawn {
-                commands.entity(entity).remove::<ChildOf>().despawn();
+    ev_remove_particle.read().for_each(|ev| match &ev.ev_type {
+        DespawnParticleEventType::Position(position) => {
+            if let Some(entity) = map.remove(position) {
+                commands.entity(entity).despawn();
             } else {
-                commands.entity(entity).remove::<ChildOf>();
+                info!(
+                    "Attempted to despawn particle from position where none exists: {:?}",
+                    position
+                );
+            }
+        }
+        DespawnParticleEventType::Entity(entity) => {
+            if particle_query.contains(*entity) {
+                commands.entity(*entity).despawn();
+            } else {
+                info!(
+                    "Attempted to despawn non-particle entity using DespawnParticlEvent: {:?}",
+                    entity
+                );
             }
         }
     });

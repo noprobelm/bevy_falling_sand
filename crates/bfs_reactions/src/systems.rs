@@ -1,9 +1,7 @@
 use super::ReactionRng;
 use bevy::prelude::*;
 use bfs_color::{ChangesColor, ResetParticleColorEvent};
-use bfs_core::{
-    Particle, ParticleMap, ParticlePosition, ParticleRng, ParticleSimulationSet, RemoveParticleEvent,
-};
+use bfs_core::{Particle, ParticleMap, ParticlePosition, ParticleRng, ParticleSimulationSet};
 
 use crate::{Burning, Burns, Fire};
 
@@ -27,15 +25,14 @@ fn handle_fire(
     mut commands: Commands,
     mut fire_query: Query<(&Fire, &ParticlePosition, &mut ReactionRng)>,
     burns_query: Query<(Entity, &Burns), (With<Particle>, Without<Burning>)>,
-    particle_map: Res<ParticleMap>,
+    map: Res<ParticleMap>,
 ) {
     fire_query.iter_mut().for_each(|(fire, position, mut rng)| {
         let mut destroy_fire: bool = false;
         if !rng.chance(fire.chance_to_spread) {
             return;
         }
-        particle_map
-            .within_radius(position.0, fire.burn_radius)
+        map.within_radius(position.0, fire.burn_radius)
             .for_each(|(_, entity)| {
                 if let Ok((entity, burns)) = burns_query.get(*entity) {
                     commands.entity(entity).insert(burns.to_burning());
@@ -52,10 +49,9 @@ fn handle_fire(
                 }
             });
         if destroy_fire {
-            commands.trigger(RemoveParticleEvent {
-                position: position.0,
-                despawn: true,
-            });
+            if let Some(entity) = map.get(&position.0) {
+                commands.entity(*entity).despawn();
+            }
         }
     });
 }

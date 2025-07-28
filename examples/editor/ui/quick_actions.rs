@@ -272,7 +272,7 @@ fn spawn_particles(
 }
 
 fn despawn_particles(
-    mut evw_remove_particle: EventWriter<RemoveParticleEvent>,
+    mut evw_remove_particle: EventWriter<DespawnParticleEvent>,
     cursor_position: Res<CursorPosition>,
     brush_type_state: Res<State<BrushTypeState>>,
     brush_size_query: Query<&BrushSize>,
@@ -362,13 +362,10 @@ fn despawn_particles(
                 );
             } else {
                 // Despawn particle at current cursor position when not moving
-                evw_remove_particle.write(RemoveParticleEvent {
-                    position: IVec2::new(
-                        cursor_position.current.x.round() as i32,
-                        cursor_position.current.y.round() as i32,
-                    ),
-                    despawn: true,
-                });
+                evw_remove_particle.write(DespawnParticleEvent::from_position(IVec2::new(
+                    cursor_position.current.x.round() as i32,
+                    cursor_position.current.y.round() as i32,
+                )));
             }
         }
     }
@@ -521,7 +518,7 @@ fn spawn_cursor_interpolated(commands: &mut Commands, particle: Particle, start:
 }
 
 fn despawn_circle(
-    evw_remove_particle: &mut EventWriter<RemoveParticleEvent>,
+    evw_remove_particle: &mut EventWriter<DespawnParticleEvent>,
     center: Vec2,
     radius: usize,
 ) {
@@ -542,15 +539,12 @@ fn despawn_circle(
     }
 
     for position in points {
-        evw_remove_particle.write(RemoveParticleEvent {
-            position,
-            despawn: true,
-        });
+        evw_remove_particle.write(DespawnParticleEvent::from_position(position));
     }
 }
 
 fn despawn_capsule(
-    evw_remove_particle: &mut EventWriter<RemoveParticleEvent>,
+    evw_remove_particle: &mut EventWriter<DespawnParticleEvent>,
     start: Vec2,
     end: Vec2,
     radius: usize,
@@ -563,15 +557,12 @@ fn despawn_capsule(
 
     let points = points_within_capsule(&capsule, start, end);
     for position in points {
-        evw_remove_particle.write(RemoveParticleEvent {
-            position,
-            despawn: true,
-        });
+        evw_remove_particle.write(DespawnParticleEvent::from_position(position));
     }
 }
 
 fn despawn_line(
-    evw_remove_particle: &mut EventWriter<RemoveParticleEvent>,
+    evw_remove_particle: &mut EventWriter<DespawnParticleEvent>,
     center: Vec2,
     brush_size: usize,
 ) {
@@ -583,15 +574,12 @@ fn despawn_line(
             (center.x + x as f32).round() as i32,
             center.y.round() as i32,
         );
-        evw_remove_particle.write(RemoveParticleEvent {
-            position,
-            despawn: true,
-        });
+        evw_remove_particle.write(DespawnParticleEvent::from_position(position));
     }
 }
 
 fn despawn_line_interpolated(
-    evw_remove_particle: &mut EventWriter<RemoveParticleEvent>,
+    evw_remove_particle: &mut EventWriter<DespawnParticleEvent>,
     start: Vec2,
     end: Vec2,
     brush_size: usize,
@@ -614,15 +602,12 @@ fn despawn_line_interpolated(
     }
 
     for position in points {
-        evw_remove_particle.write(RemoveParticleEvent {
-            position,
-            despawn: true,
-        });
+        evw_remove_particle.write(DespawnParticleEvent::from_position(position));
     }
 }
 
 fn despawn_cursor_interpolated(
-    evw_remove_particle: &mut EventWriter<RemoveParticleEvent>,
+    evw_remove_particle: &mut EventWriter<DespawnParticleEvent>,
     start: Vec2,
     end: Vec2,
 ) {
@@ -642,9 +627,6 @@ fn despawn_cursor_interpolated(
     }
 
     for position in points {
-        evw_remove_particle.write(RemoveParticleEvent {
-            position,
-            despawn: true,
-        });
+        evw_remove_particle.write(DespawnParticleEvent::from_position(position));
     }
 }

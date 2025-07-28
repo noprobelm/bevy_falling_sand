@@ -34,7 +34,6 @@ impl Plugin for ParticleCorePlugin {
             .add_event::<ParticleRegistrationEvent>()
             .add_event::<ResetParticleChildrenEvent>()
             .add_event::<ResetParticleEvent>()
-            .add_event::<RemoveParticleEvent>()
             .add_systems(
                 PreUpdate,
                 handle_new_particles.in_set(ParticleRegistrationSet),
@@ -406,15 +405,6 @@ pub struct SimulationStepEvent;
 pub struct ParticleRegistrationEvent {
     /// The new particle entities.
     pub entities: Vec<Entity>,
-}
-
-/// Event to send each tiem a Particle is removed from the simulation.
-#[derive(Event)]
-pub struct RemoveParticleEvent {
-    /// The position of the particle.
-    pub position: IVec2,
-    /// Should the underlying entity be despawned
-    pub despawn: bool,
 }
 
 #[derive(Event)]

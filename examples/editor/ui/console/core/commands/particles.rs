@@ -295,3 +295,5 @@ fn on_despawn_all_particles(
 ) {
     evw_clear_particle_map.write(ClearParticleMapEvent);
 }
+
+fn on_despawn_named_particles() {}
