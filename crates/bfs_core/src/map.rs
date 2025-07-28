@@ -498,14 +498,16 @@ pub struct DespawnParticleEvent {
 
 impl DespawnParticleEvent {
     /// Build event from particle position.
-    pub fn from_position(position: IVec2) -> Self {
+    #[must_use]
+    pub const fn from_position(position: IVec2) -> Self {
         Self {
             ev_type: DespawnParticleEventType::Position(position),
         }
     }
 
     /// Build event from particle entity.
-    pub fn from_entity(entity: Entity) -> Self {
+    #[must_use]
+    pub const fn from_entity(entity: Entity) -> Self {
         Self {
             ev_type: DespawnParticleEventType::Entity(entity),
         }
