@@ -255,8 +255,6 @@ impl ConsoleState {
         if let Some(index) = self.suggestion_index {
             if let Some(suggestion) = self.suggestions.get(index).cloned() {
                 self.apply_suggestion(&suggestion);
-                self.commit_completion();
-                self.input.push(' ');
                 self.needs_cursor_at_end = true;
             }
         }
@@ -429,6 +427,15 @@ impl ConsoleState {
     }
 
     pub fn update_suggestions(&mut self, cache: &ConsoleCache, config: &ConsoleConfiguration) {
+        self.update_suggestions_with_particle_cache(cache, config, None);
+    }
+
+    pub fn update_suggestions_with_particle_cache(
+        &mut self, 
+        cache: &ConsoleCache, 
+        config: &ConsoleConfiguration,
+        particle_cache: Option<&crate::ui::particle_search::ParticleSearchCache>
+    ) {
         if self.in_completion_mode {
             return;
         }
@@ -465,7 +472,7 @@ impl ConsoleState {
             let (context_path, partial_word) =
                 self.parse_command_context(&words, config, input_to_analyze);
             self.suggestions =
-                self.get_context_suggestions(context_path, partial_word, cache, config);
+                self.get_context_suggestions_with_particle_cache(context_path, partial_word, cache, config, particle_cache);
         }
     }
 
@@ -534,6 +541,40 @@ impl ConsoleState {
         _cache: &ConsoleCache,
         config: &ConsoleConfiguration,
     ) -> Vec<String> {
+        self.get_context_suggestions_with_particle_cache(context_path, partial_word, _cache, config, None)
+    }
+
+    fn get_context_suggestions_with_particle_cache(
+        &self,
+        context_path: Vec<String>,
+        partial_word: String,
+        _cache: &ConsoleCache,
+        config: &ConsoleConfiguration,
+        particle_cache: Option<&crate::ui::particle_search::ParticleSearchCache>
+    ) -> Vec<String> {
+        // Special case for particle command autocomplete
+        if context_path == vec!["brush".to_string(), "set".to_string(), "particle".to_string()] {
+            if let Some(p_cache) = particle_cache {
+                if partial_word.is_empty() {
+                    // Return first 5 particles when no partial word
+                    return p_cache.all_particles
+                        .iter()
+                        .take(5)
+                        .cloned()
+                        .collect();
+                } else {
+                    // Filter particles that start with the partial word
+                    return p_cache.all_particles
+                        .iter()
+                        .filter(|p| p.to_lowercase().starts_with(&partial_word.to_lowercase()))
+                        .take(5)
+                        .cloned()
+                        .collect();
+                }
+            }
+            return vec![];
+        }
+
         let completions = self.get_all_completions_for_context(&context_path, config);
 
         if context_path.is_empty() {
@@ -547,11 +588,15 @@ impl ConsoleState {
                     .collect()
             }
         } else {
-            completions
-                .into_iter()
-                .filter(|s| s.starts_with(&partial_word))
-                .take(5)
-                .collect()
+            if partial_word.is_empty() {
+                completions.into_iter().take(5).collect()
+            } else {
+                completions
+                    .into_iter()
+                    .filter(|s| s.starts_with(&partial_word))
+                    .take(5)
+                    .collect()
+            }
         }
     }
 

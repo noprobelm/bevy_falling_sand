@@ -121,6 +121,7 @@ fn render_ui_panels(
     mut ev_save_particles_scene: EventWriter<SaveParticlesSceneEvent>,
     mut ev_load_particles_scene: EventWriter<LoadParticlesSceneEvent>,
     particle_movement_state_current: Res<State<MovementSource>>,
+    particle_search_cache: Res<ParticleSearchCache>,
 ) {
     let ctx = contexts.ctx_mut();
 
@@ -209,7 +210,7 @@ fn render_ui_panels(
         .exact_height(console_height)
         .frame(egui::Frame::NONE)
         .show(ctx, |ui| {
-            Console.render(ui, &mut console_state, &cache, &config, &mut command_writer);
+            Console.render_with_particle_cache(ui, &mut console_state, &cache, &config, &mut command_writer, Some(&particle_search_cache));
         });
 
     SceneManagementUI.render(
