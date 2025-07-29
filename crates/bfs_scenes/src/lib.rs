@@ -1,3 +1,6 @@
+//! Crate to load Bevy Falling Sand scenes. We do not use conventional scenes here to preserve file
+//! size (particle data is quite substantial). In the future this crate will be modified to further
+//! reduce file size of particle scene data.
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![warn(
     clippy::nursery,
