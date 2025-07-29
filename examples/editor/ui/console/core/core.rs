@@ -420,9 +420,11 @@ impl ConsoleState {
             }
             self.history_index += 1;
             self.input = self.history.get(self.history_index).unwrap().clone();
+            self.needs_cursor_at_end = true;
         } else if !up && self.history_index > 0 {
             self.history_index -= 1;
             self.input = self.history.get(self.history_index).unwrap().clone();
+            self.needs_cursor_at_end = true;
         }
     }
 
