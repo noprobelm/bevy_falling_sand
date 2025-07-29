@@ -37,13 +37,13 @@ impl ParticleSceneAsset {
 
     /// Get the number of particles in the scene.
     #[must_use]
-    pub fn len(&self) -> usize {
+    pub const fn len(&self) -> usize {
         self.particles.len()
     }
 
     /// Check if the scene is empty.
     #[must_use]
-    pub fn is_empty(&self) -> bool {
+    pub const fn is_empty(&self) -> bool {
         self.particles.is_empty()
     }
 }
@@ -110,3 +110,4 @@ impl AssetLoader for ParticleSceneAssetLoader {
         &["ron", "scene.ron"]
     }
 }
+

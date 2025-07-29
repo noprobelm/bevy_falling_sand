@@ -32,7 +32,9 @@ use particle_search::{
     ParticleSearchCache, ParticleSearchState,
 };
 use statistics_panel::StatisticsPanel;
-use top_bar::particle_files::ParticleFileBrowser;
+use top_bar::particle_files::{
+    ParticleFileBrowser, SaveParticlesSceneEvent, LoadParticlesSceneEvent
+};
 pub use top_bar::particle_files::ParticleFileDialog;
 use top_bar::{ParticleFilesPlugin, UiTopBar};
 
@@ -122,8 +124,8 @@ fn render_ui_panels(
     mut ev_save_scene: EventWriter<SaveSceneEvent>,
     mut ev_load_scene: EventWriter<LoadSceneEvent>,
     mut particle_file_browser_state: ResMut<FileBrowserState>,
-    mut ev_save_particles: EventWriter<top_bar::particle_files::SaveParticlesEvent>,
-    mut ev_load_particles: EventWriter<top_bar::particle_files::LoadParticlesEvent>,
+    mut ev_save_particles_scene: EventWriter<SaveParticlesSceneEvent>,
+    mut ev_load_particles_scene: EventWriter<LoadParticlesSceneEvent>,
     particle_movement_state_current: Res<State<MovementSource>>,
 ) {
     let ctx = contexts.ctx_mut();
@@ -234,8 +236,8 @@ fn render_ui_panels(
             egui::UiBuilder::new().max_rect(ctx.screen_rect()),
         ),
         &mut particle_file_browser_state,
-        &mut ev_save_particles,
-        &mut ev_load_particles,
+        &mut ev_save_particles_scene,
+        &mut ev_load_particles_scene,
     );
 }
 

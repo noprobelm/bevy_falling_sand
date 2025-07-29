@@ -158,26 +158,24 @@ impl Component for ParticleType {
         hooks.on_add(|mut world, context| {
             let name = {
                 let particle_type = world.get::<Self>(context.entity).unwrap();
-                // For now, only support static strings in the map
-                if let Cow::Borrowed(name) = &particle_type.name {
-                    Some(*name)
-                } else {
-                    warn!(
-                        "ParticleType with owned string cannot be registered in map: '{}'",
-                        particle_type.name
-                    );
-                    None
+                match &particle_type.name {
+                    Cow::Borrowed(name) => Some(*name),
+                    Cow::Owned(owned_name) => {
+                        // Convert owned string to static string by leaking it
+                        // This is necessary for scene deserialization where strings come as owned
+                        let static_name: &'static str =
+                            Box::leak(owned_name.clone().into_boxed_str());
+                        Some(static_name)
+                    }
                 }
             };
 
             if let Some(name) = name {
-                // Add ParticleInstances component - relationships will handle synchronization
                 world
                     .commands()
                     .entity(context.entity)
                     .insert(ParticleInstances::default());
 
-                // Register in ParticleTypeMap
                 let mut type_map = world.resource_mut::<ParticleTypeMap>();
                 type_map.insert(name, context.entity);
             }
@@ -186,11 +184,14 @@ impl Component for ParticleType {
         hooks.on_remove(|mut world, context| {
             let name = {
                 let particle_type = world.get::<Self>(context.entity).unwrap();
-                // Only remove if it was a static string
-                if let Cow::Borrowed(name) = &particle_type.name {
-                    Some(*name)
-                } else {
-                    None
+                match &particle_type.name {
+                    Cow::Borrowed(name) => Some(*name),
+                    Cow::Owned(owned_name) => {
+                        let type_map = world.resource::<ParticleTypeMap>();
+
+                        let found_key = type_map.keys().find(|&key| key == owned_name.as_str());
+                        found_key
+                    }
                 }
             };
 

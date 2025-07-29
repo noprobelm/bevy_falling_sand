@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use bevy_falling_sand::prelude::*;
+use bfs_assets::LoadParticleDefinitionsSceneEvent;
 
 use crate::app_state::InitializationState;
 
@@ -18,10 +19,10 @@ impl Plugin for ParticleSetupPlugin {
 #[reflect(Resource)]
 pub struct SelectedParticle(pub Particle);
 
-fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
-    let particles_handle: Handle<ParticleDefinitionsAsset> =
-        asset_server.load("particles/particles.ron");
-    commands.spawn(ParticleDefinitionsHandle::new(particles_handle));
+fn setup(mut ev_load_particles_scene: EventWriter<LoadParticleDefinitionsSceneEvent>) {
+    // Load the new scene-based particle definitions
+    let particles_path = std::path::PathBuf::from("particles/particles.scn.ron");
+    ev_load_particles_scene.write(LoadParticleDefinitionsSceneEvent(particles_path));
 }
 
 fn check_particles_defs_initialized(

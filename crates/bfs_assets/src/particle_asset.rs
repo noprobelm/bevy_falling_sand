@@ -90,7 +90,8 @@ pub struct ParticleDefinitionsHandle {
 
 impl ParticleDefinitionsHandle {
     /// Create a new particle definitions handle.
-    pub fn new(handle: Handle<ParticleDefinitionsAsset>) -> Self {
+    #[must_use]
+    pub const fn new(handle: Handle<ParticleDefinitionsAsset>) -> Self {
         Self {
             handle,
             spawned: false,
@@ -114,4 +115,3 @@ pub fn load_particle_definitions(
         }
     }
 }
-

@@ -1,7 +1,10 @@
 pub mod particle_files;
 
 use super::*;
-use particle_files::{spawn_save_dialog, spawn_load_dialog};
+use particle_files::{
+    spawn_save_scene_dialog as spawn_save_particles_scene_dialog, 
+    spawn_load_scene_dialog as spawn_load_particles_scene_dialog
+};
 use crate::ui::file_browser::FileBrowserState;
 use crate::scenes::{spawn_load_scene_dialog, spawn_save_scene_dialog};
 
@@ -22,11 +25,11 @@ impl UiTopBar {
             }
             ui.separator();
             if ui.button("Save Particle Set").clicked() {
-                spawn_save_dialog(particle_browser_state);
+                spawn_save_particles_scene_dialog(particle_browser_state);
                 ui.close_menu();
             }
             if ui.button("Load Particle Set").clicked() {
-                spawn_load_dialog(particle_browser_state);
+                spawn_load_particles_scene_dialog(particle_browser_state);
                 ui.close_menu();
             }
             ui.separator();

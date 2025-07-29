@@ -8,4 +8,4 @@ bevy.workspace = true
 bfs_core = { path = "../bfs_core" }
 bevy_turborand = "0.11.0"
 serde = "1.0.210"
-smallvec = "1.13.2"
+smallvec = { version = "1.13.2", features = ["serde"] }

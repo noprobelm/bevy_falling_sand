@@ -12,12 +12,15 @@
 
 mod particle_asset;
 mod particle_data;
+mod particle_scene_definitions;
 mod scene_asset;
 
 use bevy::prelude::*;
+use bevy::scene::SceneSpawner;
 
 pub use particle_asset::*;
 pub use particle_data::*;
+pub use particle_scene_definitions::*;
 pub use scene_asset::*;
 
 /// Plugin providing asset loading functionality for particle definitions.
@@ -29,8 +32,19 @@ impl Plugin for FallingSandAssetsPlugin {
             .init_asset_loader::<ParticleDefinitionsAssetLoader>()
             .init_asset::<ParticleSceneAsset>()
             .init_asset_loader::<ParticleSceneAssetLoader>()
+            .init_resource::<SceneSpawner>()
+            .add_event::<SaveParticleDefinitionsEvent>()
+            .add_event::<LoadParticleDefinitionsSceneEvent>()
             .register_type::<ParticleData>()
             .register_type::<ParticleSceneData>()
-            .add_systems(Update, load_particle_definitions);
+            .add_systems(
+                Update,
+                (
+                    load_particle_definitions,
+                    save_particle_definitions_system,
+                    load_particle_definitions_scene_system,
+                ),
+            );
     }
 }
+

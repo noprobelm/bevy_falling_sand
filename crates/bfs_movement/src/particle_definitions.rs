@@ -20,6 +20,7 @@ impl Plugin for ParticleDefinitionsPlugin {
             .register_type::<Density>()
             .register_type::<Velocity>()
             .register_type::<Momentum>()
+            .register_type::<NeighborGroup>()
             .register_type::<Movement>()
             .add_systems(
                 PreUpdate,
@@ -187,7 +188,8 @@ impl Momentum {
 ///
 /// The outer collection is an ordered group of prioritized tiers. The inner collection are the
 /// positions of the neighbors relative to the current tier.
-#[derive(Clone, Eq, PartialEq, Hash, Debug, Default, Component, Reflect)]
+#[derive(Clone, Eq, PartialEq, Hash, Debug, Default, Component, Reflect, Serialize, Deserialize)]
+#[reflect(Component)]
 pub struct NeighborGroup {
     /// The underlying neighbor group.
     pub neighbor_group: SmallVec<[IVec2; 4]>,
@@ -289,7 +291,7 @@ impl<'a> Iterator for NeighborGroupIter<'a> {
 
 /// Specifies the order of movement priority for a particle. This is mandatory for a particle to
 /// move while using [`bfs_movement`].
-#[derive(Clone, Eq, PartialEq, Hash, Debug, Default, Component, Reflect)]
+#[derive(Clone, Eq, PartialEq, Hash, Debug, Default, Component, Reflect, Serialize, Deserialize)]
 #[reflect(Component)]
 pub struct Movement {
     /// The underlying groups of neighbors that define the movement priority.
