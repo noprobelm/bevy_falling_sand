@@ -9,9 +9,9 @@ use crate::{
 };
 
 /// Adds Bevy plugin elements for particle mapping functionality.
-pub(super) struct ParticleMapPlugin;
+pub(super) struct ParticleSpatialPlugin;
 
-impl Plugin for ParticleMapPlugin {
+impl Plugin for ParticleSpatialPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<ClearParticleMapEvent>()
             .add_event::<ClearParticleTypeChildrenEvent>()
@@ -599,3 +599,4 @@ fn ev_clear_particle_type_children(
         }
     });
 }
+

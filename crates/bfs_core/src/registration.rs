@@ -1,103 +1,38 @@
-//! Provides all core functionality for particles, including registration, mutation, removal, and
-//! even extension through external plugins if desired.
+//! Provides particle type registration and management functionality.
 use bevy::ecs::component::Mutable;
 use bevy::platform::collections::hash_map::Entry;
 use bevy::platform::hash::FixedHasher;
 use bevy::prelude::*;
 use bevy::{ecs::component::StorageType, platform::collections::HashMap};
-use bevy_turborand::DelegatedRng;
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
-use std::ops::RangeBounds;
 
-use crate::ParticleMap;
+use crate::{ParticleMap, ParticleRegistrationEvent, ParticleRegistrationSet};
 
-/// Adds Bevy plugin elements for core particle functionality.
-pub(super) struct ParticleCorePlugin;
+/// Adds Bevy plugin elements for particle type registration.
+pub(super) struct ParticleRegistrationPlugin;
 
-impl Plugin for ParticleCorePlugin {
+impl Plugin for ParticleRegistrationPlugin {
     fn build(&self, app: &mut App) {
-        app.register_type::<Particle>()
-            .register_type::<ParticleType>()
+        app.register_type::<ParticleType>()
+            .register_type::<Particle>()
             .register_type::<ParticlePosition>()
-            .init_resource::<ParticleSimulationRun>()
-            .configure_sets(
-                PostUpdate,
-                ParticleSimulationSet.run_if(
-                    resource_exists::<ParticleSimulationRun>
-                        .or(condition_ev_simulation_step_received),
-                ),
-            )
             .configure_sets(PreUpdate, ParticleRegistrationSet)
-            .init_resource::<ParticleTypeMap>()
-            .add_event::<SimulationStepEvent>()
-            .add_event::<ParticleRegistrationEvent>()
             .add_event::<ResetParticleChildrenEvent>()
             .add_event::<ResetParticleEvent>()
+            .init_resource::<ParticleTypeMap>()
             .add_systems(
                 PreUpdate,
-                handle_new_particles.in_set(ParticleRegistrationSet),
-            )
-            .add_systems(PreUpdate, (ev_reset_particle, ev_reset_particle_children));
+                (
+                    evr_reset_particle,
+                    evr_reset_particle_children,
+                    handle_new_particles.in_set(ParticleRegistrationSet),
+                ),
+            );
     }
 }
 
-/// A trait for RNG utilities used in particle systems.
-pub trait ParticleRng: Component {
-    /// The type of the internal RNG
-    type InnerRng: DelegatedRng;
-
-    /// Get mutable access to the inner RNG.
-    fn inner_mut(&mut self) -> &mut Self::InnerRng;
-
-    /// Shuffle the given slice.
-    fn shuffle<T>(&mut self, slice: &mut [T]) {
-        self.inner_mut().shuffle(slice);
-    }
-
-    /// Return true with the given probability.
-    fn chance(&mut self, rate: f64) -> bool {
-        self.inner_mut().chance(rate)
-    }
-
-    /// Sample a random element from a list.
-    fn sample<'a, T>(&mut self, list: &'a [T]) -> Option<&'a T> {
-        self.inner_mut().sample(list)
-    }
-
-    /// Return a random index within the given bounds.
-    fn index(&mut self, bound: impl RangeBounds<usize>) -> usize {
-        self.inner_mut().index(bound)
-    }
-}
-
-/// Convenience macro for implementing [`ParticleRng`] on a component.
-#[macro_export]
-macro_rules! impl_particle_rng {
-    ($wrapper:ident, $inner:ty) => {
-        impl ParticleRng for $wrapper {
-            type InnerRng = $inner;
-
-            fn inner_mut(&mut self) -> &mut Self::InnerRng {
-                &mut self.0
-            }
-        }
-    };
-}
-
-/// Marker resource to indicate whether the simulation should be running.
-#[derive(Resource, Default)]
-pub struct ParticleSimulationRun;
-
-/// System set for particle simulation systems.
-#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ParticleSimulationSet;
-
-/// System set for registering new particles
-#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ParticleRegistrationSet;
-
-/// Unique identifer for a particle type. No two particle types with the same name can exist.
+/// Unique identifer for a particle type.
 #[derive(
     Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Reflect, Serialize, Deserialize,
 )]
@@ -110,7 +45,7 @@ pub struct ParticleType {
 impl ParticleType {
     /// Initialize a new `ParticleType` from a static string
     #[must_use]
-    pub fn new(name: &'static str) -> Self {
+    pub const fn new(name: &'static str) -> Self {
         Self {
             name: Cow::Borrowed(name),
         }
@@ -118,7 +53,7 @@ impl ParticleType {
 
     /// Initialize a new `ParticleType` from an owned string
     #[must_use]
-    pub fn from_string(name: String) -> Self {
+    pub const fn from_string(name: String) -> Self {
         Self {
             name: Cow::Owned(name),
         }
@@ -143,9 +78,9 @@ impl From<Cow<'static, str>> for ParticleType {
     }
 }
 
-impl Into<Cow<'static, str>> for ParticleType {
-    fn into(self) -> Cow<'static, str> {
-        self.name
+impl From<ParticleType> for Cow<'static, str> {
+    fn from(val: ParticleType) -> Self {
+        val.name
     }
 }
 
@@ -273,8 +208,9 @@ pub struct AttachedToParticleType(pub Entity);
 pub struct ParticleInstances(Vec<Entity>);
 
 impl ParticleInstances {
-    /// Create a new empty ParticleInstances collection.
-    pub fn new() -> Self {
+    /// Create a new empty [`ParticleInstances`] collection.
+    #[must_use]
+    pub const fn new() -> Self {
         Self(Vec::new())
     }
 
@@ -298,12 +234,14 @@ impl ParticleInstances {
     }
 
     /// Get the number of instances.
-    pub fn len(&self) -> usize {
+    #[must_use]
+    pub const fn len(&self) -> usize {
         self.0.len()
     }
 
     /// Check if there are no instances.
-    pub fn is_empty(&self) -> bool {
+    #[must_use]
+    pub const fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
 
@@ -331,7 +269,7 @@ pub struct Particle {
 impl Particle {
     /// Initialize a new `Particle` from a static string
     #[must_use]
-    pub fn new(name: &'static str) -> Self {
+    pub const fn new(name: &'static str) -> Self {
         Self {
             name: Cow::Borrowed(name),
         }
@@ -339,7 +277,7 @@ impl Particle {
 
     /// Initialize a new `Particle` from an owned string
     #[must_use]
-    pub fn from_string(name: String) -> Self {
+    pub const fn from_string(name: String) -> Self {
         Self {
             name: Cow::Owned(name),
         }
@@ -364,9 +302,9 @@ impl From<Cow<'static, str>> for Particle {
     }
 }
 
-impl Into<Cow<'static, str>> for Particle {
-    fn into(self) -> Cow<'static, str> {
-        self.name
+impl From<Particle> for Cow<'static, str> {
+    fn from(val: Particle) -> Self {
+        val.name
     }
 }
 
@@ -382,9 +320,6 @@ impl Component for Particle {
                 let mut map = world.resource_mut::<ParticleMap>();
                 map.remove(&position);
             }
-
-            // Bevy's relationship system automatically handles cleanup of AttachedToParticleType
-            // and synchronization with ParticleInstances when entities are removed
         });
     }
 }
@@ -395,42 +330,6 @@ impl Component for Particle {
 )]
 #[reflect(Component)]
 pub struct ParticlePosition(pub IVec2);
-
-/// Event which is used to trigger the simulation to step forward by one tick.
-#[derive(Clone, Event, Hash, Debug, Eq, PartialEq, PartialOrd)]
-pub struct SimulationStepEvent;
-
-/// An event which is sent each time a new [`Particle`] has been spawned into the world. Systems
-/// which listen for this event can insert other Particle-type components to the subject entitiesa.
-#[derive(Clone, Event, Hash, Debug, Eq, PartialEq, PartialOrd)]
-pub struct ParticleRegistrationEvent {
-    /// The new particle entities.
-    pub entities: Vec<Entity>,
-}
-
-#[derive(Event)]
-/// Triggers a [`ParticleType`] to reset all of its children's data.
-pub struct ResetParticleChildrenEvent {
-    /// The particle type entity to reset children for.
-    pub entity: Entity,
-}
-
-#[derive(Event)]
-/// Triggers a particle to reset itself to its parent's blueprint data.
-pub struct ResetParticleEvent {
-    /// The entity to reset particle blueprint data for.
-    pub entity: Entity,
-}
-
-#[allow(clippy::needless_pass_by_value)]
-fn condition_ev_simulation_step_received(
-    mut ev_simulation_step: EventReader<SimulationStepEvent>,
-) -> bool {
-    for _ in ev_simulation_step.read() {
-        return true;
-    }
-    false
-}
 
 /// Handles new particles as they are added to the world. If a new particle is being added at the same
 /// coordinate of an existing entity, the new particle is despawned.
@@ -464,8 +363,6 @@ fn handle_new_particles(
         if let Some(parent_handle) = type_map.get(&particle_type.name) {
             entities.push(entity);
 
-            // Use Bevy's relationship system - the ParticleInstances will be
-            // automatically updated when we add the AttachedToParticleType component
             commands.entity(entity).insert((
                 ParticlePosition(coordinates),
                 AttachedToParticleType(*parent_handle),
@@ -481,12 +378,26 @@ fn handle_new_particles(
     ev_particle_registered.write(ParticleRegistrationEvent { entities });
 }
 
+/// Triggers a [`ParticleType`] to reset all of its children's data.
+#[derive(Clone, Event, Hash, Debug, Eq, PartialEq, PartialOrd)]
+pub struct ResetParticleChildrenEvent {
+    /// The particle type entity to reset children for.
+    pub entity: Entity,
+}
+
+/// Triggers a particle to reset itself to its parent's blueprint data.
+#[derive(Clone, Event, Hash, Debug, Eq, PartialEq, PartialOrd)]
+pub struct ResetParticleEvent {
+    /// The entity to reset particle blueprint data for.
+    pub entity: Entity,
+}
+
 #[allow(clippy::needless_pass_by_value)]
-fn ev_reset_particle(
-    mut ev_reset_particle: EventReader<ResetParticleEvent>,
-    mut particle_query: Query<&mut Particle>,
+fn evr_reset_particle(
+    mut evr_reset_particle: EventReader<ResetParticleEvent>,
+    mut particle_query: Query<&mut crate::Particle>,
 ) {
-    ev_reset_particle.read().for_each(|ev| {
+    evr_reset_particle.read().for_each(|ev| {
         if let Ok(particle) = particle_query.get_mut(ev.entity) {
             particle.into_inner();
         } else {
@@ -496,16 +407,17 @@ fn ev_reset_particle(
 }
 
 #[allow(clippy::needless_pass_by_value)]
-fn ev_reset_particle_children(
-    mut ev_reset_particle_children: EventReader<ResetParticleChildrenEvent>,
-    mut ev_reset_particle: EventWriter<ResetParticleEvent>,
+fn evr_reset_particle_children(
+    mut evr_reset_particle_children: EventReader<ResetParticleChildrenEvent>,
+    mut evw_reset_particle: EventWriter<ResetParticleEvent>,
     particle_type_query: Query<&ParticleInstances, With<ParticleType>>,
 ) {
-    ev_reset_particle_children.read().for_each(|ev| {
+    evr_reset_particle_children.read().for_each(|ev| {
         if let Ok(particle_instances) = particle_type_query.get(ev.entity) {
             particle_instances.iter().for_each(|entity| {
-                ev_reset_particle.write(ResetParticleEvent { entity: *entity });
+                evw_reset_particle.write(ResetParticleEvent { entity: *entity });
             });
         }
     });
 }
+
