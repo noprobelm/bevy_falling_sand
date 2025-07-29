@@ -24,4 +24,3 @@ pub fn clear_command(
         }
     }
 }
-

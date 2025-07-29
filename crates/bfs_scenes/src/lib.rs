@@ -61,7 +61,6 @@ pub struct SaveSceneEvent(pub PathBuf);
 #[derive(Event)]
 pub struct LoadSceneEvent(pub PathBuf);
 
-
 /// Triggers systems to load particles from an asset handle.
 #[derive(Event)]
 pub struct LoadSceneAssetEvent(pub Handle<ParticleSceneAsset>);
@@ -90,7 +89,8 @@ fn save_scene_system(
 fn load_scene_system(mut commands: Commands, mut ev_load_scene: EventReader<LoadSceneEvent>) {
     for ev in ev_load_scene.read() {
         let file = File::open(ev.0.clone()).expect("Failed to open RON file");
-        let particle_scene: ParticleScene = ron::de::from_reader(file).expect("Failed to load RON file");
+        let particle_scene: ParticleScene =
+            ron::de::from_reader(file).expect("Failed to load RON file");
 
         for particle_data in particle_scene.particles {
             let transform = Transform::from_xyz(
@@ -112,7 +112,7 @@ fn load_scene_asset_system(
     for ev in ev_load_scene_asset.read() {
         if let Some(scene_asset) = scene_assets.get(&ev.0) {
             info!("Loading scene with {} particles", scene_asset.len());
-            
+
             for particle_data in &scene_asset.particles {
                 let transform = Transform::from_xyz(
                     particle_data.position[0] as f32,
@@ -120,7 +120,8 @@ fn load_scene_asset_system(
                     0.,
                 );
 
-                let particle = Particle::new(Box::leak(particle_data.particle.clone().into_boxed_str()));
+                let particle =
+                    Particle::new(Box::leak(particle_data.particle.clone().into_boxed_str()));
                 commands.spawn((particle, transform));
             }
         } else {

@@ -32,10 +32,10 @@ use particle_search::{
     ParticleSearchCache, ParticleSearchState,
 };
 use statistics_panel::StatisticsPanel;
-use top_bar::particle_files::{
-    ParticleFileBrowser, SaveParticlesSceneEvent, LoadParticlesSceneEvent
-};
 pub use top_bar::particle_files::ParticleFileDialog;
+use top_bar::particle_files::{
+    LoadParticlesSceneEvent, ParticleFileBrowser, SaveParticlesSceneEvent,
+};
 use top_bar::{ParticleFilesPlugin, UiTopBar};
 
 use bevy::prelude::*;

@@ -1,9 +1,9 @@
+use super::brush::{BrushState, BrushType, SelectedBrushParticle};
 use bevy::{
     diagnostic::{DiagnosticsStore, FrameTimeDiagnosticsPlugin},
     prelude::*,
 };
 use bevy_falling_sand::prelude::*;
-use super::brush::{BrushState, BrushType, SelectedBrushParticle};
 
 #[derive(Component)]
 pub struct TotalParticleCountText;
@@ -28,17 +28,17 @@ pub struct StatusUIPlugin;
 impl Plugin for StatusUIPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(FrameTimeDiagnosticsPlugin::default())
-        .add_systems(
-            Update,
-            (
-                update_fps_text,
-                update_total_particle_count_text.run_if(resource_exists::<TotalParticleCount>),
-                update_brush_state_text.run_if(resource_exists::<State<BrushState>>),
-                update_selected_particle_text.run_if(resource_exists::<SelectedBrushParticle>),
-                update_brush_type_text.run_if(resource_exists::<State<BrushType>>),
-                update_movement_source_text.run_if(resource_exists::<State<MovementSource>>),
-            ),
-        );
+            .add_systems(
+                Update,
+                (
+                    update_fps_text,
+                    update_total_particle_count_text.run_if(resource_exists::<TotalParticleCount>),
+                    update_brush_state_text.run_if(resource_exists::<State<BrushState>>),
+                    update_selected_particle_text.run_if(resource_exists::<SelectedBrushParticle>),
+                    update_brush_type_text.run_if(resource_exists::<State<BrushType>>),
+                    update_movement_source_text.run_if(resource_exists::<State<MovementSource>>),
+                ),
+            );
     }
 }
 

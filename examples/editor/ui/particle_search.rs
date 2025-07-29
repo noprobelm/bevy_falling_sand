@@ -294,4 +294,3 @@ pub fn handle_particle_search_input(
         }
     }
 }
-

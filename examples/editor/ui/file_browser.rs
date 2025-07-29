@@ -65,7 +65,8 @@ impl FileBrowser {
                         let path = entry.path();
                         if path.extension()? == state.file_extension.as_str() {
                             let file_name = path.file_name()?.to_str()?;
-                            let display_name = file_name.trim_end_matches(&format!(".{}", state.file_extension));
+                            let display_name =
+                                file_name.trim_end_matches(&format!(".{}", state.file_extension));
                             let full_path = format!("{}/{}", state.current_directory, file_name);
                             Some((display_name.to_string(), full_path))
                         } else {
@@ -85,24 +86,27 @@ impl FileBrowser {
                     ui.label("File name:");
                     ui.text_edit_singleline(&mut state.save_input_text);
                 });
-                
+
                 ui.separator();
                 ui.label("Existing files:");
-                
+
                 egui::ScrollArea::vertical()
                     .max_height(150.0)
                     .show(ui, |ui| {
                         for (display_name, _) in &all_files {
-                            if ui.selectable_label(
-                                state.selected_file.as_ref() == Some(display_name),
-                                display_name
-                            ).clicked() {
+                            if ui
+                                .selectable_label(
+                                    state.selected_file.as_ref() == Some(display_name),
+                                    display_name,
+                                )
+                                .clicked()
+                            {
                                 state.selected_file = Some(display_name.clone());
                                 state.save_input_text = display_name.clone();
                             }
                         }
                     });
-                
+
                 ui.separator();
                 ui.horizontal(|ui| {
                     if ui.button("Save").clicked() {
@@ -143,7 +147,8 @@ impl FileBrowser {
                         let path = entry.path();
                         if path.extension()? == state.file_extension.as_str() {
                             let file_name = path.file_name()?.to_str()?;
-                            let display_name = file_name.trim_end_matches(&format!(".{}", state.file_extension));
+                            let display_name =
+                                file_name.trim_end_matches(&format!(".{}", state.file_extension));
                             let full_path = format!("{}/{}", state.current_directory, file_name);
                             Some((display_name.to_string(), full_path))
                         } else {
@@ -161,18 +166,23 @@ impl FileBrowser {
             .show(ui.ctx(), |ui| {
                 ui.label("Select a file to load:");
                 ui.separator();
-                
+
                 egui::ScrollArea::vertical()
                     .max_height(200.0)
                     .show(ui, |ui| {
                         for (display_name, file_path) in &all_files {
                             let is_selected = state.selected_file.as_ref() == Some(display_name);
-                            
+
                             if ui.selectable_label(is_selected, display_name).clicked() {
                                 state.selected_file = Some(display_name.clone());
                             }
-                            
-                            if is_selected && ui.input(|i| i.pointer.button_double_clicked(egui::PointerButton::Primary)) {
+
+                            if is_selected
+                                && ui.input(|i| {
+                                    i.pointer
+                                        .button_double_clicked(egui::PointerButton::Primary)
+                                })
+                            {
                                 on_load(PathBuf::from(file_path));
                                 state.show_load_dialog = false;
                                 state.selected_file = None;
@@ -180,17 +190,22 @@ impl FileBrowser {
                             }
                         }
                     });
-                
+
                 ui.separator();
                 if let Some(selected) = &state.selected_file {
                     ui.label(format!("Selected: {}", selected));
                 }
-                
+
                 ui.horizontal(|ui| {
                     let load_enabled = state.selected_file.is_some();
-                    if ui.add_enabled(load_enabled, egui::Button::new("Load")).clicked() {
+                    if ui
+                        .add_enabled(load_enabled, egui::Button::new("Load"))
+                        .clicked()
+                    {
                         if let Some(selected) = &state.selected_file {
-                            if let Some((_, file_path)) = all_files.iter().find(|(name, _)| name == selected) {
+                            if let Some((_, file_path)) =
+                                all_files.iter().find(|(name, _)| name == selected)
+                            {
                                 on_load(PathBuf::from(file_path));
                             }
                         }

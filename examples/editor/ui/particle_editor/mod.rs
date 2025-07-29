@@ -237,46 +237,68 @@ impl ParticleEditor {
             egui::ComboBox::from_label("")
                 .selected_text(current_state_text)
                 .show_ui(ui, |ui| {
-                    if ui.selectable_value(
-                        &mut editor_data.material_state,
-                        MaterialState::Wall,
-                        "Wall",
-                    ).clicked() {
+                    if ui
+                        .selectable_value(
+                            &mut editor_data.material_state,
+                            MaterialState::Wall,
+                            "Wall",
+                        )
+                        .clicked()
+                    {
                         editor_data.fluidity = None;
                     }
-                    if ui.selectable_value(
-                        &mut editor_data.material_state,
-                        MaterialState::Solid,
-                        "Solid",
-                    ).clicked() {
+                    if ui
+                        .selectable_value(
+                            &mut editor_data.material_state,
+                            MaterialState::Solid,
+                            "Solid",
+                        )
+                        .clicked()
+                    {
                         editor_data.fluidity = None;
                     }
-                    if ui.selectable_value(
-                        &mut editor_data.material_state,
-                        MaterialState::MovableSolid,
-                        "Movable Solid",
-                    ).clicked() {
+                    if ui
+                        .selectable_value(
+                            &mut editor_data.material_state,
+                            MaterialState::MovableSolid,
+                            "Movable Solid",
+                        )
+                        .clicked()
+                    {
                         editor_data.fluidity = None;
                     }
-                    if ui.selectable_value(
-                        &mut editor_data.material_state,
-                        MaterialState::Liquid,
-                        "Liquid",
-                    ).clicked() {
+                    if ui
+                        .selectable_value(
+                            &mut editor_data.material_state,
+                            MaterialState::Liquid,
+                            "Liquid",
+                        )
+                        .clicked()
+                    {
                         if editor_data.fluidity.is_none() {
                             editor_data.fluidity = Some(3);
                         }
                     }
-                    if ui.selectable_value(&mut editor_data.material_state, MaterialState::Gas, "Gas").clicked() {
+                    if ui
+                        .selectable_value(
+                            &mut editor_data.material_state,
+                            MaterialState::Gas,
+                            "Gas",
+                        )
+                        .clicked()
+                    {
                         if editor_data.fluidity.is_none() {
                             editor_data.fluidity = Some(3);
                         }
                     }
-                    if ui.selectable_value(
-                        &mut editor_data.material_state,
-                        MaterialState::Other,
-                        "Other",
-                    ).clicked() {
+                    if ui
+                        .selectable_value(
+                            &mut editor_data.material_state,
+                            MaterialState::Other,
+                            "Other",
+                        )
+                        .clicked()
+                    {
                         editor_data.fluidity = None;
                     }
                 });
@@ -412,7 +434,10 @@ impl ParticleEditor {
         if let Some(ref mut burns_config) = editor_data.burns_config {
             ui.horizontal(|ui| {
                 ui.label("Duration (ms):");
-                if ui.text_edit_singleline(&mut burns_config.duration_str).changed() {
+                if ui
+                    .text_edit_singleline(&mut burns_config.duration_str)
+                    .changed()
+                {
                     if let Ok(new_duration) = burns_config.duration_str.parse::<u64>() {
                         burns_config.duration = std::time::Duration::from_millis(new_duration);
                     }
@@ -421,7 +446,10 @@ impl ParticleEditor {
 
             ui.horizontal(|ui| {
                 ui.label("Tick Rate (ms):");
-                if ui.text_edit_singleline(&mut burns_config.tick_rate_str).changed() {
+                if ui
+                    .text_edit_singleline(&mut burns_config.tick_rate_str)
+                    .changed()
+                {
                     if let Ok(new_tick_rate) = burns_config.tick_rate_str.parse::<u64>() {
                         burns_config.tick_rate = std::time::Duration::from_millis(new_tick_rate);
                     }

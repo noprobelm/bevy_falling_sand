@@ -412,7 +412,7 @@ pub fn handle_create_new_particle(
             &mut commands,
             &editor_data,
             &mut particle_type_map,
-            true, 
+            true,
         );
 
         let mut final_editor_data = editor_data;

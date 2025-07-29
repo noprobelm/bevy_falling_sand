@@ -91,39 +91,39 @@ impl Console {
                                 .color(egui::Color32::from_rgb(100, 200, 100)),
                         );
 
-                        
                         let cursor_at_end = console_state.needs_cursor_at_end;
                         if cursor_at_end {
                             console_state.needs_cursor_at_end = false;
                             console_state.request_focus_and_cursor = true;
                         }
-                        
+
                         let text_edit_id = egui::Id::new("console_input");
-                        
+
                         // Filter out backtick characters from input events
                         ui.input_mut(|i| {
                             i.events.retain(|event| {
                                 !matches!(event, egui::Event::Text(text) if text.contains('`'))
                             });
                         });
-                        
+
                         let response = ui.add(
                             egui::TextEdit::singleline(&mut console_state.input)
                                 .font(egui::TextStyle::Monospace)
                                 .desired_width(ui.available_width())
                                 .lock_focus(true)
-                                .id(text_edit_id)
+                                .id(text_edit_id),
                         );
 
-                        
-                        if !console_state.in_completion_mode && !console_state.suggestions.is_empty() {
+                        if !console_state.in_completion_mode
+                            && !console_state.suggestions.is_empty()
+                        {
                             if let Some(suggestion) = console_state.suggestions.first() {
-                                
-                                let completed_input = calculate_completed_input(&console_state.input, suggestion);
-                                
-                                
+                                let completed_input =
+                                    calculate_completed_input(&console_state.input, suggestion);
+
                                 if completed_input.len() > console_state.input.len() {
-                                    let remaining_text = &completed_input[console_state.input.len()..];
+                                    let remaining_text =
+                                        &completed_input[console_state.input.len()..];
                                     if !remaining_text.is_empty() {
                                         let font_id = ui
                                             .style()
@@ -142,7 +142,8 @@ impl Console {
 
                                         let text_edit_margin = ui.spacing().button_padding.x;
                                         let text_edit_content_rect = response.rect;
-                                        let text_start_x = text_edit_content_rect.left() + text_edit_margin;
+                                        let text_start_x =
+                                            text_edit_content_rect.left() + text_edit_margin;
                                         let text_y = text_edit_content_rect.center().y
                                             - (text_galley.size().y / 2.0);
 
@@ -156,24 +157,28 @@ impl Console {
                                             egui::Align2::LEFT_TOP,
                                             remaining_text,
                                             font_id,
-                                            egui::Color32::from_rgb(120, 120, 120), 
+                                            egui::Color32::from_rgb(120, 120, 120),
                                         );
                                     }
                                 }
                             }
                         }
-                        
-                        
+
                         if console_state.request_focus_and_cursor {
                             response.request_focus();
-                            
-                            
-                            if let Some(mut state) = egui::TextEdit::load_state(ui.ctx(), text_edit_id) {
+
+                            if let Some(mut state) =
+                                egui::TextEdit::load_state(ui.ctx(), text_edit_id)
+                            {
                                 let text_len = console_state.input.len();
-                                state.cursor.set_char_range(Some(egui::text::CCursorRange::one(egui::text::CCursor::new(text_len))));
+                                state
+                                    .cursor
+                                    .set_char_range(Some(egui::text::CCursorRange::one(
+                                        egui::text::CCursor::new(text_len),
+                                    )));
                                 state.store(ui.ctx(), text_edit_id);
                             }
-                            
+
                             console_state.request_focus_and_cursor = false;
                         }
 
@@ -184,14 +189,12 @@ impl Console {
                             console_state.needs_initial_focus = false;
                         }
 
-
                         if response.changed() {
                             console_state.on_input_changed();
                             console_state.update_suggestions(cache, config);
                         }
 
                         if response.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
-                            
                             console_state.commit_completion();
 
                             if !console_state.input.trim().is_empty() {
@@ -213,13 +216,13 @@ impl Console {
                             let mut space_pressed = false;
 
                             ui.input_mut(|i| {
-                                
-                                if i.key_pressed(egui::Key::Tab) && !console_state.suggestions.is_empty() {
-                                    
+                                if i.key_pressed(egui::Key::Tab)
+                                    && !console_state.suggestions.is_empty()
+                                {
                                     if !console_state.in_completion_mode {
                                         console_state.update_suggestions(cache, config);
                                     }
-                                    
+
                                     console_state.handle_tab_completion();
                                     tab_handled = true;
                                     i.consume_key(egui::Modifiers::NONE, egui::Key::Tab);
@@ -228,8 +231,9 @@ impl Console {
                                     }
                                 }
 
-                                
-                                if i.key_pressed(egui::Key::Space) && console_state.in_completion_mode {
+                                if i.key_pressed(egui::Key::Space)
+                                    && console_state.in_completion_mode
+                                {
                                     console_state.commit_completion();
                                     console_state.input.push(' ');
                                     console_state.update_suggestions(cache, config);
@@ -239,7 +243,7 @@ impl Console {
                             });
 
                             if tab_handled || space_pressed {
-                                response.request_focus(); 
+                                response.request_focus();
                             }
                         }
 
@@ -271,30 +275,22 @@ pub fn receive_console_line(
     }
 }
 
-
-
 fn calculate_completed_input(current_input: &str, suggestion: &str) -> String {
     if current_input.is_empty() {
         return suggestion.to_string();
     }
-    
-    
+
     if current_input.ends_with(' ') {
-        
         format!("{}{}", current_input, suggestion)
     } else {
-        
         let words: Vec<&str> = current_input.trim().split_whitespace().collect();
-        
+
         if words.len() == 1 {
-            
             suggestion.to_string()
         } else {
-            
-            let mut complete_words = words[..words.len()-1].to_vec();
+            let mut complete_words = words[..words.len() - 1].to_vec();
             complete_words.push(suggestion);
             complete_words.join(" ")
         }
     }
 }
-

@@ -47,4 +47,3 @@ impl Plugin for FallingSandAssetsPlugin {
             );
     }
 }
-

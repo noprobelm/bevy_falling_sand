@@ -420,4 +420,3 @@ fn evr_reset_particle_children(
         }
     });
 }
-

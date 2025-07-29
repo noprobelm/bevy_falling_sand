@@ -599,4 +599,3 @@ fn ev_clear_particle_type_children(
         }
     });
 }
-

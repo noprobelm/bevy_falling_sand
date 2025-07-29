@@ -38,8 +38,7 @@ impl Plugin for FallingSandPhysicsPlugin {
             .init_resource::<SolidTerrainColliders>()
             .add_systems(
                 Update,
-                recalculate_and_spawn_static_bodies_for_dirty_chunks
-                    .in_set(ParticleSimulationSet),
+                recalculate_and_spawn_static_bodies_for_dirty_chunks.in_set(ParticleSimulationSet),
             );
     }
 }
@@ -117,7 +116,6 @@ struct SolidMeshData {
 #[derive(Resource, Default, Debug)]
 struct SolidTerrainColliders(bevy::platform::collections::HashMap<usize, Vec<Entity>>);
 
-
 fn recalculate_and_spawn_static_bodies_for_dirty_chunks(
     mut commands: Commands,
     wall_query: Query<&ParticlePosition, With<Wall>>,
@@ -131,7 +129,6 @@ fn recalculate_and_spawn_static_bodies_for_dirty_chunks(
     mut solid_colliders: ResMut<SolidTerrainColliders>,
     particle_map: Res<ParticleMap>,
 ) {
-
     // Find all chunks that have dirty rects (indicating movement)
     let dirty_chunks: Vec<usize> = particle_map
         .iter_chunks()
@@ -155,7 +152,7 @@ fn recalculate_and_spawn_static_bodies_for_dirty_chunks(
         wall_mesh_data.chunks.remove(&chunk_index);
         movable_solid_mesh_data.chunks.remove(&chunk_index);
         solid_mesh_data.chunks.remove(&chunk_index);
-        
+
         // Clear and despawn existing colliders for this specific chunk
         if let Some(entities) = wall_colliders.0.remove(&chunk_index) {
             for entity in entities {
@@ -192,8 +189,10 @@ fn recalculate_and_spawn_static_bodies_for_dirty_chunks(
             if !wall_positions.is_empty() {
                 let (vertices_list, indices_list) = process_solid_positions(wall_positions);
                 if !vertices_list.is_empty() {
-                    wall_mesh_data.chunks.insert(chunk_index, (vertices_list.clone(), indices_list.clone()));
-                    
+                    wall_mesh_data
+                        .chunks
+                        .insert(chunk_index, (vertices_list.clone(), indices_list.clone()));
+
                     // Spawn colliders for this chunk
                     let mut chunk_entities = Vec::new();
                     for (vertices, indices) in vertices_list.iter().zip(&indices_list) {
@@ -218,11 +217,7 @@ fn recalculate_and_spawn_static_bodies_for_dirty_chunks(
                 .iter()
                 .filter_map(|(pos, entity)| {
                     if let Ok((_, moved)) = movable_solid_query.get(*entity) {
-                        if !moved.0 {
-                            Some(*pos)
-                        } else {
-                            None
-                        }
+                        if !moved.0 { Some(*pos) } else { None }
                     } else {
                         None
                     }
@@ -230,10 +225,13 @@ fn recalculate_and_spawn_static_bodies_for_dirty_chunks(
                 .collect();
 
             if !movable_solid_positions.is_empty() {
-                let (vertices_list, indices_list) = process_solid_positions(movable_solid_positions);
+                let (vertices_list, indices_list) =
+                    process_solid_positions(movable_solid_positions);
                 if !vertices_list.is_empty() {
-                    movable_solid_mesh_data.chunks.insert(chunk_index, (vertices_list.clone(), indices_list.clone()));
-                    
+                    movable_solid_mesh_data
+                        .chunks
+                        .insert(chunk_index, (vertices_list.clone(), indices_list.clone()));
+
                     // Spawn colliders for this chunk
                     let mut chunk_entities = Vec::new();
                     for (vertices, indices) in vertices_list.iter().zip(&indices_list) {
@@ -248,7 +246,9 @@ fn recalculate_and_spawn_static_bodies_for_dirty_chunks(
                         }
                     }
                     if !chunk_entities.is_empty() {
-                        movable_solid_colliders.0.insert(chunk_index, chunk_entities);
+                        movable_solid_colliders
+                            .0
+                            .insert(chunk_index, chunk_entities);
                     }
                 }
             }
@@ -258,11 +258,7 @@ fn recalculate_and_spawn_static_bodies_for_dirty_chunks(
                 .iter()
                 .filter_map(|(pos, entity)| {
                     if let Ok((_, moved)) = solid_query.get(*entity) {
-                        if !moved.0 {
-                            Some(*pos)
-                        } else {
-                            None
-                        }
+                        if !moved.0 { Some(*pos) } else { None }
                     } else {
                         None
                     }
@@ -272,8 +268,10 @@ fn recalculate_and_spawn_static_bodies_for_dirty_chunks(
             if !solid_positions.is_empty() {
                 let (vertices_list, indices_list) = process_solid_positions(solid_positions);
                 if !vertices_list.is_empty() {
-                    solid_mesh_data.chunks.insert(chunk_index, (vertices_list.clone(), indices_list.clone()));
-                    
+                    solid_mesh_data
+                        .chunks
+                        .insert(chunk_index, (vertices_list.clone(), indices_list.clone()));
+
                     // Spawn colliders for this chunk
                     let mut chunk_entities = Vec::new();
                     for (vertices, indices) in vertices_list.iter().zip(&indices_list) {
@@ -362,7 +360,6 @@ fn process_solid_positions(positions: Vec<IVec2>) -> (Vec<Vec<Vector>>, Vec<Vec<
 
     (all_vertices, all_indices)
 }
-
 
 fn extract_ordered_perimeter_loop(grid: &Grid) -> Vec<Vec2> {
     let edges = extract_perimeter_edges(grid);

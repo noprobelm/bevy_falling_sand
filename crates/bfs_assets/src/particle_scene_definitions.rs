@@ -72,4 +72,3 @@ pub fn load_particle_definitions_scene_system(
         scene_spawner.spawn_dynamic(scene_handle);
     }
 }
-

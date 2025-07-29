@@ -110,4 +110,3 @@ impl AssetLoader for ParticleSceneAssetLoader {
         &["ron", "scene.ron"]
     }
 }
-

@@ -1,6 +1,5 @@
 mod utils;
 
-
 use bevy::{input::common_conditions::input_just_pressed, prelude::*};
 use bevy_falling_sand::prelude::*;
 use utils::{
@@ -126,11 +125,7 @@ fn setup(mut commands: Commands) {
 
     commands.entity(panel_id).with_children(|parent| {
         let style = TextFont::default();
-        parent.spawn((
-            FpsText,
-            Text::new("FPS: --"),
-            style.clone(),
-        ));
+        parent.spawn((FpsText, Text::new("FPS: --"), style.clone()));
         parent.spawn((
             BrushStateText,
             Text::new("Brush Mode: Spawn"),

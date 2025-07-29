@@ -55,22 +55,23 @@ impl ParticleFileUtils {
         particle_data: HashMap<String, bfs_assets::ParticleData>,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let definitions = particle_data;
-        
+
         let ron_string = ron::ser::to_string_pretty(&definitions, Default::default())?;
-        
+
         std::fs::write(path, ron_string)?;
-        
+
         Ok(())
     }
 
     /// Load particles from a RON file
     pub fn load_particles_from_file(
         path: impl AsRef<Path>,
-    ) -> Result<HashMap<String, bfs_assets::ParticleData>, Box<dyn std::error::Error + Send + Sync>> {
+    ) -> Result<HashMap<String, bfs_assets::ParticleData>, Box<dyn std::error::Error + Send + Sync>>
+    {
         let content = std::fs::read_to_string(path)?;
-        
+
         let definitions: ParticleDefinitions = ron::from_str(&content)?;
-        
+
         Ok(definitions)
     }
 
@@ -93,7 +94,7 @@ pub fn handle_save_particle_file_events(
 ) {
     for event in save_events.read() {
         let particle_data = registry.entities_to_data(&event.entities, world);
-        
+
         if particle_data.is_empty() {
             saved_events.write(ParticleFileSavedEvent {
                 path: event.path.clone(),
@@ -104,7 +105,7 @@ pub fn handle_save_particle_file_events(
         }
 
         let path = event.path.clone();
-        
+
         match ParticleFileUtils::save_particles_to_file(&path, particle_data) {
             Ok(()) => {
                 saved_events.write(ParticleFileSavedEvent {
@@ -133,16 +134,16 @@ pub fn handle_load_particle_file_events(
 ) {
     for event in load_events.read() {
         let path = event.path.clone();
-        
+
         match ParticleFileUtils::load_particles_from_file(&path) {
             Ok(particle_data) => {
                 let particle_count = particle_data.len();
-                
+
                 // Spawn particles into the world
                 for (_name, data) in particle_data {
                     registry.data_to_entity(&data, &mut commands);
                 }
-                
+
                 loaded_events.write(ParticleFileLoadedEvent {
                     path: event.path.clone(),
                     success: true,
@@ -187,29 +188,18 @@ pub struct ParticleFileAPI;
 
 impl ParticleFileAPI {
     /// Save all particles in the world to a file
-    pub fn save_all_particles(
-        commands: &mut Commands,
-        world: &World,
-        path: String,
-    ) {
+    pub fn save_all_particles(commands: &mut Commands, world: &World, path: String) {
         let entities = world.get_particle_entities();
         commands.trigger(SaveParticleFileEvent { path, entities });
     }
-    
+
     /// Save specific particles to a file
-    pub fn save_particles(
-        commands: &mut Commands,
-        entities: Vec<Entity>,
-        path: String,
-    ) {
+    pub fn save_particles(commands: &mut Commands, entities: Vec<Entity>, path: String) {
         commands.trigger(SaveParticleFileEvent { path, entities });
     }
-    
+
     /// Load particles from a file
-    pub fn load_particles(
-        commands: &mut Commands,
-        path: String,
-    ) {
+    pub fn load_particles(commands: &mut Commands, path: String) {
         commands.trigger(LoadParticleFileEvent { path });
     }
 }

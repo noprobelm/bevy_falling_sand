@@ -10,7 +10,7 @@ use bfs_assets::{FallingSandAssetsPlugin, ParticleDefinitionsAsset, ParticleDefi
 use bfs_core::{Particle, ParticleTypeMap};
 use ron::ser::{to_string_pretty, PrettyConfig};
 use std::collections::HashMap;
-use utils::status_ui::{StatusUIPlugin, FpsText};
+use utils::status_ui::{FpsText, StatusUIPlugin};
 
 fn main() {
     App::new()
@@ -91,7 +91,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         }),
         MainCamera,
     ));
-    
+
     // Instructions and status panel
     let instructions_text = "This example demonstrates saving and loading particles.\n\
         Click and drag to spawn particles\n\
@@ -100,14 +100,10 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         R: Reset\n\
         Mouse wheel: Zoom camera";
     let panel_id = utils::instructions::spawn_instructions_panel(&mut commands, instructions_text);
-    
+
     commands.entity(panel_id).with_children(|parent| {
         let style = TextFont::default();
-        parent.spawn((
-            FpsText,
-            Text::new("FPS: --"),
-            style.clone(),
-        ));
+        parent.spawn((FpsText, Text::new("FPS: --"), style.clone()));
     });
 
     // Load the particle definitions asset

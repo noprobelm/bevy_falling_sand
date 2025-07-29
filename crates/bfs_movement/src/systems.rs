@@ -1,8 +1,8 @@
-use crate::{MovementRng, Velocity, Momentum, Density, Movement, Moved};
+use crate::{Density, Momentum, Moved, Movement, MovementRng, Velocity};
 use std::mem;
 
-use bevy::prelude::*;
 use bevy::platform::collections::HashSet;
+use bevy::prelude::*;
 use bevy_turborand::prelude::*;
 use bfs_core::{Particle, ParticleMap, ParticlePosition, ParticleSimulationSet};
 
@@ -78,10 +78,12 @@ fn handle_movement_by_chunks(
         for mut chunk in chunks {
             if let Some(dirty_rect) = chunk.dirty_rect() {
                 movement_state.chunk_entities_buffer.clear();
-                movement_state.chunk_entities_buffer.extend(chunk.iter().map(|(pos, entity)| (*pos, *entity)));
+                movement_state
+                    .chunk_entities_buffer
+                    .extend(chunk.iter().map(|(pos, entity)| (*pos, *entity)));
                 // Shuffle entities to prevent deterministic patterns
                 global_rng.shuffle(&mut movement_state.chunk_entities_buffer);
-                
+
                 let chunk_entities = movement_state.chunk_entities_buffer.clone();
                 for (position, entity) in &chunk_entities {
                     if dirty_rect.contains(*position) {
@@ -107,14 +109,15 @@ fn handle_movement_by_chunks(
                                 particle_moved.0 = false;
                                 continue;
                             }
-                            
+
                             let mut moved = false;
                             let mut obstructed: ObstructedDirections = [false; 9];
 
                             'velocity_loop: for _ in 0..velocity.current() {
-                                for relative_position in movement_priority
-                                    .iter_candidates(&mut rng, momentum.as_deref().copied().as_ref())
-                                {
+                                for relative_position in movement_priority.iter_candidates(
+                                    &mut rng,
+                                    momentum.as_deref().copied().as_ref(),
+                                ) {
                                     let neighbor_position = position.0 + *relative_position;
                                     let signum = relative_position.signum();
                                     let obstruct_idx = direction_to_index(signum);
@@ -123,7 +126,8 @@ fn handle_movement_by_chunks(
                                         continue;
                                     }
 
-                                    let neighbor_entity = (*map_ptr).get(&neighbor_position).copied();
+                                    let neighbor_entity =
+                                        (*map_ptr).get(&neighbor_position).copied();
 
                                     match neighbor_entity {
                                         Some(neighbor_entity) => {
@@ -145,7 +149,10 @@ fn handle_movement_by_chunks(
                                                 }
 
                                                 if density > neighbor_density {
-                                                    if (*map_ptr).swap(neighbor_position.0, position.0).is_ok() {
+                                                    if (*map_ptr)
+                                                        .swap(neighbor_position.0, position.0)
+                                                        .is_ok()
+                                                    {
                                                         swap_particle_positions(
                                                             &mut position,
                                                             &mut transform,
@@ -169,7 +176,10 @@ fn handle_movement_by_chunks(
                                             }
                                         }
                                         None => {
-                                            if (*map_ptr).swap(position.0, neighbor_position).is_ok() {
+                                            if (*map_ptr)
+                                                .swap(position.0, neighbor_position)
+                                                .is_ok()
+                                            {
                                                 position.0 = neighbor_position;
                                                 // Batch transform update
                                                 transform.translation = Vec3::new(
@@ -212,8 +222,6 @@ fn handle_movement_by_chunks(
     }
 }
 
-
-
 #[allow(unused_mut, clippy::too_many_lines)]
 fn handle_movement_by_particles(
     mut particle_query: Query<ParticleMovementQuery>,
@@ -241,7 +249,7 @@ fn handle_movement_by_particles(
                     particle_moved.0 = false;
                     return;
                 }
-                
+
                 if let Some(chunk) = map.chunk(&position.0) {
                     if let Some(dirty_rect) = chunk.dirty_rect() {
                     if !dirty_rect.contains(position.0) {
@@ -253,7 +261,7 @@ fn handle_movement_by_particles(
                 }
                 let mut moved = false;
                 let mut obstructed: ObstructedDirections = [false; 9];
-                
+
                 'velocity_loop: for _ in 0..velocity.current() {
                     for relative_position in movement_priority
                         .iter_candidates(&mut rng, momentum.as_deref().copied().as_ref())
@@ -294,7 +302,7 @@ fn handle_movement_by_particles(
                                                     &mut neighbor_transform,
                                                 );
                                                 if let Some(ref mut momentum) = momentum {
-                                                    momentum.0 = IVec2::ZERO; 
+                                                    momentum.0 = IVec2::ZERO;
                                                 }
                                                 velocity.decrement();
                                                 moved = true;

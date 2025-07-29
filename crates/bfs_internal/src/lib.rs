@@ -19,7 +19,6 @@ pub mod particle_registry;
 /// Prelude for commonly accessed constructs
 pub mod prelude;
 
-
 use bevy::prelude::{App, Plugin, Vec2};
 use bevy_turborand::prelude::*;
 
