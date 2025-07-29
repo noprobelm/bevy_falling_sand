@@ -8,7 +8,7 @@ impl Plugin for BrushPlugin {
         app.init_gizmo_group::<BrushGizmos>()
             .init_resource::<MaxBrushSize>()
             .init_state::<BrushTypeState>()
-            .init_state::<BrushSpawnState>()
+            .init_state::<BrushModeState>()
             .add_systems(Startup, setup)
             .add_systems(Update, update_brush_gizmos);
     }
@@ -35,8 +35,8 @@ impl Default for MaxBrushSize {
     }
 }
 
-#[derive(States, Reflect, Default, Debug, Clone, Eq, PartialEq, Hash)]
-pub enum BrushSpawnState {
+#[derive(States, Reflect, Default, Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub enum BrushModeState {
     #[default]
     Spawn,
     Despawn,

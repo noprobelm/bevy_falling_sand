@@ -10,7 +10,7 @@ use bevy_falling_sand::prelude::*;
 
 use crate::{
     app_state::{AppState, CanvasState},
-    brush::{BrushSize, BrushSpawnState, BrushTypeState, MaxBrushSize},
+    brush::{BrushModeState, BrushSize, BrushTypeState, MaxBrushSize},
     cursor::{update_cursor_position, CursorPosition},
     particles::SelectedParticle,
 };
@@ -34,13 +34,13 @@ impl Plugin for QuickActionsPlugin {
                     .run_if(in_state(CanvasState::Edit)),
                 spawn_particles
                     .run_if(input_pressed(MouseButton::Left))
-                    .run_if(in_state(BrushSpawnState::Spawn))
+                    .run_if(in_state(BrushModeState::Spawn))
                     .run_if(in_state(AppState::Canvas))
                     .before(ParticleSimulationSet)
                     .after(update_cursor_position),
                 despawn_particles
                     .run_if(input_pressed(MouseButton::Left))
-                    .run_if(in_state(BrushSpawnState::Despawn))
+                    .run_if(in_state(BrushModeState::Despawn))
                     .run_if(in_state(AppState::Canvas))
                     .before(ParticleSimulationSet)
                     .after(update_cursor_position),
@@ -110,12 +110,12 @@ fn step_simulation(mut evw_simulation_step: EventWriter<SimulationStepEvent>) {
 }
 
 fn update_brush_spawn_state(
-    brush_spawn_state: Res<State<BrushSpawnState>>,
-    mut brush_spawn_state_next: ResMut<NextState<BrushSpawnState>>,
+    brush_spawn_state: Res<State<BrushModeState>>,
+    mut brush_spawn_state_next: ResMut<NextState<BrushModeState>>,
 ) {
     match brush_spawn_state.get() {
-        BrushSpawnState::Spawn => brush_spawn_state_next.set(BrushSpawnState::Despawn),
-        BrushSpawnState::Despawn => brush_spawn_state_next.set(BrushSpawnState::Spawn),
+        BrushModeState::Spawn => brush_spawn_state_next.set(BrushModeState::Despawn),
+        BrushModeState::Despawn => brush_spawn_state_next.set(BrushModeState::Spawn),
     }
 }
 

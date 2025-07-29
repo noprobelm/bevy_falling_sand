@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::brush::BrushTypeState;
+use crate::brush::{BrushModeState, BrushTypeState};
 
 use super::super::core::{ConsoleCommand, PrintConsoleLine};
 
@@ -8,7 +8,8 @@ pub struct BrushCommandPlugin;
 
 impl Plugin for BrushCommandPlugin {
     fn build(&self, app: &mut App) {
-        app.add_observer(on_update_brush_type);
+        app.add_observer(on_update_brush_type)
+            .add_observer(on_update_brush_mode);
     }
 }
 
@@ -42,7 +43,7 @@ impl ConsoleCommand for BrushSetCommand {
     }
 
     fn subcommand_types(&self) -> Vec<Box<dyn ConsoleCommand>> {
-        vec![Box::new(BrushSetTypeCommand)]
+        vec![Box::new(BrushSetTypeCommand), Box::new(BrushSetModeCommand)]
     }
 }
 
@@ -142,12 +143,92 @@ impl ConsoleCommand for BrushSetTypeCursorCommand {
     }
 }
 
+#[derive(Default)]
+pub struct BrushSetModeCommand;
+
+impl ConsoleCommand for BrushSetModeCommand {
+    fn name(&self) -> &'static str {
+        "mode"
+    }
+
+    fn description(&self) -> &'static str {
+        "Set the brush mode"
+    }
+
+    fn subcommand_types(&self) -> Vec<Box<dyn ConsoleCommand>> {
+        vec![
+            Box::new(BrushSetModeSpawnCommand),
+            Box::new(BrushSetModeDespawnCommand),
+        ]
+    }
+}
+
+#[derive(Default)]
+pub struct BrushSetModeSpawnCommand;
+
+impl ConsoleCommand for BrushSetModeSpawnCommand {
+    fn name(&self) -> &'static str {
+        "spawn"
+    }
+
+    fn description(&self) -> &'static str {
+        "Set the brush mode to 'spawn'"
+    }
+
+    fn execute_action(
+        &self,
+        _args: &[String],
+        console_writer: &mut EventWriter<PrintConsoleLine>,
+        commands: &mut Commands,
+    ) {
+        console_writer.write(PrintConsoleLine::new(
+            "Setting brush mode to 'spawn'".to_string(),
+        ));
+        commands.trigger(SetBrushModeEvent(BrushModeState::Spawn));
+    }
+}
+
+#[derive(Default)]
+pub struct BrushSetModeDespawnCommand;
+
+impl ConsoleCommand for BrushSetModeDespawnCommand {
+    fn name(&self) -> &'static str {
+        "despawn"
+    }
+
+    fn description(&self) -> &'static str {
+        "Set the brush mode to 'despawn'"
+    }
+
+    fn execute_action(
+        &self,
+        _args: &[String],
+        console_writer: &mut EventWriter<PrintConsoleLine>,
+        commands: &mut Commands,
+    ) {
+        console_writer.write(PrintConsoleLine::new(
+            "Setting brush mode to 'despawn'".to_string(),
+        ));
+        commands.trigger(SetBrushModeEvent(BrushModeState::Despawn));
+    }
+}
+
 #[derive(Clone, Event, Hash, Debug, Eq, PartialEq, PartialOrd)]
 struct SetBrushTypeEvent(pub BrushTypeState);
+
+#[derive(Clone, Event, Hash, Debug, Eq, PartialEq, PartialOrd)]
+struct SetBrushModeEvent(pub BrushModeState);
 
 fn on_update_brush_type(
     trigger: Trigger<SetBrushTypeEvent>,
     mut brush_type_state_next: ResMut<NextState<BrushTypeState>>,
 ) {
     brush_type_state_next.set(trigger.event().0);
+}
+
+fn on_update_brush_mode(
+    trigger: Trigger<SetBrushModeEvent>,
+    mut brush_mode_state_next: ResMut<NextState<BrushModeState>>,
+) {
+    brush_mode_state_next.set(trigger.event().0);
 }
