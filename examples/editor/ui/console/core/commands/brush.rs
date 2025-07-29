@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::brush::{BrushModeState, BrushTypeState};
+use crate::brush::{Brush, BrushModeState, BrushSize, BrushTypeState, MaxBrushSize};
 
 use super::super::core::{ConsoleCommand, PrintConsoleLine};
 
@@ -9,7 +9,9 @@ pub struct BrushCommandPlugin;
 impl Plugin for BrushCommandPlugin {
     fn build(&self, app: &mut App) {
         app.add_observer(on_update_brush_type)
-            .add_observer(on_update_brush_mode);
+            .add_observer(on_update_brush_mode)
+            .add_observer(on_update_brush_size)
+            .add_observer(on_show_brush_info);
     }
 }
 
@@ -26,7 +28,7 @@ impl ConsoleCommand for BrushCommand {
     }
 
     fn subcommand_types(&self) -> Vec<Box<dyn ConsoleCommand>> {
-        vec![Box::new(BrushSetCommand)]
+        vec![Box::new(BrushSetCommand), Box::new(BrushInfoCommand)]
     }
 }
 
@@ -43,7 +45,11 @@ impl ConsoleCommand for BrushSetCommand {
     }
 
     fn subcommand_types(&self) -> Vec<Box<dyn ConsoleCommand>> {
-        vec![Box::new(BrushSetTypeCommand), Box::new(BrushSetModeCommand)]
+        vec![
+            Box::new(BrushSetTypeCommand),
+            Box::new(BrushSetModeCommand),
+            Box::new(BrushSetSizeCommand),
+        ]
     }
 }
 
@@ -112,7 +118,7 @@ impl ConsoleCommand for BrushSetTypeCircleCommand {
         commands: &mut Commands,
     ) {
         console_writer.write(PrintConsoleLine::new(
-            "Setting brush type to 'line'".to_string(),
+            "Setting brush type to 'circle'".to_string(),
         ));
         commands.trigger(SetBrushTypeEvent(BrushTypeState::Circle));
     }
@@ -184,7 +190,7 @@ impl ConsoleCommand for BrushSetModeSpawnCommand {
         console_writer.write(PrintConsoleLine::new(
             "Setting brush mode to 'spawn'".to_string(),
         ));
-        commands.trigger(SetBrushModeEvent(BrushModeState::Spawn));
+        commands.trigger(BrushSetModeEvent(BrushModeState::Spawn));
     }
 }
 
@@ -209,7 +215,78 @@ impl ConsoleCommand for BrushSetModeDespawnCommand {
         console_writer.write(PrintConsoleLine::new(
             "Setting brush mode to 'despawn'".to_string(),
         ));
-        commands.trigger(SetBrushModeEvent(BrushModeState::Despawn));
+        commands.trigger(BrushSetModeEvent(BrushModeState::Despawn));
+    }
+}
+
+#[derive(Default)]
+pub struct BrushSetSizeCommand;
+
+impl ConsoleCommand for BrushSetSizeCommand {
+    fn name(&self) -> &'static str {
+        "size"
+    }
+
+    fn description(&self) -> &'static str {
+        "Set the brush size (usage: brush set size <value>)"
+    }
+
+    fn execute_action(
+        &self,
+        args: &[String],
+        console_writer: &mut EventWriter<PrintConsoleLine>,
+        commands: &mut Commands,
+    ) {
+        if args.is_empty() {
+            console_writer.write(PrintConsoleLine::new(
+                "Error: size value required (usage: brush set size <value>)".to_string(),
+            ));
+            return;
+        }
+
+        match args[0].parse::<usize>() {
+            Ok(size) => {
+                if size == 0 {
+                    console_writer.write(PrintConsoleLine::new(
+                        "Error: brush size must be greater than 0".to_string(),
+                    ));
+                } else {
+                    console_writer.write(PrintConsoleLine::new(format!(
+                        "Setting brush size to {}",
+                        size
+                    )));
+                    commands.trigger(BrushSetSizeEvent(size));
+                }
+            }
+            Err(_) => {
+                console_writer.write(PrintConsoleLine::new(format!(
+                    "Error: '{}' is not a valid size value",
+                    args[0]
+                )));
+            }
+        }
+    }
+}
+
+#[derive(Default)]
+pub struct BrushInfoCommand;
+
+impl ConsoleCommand for BrushInfoCommand {
+    fn name(&self) -> &'static str {
+        "info"
+    }
+
+    fn description(&self) -> &'static str {
+        "Display current brush information"
+    }
+
+    fn execute_action(
+        &self,
+        _args: &[String],
+        _console_writer: &mut EventWriter<PrintConsoleLine>,
+        commands: &mut Commands,
+    ) {
+        commands.trigger(ShowBrushInfoEvent);
     }
 }
 
@@ -217,7 +294,13 @@ impl ConsoleCommand for BrushSetModeDespawnCommand {
 struct SetBrushTypeEvent(pub BrushTypeState);
 
 #[derive(Clone, Event, Hash, Debug, Eq, PartialEq, PartialOrd)]
-struct SetBrushModeEvent(pub BrushModeState);
+struct BrushSetModeEvent(pub BrushModeState);
+
+#[derive(Clone, Event, Hash, Debug, Eq, PartialEq, PartialOrd)]
+struct BrushSetSizeEvent(pub usize);
+
+#[derive(Clone, Event, Hash, Debug, Eq, PartialEq, PartialOrd)]
+struct ShowBrushInfoEvent;
 
 fn on_update_brush_type(
     trigger: Trigger<SetBrushTypeEvent>,
@@ -227,8 +310,47 @@ fn on_update_brush_type(
 }
 
 fn on_update_brush_mode(
-    trigger: Trigger<SetBrushModeEvent>,
+    trigger: Trigger<BrushSetModeEvent>,
     mut brush_mode_state_next: ResMut<NextState<BrushModeState>>,
 ) {
     brush_mode_state_next.set(trigger.event().0);
+}
+
+fn on_update_brush_size(
+    trigger: Trigger<BrushSetSizeEvent>,
+    mut brush_size_query: Query<&mut BrushSize>,
+) -> Result {
+    let mut brush_size = brush_size_query.single_mut()?;
+    let size = trigger.event().0;
+    brush_size.0 = size;
+
+    Ok(())
+}
+
+fn on_show_brush_info(
+    _trigger: Trigger<ShowBrushInfoEvent>,
+    brush_size_query: Query<&BrushSize, With<Brush>>,
+    max_brush_size: Res<MaxBrushSize>,
+    brush_type_state: Res<State<BrushTypeState>>,
+    brush_mode_state: Res<State<BrushModeState>>,
+    mut console_writer: EventWriter<PrintConsoleLine>,
+) {
+    console_writer.write(PrintConsoleLine::new("Current brush settings:".to_string()));
+
+    if let Ok(brush_size) = brush_size_query.single() {
+        console_writer.write(PrintConsoleLine::new(format!(
+            "  Size: {} (soft cap: {})",
+            brush_size.0, max_brush_size.0
+        )));
+    }
+
+    console_writer.write(PrintConsoleLine::new(format!(
+        "  Type: {:?}",
+        brush_type_state.get()
+    )));
+
+    console_writer.write(PrintConsoleLine::new(format!(
+        "  Mode: {:?}",
+        brush_mode_state.get()
+    )));
 }

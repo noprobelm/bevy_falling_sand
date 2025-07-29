@@ -18,7 +18,7 @@ impl Plugin for BrushPlugin {
 pub struct BrushGizmos;
 
 #[derive(Component)]
-struct Brush;
+pub struct Brush;
 
 #[derive(Component)]
 pub struct BrushSize(pub usize);
