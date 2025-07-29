@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 
+pub mod brush;
 pub mod camera;
 pub mod clear;
 pub mod exit;
@@ -7,6 +8,7 @@ pub mod help;
 pub mod particles;
 pub mod physics;
 
+use brush::BrushCommandPlugin;
 use camera::CameraCommandPlugin;
 use clear::ClearCommandPlugin;
 use exit::ExitCommandPlugin;
@@ -30,6 +32,7 @@ impl Plugin for ConsoleCommandsPlugin {
                 ParticlesCommandPlugin,
                 CameraCommandPlugin,
                 PhysicsCommandPlugin,
+                BrushCommandPlugin,
             ));
     }
 }
@@ -39,7 +42,7 @@ fn init_command_registry(
     mut config: ResMut<ConsoleConfiguration>,
     mut cache: ResMut<ConsoleCache>,
 ) {
-    use commands::{camera::*, clear::*, exit::*, help::*, particles::*, physics::*};
+    use commands::{brush::*, camera::*, clear::*, exit::*, help::*, particles::*, physics::*};
 
     registry.register::<ClearCommand>();
     registry.register::<ExitCommand>();
@@ -47,6 +50,7 @@ fn init_command_registry(
     registry.register::<ParticlesCommand>();
     registry.register::<CameraCommand>();
     registry.register::<PhysicsCommand>();
+    registry.register::<BrushCommand>();
 
     config.register_command::<ClearCommand>();
     config.register_command::<ExitCommand>();
@@ -54,5 +58,6 @@ fn init_command_registry(
     config.register_command::<ParticlesCommand>();
     config.register_command::<CameraCommand>();
     config.register_command::<PhysicsCommand>();
+    config.register_command::<BrushCommand>();
     cache.rebuild_tries(&config);
 }

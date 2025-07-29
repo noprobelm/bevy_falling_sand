@@ -42,7 +42,7 @@ pub enum BrushSpawnState {
     Despawn,
 }
 
-#[derive(Default, Clone, Hash, Eq, PartialEq, Debug, States)]
+#[derive(Default, Copy, Clone, Hash, Eq, PartialEq, Ord, PartialOrd, Debug, States)]
 pub enum BrushTypeState {
     Line,
     #[default]
