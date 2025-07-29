@@ -1,7 +1,6 @@
 use bevy::prelude::*;
-use clap::Parser;
 
-use super::super::core::{ConsoleCommand, ConsoleCommandEntered, NamedCommand, PrintConsoleLine};
+use super::super::core::{ConsoleCommand, PrintConsoleLine};
 
 pub struct ExitCommandPlugin;
 
@@ -14,42 +13,8 @@ impl Plugin for ExitCommandPlugin {
 #[derive(Event)]
 pub struct ExitApplicationEvent;
 
-#[derive(Parser, Resource)]
-#[command(name = "exit", about = "Exit the application")]
-pub struct ExitCommand {
-    command: Option<String>,
-}
-
-impl NamedCommand for ExitCommand {
-    fn name() -> &'static str {
-        "exit"
-    }
-}
-
 #[derive(Default)]
-pub struct ExitConsoleCommand;
-
-impl ConsoleCommand for ExitConsoleCommand {
-    fn name(&self) -> &'static str {
-        "exit"
-    }
-
-    fn description(&self) -> &'static str {
-        "Exit the application"
-    }
-
-    fn execute(
-        &self,
-        path: &[String],
-        _args: &[String],
-        _console_writer: &mut EventWriter<PrintConsoleLine>,
-        commands: &mut Commands,
-    ) {
-        if path.len() == 1 && path[0] == "exit" {
-            commands.trigger(ExitApplicationEvent);
-        }
-    }
-}
+pub struct ExitCommand;
 
 impl ConsoleCommand for ExitCommand {
     fn name(&self) -> &'static str {
@@ -60,16 +25,13 @@ impl ConsoleCommand for ExitCommand {
         "Exit the application"
     }
 
-    fn execute(
+    fn execute_action(
         &self,
-        path: &[String],
         _args: &[String],
         _console_writer: &mut EventWriter<PrintConsoleLine>,
         commands: &mut Commands,
     ) {
-        if path.len() == 1 && path[0] == "exit" {
-            commands.trigger(ExitApplicationEvent);
-        }
+        commands.trigger(ExitApplicationEvent);
     }
 }
 
@@ -78,15 +40,4 @@ fn on_exit_application(
     mut app_exit: EventWriter<AppExit>,
 ) {
     app_exit.write(AppExit::Success);
-}
-
-pub fn exit_command(
-    mut cmd: EventReader<ConsoleCommandEntered>,
-    mut evw_app_exit: EventWriter<AppExit>,
-) {
-    for command_event in cmd.read() {
-        if command_event.command_path.len() == 1 && command_event.command_path[0] == "exit" {
-            evw_app_exit.write(AppExit::Success);
-        }
-    }
 }

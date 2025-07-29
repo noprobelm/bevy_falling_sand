@@ -1,26 +1,41 @@
 use bevy::prelude::*;
-use clap::Parser;
 
-use super::super::core::{ConsoleCommandEntered, ConsoleState, NamedCommand};
+use super::super::core::{ConsoleCommand, ConsoleState, PrintConsoleLine};
 
-#[derive(Parser, Resource)]
-#[command(name = "clear", about = "Clear the console output")]
-pub struct ClearCommand;
+pub struct ClearCommandPlugin;
 
-impl NamedCommand for ClearCommand {
-    fn name() -> &'static str {
-        "clear"
+impl Plugin for ClearCommandPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_observer(on_clear_console);
     }
 }
 
-pub fn clear_command(
-    mut cmd: EventReader<ConsoleCommandEntered>,
-    mut console_state: ResMut<ConsoleState>,
-) {
-    for command_event in cmd.read() {
-        if command_event.command_path.len() == 1 && command_event.command_path[0] == "clear" {
-            console_state.messages.clear();
-            console_state.add_message("--- Bevy Falling Sand Editor Console ---".to_string());
-        }
+#[derive(Event)]
+pub struct ClearConsoleEvent;
+
+#[derive(Default)]
+pub struct ClearCommand;
+
+impl ConsoleCommand for ClearCommand {
+    fn name(&self) -> &'static str {
+        "clear"
     }
+
+    fn description(&self) -> &'static str {
+        "Clear the console output"
+    }
+
+    fn execute_action(
+        &self,
+        _args: &[String],
+        _console_writer: &mut EventWriter<PrintConsoleLine>,
+        commands: &mut Commands,
+    ) {
+        commands.trigger(ClearConsoleEvent);
+    }
+}
+
+fn on_clear_console(_trigger: Trigger<ClearConsoleEvent>, mut console_state: ResMut<ConsoleState>) {
+    console_state.messages.clear();
+    console_state.add_message("--- Bevy Falling Sand Editor Console ---".to_string());
 }

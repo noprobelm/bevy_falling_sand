@@ -12,9 +12,6 @@ use bevy_falling_sand::prelude::{
     ParticleTypeMaterialsParam, ResetParticleChildrenEvent, SaveSceneEvent, TotalParticleCount,
     WallParticleCount,
 };
-use console::core::commands::camera::CameraCommandPlugin;
-use console::core::commands::exit::ExitCommandPlugin;
-use console::core::commands::particles::ParticlesCommandPlugin;
 use console::core::{ConsoleCache, ConsoleCommandEntered, ConsoleConfiguration};
 use console::{Console, ConsolePlugin};
 use quick_actions::*;
@@ -50,9 +47,6 @@ impl Plugin for UiPlugin {
                 enable_multipass_for_primary_context: false,
             },
             ConsolePlugin,
-            CameraCommandPlugin,
-            ExitCommandPlugin,
-            ParticlesCommandPlugin,
             ParticleEditorPlugin,
             ParticleFilesPlugin,
             FrameTimeDiagnosticsPlugin::default(),

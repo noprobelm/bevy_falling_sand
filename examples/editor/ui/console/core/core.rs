@@ -1,7 +1,6 @@
 use bevy::prelude::*;
-use clap::CommandFactory;
 use shlex::Shlex;
-use std::collections::{BTreeMap, HashMap, VecDeque};
+use std::collections::{HashMap, VecDeque};
 use trie_rs::{Trie, TrieBuilder};
 
 #[derive(Clone, Debug, Event)]
@@ -23,7 +22,6 @@ impl PrintConsoleLine {
 
 #[derive(Resource)]
 pub struct ConsoleConfiguration {
-    pub commands: BTreeMap<&'static str, clap::Command>,
     pub command_tree: HashMap<String, CommandNode>,
     pub history_size: usize,
     pub symbol: String,
@@ -32,7 +30,6 @@ pub struct ConsoleConfiguration {
 impl Default for ConsoleConfiguration {
     fn default() -> Self {
         Self {
-            commands: BTreeMap::new(),
             command_tree: HashMap::new(),
             history_size: 20,
             symbol: "> ".to_owned(),
@@ -42,7 +39,6 @@ impl Default for ConsoleConfiguration {
 
 #[derive(Resource, Default)]
 pub struct ConsoleCache {
-    pub commands_trie: Option<Trie<u8>>,
     pub context_tries: HashMap<Vec<String>, Trie<u8>>,
 }
 
@@ -90,10 +86,6 @@ impl Default for ConsoleState {
 
         state
     }
-}
-
-pub trait NamedCommand {
-    fn name() -> &'static str;
 }
 
 pub trait ConsoleCommand: Send + Sync + 'static {
@@ -168,22 +160,13 @@ pub trait ConsoleCommand: Send + Sync + 'static {
         self.subcommand_types()
     }
 
-    fn clap_command(&self) -> clap::Command {
-        let mut cmd = clap::Command::new(self.name()).about(self.description());
-
-        for subcmd in self.subcommand_types() {
-            cmd = cmd.subcommand(subcmd.clap_command());
-        }
-
-        cmd
-    }
 
     fn build_command_node(&self) -> CommandNode {
         let mut node = CommandNode::new(self.name(), self.description());
 
         let subcommands = self.subcommand_types();
         if subcommands.is_empty() {
-            node = node.executable(self.clap_command());
+            node = node.executable();
         } else {
             for subcmd in subcommands {
                 node = node.with_child(subcmd.build_command_node());
@@ -203,8 +186,6 @@ pub struct CommandNode {
     pub children: HashMap<String, CommandNode>,
 
     pub is_executable: bool,
-
-    pub clap_command: Option<clap::Command>,
 }
 
 impl CommandNode {
@@ -214,13 +195,11 @@ impl CommandNode {
             description: description.into(),
             children: HashMap::new(),
             is_executable: false,
-            clap_command: None,
         }
     }
 
-    pub fn executable(mut self, clap_command: clap::Command) -> Self {
+    pub fn executable(mut self) -> Self {
         self.is_executable = true;
-        self.clap_command = Some(clap_command);
         self
     }
 
@@ -373,7 +352,7 @@ impl ConsoleState {
                 }
 
                 let command_name = &command_path[0];
-                if config.commands.contains_key(command_name.as_str()) {
+                if config.command_tree.contains_key(command_name) {
                     self.add_message(format!("Executing command: {}", command_name));
                     command_writer.write(ConsoleCommandEntered {
                         command_path: vec![command_name.clone()],
@@ -470,15 +449,14 @@ impl ConsoleState {
             }
 
             if words.len() == 1 && !input_to_analyze.ends_with(' ') {
-                if let Some(trie) = &cache.commands_trie {
-                    let word = words[0];
-                    self.suggestions = trie
-                        .predictive_search(word.as_bytes())
-                        .into_iter()
-                        .take(5)
-                        .map(|s| String::from_utf8(s).unwrap_or_default())
-                        .collect();
-                }
+                // Root command suggestions are handled by command_tree below
+                let word = words[0];
+                self.suggestions = config.command_tree
+                    .keys()
+                    .filter(|cmd| cmd.starts_with(word))
+                    .take(5)
+                    .cloned()
+                    .collect();
                 return;
             }
 
@@ -581,13 +559,7 @@ impl ConsoleState {
         config: &ConsoleConfiguration,
     ) -> Vec<String> {
         if context_path.is_empty() {
-            let mut completions = config
-                .commands
-                .keys()
-                .map(|s| s.to_string())
-                .collect::<Vec<_>>();
-            completions.extend(config.command_tree.keys().cloned());
-            return completions;
+            return config.command_tree.keys().cloned().collect();
         }
 
         if let Some(root_node) = config.command_tree.get(&context_path[0]) {
@@ -662,9 +634,6 @@ impl<T: ConsoleCommand + Default> ConsoleCommand for CommandWrapper<T> {
         T::default().subcommands()
     }
 
-    fn clap_command(&self) -> clap::Command {
-        T::default().clap_command()
-    }
 
     fn build_command_node(&self) -> CommandNode {
         T::default().build_command_node()
@@ -696,18 +665,6 @@ pub fn command_handler(
 
 impl ConsoleCache {
     pub fn rebuild_tries(&mut self, config: &ConsoleConfiguration) {
-        let mut root_builder: TrieBuilder<u8> = TrieBuilder::new();
-
-        for name in config.commands.keys() {
-            root_builder.push(name.as_bytes());
-        }
-
-        for name in config.command_tree.keys() {
-            root_builder.push(name.as_bytes());
-        }
-
-        self.commands_trie = Some(root_builder.build());
-
         self.context_tries.clear();
         self.build_context_tries_recursive(&vec![], config);
     }
@@ -740,13 +697,7 @@ impl ConsoleCache {
         config: &ConsoleConfiguration,
     ) -> Vec<String> {
         if context_path.is_empty() {
-            let mut completions = config
-                .commands
-                .keys()
-                .map(|s| s.to_string())
-                .collect::<Vec<_>>();
-            completions.extend(config.command_tree.keys().cloned());
-            completions
+            config.command_tree.keys().cloned().collect()
         } else {
             if let Some(root_node) = config.command_tree.get(&context_path[0]) {
                 if let Some(node) = root_node.get_node(&context_path[1..]) {
@@ -757,24 +708,3 @@ impl ConsoleCache {
         }
     }
 }
-
-pub fn init_commands(mut config: ResMut<ConsoleConfiguration>, mut cache: ResMut<ConsoleCache>) {
-    use super::commands::{ClearCommand, ExitCommand, HelpCommand};
-
-    let help_cmd = HelpCommand::command().no_binary_name(true);
-    config.commands.insert(HelpCommand::name(), help_cmd);
-
-    let clear_cmd = ClearCommand::command().no_binary_name(true);
-    config.commands.insert(ClearCommand::name(), clear_cmd);
-
-    let exit_cmd = ExitCommand::command().no_binary_name(true);
-    config
-        .commands
-        .insert(<ExitCommand as NamedCommand>::name(), exit_cmd);
-
-    add_example_commands(&mut config);
-
-    cache.rebuild_tries(&config);
-}
-
-fn add_example_commands(_config: &mut ConsoleConfiguration) {}

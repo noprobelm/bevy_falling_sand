@@ -2,8 +2,12 @@ pub mod commands;
 pub mod core;
 
 use bevy::prelude::*;
-use commands::*;
 pub use core::*;
+
+use commands::{
+    camera::CameraCommandPlugin, clear::ClearCommandPlugin, exit::ExitCommandPlugin,
+    help::HelpCommandPlugin, particles::ParticlesCommandPlugin,
+};
 
 pub struct ConsolePlugin;
 
@@ -15,11 +19,15 @@ impl Plugin for ConsolePlugin {
             .init_resource::<CommandRegistry>()
             .add_event::<ConsoleCommandEntered>()
             .add_event::<PrintConsoleLine>()
-            .add_systems(Startup, (core::init_commands, init_command_registry))
-            .add_systems(
-                Update,
-                (help_command, clear_command, exit_command, command_handler),
-            );
+            .add_systems(Startup, init_command_registry)
+            .add_systems(Update, command_handler)
+            .add_plugins((
+                ClearCommandPlugin,
+                ExitCommandPlugin,
+                HelpCommandPlugin,
+                ParticlesCommandPlugin,
+                CameraCommandPlugin,
+            ));
     }
 }
 
@@ -28,14 +36,18 @@ fn init_command_registry(
     mut config: ResMut<ConsoleConfiguration>,
     mut cache: ResMut<ConsoleCache>,
 ) {
-    use commands::{camera::*, exit::ExitConsoleCommand, particles::*, physics::*};
+    use commands::{camera::*, clear::*, exit::*, help::*, particles::*, physics::*};
 
-    registry.register::<ExitConsoleCommand>();
+    registry.register::<ClearCommand>();
+    registry.register::<ExitCommand>();
+    registry.register::<HelpCommand>();
     registry.register::<ParticlesCommand>();
     registry.register::<CameraCommand>();
     registry.register::<PhysicsCommand>();
 
-    config.register_command::<ExitConsoleCommand>();
+    config.register_command::<ClearCommand>();
+    config.register_command::<ExitCommand>();
+    config.register_command::<HelpCommand>();
     config.register_command::<ParticlesCommand>();
     config.register_command::<CameraCommand>();
     config.register_command::<PhysicsCommand>();
