@@ -1,0 +1,1609 @@
+(
+  resources: {},
+  entities: {
+    4294967327: (
+      components: {
+        "bfs_color::particle_definitions::ColorProfile": (
+          index: 0,
+          color: Srgba((
+            red: 0.23137255,
+            green: 0.2,
+            blue: 0.2,
+            alpha: 1.0,
+          )),
+          palette: [
+            Srgba((
+              red: 0.23137255,
+              green: 0.2,
+              blue: 0.2,
+              alpha: 1.0,
+            )),
+            Srgba((
+              red: 0.2901961,
+              green: 0.23921569,
+              blue: 0.23921569,
+              alpha: 1.0,
+            )),
+            Srgba((
+              red: 0.36078432,
+              green: 0.2901961,
+              blue: 0.2901961,
+              alpha: 1.0,
+            )),
+            Srgba((
+              red: 0.4,
+              green: 0.32941177,
+              blue: 0.32941177,
+              alpha: 1.0,
+            )),
+          ],
+        ),
+        "bfs_core::registration::ParticleType": (
+          name: "Rock Wall",
+        ),
+        "bfs_movement::material::Wall": (),
+        "bfs_movement::particle_definitions::Moved": (false),
+      },
+    ),
+    4294967328: (
+      components: {
+        "bfs_color::particle_definitions::ChangesColor": (
+          chance: 0.1,
+        ),
+        "bfs_color::particle_definitions::ColorProfile": (
+          index: 0,
+          color: Srgba((
+            red: 0.5803922,
+            green: 0.70980394,
+            blue: 0.78039217,
+            alpha: 1.0,
+          )),
+          palette: [
+            Srgba((
+              red: 0.5803922,
+              green: 0.70980394,
+              blue: 0.78039217,
+              alpha: 1.0,
+            )),
+            Srgba((
+              red: 0.87058824,
+              green: 0.92941177,
+              blue: 0.67058825,
+              alpha: 1.0,
+            )),
+            Srgba((
+              red: 0.9411765,
+              green: 0.8117647,
+              blue: 0.4,
+              alpha: 1.0,
+            )),
+            Srgba((
+              red: 0.8392157,
+              green: 0.50980395,
+              blue: 0.41960785,
+              alpha: 1.0,
+            )),
+            Srgba((
+              red: 0.7411765,
+              green: 0.30980393,
+              blue: 0.41960785,
+              alpha: 1.0,
+            )),
+            Srgba((
+              red: 0.9411765,
+              green: 0.36078432,
+              blue: 0.36862746,
+              alpha: 1.0,
+            )),
+          ],
+        ),
+        "bfs_core::registration::ParticleType": (
+          name: "Sparkly Slime",
+        ),
+        "bfs_movement::material::Liquid": (
+          fluidity: 1,
+        ),
+        "bfs_movement::particle_definitions::Density": (850),
+        "bfs_movement::particle_definitions::Momentum": ((0, 0)),
+        "bfs_movement::particle_definitions::Moved": (true),
+        "bfs_movement::particle_definitions::Movement": (
+          neighbor_groups: [
+            (
+              neighbor_group: [
+                (0, -1),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (-1, -1),
+                (1, -1),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (1, 0),
+                (-1, 0),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (2, 0),
+                (-2, 0),
+              ],
+            ),
+          ],
+        ),
+        "bfs_movement::particle_definitions::Velocity": (
+          current: 1,
+          max: 2,
+        ),
+      },
+    ),
+    4294967329: (
+      components: {
+        "bfs_color::particle_definitions::ColorProfile": (
+          index: 0,
+          color: Srgba((
+            red: 0.54901963,
+            green: 0.85882354,
+            blue: 0.972549,
+            alpha: 0.5019608,
+          )),
+          palette: [
+            Srgba((
+              red: 0.54901963,
+              green: 0.85882354,
+              blue: 0.972549,
+              alpha: 0.5019608,
+            )),
+          ],
+        ),
+        "bfs_core::registration::ParticleType": (
+          name: "Ice Wall",
+        ),
+        "bfs_movement::material::Wall": (),
+        "bfs_movement::particle_definitions::Moved": (false),
+        "bfs_reactions::particle_definitions::Burns": (
+          duration: (
+            secs: 2,
+            nanos: 0,
+          ),
+          tick_rate: (
+            secs: 0,
+            nanos: 100000000,
+          ),
+          chance_destroy_per_tick: Some(0.01),
+          reaction: Some((
+            produces: (
+              name: "Water",
+            ),
+            chance_to_produce: 0.2,
+          )),
+          color: None,
+          spreads: None,
+          ignites_on_spawn: false,
+        ),
+      },
+    ),
+    4294967330: (
+      components: {
+        "bfs_color::particle_definitions::ColorProfile": (
+          index: 0,
+          color: Srgba((
+            red: 0.6313726,
+            green: 0.4,
+            blue: 0.18039216,
+            alpha: 1.0,
+          )),
+          palette: [
+            Srgba((
+              red: 0.6313726,
+              green: 0.4,
+              blue: 0.18039216,
+              alpha: 1.0,
+            )),
+          ],
+        ),
+        "bfs_core::registration::ParticleType": (
+          name: "Wood Wall",
+        ),
+        "bfs_movement::material::Wall": (),
+        "bfs_movement::particle_definitions::Moved": (false),
+        "bfs_reactions::particle_definitions::Burns": (
+          duration: (
+            secs: 10,
+            nanos: 0,
+          ),
+          tick_rate: (
+            secs: 0,
+            nanos: 100000000,
+          ),
+          chance_destroy_per_tick: Some(0.0),
+          reaction: Some((
+            produces: (
+              name: "Smoke",
+            ),
+            chance_to_produce: 0.035,
+          )),
+          color: Some((
+            index: 0,
+            color: Srgba((
+              red: 1.0,
+              green: 0.34901962,
+              blue: 0.0,
+              alpha: 1.0,
+            )),
+            palette: [
+              Srgba((
+                red: 1.0,
+                green: 0.34901962,
+                blue: 0.0,
+                alpha: 1.0,
+              )),
+              Srgba((
+                red: 1.0,
+                green: 0.0,
+                blue: 0.0,
+                alpha: 1.0,
+              )),
+              Srgba((
+                red: 1.0,
+                green: 0.6,
+                blue: 0.0,
+                alpha: 1.0,
+              )),
+              Srgba((
+                red: 1.0,
+                green: 0.8117647,
+                blue: 0.0,
+                alpha: 1.0,
+              )),
+              Srgba((
+                red: 1.0,
+                green: 0.9098039,
+                blue: 0.03137255,
+                alpha: 1.0,
+              )),
+            ],
+          )),
+          spreads: Some((
+            burn_radius: 1.5,
+            chance_to_spread: 0.005,
+            destroys_on_spread: false,
+          )),
+          ignites_on_spawn: false,
+        ),
+      },
+    ),
+    4294967331: (
+      components: {
+        "bfs_color::particle_definitions::ColorProfile": (
+          index: 0,
+          color: Srgba((
+            red: 0.47058824,
+            green: 0.023529412,
+            blue: 0.023529412,
+            alpha: 1.0,
+          )),
+          palette: [
+            Srgba((
+              red: 0.47058824,
+              green: 0.023529412,
+              blue: 0.023529412,
+              alpha: 1.0,
+            )),
+          ],
+        ),
+        "bfs_core::registration::ParticleType": (
+          name: "Blood",
+        ),
+        "bfs_movement::material::Liquid": (
+          fluidity: 5,
+        ),
+        "bfs_movement::particle_definitions::Density": (800),
+        "bfs_movement::particle_definitions::Momentum": ((0, 0)),
+        "bfs_movement::particle_definitions::Moved": (true),
+        "bfs_movement::particle_definitions::Movement": (
+          neighbor_groups: [
+            (
+              neighbor_group: [
+                (0, -1),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (-1, -1),
+                (1, -1),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (1, 0),
+                (-1, 0),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (2, 0),
+                (-2, 0),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (3, 0),
+                (-3, 0),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (4, 0),
+                (-4, 0),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (5, 0),
+                (-5, 0),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (6, 0),
+                (-6, 0),
+              ],
+            ),
+          ],
+        ),
+        "bfs_movement::particle_definitions::Velocity": (
+          current: 1,
+          max: 3,
+        ),
+      },
+    ),
+    4294967332: (
+      components: {
+        "bfs_color::particle_definitions::ColorProfile": (
+          index: 0,
+          color: Srgba((
+            red: 0.8392157,
+            green: 0.6,
+            blue: 0.4392157,
+            alpha: 0.5019608,
+          )),
+          palette: [
+            Srgba((
+              red: 0.8392157,
+              green: 0.6,
+              blue: 0.4392157,
+              alpha: 0.5019608,
+            )),
+          ],
+        ),
+        "bfs_core::registration::ParticleType": (
+          name: "Whiskey",
+        ),
+        "bfs_movement::material::Liquid": (
+          fluidity: 5,
+        ),
+        "bfs_movement::particle_definitions::Density": (850),
+        "bfs_movement::particle_definitions::Momentum": ((0, 0)),
+        "bfs_movement::particle_definitions::Moved": (true),
+        "bfs_movement::particle_definitions::Movement": (
+          neighbor_groups: [
+            (
+              neighbor_group: [
+                (0, -1),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (-1, -1),
+                (1, -1),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (1, 0),
+                (-1, 0),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (2, 0),
+                (-2, 0),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (3, 0),
+                (-3, 0),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (4, 0),
+                (-4, 0),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (5, 0),
+                (-5, 0),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (6, 0),
+                (-6, 0),
+              ],
+            ),
+          ],
+        ),
+        "bfs_movement::particle_definitions::Velocity": (
+          current: 1,
+          max: 3,
+        ),
+      },
+    ),
+    4294967333: (
+      components: {
+        "bfs_color::particle_definitions::ColorProfile": (
+          index: 0,
+          color: Srgba((
+            red: 0.36078432,
+            green: 0.5294118,
+            blue: 0.1882353,
+            alpha: 1.0,
+          )),
+          palette: [
+            Srgba((
+              red: 0.36078432,
+              green: 0.5294118,
+              blue: 0.1882353,
+              alpha: 1.0,
+            )),
+            Srgba((
+              red: 0.23921569,
+              green: 0.36078432,
+              blue: 0.12941177,
+              alpha: 1.0,
+            )),
+            Srgba((
+              red: 0.32156864,
+              green: 0.47843137,
+              blue: 0.18039216,
+              alpha: 1.0,
+            )),
+            Srgba((
+              red: 0.36078432,
+              green: 0.54901963,
+              blue: 0.2,
+              alpha: 1.0,
+            )),
+          ],
+        ),
+        "bfs_core::registration::ParticleType": (
+          name: "Grass Wall",
+        ),
+        "bfs_movement::material::Wall": (),
+        "bfs_movement::particle_definitions::Moved": (false),
+        "bfs_reactions::particle_definitions::Burns": (
+          duration: (
+            secs: 1,
+            nanos: 0,
+          ),
+          tick_rate: (
+            secs: 0,
+            nanos: 100000000,
+          ),
+          chance_destroy_per_tick: Some(0.5),
+          reaction: Some((
+            produces: (
+              name: "FIRE",
+            ),
+            chance_to_produce: 1.0,
+          )),
+          color: Some((
+            index: 0,
+            color: Srgba((
+              red: 1.0,
+              green: 0.34901962,
+              blue: 0.0,
+              alpha: 1.0,
+            )),
+            palette: [
+              Srgba((
+                red: 1.0,
+                green: 0.34901962,
+                blue: 0.0,
+                alpha: 1.0,
+              )),
+              Srgba((
+                red: 1.0,
+                green: 0.0,
+                blue: 0.0,
+                alpha: 1.0,
+              )),
+              Srgba((
+                red: 1.0,
+                green: 0.6,
+                blue: 0.0,
+                alpha: 1.0,
+              )),
+              Srgba((
+                red: 1.0,
+                green: 0.8117647,
+                blue: 0.0,
+                alpha: 1.0,
+              )),
+              Srgba((
+                red: 1.0,
+                green: 0.9098039,
+                blue: 0.03137255,
+                alpha: 1.0,
+              )),
+            ],
+          )),
+          spreads: Some((
+            burn_radius: 1.5,
+            chance_to_spread: 1.0,
+            destroys_on_spread: false,
+          )),
+          ignites_on_spawn: false,
+        ),
+      },
+    ),
+    4294967334: (
+      components: {
+        "bfs_color::particle_definitions::ColorProfile": (
+          index: 0,
+          color: Srgba((
+            red: 0.21960784,
+            green: 0.10980392,
+            blue: 0.15686275,
+            alpha: 1.0,
+          )),
+          palette: [
+            Srgba((
+              red: 0.21960784,
+              green: 0.10980392,
+              blue: 0.15686275,
+              alpha: 1.0,
+            )),
+            Srgba((
+              red: 0.23921569,
+              green: 0.40784314,
+              blue: 0.5568628,
+              alpha: 1.0,
+            )),
+            Srgba((
+              red: 0.6666667,
+              green: 0.7372549,
+              blue: 0.54901963,
+              alpha: 1.0,
+            )),
+            Srgba((
+              red: 0.9098039,
+              green: 0.8862745,
+              blue: 0.70980394,
+              alpha: 1.0,
+            )),
+            Srgba((
+              red: 0.9490196,
+              green: 0.60784316,
+              blue: 0.42745098,
+              alpha: 1.0,
+            )),
+          ],
+        ),
+        "bfs_core::registration::ParticleType": (
+          name: "My Custom Particle",
+        ),
+        "bfs_movement::material::MovableSolid": (),
+        "bfs_movement::particle_definitions::Density": (1250),
+        "bfs_movement::particle_definitions::Momentum": ((0, 0)),
+        "bfs_movement::particle_definitions::Moved": (true),
+        "bfs_movement::particle_definitions::Movement": (
+          neighbor_groups: [
+            (
+              neighbor_group: [
+                (0, -1),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (-1, -1),
+                (1, -1),
+              ],
+            ),
+          ],
+        ),
+        "bfs_movement::particle_definitions::Velocity": (
+          current: 1,
+          max: 3,
+        ),
+      },
+    ),
+    4294967335: (
+      components: {
+        "bfs_color::particle_definitions::ColorProfile": (
+          index: 0,
+          color: Srgba((
+            red: 0.16862746,
+            green: 0.07058824,
+            blue: 0.16078432,
+            alpha: 1.0,
+          )),
+          palette: [
+            Srgba((
+              red: 0.16862746,
+              green: 0.07058824,
+              blue: 0.16078432,
+              alpha: 1.0,
+            )),
+          ],
+        ),
+        "bfs_core::registration::ParticleType": (
+          name: "Oil",
+        ),
+        "bfs_movement::material::Liquid": (
+          fluidity: 3,
+        ),
+        "bfs_movement::particle_definitions::Density": (730),
+        "bfs_movement::particle_definitions::Momentum": ((0, 0)),
+        "bfs_movement::particle_definitions::Moved": (true),
+        "bfs_movement::particle_definitions::Movement": (
+          neighbor_groups: [
+            (
+              neighbor_group: [
+                (0, -1),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (-1, -1),
+                (1, -1),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (1, 0),
+                (-1, 0),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (2, 0),
+                (-2, 0),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (3, 0),
+                (-3, 0),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (4, 0),
+                (-4, 0),
+              ],
+            ),
+          ],
+        ),
+        "bfs_movement::particle_definitions::Velocity": (
+          current: 1,
+          max: 3,
+        ),
+        "bfs_reactions::particle_definitions::Burns": (
+          duration: (
+            secs: 5,
+            nanos: 0,
+          ),
+          tick_rate: (
+            secs: 0,
+            nanos: 100000000,
+          ),
+          chance_destroy_per_tick: Some(0.1),
+          reaction: Some((
+            produces: (
+              name: "Smoke",
+            ),
+            chance_to_produce: 0.035,
+          )),
+          color: Some((
+            index: 0,
+            color: Srgba((
+              red: 1.0,
+              green: 0.34901962,
+              blue: 0.0,
+              alpha: 1.0,
+            )),
+            palette: [
+              Srgba((
+                red: 1.0,
+                green: 0.34901962,
+                blue: 0.0,
+                alpha: 1.0,
+              )),
+              Srgba((
+                red: 1.0,
+                green: 0.0,
+                blue: 0.0,
+                alpha: 1.0,
+              )),
+              Srgba((
+                red: 1.0,
+                green: 0.6,
+                blue: 0.0,
+                alpha: 1.0,
+              )),
+              Srgba((
+                red: 1.0,
+                green: 0.8117647,
+                blue: 0.0,
+                alpha: 1.0,
+              )),
+              Srgba((
+                red: 1.0,
+                green: 0.9098039,
+                blue: 0.03137255,
+                alpha: 1.0,
+              )),
+            ],
+          )),
+          spreads: Some((
+            burn_radius: 2.0,
+            chance_to_spread: 0.2,
+            destroys_on_spread: false,
+          )),
+          ignites_on_spawn: false,
+        ),
+      },
+    ),
+    4294967336: (
+      components: {
+        "bfs_color::particle_definitions::ChangesColor": (
+          chance: 0.1,
+        ),
+        "bfs_color::particle_definitions::ColorProfile": (
+          index: 0,
+          color: Srgba((
+            red: 0.4392157,
+            green: 0.4117647,
+            blue: 0.4,
+            alpha: 1.0,
+          )),
+          palette: [
+            Srgba((
+              red: 0.4392157,
+              green: 0.4117647,
+              blue: 0.4,
+              alpha: 1.0,
+            )),
+            Srgba((
+              red: 0.52156866,
+              green: 0.5019608,
+              blue: 0.4509804,
+              alpha: 1.0,
+            )),
+          ],
+        ),
+        "bfs_core::registration::ParticleType": (
+          name: "Smoke",
+        ),
+        "bfs_movement::material::Gas": (
+          fluidity: 1,
+        ),
+        "bfs_movement::particle_definitions::Density": (275),
+        "bfs_movement::particle_definitions::Moved": (true),
+        "bfs_movement::particle_definitions::Movement": (
+          neighbor_groups: [
+            (
+              neighbor_group: [
+                (0, 1),
+                (1, 1),
+                (-1, 1),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (2, 0),
+                (-2, 0),
+              ],
+            ),
+          ],
+        ),
+        "bfs_movement::particle_definitions::Velocity": (
+          current: 1,
+          max: 1,
+        ),
+      },
+    ),
+    4294967337: (
+      components: {
+        "bfs_color::particle_definitions::ColorProfile": (
+          index: 0,
+          color: Srgba((
+            red: 0.5686275,
+            green: 0.41960785,
+            blue: 0.29803923,
+            alpha: 1.0,
+          )),
+          palette: [
+            Srgba((
+              red: 0.5686275,
+              green: 0.41960785,
+              blue: 0.29803923,
+              alpha: 1.0,
+            )),
+            Srgba((
+              red: 0.4509804,
+              green: 0.34117648,
+              blue: 0.23921569,
+              alpha: 1.0,
+            )),
+          ],
+        ),
+        "bfs_core::registration::ParticleType": (
+          name: "Dirt Wall",
+        ),
+        "bfs_movement::material::Wall": (),
+        "bfs_movement::particle_definitions::Moved": (false),
+      },
+    ),
+    4294967338: (
+      components: {
+        "bfs_color::particle_definitions::ColorProfile": (
+          index: 0,
+          color: Srgba((
+            red: 0.5686275,
+            green: 0.41960785,
+            blue: 0.29803923,
+            alpha: 1.0,
+          )),
+          palette: [
+            Srgba((
+              red: 0.5686275,
+              green: 0.41960785,
+              blue: 0.29803923,
+              alpha: 1.0,
+            )),
+            Srgba((
+              red: 0.4509804,
+              green: 0.34117648,
+              blue: 0.23921569,
+              alpha: 1.0,
+            )),
+          ],
+        ),
+        "bfs_core::registration::ParticleType": (
+          name: "Dirt",
+        ),
+        "bfs_movement::material::MovableSolid": (),
+        "bfs_movement::particle_definitions::Density": (1250),
+        "bfs_movement::particle_definitions::Momentum": ((0, 0)),
+        "bfs_movement::particle_definitions::Moved": (true),
+        "bfs_movement::particle_definitions::Movement": (
+          neighbor_groups: [
+            (
+              neighbor_group: [
+                (0, -1),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (-1, -1),
+                (1, -1),
+              ],
+            ),
+          ],
+        ),
+        "bfs_movement::particle_definitions::Velocity": (
+          current: 1,
+          max: 3,
+        ),
+      },
+    ),
+    4294967339: (
+      components: {
+        "bfs_color::particle_definitions::ColorProfile": (
+          index: 0,
+          color: Srgba((
+            red: 0.21960784,
+            green: 0.10980392,
+            blue: 0.15686275,
+            alpha: 1.0,
+          )),
+          palette: [
+            Srgba((
+              red: 0.21960784,
+              green: 0.10980392,
+              blue: 0.15686275,
+              alpha: 1.0,
+            )),
+            Srgba((
+              red: 0.23921569,
+              green: 0.40784314,
+              blue: 0.5568628,
+              alpha: 1.0,
+            )),
+            Srgba((
+              red: 0.6666667,
+              green: 0.7372549,
+              blue: 0.54901963,
+              alpha: 1.0,
+            )),
+            Srgba((
+              red: 0.9098039,
+              green: 0.8862745,
+              blue: 0.70980394,
+              alpha: 1.0,
+            )),
+            Srgba((
+              red: 0.9490196,
+              green: 0.60784316,
+              blue: 0.42745098,
+              alpha: 1.0,
+            )),
+          ],
+        ),
+        "bfs_core::registration::ParticleType": (
+          name: "My Custom Wall Particle",
+        ),
+        "bfs_movement::material::Wall": (),
+        "bfs_movement::particle_definitions::Moved": (false),
+      },
+    ),
+    4294967340: (
+      components: {
+        "bfs_color::particle_definitions::ChangesColor": (
+          chance: 0.1,
+        ),
+        "bfs_color::particle_definitions::ColorProfile": (
+          index: 0,
+          color: Srgba((
+            red: 0.2509804,
+            green: 0.38431373,
+            blue: 0.09411765,
+            alpha: 0.5019608,
+          )),
+          palette: [
+            Srgba((
+              red: 0.2509804,
+              green: 0.38431373,
+              blue: 0.09411765,
+              alpha: 0.5019608,
+            )),
+            Srgba((
+              red: 0.2901961,
+              green: 0.4509804,
+              blue: 0.10980392,
+              alpha: 0.5019608,
+            )),
+          ],
+        ),
+        "bfs_core::registration::ParticleType": (
+          name: "Flammable Gas",
+        ),
+        "bfs_movement::material::Gas": (
+          fluidity: 1,
+        ),
+        "bfs_movement::particle_definitions::Density": (200),
+        "bfs_movement::particle_definitions::Moved": (true),
+        "bfs_movement::particle_definitions::Movement": (
+          neighbor_groups: [
+            (
+              neighbor_group: [
+                (0, 1),
+                (1, 1),
+                (-1, 1),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (2, 0),
+                (-2, 0),
+              ],
+            ),
+          ],
+        ),
+        "bfs_movement::particle_definitions::Velocity": (
+          current: 1,
+          max: 1,
+        ),
+        "bfs_reactions::particle_definitions::Burns": (
+          duration: (
+            secs: 1,
+            nanos: 0,
+          ),
+          tick_rate: (
+            secs: 0,
+            nanos: 100000000,
+          ),
+          chance_destroy_per_tick: Some(0.5),
+          reaction: None,
+          color: Some((
+            index: 0,
+            color: Srgba((
+              red: 1.0,
+              green: 0.34901962,
+              blue: 0.0,
+              alpha: 1.0,
+            )),
+            palette: [
+              Srgba((
+                red: 1.0,
+                green: 0.34901962,
+                blue: 0.0,
+                alpha: 1.0,
+              )),
+              Srgba((
+                red: 1.0,
+                green: 0.0,
+                blue: 0.0,
+                alpha: 1.0,
+              )),
+              Srgba((
+                red: 1.0,
+                green: 0.6,
+                blue: 0.0,
+                alpha: 1.0,
+              )),
+              Srgba((
+                red: 1.0,
+                green: 0.8117647,
+                blue: 0.0,
+                alpha: 1.0,
+              )),
+              Srgba((
+                red: 1.0,
+                green: 0.9098039,
+                blue: 0.03137255,
+                alpha: 1.0,
+              )),
+            ],
+          )),
+          spreads: Some((
+            burn_radius: 2.0,
+            chance_to_spread: 0.35000000000000003,
+            destroys_on_spread: true,
+          )),
+          ignites_on_spawn: false,
+        ),
+      },
+    ),
+    4294967341: (
+      components: {
+        "bfs_color::particle_definitions::ColorProfile": (
+          index: 0,
+          color: Srgba((
+            red: 1.0,
+            green: 0.92156863,
+            blue: 0.5411765,
+            alpha: 1.0,
+          )),
+          palette: [
+            Srgba((
+              red: 1.0,
+              green: 0.92156863,
+              blue: 0.5411765,
+              alpha: 1.0,
+            )),
+            Srgba((
+              red: 0.9490196,
+              green: 0.8784314,
+              blue: 0.41960785,
+              alpha: 1.0,
+            )),
+          ],
+        ),
+        "bfs_core::registration::ParticleType": (
+          name: "Sand",
+        ),
+        "bfs_movement::material::MovableSolid": (),
+        "bfs_movement::particle_definitions::Density": (1250),
+        "bfs_movement::particle_definitions::Momentum": ((0, 0)),
+        "bfs_movement::particle_definitions::Moved": (true),
+        "bfs_movement::particle_definitions::Movement": (
+          neighbor_groups: [
+            (
+              neighbor_group: [
+                (0, -1),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (-1, -1),
+                (1, -1),
+              ],
+            ),
+          ],
+        ),
+        "bfs_movement::particle_definitions::Velocity": (
+          current: 1,
+          max: 3,
+        ),
+      },
+    ),
+    4294967342: (
+      components: {
+        "bfs_color::particle_definitions::ChangesColor": (
+          chance: 0.1,
+        ),
+        "bfs_color::particle_definitions::ColorProfile": (
+          index: 0,
+          color: Srgba((
+            red: 1.0,
+            green: 0.34901962,
+            blue: 0.0,
+            alpha: 1.0,
+          )),
+          palette: [
+            Srgba((
+              red: 1.0,
+              green: 0.34901962,
+              blue: 0.0,
+              alpha: 1.0,
+            )),
+            Srgba((
+              red: 1.0,
+              green: 0.5686275,
+              blue: 0.0,
+              alpha: 1.0,
+            )),
+            Srgba((
+              red: 1.0,
+              green: 0.8117647,
+              blue: 0.0,
+              alpha: 1.0,
+            )),
+            Srgba((
+              red: 0.78039217,
+              green: 0.2901961,
+              blue: 0.019607844,
+              alpha: 1.0,
+            )),
+          ],
+        ),
+        "bfs_core::registration::ParticleType": (
+          name: "FIRE",
+        ),
+        "bfs_movement::material::Gas": (
+          fluidity: 1,
+        ),
+        "bfs_movement::particle_definitions::Density": (450),
+        "bfs_movement::particle_definitions::Moved": (true),
+        "bfs_movement::particle_definitions::Movement": (
+          neighbor_groups: [
+            (
+              neighbor_group: [
+                (0, 1),
+                (1, 1),
+                (-1, 1),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (2, 0),
+                (-2, 0),
+              ],
+            ),
+          ],
+        ),
+        "bfs_movement::particle_definitions::Velocity": (
+          current: 1,
+          max: 3,
+        ),
+        "bfs_reactions::particle_definitions::Burns": (
+          duration: (
+            secs: 1,
+            nanos: 0,
+          ),
+          tick_rate: (
+            secs: 0,
+            nanos: 100000000,
+          ),
+          chance_destroy_per_tick: Some(0.5),
+          reaction: None,
+          color: None,
+          spreads: Some((
+            burn_radius: 1.5,
+            chance_to_spread: 0.01,
+            destroys_on_spread: false,
+          )),
+          ignites_on_spawn: true,
+        ),
+      },
+    ),
+    4294967343: (
+      components: {
+        "bfs_color::particle_definitions::ColorProfile": (
+          index: 0,
+          color: Srgba((
+            red: 0.41960785,
+            green: 0.4509804,
+            blue: 0.54901963,
+            alpha: 1.0,
+          )),
+          palette: [
+            Srgba((
+              red: 0.41960785,
+              green: 0.4509804,
+              blue: 0.54901963,
+              alpha: 1.0,
+            )),
+            Srgba((
+              red: 0.54901963,
+              green: 0.5882353,
+              blue: 0.67058825,
+              alpha: 1.0,
+            )),
+            Srgba((
+              red: 0.69803923,
+              green: 0.76862746,
+              blue: 0.8392157,
+              alpha: 1.0,
+            )),
+          ],
+        ),
+        "bfs_core::registration::ParticleType": (
+          name: "Rock",
+        ),
+        "bfs_movement::material::Solid": (),
+        "bfs_movement::particle_definitions::Density": (1250),
+        "bfs_movement::particle_definitions::Moved": (true),
+        "bfs_movement::particle_definitions::Movement": (
+          neighbor_groups: [
+            (
+              neighbor_group: [
+                (0, -1),
+              ],
+            ),
+          ],
+        ),
+        "bfs_movement::particle_definitions::Velocity": (
+          current: 1,
+          max: 3,
+        ),
+      },
+    ),
+    4294967344: (
+      components: {
+        "bfs_color::particle_definitions::ColorProfile": (
+          index: 0,
+          color: Srgba((
+            red: 0.043137256,
+            green: 0.5019608,
+            blue: 0.67058825,
+            alpha: 0.5019608,
+          )),
+          palette: [
+            Srgba((
+              red: 0.043137256,
+              green: 0.5019608,
+              blue: 0.67058825,
+              alpha: 0.5019608,
+            )),
+          ],
+        ),
+        "bfs_core::registration::ParticleType": (
+          name: "Water",
+        ),
+        "bfs_movement::material::Liquid": (
+          fluidity: 5,
+        ),
+        "bfs_movement::particle_definitions::Density": (750),
+        "bfs_movement::particle_definitions::Momentum": ((0, 0)),
+        "bfs_movement::particle_definitions::Moved": (true),
+        "bfs_movement::particle_definitions::Movement": (
+          neighbor_groups: [
+            (
+              neighbor_group: [
+                (0, -1),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (-1, -1),
+                (1, -1),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (1, 0),
+                (-1, 0),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (2, 0),
+                (-2, 0),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (3, 0),
+                (-3, 0),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (4, 0),
+                (-4, 0),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (5, 0),
+                (-5, 0),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (6, 0),
+                (-6, 0),
+              ],
+            ),
+          ],
+        ),
+        "bfs_movement::particle_definitions::Velocity": (
+          current: 1,
+          max: 3,
+        ),
+      },
+    ),
+    4294967345: (
+      components: {
+        "bfs_color::particle_definitions::ChangesColor": (
+          chance: 0.1,
+        ),
+        "bfs_color::particle_definitions::ColorProfile": (
+          index: 0,
+          color: Srgba((
+            red: 0.50980395,
+            green: 0.59607846,
+            blue: 0.20392157,
+            alpha: 0.5019608,
+          )),
+          palette: [
+            Srgba((
+              red: 0.50980395,
+              green: 0.59607846,
+              blue: 0.20392157,
+              alpha: 0.5019608,
+            )),
+            Srgba((
+              red: 0.56078434,
+              green: 0.654902,
+              blue: 0.22352941,
+              alpha: 0.5019608,
+            )),
+          ],
+        ),
+        "bfs_core::registration::ParticleType": (
+          name: "Slime",
+        ),
+        "bfs_movement::material::Liquid": (
+          fluidity: 1,
+        ),
+        "bfs_movement::particle_definitions::Density": (850),
+        "bfs_movement::particle_definitions::Momentum": ((0, 0)),
+        "bfs_movement::particle_definitions::Moved": (true),
+        "bfs_movement::particle_definitions::Movement": (
+          neighbor_groups: [
+            (
+              neighbor_group: [
+                (0, -1),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (-1, -1),
+                (1, -1),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (1, 0),
+                (-1, 0),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (2, 0),
+                (-2, 0),
+              ],
+            ),
+          ],
+        ),
+        "bfs_movement::particle_definitions::Velocity": (
+          current: 1,
+          max: 2,
+        ),
+      },
+    ),
+    4294967346: (
+      components: {
+        "bfs_color::particle_definitions::ChangesColor": (
+          chance: 0.1,
+        ),
+        "bfs_color::particle_definitions::ColorProfile": (
+          index: 0,
+          color: Srgba((
+            red: 0.93333334,
+            green: 0.9490196,
+            blue: 0.95686275,
+            alpha: 1.0,
+          )),
+          palette: [
+            Srgba((
+              red: 0.93333334,
+              green: 0.9490196,
+              blue: 0.95686275,
+              alpha: 1.0,
+            )),
+            Srgba((
+              red: 0.78039217,
+              green: 0.8392157,
+              blue: 0.8784314,
+              alpha: 1.0,
+            )),
+          ],
+        ),
+        "bfs_core::registration::ParticleType": (
+          name: "Steam",
+        ),
+        "bfs_movement::material::Gas": (
+          fluidity: 3,
+        ),
+        "bfs_movement::particle_definitions::Density": (250),
+        "bfs_movement::particle_definitions::Moved": (true),
+        "bfs_movement::particle_definitions::Movement": (
+          neighbor_groups: [
+            (
+              neighbor_group: [
+                (0, 1),
+                (1, 1),
+                (-1, 1),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (2, 0),
+                (-2, 0),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (3, 0),
+                (-3, 0),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (4, 0),
+                (-4, 0),
+              ],
+            ),
+          ],
+        ),
+        "bfs_movement::particle_definitions::Velocity": (
+          current: 1,
+          max: 1,
+        ),
+        "bfs_reactions::particle_definitions::Burns": (
+          duration: (
+            secs: 0,
+            nanos: 200000000,
+          ),
+          tick_rate: (
+            secs: 0,
+            nanos: 100000000,
+          ),
+          chance_destroy_per_tick: Some(1.0),
+          reaction: Some((
+            produces: (
+              name: "Water",
+            ),
+            chance_to_produce: 1.0,
+          )),
+          color: None,
+          spreads: None,
+          ignites_on_spawn: false,
+        ),
+      },
+    ),
+    4294967347: (
+      components: {
+        "bfs_color::particle_definitions::ColorProfile": (
+          index: 0,
+          color: Srgba((
+            red: 0.91764706,
+            green: 0.99215686,
+            blue: 0.972549,
+            alpha: 1.0,
+          )),
+          palette: [
+            Srgba((
+              red: 0.91764706,
+              green: 0.99215686,
+              blue: 0.972549,
+              alpha: 1.0,
+            )),
+            Srgba((
+              red: 1.0,
+              green: 1.0,
+              blue: 1.0,
+              alpha: 1.0,
+            )),
+          ],
+        ),
+        "bfs_core::registration::ParticleType": (
+          name: "Snow",
+        ),
+        "bfs_movement::material::MovableSolid": (),
+        "bfs_movement::particle_definitions::Density": (1250),
+        "bfs_movement::particle_definitions::Momentum": ((0, 0)),
+        "bfs_movement::particle_definitions::Moved": (true),
+        "bfs_movement::particle_definitions::Movement": (
+          neighbor_groups: [
+            (
+              neighbor_group: [
+                (0, -1),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (-1, -1),
+                (1, -1),
+              ],
+            ),
+          ],
+        ),
+        "bfs_movement::particle_definitions::Velocity": (
+          current: 1,
+          max: 3,
+        ),
+      },
+    ),
+    4294967348: (
+      components: {
+        "bfs_color::particle_definitions::ColorProfile": (
+          index: 0,
+          color: Srgba((
+            red: 0.41960785,
+            green: 0.4509804,
+            blue: 0.54901963,
+            alpha: 1.0,
+          )),
+          palette: [
+            Srgba((
+              red: 0.41960785,
+              green: 0.4509804,
+              blue: 0.54901963,
+              alpha: 1.0,
+            )),
+            Srgba((
+              red: 0.54901963,
+              green: 0.5882353,
+              blue: 0.67058825,
+              alpha: 1.0,
+            )),
+            Srgba((
+              red: 0.69803923,
+              green: 0.76862746,
+              blue: 0.8392157,
+              alpha: 1.0,
+            )),
+          ],
+        ),
+        "bfs_core::registration::ParticleType": (
+          name: "Dense Rock Wall",
+        ),
+        "bfs_movement::material::Wall": (),
+        "bfs_movement::particle_definitions::Moved": (false),
+      },
+    ),
+  },
+)
