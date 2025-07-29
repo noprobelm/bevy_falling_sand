@@ -2,6 +2,14 @@ use bevy::prelude::*;
 
 use super::super::core::{ConsoleCommand, PrintConsoleLine};
 
+pub struct PhysicsCommandPlugin;
+
+impl Plugin for PhysicsCommandPlugin {
+    fn build(&self, _app: &mut App) {
+        // Not yet implemented
+    }
+}
+
 #[derive(Default)]
 pub struct PhysicsCommand;
 

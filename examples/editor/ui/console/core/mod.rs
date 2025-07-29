@@ -2,12 +2,8 @@ pub mod commands;
 pub mod core;
 
 use bevy::prelude::*;
+use commands::ConsoleCommandsPlugin;
 pub use core::*;
-
-use commands::{
-    camera::CameraCommandPlugin, clear::ClearCommandPlugin, exit::ExitCommandPlugin,
-    help::HelpCommandPlugin, particles::ParticlesCommandPlugin,
-};
 
 pub struct ConsolePlugin;
 
@@ -19,37 +15,7 @@ impl Plugin for ConsolePlugin {
             .init_resource::<CommandRegistry>()
             .add_event::<ConsoleCommandEntered>()
             .add_event::<PrintConsoleLine>()
-            .add_systems(Startup, init_command_registry)
             .add_systems(Update, command_handler)
-            .add_plugins((
-                ClearCommandPlugin,
-                ExitCommandPlugin,
-                HelpCommandPlugin,
-                ParticlesCommandPlugin,
-                CameraCommandPlugin,
-            ));
+            .add_plugins(ConsoleCommandsPlugin);
     }
-}
-
-fn init_command_registry(
-    mut registry: ResMut<CommandRegistry>,
-    mut config: ResMut<ConsoleConfiguration>,
-    mut cache: ResMut<ConsoleCache>,
-) {
-    use commands::{camera::*, clear::*, exit::*, help::*, particles::*, physics::*};
-
-    registry.register::<ClearCommand>();
-    registry.register::<ExitCommand>();
-    registry.register::<HelpCommand>();
-    registry.register::<ParticlesCommand>();
-    registry.register::<CameraCommand>();
-    registry.register::<PhysicsCommand>();
-
-    config.register_command::<ClearCommand>();
-    config.register_command::<ExitCommand>();
-    config.register_command::<HelpCommand>();
-    config.register_command::<ParticlesCommand>();
-    config.register_command::<CameraCommand>();
-    config.register_command::<PhysicsCommand>();
-    cache.rebuild_tries(&config);
 }
