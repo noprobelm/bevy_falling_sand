@@ -25,7 +25,9 @@ impl Plugin for QuickActionsPlugin {
                 toggle_particle_map_overlay.run_if(input_just_pressed(KeyCode::F1)),
                 toggle_dirty_rects_overlay.run_if(input_just_pressed(KeyCode::F2)),
                 toggle_particle_movement_logic.run_if(input_just_pressed(KeyCode::F3)),
-                toggle_simulation_run.run_if(input_just_pressed(KeyCode::Space)),
+                toggle_simulation_run
+                    .run_if(input_just_pressed(KeyCode::Space))
+                    .run_if(in_state(AppState::Canvas)),
                 step_simulation.run_if(input_just_pressed(KeyCode::Enter)),
                 update_brush_type_state.run_if(input_just_pressed(MouseButton::Back)),
                 update_brush_spawn_state.run_if(input_just_pressed(MouseButton::Right)),
