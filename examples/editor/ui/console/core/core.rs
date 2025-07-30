@@ -160,7 +160,6 @@ pub trait ConsoleCommand: Send + Sync + 'static {
         self.subcommand_types()
     }
 
-
     fn build_command_node(&self) -> CommandNode {
         let mut node = CommandNode::new(self.name(), self.description());
 
@@ -426,15 +425,11 @@ impl ConsoleState {
         }
     }
 
-    pub fn update_suggestions(&mut self, cache: &ConsoleCache, config: &ConsoleConfiguration) {
-        self.update_suggestions_with_particle_cache(cache, config, None);
-    }
-
-    pub fn update_suggestions_with_particle_cache(
-        &mut self, 
-        cache: &ConsoleCache, 
+    pub fn update_suggestions(
+        &mut self,
+        cache: &ConsoleCache,
         config: &ConsoleConfiguration,
-        particle_cache: Option<&crate::ui::particle_search::ParticleSearchCache>
+        particle_cache: Option<&crate::ui::particle_search::ParticleSearchCache>,
     ) {
         if self.in_completion_mode {
             return;
@@ -460,7 +455,8 @@ impl ConsoleState {
             if words.len() == 1 && !input_to_analyze.ends_with(' ') {
                 // Root command suggestions are handled by command_tree below
                 let word = words[0];
-                self.suggestions = config.command_tree
+                self.suggestions = config
+                    .command_tree
                     .keys()
                     .filter(|cmd| cmd.starts_with(word))
                     .take(5)
@@ -471,8 +467,13 @@ impl ConsoleState {
 
             let (context_path, partial_word) =
                 self.parse_command_context(&words, config, input_to_analyze);
-            self.suggestions =
-                self.get_context_suggestions_with_particle_cache(context_path, partial_word, cache, config, particle_cache);
+            self.suggestions = self.get_context_suggestions(
+                context_path,
+                partial_word,
+                cache,
+                config,
+                particle_cache,
+            );
         }
     }
 
@@ -540,34 +541,51 @@ impl ConsoleState {
         partial_word: String,
         _cache: &ConsoleCache,
         config: &ConsoleConfiguration,
-    ) -> Vec<String> {
-        self.get_context_suggestions_with_particle_cache(context_path, partial_word, _cache, config, None)
-    }
-
-    fn get_context_suggestions_with_particle_cache(
-        &self,
-        context_path: Vec<String>,
-        partial_word: String,
-        _cache: &ConsoleCache,
-        config: &ConsoleConfiguration,
-        particle_cache: Option<&crate::ui::particle_search::ParticleSearchCache>
+        particle_cache: Option<&crate::ui::particle_search::ParticleSearchCache>,
     ) -> Vec<String> {
         // Special case for particle command autocomplete
-        if context_path == vec!["brush".to_string(), "set".to_string(), "particle".to_string()] {
+        if context_path
+            == vec![
+                "brush".to_string(),
+                "set".to_string(),
+                "particle".to_string(),
+            ]
+        {
             if let Some(p_cache) = particle_cache {
                 if partial_word.is_empty() {
-                    // Return first 5 particles when no partial word
-                    return p_cache.all_particles
-                        .iter()
-                        .take(5)
-                        .cloned()
-                        .collect();
+                    // Return all particles when no partial word
+                    return p_cache.all_particles.iter().cloned().collect();
                 } else {
                     // Filter particles that start with the partial word
-                    return p_cache.all_particles
+                    return p_cache
+                        .all_particles
                         .iter()
                         .filter(|p| p.to_lowercase().starts_with(&partial_word.to_lowercase()))
-                        .take(5)
+                        .cloned()
+                        .collect();
+                }
+            }
+            return vec![];
+        }
+
+        // Special case for particles despawn named command autocomplete
+        if context_path
+            == vec![
+                "particles".to_string(),
+                "despawn".to_string(),
+                "named".to_string(),
+            ]
+        {
+            if let Some(p_cache) = particle_cache {
+                if partial_word.is_empty() {
+                    // Return all particles when no partial word
+                    return p_cache.all_particles.iter().cloned().collect();
+                } else {
+                    // Filter particles that start with the partial word
+                    return p_cache
+                        .all_particles
+                        .iter()
+                        .filter(|p| p.to_lowercase().starts_with(&partial_word.to_lowercase()))
                         .cloned()
                         .collect();
                 }
@@ -680,7 +698,6 @@ impl<T: ConsoleCommand + Default> ConsoleCommand for CommandWrapper<T> {
     fn subcommands(&self) -> Vec<Box<dyn ConsoleCommand>> {
         T::default().subcommands()
     }
-
 
     fn build_command_node(&self) -> CommandNode {
         T::default().build_command_node()

@@ -19,17 +19,6 @@ impl Console {
         cache: &ConsoleCache,
         config: &ConsoleConfiguration,
         command_writer: &mut EventWriter<ConsoleCommandEntered>,
-    ) {
-        self.render_with_particle_cache(ui, console_state, cache, config, command_writer, None);
-    }
-
-    pub fn render_with_particle_cache(
-        &self,
-        ui: &mut egui::Ui,
-        console_state: &mut ConsoleState,
-        cache: &ConsoleCache,
-        config: &ConsoleConfiguration,
-        command_writer: &mut EventWriter<ConsoleCommandEntered>,
         particle_cache: Option<&crate::ui::particle_search::ParticleSearchCache>,
     ) {
         let backtick_pressed = ui.input(|i| i.key_pressed(egui::Key::Backtick));
@@ -203,7 +192,7 @@ impl Console {
 
                         if response.changed() {
                             console_state.on_input_changed();
-                            console_state.update_suggestions_with_particle_cache(cache, config, particle_cache);
+                            console_state.update_suggestions(cache, config, particle_cache);
                         }
 
                         if response.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
@@ -232,7 +221,7 @@ impl Console {
                                     && !console_state.suggestions.is_empty()
                                 {
                                     if !console_state.in_completion_mode {
-                                        console_state.update_suggestions_with_particle_cache(cache, config, particle_cache);
+                                        console_state.update_suggestions(cache, config, particle_cache);
                                     }
 
                                     console_state.handle_tab_completion();
@@ -248,7 +237,7 @@ impl Console {
                                 {
                                     console_state.commit_completion();
                                     console_state.input.push(' ');
-                                    console_state.update_suggestions_with_particle_cache(cache, config, particle_cache);
+                                    console_state.update_suggestions(cache, config, particle_cache);
                                     space_pressed = true;
                                     i.consume_key(egui::Modifiers::NONE, egui::Key::Space);
                                 }

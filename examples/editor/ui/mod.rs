@@ -210,7 +210,7 @@ fn render_ui_panels(
         .exact_height(console_height)
         .frame(egui::Frame::NONE)
         .show(ctx, |ui| {
-            Console.render_with_particle_cache(ui, &mut console_state, &cache, &config, &mut command_writer, Some(&particle_search_cache));
+            Console.render(ui, &mut console_state, &cache, &config, &mut command_writer, Some(&particle_search_cache));
         });
 
     SceneManagementUI.render(
