@@ -800,6 +800,7 @@ version = "0.5.0"
 dependencies = [
  "bevy",
  "bevy_egui",
+ "bevy_trauma_shake",
  "bevy_turborand",
  "bfs_assets",
  "bfs_color",
@@ -1459,6 +1460,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "72c7c6c4e6a3d5415b3a29a17bd20c17cd0e2f068b96b24e263316d58d5346ea"
 dependencies = [
  "bevy",
+]
+
+[[package]]
+name = "bevy_trauma_shake"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5e511e3ecb0876139dc73fbacf595224b98c15fc80e652af800fc78e49466a39"
+dependencies = [
+ "bevy",
+ "noisy_bevy",
 ]
 
 [[package]]
@@ -3754,6 +3765,15 @@ name = "nohash-hasher"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2bf50223579dc7cdcfb3bfcacf7069ff68243f8c363f62ffa99cf000a6b9c451"
+
+[[package]]
+name = "noisy_bevy"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "da92b36f3af1e81a7eb06474162a789372bdce2574982c7b8d8c301afe72edb6"
+dependencies = [
+ "bevy",
+]
 
 [[package]]
 name = "nom"
