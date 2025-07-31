@@ -87,7 +87,7 @@ fn toggle_simulation_run(
     mut commands: Commands,
     simulation_pause: Option<Res<ParticleSimulationRun>>,
     app_state: Res<State<AppState>>,
-    mut time: ResMut<Time<Virtual>>,
+    mut time: ResMut<Time<Physics>>,
 ) {
     if app_state.get() == &AppState::Canvas {
         if simulation_pause.is_some() {
