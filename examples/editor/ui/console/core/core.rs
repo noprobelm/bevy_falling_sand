@@ -52,7 +52,7 @@ pub struct ConsoleState {
     pub height: f32,
     pub suggestions: Vec<String>,
     pub suggestion_index: Option<usize>,
-    pub needs_initial_focus: bool,
+    pub initial_focus: bool,
 
     pub user_typed_input: String,
 
@@ -74,7 +74,7 @@ impl Default for ConsoleState {
             height: 300.0,
             suggestions: Vec::new(),
             suggestion_index: None,
-            needs_initial_focus: true,
+            initial_focus: false,
             user_typed_input: String::new(),
             in_completion_mode: false,
             needs_cursor_at_end: false,

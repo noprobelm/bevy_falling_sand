@@ -184,10 +184,10 @@ impl Console {
                         }
 
                         if (backtick_pressed && console_state.expanded)
-                            || console_state.needs_initial_focus
+                            || console_state.initial_focus
                         {
                             response.request_focus();
-                            console_state.needs_initial_focus = false;
+                            console_state.initial_focus = false;
                         }
 
                         if response.changed() {
@@ -221,7 +221,11 @@ impl Console {
                                     && !console_state.suggestions.is_empty()
                                 {
                                     if !console_state.in_completion_mode {
-                                        console_state.update_suggestions(cache, config, particle_cache);
+                                        console_state.update_suggestions(
+                                            cache,
+                                            config,
+                                            particle_cache,
+                                        );
                                     }
 
                                     console_state.handle_tab_completion();
