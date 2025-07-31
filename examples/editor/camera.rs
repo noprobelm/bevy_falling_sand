@@ -11,8 +11,7 @@ impl Plugin for CameraPlugin {
             Update,
             (pan_camera, zoom_camera, smooth_zoom)
                 .chain()
-                .run_if(in_state(AppState::Canvas))
-                .run_if(in_state(CanvasState::Interact))
+                .run_if(in_state(AppState::Canvas).and(in_state(CanvasState::Interact)))
                 .before(AppStateDetectionSet),
         );
     }

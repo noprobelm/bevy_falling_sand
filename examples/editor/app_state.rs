@@ -11,16 +11,20 @@ impl Plugin for StatesPlugin {
     fn build(&self, app: &mut App) {
         app.configure_sets(Update, AppStateDetectionSet)
             .init_state::<AppState>()
-            .init_state::<UiState>()
-            .init_state::<CanvasState>()
+            .add_sub_state::<UiState>()
+            .add_sub_state::<CanvasState>()
             .init_state::<InitializationState>()
             .add_systems(Startup, remove_debug_overlays)
             .add_systems(
                 EguiContextPass,
                 (
                     detect_ui_interaction,
-                    manage_ui_states,
-                    manage_canvas_states.run_if(in_state(AppState::Canvas)),
+                    manage_ui_states
+                        .run_if(in_state(AppState::Ui))
+                        .after(detect_ui_interaction),
+                    manage_canvas_states
+                        .run_if(in_state(AppState::Canvas))
+                        .after(detect_ui_interaction),
                 ),
             )
             .add_systems(OnEnter(AppState::Canvas), hide_cursor)
@@ -38,7 +42,8 @@ pub enum AppState {
     Ui,
 }
 
-#[derive(States, Reflect, Default, Debug, Clone, Eq, PartialEq, Hash)]
+#[derive(SubStates, Reflect, Default, Debug, Clone, Eq, PartialEq, Hash)]
+#[source(AppState = AppState::Ui)]
 pub enum UiState {
     #[default]
     Normal,
@@ -46,7 +51,8 @@ pub enum UiState {
     ParticleSearch,
 }
 
-#[derive(States, Reflect, Default, Debug, Clone, Eq, PartialEq, Hash)]
+#[derive(SubStates, Reflect, Default, Debug, Clone, Eq, PartialEq, Hash)]
+#[source(AppState = AppState::Canvas)]
 pub enum CanvasState {
     #[default]
     Interact,
@@ -93,7 +99,7 @@ fn detect_ui_interaction(
 }
 
 fn manage_ui_states(
-    current_ui_state: Res<State<UiState>>,
+    current_ui_state: Option<Res<State<UiState>>>,
     mut next_ui_state: ResMut<NextState<UiState>>,
     particle_search_state: Option<Res<ParticleSearchState>>,
     console_state: Option<Res<ConsoleState>>,
@@ -109,20 +115,24 @@ fn manage_ui_states(
         UiState::Normal
     };
 
-    if current_ui_state.get() != &desired_state {
-        next_ui_state.set(desired_state);
+    if let Some(current_state) = current_ui_state {
+        if current_state.get() != &desired_state {
+            next_ui_state.set(desired_state);
+        }
     }
 }
 
 fn manage_canvas_states(
-    current_canvas_state: Res<State<CanvasState>>,
+    current_canvas_state: Option<Res<State<CanvasState>>>,
     mut next_canvas_state: ResMut<NextState<CanvasState>>,
     keys: Res<ButtonInput<KeyCode>>,
 ) {
-    if keys.pressed(KeyCode::AltLeft) && current_canvas_state.get() == &CanvasState::Interact {
-        next_canvas_state.set(CanvasState::Edit);
-    } else if !keys.pressed(KeyCode::AltLeft) && current_canvas_state.get() == &CanvasState::Edit {
-        next_canvas_state.set(CanvasState::Interact);
+    if let Some(current_state) = current_canvas_state {
+        if keys.pressed(KeyCode::AltLeft) && current_state.get() == &CanvasState::Interact {
+            next_canvas_state.set(CanvasState::Edit);
+        } else if !keys.pressed(KeyCode::AltLeft) && current_state.get() == &CanvasState::Edit {
+            next_canvas_state.set(CanvasState::Interact);
+        }
     }
 }
 

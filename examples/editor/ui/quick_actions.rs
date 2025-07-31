@@ -27,7 +27,8 @@ impl Plugin for QuickActionsPlugin {
         app.add_systems(
             Update,
             (
-                toggle_resource::<RenderGui>.run_if(input_just_pressed(KeyCode::KeyH)),
+                toggle_resource::<RenderGui>
+                    .run_if(input_just_pressed(KeyCode::KeyH).and(in_state(AppState::Canvas))),
                 toggle_resource::<DebugParticleMap>.run_if(input_just_pressed(KeyCode::F1)),
                 toggle_resource::<DrawCursorGuide>.run_if(input_just_pressed(KeyCode::F2)),
                 toggle_resource::<DebugDirtyRects>.run_if(input_just_pressed(KeyCode::F3)),
@@ -38,9 +39,7 @@ impl Plugin for QuickActionsPlugin {
                 step_simulation.run_if(input_just_pressed(KeyCode::Enter)),
                 update_brush_type_state.run_if(input_just_pressed(MouseButton::Back)),
                 update_brush_spawn_state.run_if(input_just_pressed(MouseButton::Right)),
-                resize_brush
-                    .run_if(in_state(AppState::Canvas))
-                    .run_if(in_state(CanvasState::Edit)),
+                resize_brush.run_if(in_state(AppState::Canvas).and(in_state(CanvasState::Edit))),
                 spawn_particles
                     .run_if(input_pressed(MouseButton::Left))
                     .run_if(in_state(BrushModeState::Spawn))
