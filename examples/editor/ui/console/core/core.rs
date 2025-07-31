@@ -53,13 +53,9 @@ pub struct ConsoleState {
     pub suggestions: Vec<String>,
     pub suggestion_index: Option<usize>,
     pub initial_focus: bool,
-
     pub user_typed_input: String,
-
     pub in_completion_mode: bool,
-
     pub needs_cursor_at_end: bool,
-
     pub request_focus_and_cursor: bool,
 }
 
