@@ -1,5 +1,6 @@
 mod console;
 pub mod file_browser;
+mod overlays;
 mod particle_editor;
 pub mod particle_search;
 mod quick_actions;
@@ -19,6 +20,7 @@ use quick_actions::*;
 use crate::scenes::{SceneFileBrowserState, SceneManagementUI};
 use crate::ui::file_browser::FileBrowserState;
 pub use console::core::ConsoleState;
+use overlays::OverlaysPlugin;
 use particle_editor::{
     ApplyEditorChanges, ApplyEditorChangesAndReset, CreateNewParticle, CurrentEditorSelection,
     LoadParticleIntoEditor, ParticleEditorData,
@@ -51,7 +53,9 @@ impl Plugin for UiPlugin {
             ParticleFilesPlugin,
             FrameTimeDiagnosticsPlugin::default(),
             QuickActionsPlugin,
+            OverlaysPlugin,
         ))
+        .init_resource::<RenderGui>()
         .init_resource::<ParticleSearchState>()
         .init_resource::<ParticleSearchCache>()
         .init_resource::<StatisticsPanel>()
@@ -65,10 +69,14 @@ impl Plugin for UiPlugin {
                 render_ui_panels,
                 render_particle_search,
                 handle_particle_search_input,
-            ),
+            )
+                .run_if(resource_exists::<RenderGui>),
         );
     }
 }
+
+#[derive(Resource, Clone, Default, Debug)]
+pub struct RenderGui;
 
 type UiSystemParams<'w, 's> = (
     Commands<'w, 's>,
@@ -210,7 +218,14 @@ fn render_ui_panels(
         .exact_height(console_height)
         .frame(egui::Frame::NONE)
         .show(ctx, |ui| {
-            Console.render(ui, &mut console_state, &cache, &config, &mut command_writer, Some(&particle_search_cache));
+            Console.render(
+                ui,
+                &mut console_state,
+                &cache,
+                &config,
+                &mut command_writer,
+                Some(&particle_search_cache),
+            );
         });
 
     SceneManagementUI.render(

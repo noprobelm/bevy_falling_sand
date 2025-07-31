@@ -15,6 +15,11 @@ use crate::{
     particles::SelectedParticle,
 };
 
+use super::{
+    overlays::{draw_cursor_guide, DrawCursorGuide},
+    RenderGui,
+};
+
 pub(super) struct QuickActionsPlugin;
 
 impl Plugin for QuickActionsPlugin {
@@ -22,9 +27,11 @@ impl Plugin for QuickActionsPlugin {
         app.add_systems(
             Update,
             (
-                toggle_particle_map_overlay.run_if(input_just_pressed(KeyCode::F1)),
-                toggle_dirty_rects_overlay.run_if(input_just_pressed(KeyCode::F2)),
-                toggle_particle_movement_logic.run_if(input_just_pressed(KeyCode::F3)),
+                toggle_resource::<RenderGui>.run_if(input_just_pressed(KeyCode::KeyH)),
+                toggle_resource::<DebugParticleMap>.run_if(input_just_pressed(KeyCode::F1)),
+                toggle_resource::<DrawCursorGuide>.run_if(input_just_pressed(KeyCode::F2)),
+                toggle_resource::<DebugDirtyRects>.run_if(input_just_pressed(KeyCode::F3)),
+                toggle_particle_movement_logic.run_if(input_just_pressed(KeyCode::F4)),
                 toggle_simulation_run
                     .run_if(input_just_pressed(KeyCode::Space))
                     .run_if(in_state(AppState::Canvas)),
@@ -46,30 +53,19 @@ impl Plugin for QuickActionsPlugin {
                     .run_if(in_state(AppState::Canvas))
                     .before(ParticleSimulationSet)
                     .after(update_cursor_position),
+                draw_cursor_guide
+                    .run_if(resource_exists::<DrawCursorGuide>)
+                    .after(ParticleDebugSet),
             ),
         );
     }
 }
 
-fn toggle_particle_map_overlay(
-    mut commands: Commands,
-    debug_particle_map: Option<Res<DebugParticleMap>>,
-) {
-    if debug_particle_map.is_some() {
-        commands.remove_resource::<DebugParticleMap>();
+fn toggle_resource<T: Resource + Default>(mut commands: Commands, resource: Option<Res<T>>) {
+    if resource.is_some() {
+        commands.remove_resource::<T>();
     } else {
-        commands.init_resource::<DebugParticleMap>();
-    }
-}
-
-fn toggle_dirty_rects_overlay(
-    mut commands: Commands,
-    debug_dirty_rects: Option<Res<DebugDirtyRects>>,
-) {
-    if debug_dirty_rects.is_some() {
-        commands.remove_resource::<DebugDirtyRects>();
-    } else {
-        commands.init_resource::<DebugDirtyRects>();
+        commands.init_resource::<T>();
     }
 }
 

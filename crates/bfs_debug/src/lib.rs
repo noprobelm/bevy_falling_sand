@@ -19,12 +19,12 @@ pub struct FallingSandDebugPlugin;
 
 impl Plugin for FallingSandDebugPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<DynamicParticleCount>()
+        app.configure_sets(PostUpdate, ParticleDebugSet.after(ParticleSimulationSet))
+            .init_resource::<DynamicParticleCount>()
             .init_resource::<WallParticleCount>()
             .init_resource::<TotalParticleCount>()
             .init_resource::<ActiveParticleCount>()
-            .init_resource::<ActiveChunkColor>()
-            .init_resource::<InactiveChunkColor>()
+            .init_resource::<ChunkBorderColor>()
             .init_resource::<DirtyRectColor>()
             .init_resource::<DebugParticleCount>()
             .init_resource::<DebugParticleMap>()
@@ -34,10 +34,10 @@ impl Plugin for FallingSandDebugPlugin {
                 Update,
                 (
                     color_active_chunks
-                        .after(ParticleSimulationSet)
+                        .in_set(ParticleDebugSet)
                         .run_if(resource_exists::<DebugParticleMap>),
                     color_dirty_rects
-                        .after(ParticleSimulationSet)
+                        .in_set(ParticleDebugSet)
                         .after(color_active_chunks)
                         .run_if(resource_exists::<DebugDirtyRects>),
                     (
@@ -46,12 +46,16 @@ impl Plugin for FallingSandDebugPlugin {
                         count_total_particles,
                         count_active_particles,
                     )
-                        .after(ParticleSimulationSet)
+                        .in_set(ParticleDebugSet)
                         .run_if(resource_exists::<DebugParticleCount>),
                 ),
             );
     }
 }
+
+/// System set for debugging systems.
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ParticleDebugSet;
 
 #[derive(Default, Reflect, GizmoConfigGroup)]
 struct DebugGizmos;
@@ -96,9 +100,9 @@ impl Default for ActiveChunkColor {
 
 #[derive(Resource)]
 /// Resource to hold the color we render inactive chunks as.
-pub struct InactiveChunkColor(pub Color);
+pub struct ChunkBorderColor(pub Color);
 
-impl Default for InactiveChunkColor {
+impl Default for ChunkBorderColor {
     fn default() -> Self {
         Self(Color::srgba(0.67, 0.21, 0.24, 1.0))
     }
@@ -135,30 +139,16 @@ fn color_dirty_rects(
 #[allow(clippy::needless_pass_by_value)]
 fn color_active_chunks(
     map: Res<ParticleMap>,
-    active_chunk_color: Res<ActiveChunkColor>,
-    inactive_chunk_color: Res<InactiveChunkColor>,
+    inactive_chunk_color: Res<ChunkBorderColor>,
     mut chunk_gizmos: Gizmos<DebugGizmos>,
 ) {
     map.iter_chunks().for_each(|chunk| {
         let rect = Rect::from_corners(chunk.region().min.as_vec2(), chunk.region().max.as_vec2());
-        if chunk.dirty_rect().is_none() {
-            chunk_gizmos.rect_2d(
-                rect.center(),
-                rect.size() + Vec2::splat(1.),
-                inactive_chunk_color.0,
-            );
-        }
-    });
-
-    map.iter_chunks().for_each(|chunk| {
-        let rect = Rect::from_corners(chunk.region().min.as_vec2(), chunk.region().max.as_vec2());
-        if chunk.dirty_rect().is_some() {
-            chunk_gizmos.rect_2d(
-                rect.center(),
-                rect.size() + Vec2::splat(1.),
-                active_chunk_color.0,
-            );
-        }
+        chunk_gizmos.rect_2d(
+            rect.center(),
+            rect.size() + Vec2::splat(1.),
+            inactive_chunk_color.0,
+        );
     });
 }
 
