@@ -54,9 +54,6 @@ pub enum SwapError {
 ///
 /// The map is segmented into a series of chunks, which assists in particle movement systems by
 /// allowing for the definition of dirty_rects, and eventually parallelized operations on chunks.
-///
-/// Preliminary testing suggests the ideal map and chunk size are both '32'. Initializing with
-/// "default" will ensure optimal values are used.
 #[derive(Clone, Eq, PartialEq, Debug, Resource)]
 pub struct ParticleMap {
     /// The x/y size of the particle map.
