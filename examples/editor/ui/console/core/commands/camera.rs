@@ -62,7 +62,7 @@ fn on_reset_camera(
     camera_query: Query<Entity, With<MainCamera>>,
     mut commands: Commands,
 ) -> Result {
-    let initial_scale = 0.11;
+    let initial_scale = 0.25;
     let entity = camera_query.single()?;
     commands.entity(entity).insert((
         Camera2d,

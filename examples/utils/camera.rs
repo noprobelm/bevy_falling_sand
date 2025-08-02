@@ -8,7 +8,7 @@ pub fn setup_camera(mut commands: Commands) {
         Camera2d,
         Projection::Orthographic(OrthographicProjection {
             near: -1000.0,
-            scale: 0.11,
+            scale: 0.25,
             ..OrthographicProjection::default_2d()
         }),
         MainCamera,

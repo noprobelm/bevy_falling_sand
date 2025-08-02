@@ -30,7 +30,7 @@ pub struct ZoomTarget {
 pub struct ZoomSpeed(pub f32);
 
 fn setup_camera(mut commands: Commands) {
-    let initial_scale = 0.11;
+    let initial_scale = 0.25;
     commands.spawn((
         Camera2d,
         Projection::Orthographic(OrthographicProjection {
