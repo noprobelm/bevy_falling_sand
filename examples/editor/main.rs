@@ -8,7 +8,6 @@ mod ui;
 
 use app_state::StatesPlugin;
 use bevy_falling_sand::prelude::{DebugParticleCount, FallingSandDebugPlugin, FallingSandPlugin};
-use bevy_trauma_shake::TraumaPlugin;
 use brush::*;
 use camera::*;
 use cursor::*;
@@ -29,7 +28,6 @@ fn main() {
                 }),
                 ..default()
             }),
-            TraumaPlugin,
             FallingSandPlugin::default(),
             FallingSandDebugPlugin,
             ParticleSetupPlugin,

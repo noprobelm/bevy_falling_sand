@@ -1,5 +1,4 @@
 use bevy::{input::mouse::MouseWheel, prelude::*};
-use bevy_trauma_shake::Shake;
 
 use crate::app_state::{AppState, AppStateDetectionSet, CanvasState};
 
@@ -45,7 +44,6 @@ fn setup_camera(mut commands: Commands) {
             current_scale: initial_scale,
         },
         ZoomSpeed(8.0),
-        Shake::default(),
     ));
 }
 
