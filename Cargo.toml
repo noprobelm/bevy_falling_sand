@@ -7,7 +7,7 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/noprobelm/bevy_falling_sand"
 readme = "README.md"
 description = "Falling Sand simulation plugin for Bevy"
-keywords = ["falling-sand", "simulation", "physics"]
+keywords = ["bevy", "falling-sand", "simulation", "particles"]
 exclude = [
   "examples",
   "docs",
