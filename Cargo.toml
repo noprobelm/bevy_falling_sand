@@ -20,6 +20,27 @@ exclude = [
 documentation = "http://docs.rs/bevy_falling_sand"
 categories = ["game-engines", "game-development"]
 
+[features]
+movement = ["bfs_internal/movement"]
+color = ["bfs_internal/color"]
+scenes = ["bfs_internal/scenes"]
+physics = ["bfs_internal/physics"]
+reactions = ["bfs_internal/reactions", "color"]
+debug = ["bfs_internal/debug", "movement"]
+assets = ["bfs_internal/assets", "movement", "color", "reactions"]
+bundles = ["bfs_internal/bundles", "movement", "color", "reactions"]
+
+default = [
+  "movement",
+  "color",
+  "debug",
+  "reactions",
+  "scenes",
+  "physics",
+  "assets",
+  "bundles",
+]
+
 [workspace]
 members = [
   "crates/bfs_internal",
@@ -42,7 +63,7 @@ bevy = { version = "0.16", default-features = false, features = [
 ] }
 
 [dependencies]
-bfs_internal = { path = "crates/bfs_internal" }
+bfs_internal = { path = "crates/bfs_internal", default-features = false }
 bevy.workspace = true
 
 [dev-dependencies]

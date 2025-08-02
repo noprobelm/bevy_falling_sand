@@ -44,5 +44,4 @@
 //! [Falling Sand]: https://en.wikipedia.org/wiki/Falling-sand_game
 //! [avian2d]: https://docs.rs/avian2d/latest/avian2d/
 //! [Bevy]: https://docs.rs/bevy/latest/bevy/
-use bevy::prelude::*;
 pub use bfs_internal::*;

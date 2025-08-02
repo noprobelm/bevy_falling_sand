@@ -16,10 +16,13 @@
 //! plugins and commonly used particle bundles.
 
 /// Provides bundles for commonly used particle types.
+#[cfg(feature = "bundles")]
 pub mod bundles;
 /// File I/O utilities for particle data
+#[cfg(feature = "assets")]
 pub mod file_utils;
 /// Central particle registry for serialization
+#[cfg(feature = "assets")]
 pub mod particle_registry;
 /// Prelude for commonly accessed constructs
 pub mod prelude;
@@ -27,15 +30,24 @@ pub mod prelude;
 use bevy::prelude::{App, Plugin, Vec2};
 use bevy_turborand::prelude::*;
 
-pub use bfs_assets as assets;
-pub use bfs_color as color;
 pub use bfs_core as core;
+
+#[cfg(feature = "assets")]
+pub use bfs_assets as assets;
+#[cfg(feature = "color")]
+pub use bfs_color as color;
+#[cfg(feature = "debug")]
 pub use bfs_debug as debug;
+#[cfg(feature = "movement")]
 pub use bfs_movement as movement;
+#[cfg(feature = "physics")]
 pub use bfs_physics as physics;
+#[cfg(feature = "reactions")]
 pub use bfs_reactions as reactions;
+#[cfg(feature = "scenes")]
 pub use bfs_scenes as scenes;
 
+#[cfg(feature = "bundles")]
 pub use bundles::*;
 
 const DEFAULT_LENGTH_UNIT: f32 = 8.0;
@@ -109,16 +121,28 @@ impl Plugin for FallingSandPlugin {
                 map_size: self.map_size,
                 chunk_size: self.chunk_size,
             },
-            movement::FallingSandMovementPlugin,
-            color::FallingSandColorPlugin,
-            reactions::FallingSandReactionsPlugin,
-            scenes::FallingSandScenesPlugin,
-            physics::FallingSandPhysicsPlugin {
-                length_unit: self.length_unit,
-                rigid_body_gravity: self.rigid_body_gravity_scale,
-            },
-            assets::FallingSandAssetsPlugin,
         ));
+
+        #[cfg(feature = "movement")]
+        app.add_plugins(movement::FallingSandMovementPlugin);
+
+        #[cfg(feature = "color")]
+        app.add_plugins(color::FallingSandColorPlugin);
+
+        #[cfg(feature = "reactions")]
+        app.add_plugins(reactions::FallingSandReactionsPlugin);
+
+        #[cfg(feature = "scenes")]
+        app.add_plugins(scenes::FallingSandScenesPlugin);
+
+        #[cfg(feature = "physics")]
+        app.add_plugins(physics::FallingSandPhysicsPlugin {
+            length_unit: self.length_unit,
+            rigid_body_gravity: self.rigid_body_gravity_scale,
+        });
+
+        #[cfg(feature = "assets")]
+        app.add_plugins(assets::FallingSandAssetsPlugin);
     }
 }
 
