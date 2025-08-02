@@ -160,16 +160,44 @@ fn render_ui_panels(
     };
 
     let _left_response = egui::SidePanel::left("Left panel")
-        .resizable(true)
-        .width_range(300.0..=panel_width * 1.2)
-        .default_width(panel_width)
+        .resizable(false)
+        .exact_width(panel_width)
         .show(ctx, |ui| {
-            // Use TopBottomPanel pattern within the side panel for proper layout
-            egui::TopBottomPanel::bottom("Statistics panel")
-                .resizable(true)
-                .height_range(200.0..=ui.available_height() * 0.6)
-                .default_height(ui.available_height() * 0.4)
-                .show_inside(ui, |ui| {
+            // Use auto-sizing vertical layout with proper scroll areas
+            ui.vertical(|ui| {
+                // Particle Editor in a scroll area that takes most of the space
+                ui.group(|ui| {
+                    ui.heading("Particle Editor");
+                    ui.separator();
+                    
+                    // Use a scroll area that auto-sizes to content but has reasonable limits
+                    let available_height = ui.available_height();
+                    let min_editor_height = (available_height * 0.5).max(300.0);
+                    let max_editor_height = (available_height - 250.0).max(min_editor_height); // Reserve 250px for statistics
+                    
+                    egui::ScrollArea::vertical()
+                        .auto_shrink([false, true])
+                        .max_height(max_editor_height)
+                        .show(ui, |ui| {
+                            ParticleEditor.render(
+                                ui,
+                                &particle_materials,
+                                &current_editor,
+                                &mut editor_data_query,
+                                &mut load_particle_events,
+                                &mut create_particle_events,
+                                &mut apply_editor_events,
+                                &mut apply_editor_and_reset_events,
+                                &mut reset_particle_children_events,
+                                &particle_type_map,
+                            );
+                        });
+                });
+
+                ui.add_space(8.0);
+
+                // Statistics panel at the bottom, auto-sizing to content
+                ui.group(|ui| {
                     ui.heading("Statistics");
                     ui.separator();
                     
@@ -188,23 +216,7 @@ fn render_ui_panels(
                         active_particle_count.0 as u32,
                     );
                 });
-
-            // The remaining space is automatically used for the particle editor
-            egui::CentralPanel::default()
-                .show_inside(ui, |ui| {
-                    ParticleEditor.render(
-                        ui,
-                        &particle_materials,
-                        &current_editor,
-                        &mut editor_data_query,
-                        &mut load_particle_events,
-                        &mut create_particle_events,
-                        &mut apply_editor_events,
-                        &mut apply_editor_and_reset_events,
-                        &mut reset_particle_children_events,
-                        &particle_type_map,
-                    );
-                });
+            });
         });
 
     let screen_height = ctx.screen_rect().height();

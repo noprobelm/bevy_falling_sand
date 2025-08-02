@@ -59,9 +59,6 @@ impl ParticleEditor {
         let text_color = egui::Color32::from_rgb(204, 204, 204);
         ui.visuals_mut().override_text_color = Some(text_color);
 
-        ui.heading("Particle Editor");
-        ui.separator();
-
         let current_particle_name = if let Some(editor_entity) = current_editor.selected_entity {
             if let Ok(editor_data) = editor_data_query.get(editor_entity) {
                 Some(editor_data.name.clone())

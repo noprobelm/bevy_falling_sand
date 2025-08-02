@@ -19,10 +19,6 @@ impl StatisticsPanel {
         let text_color = egui::Color32::from_rgb(204, 204, 204);
         ui.visuals_mut().override_text_color = Some(text_color);
 
-        ui.heading("Statistics");
-        ui.separator();
-        ui.add_space(8.0);
-
         ui.add(egui::Label::new(
             egui::RichText::new("States").heading().size(16.0),
         ));
