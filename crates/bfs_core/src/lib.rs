@@ -25,14 +25,31 @@ pub use simulation::*;
 pub use spatial::*;
 
 /// The core plugin, which manages particle definitions and map setup.
-pub struct FallingSandCorePlugin;
+pub struct FallingSandCorePlugin {
+    /// The map size for the [`ParticleMap`] resource.
+    pub map_size: usize,
+    /// The chunk size for the [`ParticleMap`] resource.
+    pub chunk_size: usize,
+}
+
+impl Default for FallingSandCorePlugin {
+    fn default() -> Self {
+        Self {
+            map_size: 32,
+            chunk_size: 32,
+        }
+    }
+}
 
 impl Plugin for FallingSandCorePlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
             ParticleRegistrationPlugin,
             ParticleSimulationPlugin,
-            ParticleSpatialPlugin,
+            ParticleSpatialPlugin {
+                map_size: self.map_size,
+                chunk_size: self.chunk_size,
+            },
         ));
     }
 }

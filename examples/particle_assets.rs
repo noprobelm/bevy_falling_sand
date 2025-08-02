@@ -11,7 +11,7 @@ fn main() {
     App::new()
         .add_plugins((
             DefaultPlugins,
-            FallingSandMinimalPlugin,
+            FallingSandMinimalPlugin::default(),
             FallingSandAssetsPlugin,
             StatusUIPlugin,
             utils::instructions::InstructionsPlugin::default(),

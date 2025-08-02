@@ -33,6 +33,11 @@ pub use bfs_scenes as scenes;
 
 pub use bundles::*;
 
+const DEFAULT_LENGTH_UNIT: f32 = 8.0;
+const DEFAULT_RIGID_BODY_GRAVITY_SCALE: Vec2 = Vec2::new(0.0, -50.0);
+const DEFAULT_MAP_SIZE: usize = 32;
+const DEFAULT_CHUNK_SIZE: usize = 32;
+
 /// Plugin which includes all main *Bevy Falling Sand* sub-plugins.
 pub struct FallingSandPlugin {
     /// The length unit to use for [avian2d]
@@ -40,14 +45,20 @@ pub struct FallingSandPlugin {
     pub length_unit: f32,
     /// The value for [`GravityScale`](https://docs.rs/avian2d/latest/avian2d/dynamics/rigid_body/struct.GravityScale.html)
     /// in the avian2d crate.
-    pub rigid_body_gravity: Vec2,
+    pub rigid_body_gravity_scale: Vec2,
+    /// The map size for the ParticleMap resource.
+    pub map_size: usize,
+    /// The chunk size for the ParticleMap resource.
+    pub chunk_size: usize,
 }
 
 impl Default for FallingSandPlugin {
     fn default() -> Self {
         Self {
-            length_unit: 8.0,
-            rigid_body_gravity: Vec2::NEG_Y * 50.0,
+            length_unit: DEFAULT_LENGTH_UNIT,
+            rigid_body_gravity_scale: DEFAULT_RIGID_BODY_GRAVITY_SCALE,
+            map_size: DEFAULT_MAP_SIZE,
+            chunk_size: DEFAULT_CHUNK_SIZE,
         }
     }
 }
@@ -67,9 +78,21 @@ impl FallingSandPlugin {
     /// Change the gravity for 2d rigid bodies.
     pub const fn with_gravity(self, rigid_body_gravity: Vec2) -> Self {
         Self {
-            rigid_body_gravity,
+            rigid_body_gravity_scale: rigid_body_gravity,
             ..self
         }
+    }
+
+    #[must_use]
+    /// Change the map size for the ParticleMap resource.
+    pub const fn with_map_size(self, map_size: usize) -> Self {
+        Self { map_size, ..self }
+    }
+
+    #[must_use]
+    /// Change the chunk size for the ParticleMap resource.
+    pub const fn with_chunk_size(self, chunk_size: usize) -> Self {
+        Self { chunk_size, ..self }
     }
 }
 
@@ -77,14 +100,17 @@ impl Plugin for FallingSandPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
             RngPlugin::default(),
-            core::FallingSandCorePlugin,
+            core::FallingSandCorePlugin {
+                map_size: self.map_size,
+                chunk_size: self.chunk_size,
+            },
             movement::FallingSandMovementPlugin,
             color::FallingSandColorPlugin,
             reactions::FallingSandReactionsPlugin,
             scenes::FallingSandScenesPlugin,
             physics::FallingSandPhysicsPlugin {
                 length_unit: self.length_unit,
-                rigid_body_gravity: self.rigid_body_gravity,
+                rigid_body_gravity: self.rigid_body_gravity_scale,
             },
             assets::FallingSandAssetsPlugin,
         ));
@@ -95,10 +121,24 @@ impl Plugin for FallingSandPlugin {
 ///
 /// This plugin is useful for users who want to selectively import the additional plugins provided
 /// by the *Bevy Falling Sand* subcrates.
-pub struct FallingSandMinimalPlugin;
+pub struct FallingSandMinimalPlugin {
+    /// The map size for the ParticleMap resource.
+    pub map_size: usize,
+    /// The chunk size for the ParticleMap resource.
+    pub chunk_size: usize,
+}
+
+impl Default for FallingSandMinimalPlugin {
+    fn default() -> Self {
+        Self {
+            map_size: 32,
+            chunk_size: 32,
+        }
+    }
+}
 
 impl Plugin for FallingSandMinimalPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((RngPlugin::default(), core::FallingSandCorePlugin));
+        app.add_plugins((RngPlugin::default(), core::FallingSandCorePlugin::default()));
     }
 }

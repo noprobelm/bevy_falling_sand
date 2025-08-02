@@ -9,14 +9,17 @@ use crate::{
 };
 
 /// Adds Bevy plugin elements for particle mapping functionality.
-pub(super) struct ParticleSpatialPlugin;
+pub(super) struct ParticleSpatialPlugin {
+    pub map_size: usize,
+    pub chunk_size: usize,
+}
 
 impl Plugin for ParticleSpatialPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<ClearParticleMapEvent>()
+        app.insert_resource(ParticleMap::new(self.map_size, self.chunk_size))
+            .add_event::<ClearParticleMapEvent>()
             .add_event::<ClearParticleTypeChildrenEvent>()
             .add_event::<DespawnParticleEvent>()
-            .add_systems(Startup, setup_particle_map)
             .add_systems(PostUpdate, reset_chunks.in_set(ParticleSimulationSet))
             .add_systems(
                 PreUpdate,
@@ -53,7 +56,7 @@ pub enum SwapError {
 /// query.
 ///
 /// The map is segmented into a series of chunks, which assists in particle movement systems by
-/// allowing for the definition of dirty_rects, and eventually parallelized operations on chunks.
+/// allowing for the definition of dirty rects, and eventually parallelized operations on chunks.
 #[derive(Clone, Eq, PartialEq, Debug, Resource)]
 pub struct ParticleMap {
     /// The x/y size of the particle map.
@@ -68,14 +71,6 @@ pub struct ParticleMap {
     chunk_shift: u32,
     /// Bitwise right shift for map size operations.
     map_shift: u32,
-}
-
-impl Default for ParticleMap {
-    fn default() -> Self {
-        const MAP_SIZE: usize = 32;
-        const CHUNK_SIZE: usize = 32;
-        Self::new(MAP_SIZE, CHUNK_SIZE)
-    }
 }
 
 impl ParticleMap {
@@ -551,10 +546,6 @@ impl DespawnParticleEvent {
 enum DespawnParticleEventType {
     Position(IVec2),
     Entity(Entity),
-}
-
-fn setup_particle_map(mut commands: Commands) {
-    commands.insert_resource(ParticleMap::default());
 }
 
 fn reset_chunks(mut map: ResMut<ParticleMap>) {

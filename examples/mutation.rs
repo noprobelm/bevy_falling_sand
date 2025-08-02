@@ -12,7 +12,7 @@ fn main() {
     App::new()
         .add_plugins((
             DefaultPlugins,
-            FallingSandMinimalPlugin,
+            FallingSandMinimalPlugin::default(),
             FallingSandMovementPlugin,
             FallingSandColorPlugin,
             FallingSandDebugPlugin,
