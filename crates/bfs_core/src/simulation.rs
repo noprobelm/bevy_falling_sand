@@ -88,6 +88,9 @@ pub struct ParticleRegistrationEvent {
 fn condition_ev_simulation_step_received(
     mut ev_simulation_step: EventReader<SimulationStepEvent>,
 ) -> bool {
+    // For some reason, ev_simulation_step.is_empty() will not cause the simulation to step
+    // forward. We have to actually read the event. I'm probably just doing something wrong but I
+    // haven't figured out what it is yet.
     for _ in ev_simulation_step.read() {
         return true;
     }
