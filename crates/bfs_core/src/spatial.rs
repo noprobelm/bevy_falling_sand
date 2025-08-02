@@ -486,7 +486,7 @@ pub struct ClearParticleMapEvent;
 /// Event used to trigger the removal of all children under a specified [`ParticleType`].
 pub struct ClearParticleTypeChildrenEvent(pub String);
 
-/// Event to send each tiem a Particle is removed from the simulation.
+/// Event to send each time a Particle is removed from the simulation.
 #[derive(Event)]
 pub struct DespawnParticleEvent {
     /// Type of particle remove event
