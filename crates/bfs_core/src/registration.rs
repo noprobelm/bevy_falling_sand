@@ -47,7 +47,7 @@ pub struct ParticleType {
 }
 
 impl ParticleType {
-    /// Initialize a new `ParticleType` from a static string
+    /// Initialize a new [`ParticleType`] from a static string
     #[must_use]
     pub const fn new(name: &'static str) -> Self {
         Self {
@@ -55,7 +55,7 @@ impl ParticleType {
         }
     }
 
-    /// Initialize a new `ParticleType` from an owned string
+    /// Initialize a new [`ParticleType`] from an owned string
     #[must_use]
     pub const fn from_string(name: String) -> Self {
         Self {
@@ -95,49 +95,45 @@ impl Component for ParticleType {
 
     fn register_component_hooks(hooks: &mut bevy::ecs::component::ComponentHooks) {
         hooks.on_add(|mut world, context| {
-            let name = {
-                let particle_type = world.get::<Self>(context.entity).unwrap();
-                match &particle_type.name {
-                    Cow::Borrowed(name) => Some(*name),
-                    Cow::Owned(owned_name) => {
-                        // Convert owned string to static string by leaking it
-                        // This is necessary for scene deserialization where strings come as owned
-                        let static_name: &'static str =
-                            Box::leak(owned_name.clone().into_boxed_str());
-                        Some(static_name)
-                    }
+            let particle_type = world.get::<Self>(context.entity).unwrap();
+            let static_name = match &particle_type.name {
+                Cow::Borrowed(name) => *name,
+                Cow::Owned(owned_name) => {
+                    // Convert owned string to static string by leaking it
+                    // This is necessary for scene deserialization where strings come as owned
+                    Box::leak(owned_name.clone().into_boxed_str())
                 }
             };
 
-            if let Some(name) = name {
-                world
-                    .commands()
-                    .entity(context.entity)
-                    .insert(ParticleInstances::default());
+            world
+                .commands()
+                .entity(context.entity)
+                .insert(ParticleInstances::default());
 
-                let mut type_map = world.resource_mut::<ParticleTypeMap>();
-                type_map.insert(name, context.entity);
-            }
+            let mut type_map = world.resource_mut::<ParticleTypeMap>();
+            type_map.insert(static_name, context.entity);
         });
 
         hooks.on_remove(|mut world, context| {
-            let name = {
-                let particle_type = world.get::<Self>(context.entity).unwrap();
-                match &particle_type.name {
-                    Cow::Borrowed(name) => Some(*name),
-                    Cow::Owned(owned_name) => {
-                        let type_map = world.resource::<ParticleTypeMap>();
-
-                        let found_key = type_map.keys().find(|&key| key == owned_name.as_str());
+            let particle_type = world.get::<Self>(context.entity).unwrap();
+            let static_name = match &particle_type.name {
+                Cow::Borrowed(name) => *name,
+                Cow::Owned(owned_name) => {
+                    let type_map = world.resource::<ParticleTypeMap>();
+                    // Find the matching static key in the map
+                    if let Some(found_key) = type_map.keys().find(|&key| key == owned_name.as_str())
+                    {
                         found_key
+                    } else {
+                        // Fallback: this shouldn't happen in normal operation
+                        warn!("Could not find static key for owned string: {}", owned_name);
+                        return;
                     }
                 }
             };
 
-            if let Some(name) = name {
-                let mut type_map = world.resource_mut::<ParticleTypeMap>();
-                type_map.remove(name);
-            }
+            let mut type_map = world.resource_mut::<ParticleTypeMap>();
+            type_map.remove(static_name);
         });
     }
 }
@@ -151,6 +147,7 @@ pub struct ParticleTypeMap {
 impl ParticleTypeMap {
     /// Returns true if the designated key exists in the map.
     #[must_use]
+    #[inline(always)]
     pub fn contains(&self, name: &str) -> bool {
         self.map.contains_key(name)
     }
@@ -172,6 +169,7 @@ impl ParticleTypeMap {
     }
 
     /// Insert a new particle type entity.
+    #[inline(always)]
     pub fn insert(&mut self, name: &'static str, entity: Entity) -> Option<Entity> {
         self.map.insert(name, entity)
     }
@@ -183,6 +181,7 @@ impl ParticleTypeMap {
 
     /// Get a particle type from the map if it exists.
     #[must_use]
+    #[inline(always)]
     pub fn get(&self, name: &str) -> Option<&Entity> {
         self.map.get(name)
     }
@@ -199,13 +198,13 @@ impl ParticleTypeMap {
     }
 }
 
-/// Relationship component that tracks which ParticleType entity a Particle belongs to.
-/// This is the relationship source pointing to the target ParticleType entity.
+/// Relationship component that tracks which [`ParticleType`] entity a Particle belongs to.
+/// This is the relationship source pointing to the target [`ParticleType`] entity.
 #[derive(Component)]
 #[relationship(relationship_target = ParticleInstances)]
 pub struct AttachedToParticleType(pub Entity);
 
-/// RelationshipTarget component that tracks all Particle entities belonging to a ParticleType.
+/// Component that tracks all Particle entities belonging to a `[ParticleType`].
 /// This component is automatically maintained by Bevy's relationship system.
 #[derive(Component)]
 #[relationship_target(relationship = AttachedToParticleType, linked_spawn)]
@@ -216,42 +215,6 @@ impl ParticleInstances {
     #[must_use]
     pub const fn new() -> Self {
         Self(Vec::new())
-    }
-
-    /// Add a particle instance to this type.
-    /// Note: With Bevy relationships, this is handled automatically
-    pub fn add(&mut self, entity: Entity) {
-        if !self.0.contains(&entity) {
-            self.0.push(entity);
-        }
-    }
-
-    /// Remove a particle instance from this type.
-    /// Note: With Bevy relationships, this is handled automatically
-    pub fn remove(&mut self, entity: Entity) {
-        self.0.retain(|&e| e != entity);
-    }
-
-    /// Get all particle instances.
-    pub fn iter(&self) -> std::slice::Iter<Entity> {
-        self.0.iter()
-    }
-
-    /// Get the number of instances.
-    #[must_use]
-    pub const fn len(&self) -> usize {
-        self.0.len()
-    }
-
-    /// Check if there are no instances.
-    #[must_use]
-    pub const fn is_empty(&self) -> bool {
-        self.0.is_empty()
-    }
-
-    /// Clear all instances.
-    pub fn clear(&mut self) {
-        self.0.clear();
     }
 }
 
@@ -345,41 +308,43 @@ fn handle_new_particles(
     type_map: Res<ParticleTypeMap>,
     mut ev_particle_registered: EventWriter<ParticleRegistrationEvent>,
 ) {
-    let mut entities: Vec<Entity> = vec![];
+    if !particle_query.is_empty() {
+        let mut entities = vec![];
 
-    for (particle_type, transform, entity) in particle_query.iter() {
-        let coordinates = IVec2::new(
-            transform.translation.x as i32,
-            transform.translation.y as i32,
-        );
+        for (particle_type, transform, entity) in particle_query.iter() {
+            let coordinates = IVec2::new(
+                transform.translation.x as i32,
+                transform.translation.y as i32,
+            );
 
-        if let Some(chunk) = map.chunk_mut(&coordinates) {
-            if chunk.entry(coordinates).or_insert(entity) != &entity {
+            if let Some(chunk) = map.chunk_mut(&coordinates) {
+                if chunk.entry(coordinates).or_insert(entity) != &entity {
+                    commands.entity(entity).despawn();
+                    continue;
+                }
+            } else {
+                // If the chunk is out of bounds, also despawn the entity
                 commands.entity(entity).despawn();
                 continue;
             }
-        } else {
-            // If the chunk is out of bounds, also despawn the entity
-            commands.entity(entity).despawn();
-            continue;
+
+            if let Some(parent_handle) = type_map.get(&particle_type.name) {
+                entities.push(entity);
+
+                commands.entity(entity).insert((
+                    ParticlePosition(coordinates),
+                    AttachedToParticleType(*parent_handle),
+                ));
+            } else {
+                warn!(
+                    "Attempted to spawn particle without valid parent type: '{:?}'",
+                    particle_type
+                );
+            }
         }
 
-        if let Some(parent_handle) = type_map.get(&particle_type.name) {
-            entities.push(entity);
-
-            commands.entity(entity).insert((
-                ParticlePosition(coordinates),
-                AttachedToParticleType(*parent_handle),
-            ));
-        } else {
-            warn!(
-                "Attempted to spawn particle without valid parent type: '{:?}'",
-                particle_type
-            );
-        }
+        ev_particle_registered.write(ParticleRegistrationEvent { entities });
     }
-
-    ev_particle_registered.write(ParticleRegistrationEvent { entities });
 }
 
 /// Triggers a [`ParticleType`] to reset all of its children's data.
@@ -419,7 +384,7 @@ fn evr_reset_particle_children(
     evr_reset_particle_children.read().for_each(|ev| {
         if let Ok(particle_instances) = particle_type_query.get(ev.entity) {
             particle_instances.iter().for_each(|entity| {
-                evw_reset_particle.write(ResetParticleEvent { entity: *entity });
+                evw_reset_particle.write(ResetParticleEvent { entity });
             });
         }
     });

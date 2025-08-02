@@ -611,22 +611,21 @@ fn ev_clear_particle_type_children(
     mut commands: Commands,
     mut map: ResMut<ParticleMap>,
     particle_query: Query<&ParticlePosition, With<Particle>>,
-    mut particle_type_query: Query<&mut ParticleInstances, With<ParticleType>>,
+    particle_type_query: Query<&ParticleInstances, With<ParticleType>>,
     particle_parent_map: Res<ParticleTypeMap>,
 ) {
     ev_clear_particle_type_children.read().for_each(|ev| {
         let particle_type = &ev.0;
         if let Some(parent_entity) = particle_parent_map.get(particle_type) {
-            if let Ok(mut particle_instances) = particle_type_query.get_mut(*parent_entity) {
+            if let Ok(particle_instances) = particle_type_query.get(*parent_entity) {
                 for child_entity in particle_instances.iter() {
-                    if let Ok(position) = particle_query.get(*child_entity) {
+                    if let Ok(position) = particle_query.get(child_entity) {
                         map.remove(&position.0);
                     } else {
                         panic!("No child entity found for particle type '{particle_type}' while removing child from particle map!")
                     }
-                    commands.entity(*child_entity).despawn();
+                    commands.entity(child_entity).despawn();
                 }
-                particle_instances.clear();
             }
         } else {
             warn!("Ignoring particle type '{particle_type}': not found in particle type map.");
