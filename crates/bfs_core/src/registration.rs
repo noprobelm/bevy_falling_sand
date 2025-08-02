@@ -7,7 +7,7 @@ use bevy::{ecs::component::StorageType, platform::collections::HashMap};
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 
-use crate::{ParticleMap, ParticleRegistrationEvent, ParticleRegistrationSet};
+use crate::{ParticleMap, ParticleRegistrationEvent};
 
 /// Adds Bevy plugin elements for particle type registration.
 pub(super) struct ParticleRegistrationPlugin;
@@ -31,6 +31,10 @@ impl Plugin for ParticleRegistrationPlugin {
             );
     }
 }
+
+/// System set for registering new particles
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ParticleRegistrationSet;
 
 /// Unique identifer for a particle type.
 #[derive(

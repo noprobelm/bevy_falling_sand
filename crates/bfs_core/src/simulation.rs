@@ -72,10 +72,6 @@ pub struct ParticleSimulationRun;
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ParticleSimulationSet;
 
-/// System set for registering new particles
-#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ParticleRegistrationSet;
-
 /// Event which is used to trigger the simulation to step forward by one tick.
 #[derive(Clone, Event, Hash, Debug, Eq, PartialEq, PartialOrd)]
 pub struct SimulationStepEvent;
