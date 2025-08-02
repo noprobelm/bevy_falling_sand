@@ -63,16 +63,18 @@ pub struct ParticleMap {
     /// The chunks, stored as a flat map
     chunks: Vec<Chunk>,
     /// The offset value to use when finding the index of a chunk.
-    flat_map_offset_value: usize,
+    flat_map_offset_value: i32,
     /// Bitwise right shift operand to use when finding the index of a chunk.
     chunk_shift: u32,
+    /// Bitwise right shift for map size operations.
+    map_shift: u32,
 }
 
 impl Default for ParticleMap {
     fn default() -> Self {
         const MAP_SIZE: usize = 32;
         const CHUNK_SIZE: usize = 32;
-        ParticleMap::new(MAP_SIZE, CHUNK_SIZE)
+        Self::new(MAP_SIZE, CHUNK_SIZE)
     }
 }
 
@@ -94,6 +96,8 @@ impl ParticleMap {
             "Chunk size must be a power of 2"
         );
 
+        let map_shift = map_size.trailing_zeros();
+        let chunk_shift = chunk_size.trailing_zeros();
         let num_chunks = map_size.pow(2);
         let grid_offset = num_chunks / 2;
         let mut chunks = Vec::with_capacity(num_chunks);
@@ -122,29 +126,38 @@ impl ParticleMap {
             chunks,
             size: map_size,
             particles_per_chunk: chunk_size.pow(2),
-            flat_map_offset_value: grid_offset,
-            chunk_shift: chunk_size.trailing_zeros(),
+            flat_map_offset_value: grid_offset
+                .try_into()
+                .expect("grid_offset exceeds i32::MAX"),
+            chunk_shift,
+            map_shift,
         }
     }
 
+    #[inline(always)]
+    #[allow(clippy::cast_sign_loss)]
     const fn index(&self, position: IVec2) -> Option<usize> {
-        let col = ((position.x + self.flat_map_offset_value as i32) >> self.chunk_shift) as isize;
-        let row = ((self.flat_map_offset_value as i32 - position.y) >> self.chunk_shift) as isize;
+        let offset = self.flat_map_offset_value;
+        let col = ((position.x + offset) >> self.chunk_shift) as isize;
+        let row = ((offset - position.y) >> self.chunk_shift) as isize;
+        let size = self.size as isize;
 
-        if col < 0 || col >= self.size as isize || row < 0 || row >= self.size as isize {
+        if col < 0 || col >= size || row < 0 || row >= size {
             None
         } else {
-            Some((row as usize) * self.size + (col as usize))
+            Some(((row as usize) << self.map_shift) + (col as usize)) // row * size using bit shift
         }
     }
 
     /// Get a chunk if the position falls anywhere within its bounds.
     #[must_use]
+    #[inline(always)]
     pub fn chunk(&self, position: &IVec2) -> Option<&Chunk> {
         self.index(*position).and_then(|i| self.chunks.get(i))
     }
 
     /// Get a mutable chunk if the position falls anywhere within its bounds.
+    #[inline(always)]
     pub fn chunk_mut(&mut self, position: &IVec2) -> Option<&mut Chunk> {
         self.index(*position)
             .and_then(move |index| self.chunks.get_mut(index))
@@ -152,6 +165,7 @@ impl ParticleMap {
 
     /// Get the entity at position.
     #[must_use]
+    #[inline(always)]
     pub fn get(&self, position: &IVec2) -> Option<&Entity> {
         self.chunk(position)?.get(position)
     }
@@ -165,9 +179,9 @@ impl ParticleMap {
     /// Caller must ensure that the position lies within the bounds of the particle map.
     #[must_use]
     pub const unsafe fn index_unchecked(&self, position: IVec2) -> usize {
-        let col = ((position.x + self.flat_map_offset_value as i32) >> self.chunk_shift) as usize;
-        let row = ((self.flat_map_offset_value as i32 - position.y) >> self.chunk_shift) as usize;
-        row * self.size + col
+        let col = ((position.x + self.flat_map_offset_value) >> self.chunk_shift) as usize;
+        let row = ((self.flat_map_offset_value - position.y) >> self.chunk_shift) as usize;
+        (row << self.map_shift) + col // row * size using bit shift
     }
 
     /// # Safety
@@ -218,6 +232,7 @@ impl ParticleMap {
     /// # Errors
     ///
     /// Returns `Err(SwapError)` if any position is invalid.
+    #[inline(always)]
     pub fn swap(&mut self, first: IVec2, second: IVec2) -> Result<(), SwapError> {
         let first_index = self
             .index(first)
@@ -227,10 +242,7 @@ impl ParticleMap {
             .ok_or(SwapError::PositionOutOfBounds { position: second })?;
 
         if first_index == second_index {
-            let chunk = self
-                .chunks
-                .get_mut(first_index)
-                .ok_or(SwapError::ChunkOutOfBounds { index: first_index })?;
+            let chunk = unsafe { self.chunks.get_unchecked_mut(first_index) };
 
             let entity_first = chunk
                 .remove(&first)
@@ -270,39 +282,51 @@ impl ParticleMap {
         Ok(())
     }
 
+    #[allow(clippy::cast_sign_loss)]
     fn reset_chunks(&mut self) {
+        const NEIGHBOR_OFFSETS: [(isize, isize); 8] = [
+            (0, -1),  // Left
+            (0, 1),   // Right
+            (-1, 0),  // Up
+            (1, 0),   // Down
+            (-1, -1), // Up-Left
+            (-1, 1),  // Up-Right
+            (1, -1),  // Down-Left
+            (1, 1),   // Down-Right
+        ];
+
         let map_size = self.size as isize;
         let chunk_ptr = self.chunks.as_mut_ptr();
+        let max_updates = self.chunks.len() * 8;
+        let mut pending_updates = Vec::with_capacity(max_updates.min(256));
 
-        let mut pending_updates = Vec::with_capacity(self.chunks.len()); // Preallocate memory for updates
-
+        // First pass: process dirty rects and collect neighbor updates
         for index in 0..self.chunks.len() {
             let chunk = unsafe { &mut *chunk_ptr.add(index) };
 
             if let Some(dirty_rect) = chunk.next_dirty_rect.take() {
-                let inflated_rect = dirty_rect.inflate(1);
-                chunk.dirty_rect = Some(inflated_rect.intersect(chunk.region));
+                let inflated = dirty_rect.inflate(1);
+                chunk.dirty_rect = Some(inflated.intersect(chunk.region));
                 let expanded = dirty_rect.inflate(2);
 
-                let chunk_row = index as isize / map_size;
-                let chunk_col = index as isize % map_size;
+                let chunk_row = (index as isize) >> self.map_shift;
+                let chunk_col = (index as isize) & ((1 << self.map_shift) - 1);
 
-                let neighbors = [
-                    (chunk_row, chunk_col - 1),     // Left
-                    (chunk_row, chunk_col + 1),     // Right
-                    (chunk_row - 1, chunk_col),     // Up
-                    (chunk_row + 1, chunk_col),     // Down
-                    (chunk_row - 1, chunk_col - 1), // Up-Left
-                    (chunk_row - 1, chunk_col + 1), // Up-Right
-                    (chunk_row + 1, chunk_col - 1), // Down-Left
-                    (chunk_row + 1, chunk_col + 1), // Down-Right
-                ];
+                // Unroll neighbor checking for better performance
+                for &(row_offset, col_offset) in &NEIGHBOR_OFFSETS {
+                    let n_row = chunk_row + row_offset;
+                    let n_col = chunk_col + col_offset;
 
-                for &(n_row, n_col) in &neighbors {
-                    if n_row >= 0 && n_row < map_size && n_col >= 0 && n_col < map_size {
-                        let n_index = (n_row * map_size + n_col) as usize;
+                    // Branchless bounds check
+                    let in_bounds = (n_row as usize) < (map_size as usize)
+                        && (n_col as usize) < (map_size as usize);
+
+                    if in_bounds {
+                        let n_index = ((n_row << self.map_shift) + n_col) as usize;
                         let neighbor_region = unsafe { (*chunk_ptr.add(n_index)).region };
                         let intersection = neighbor_region.intersect(expanded);
+
+                        // Store update only if intersection is non-empty
                         if !intersection.is_empty() {
                             pending_updates.push((n_index, intersection));
                         }
@@ -313,7 +337,7 @@ impl ParticleMap {
             }
         }
 
-        // Second pass: apply neighbor updates
+        // Second pass: batch apply neighbor updates
         for (n_index, intersection) in pending_updates {
             let neighbor_chunk = unsafe { &mut *chunk_ptr.add(n_index) };
             match &mut neighbor_chunk.dirty_rect {
@@ -338,6 +362,8 @@ impl ParticleMap {
     }
 
     /// Find all particles within a circular radius of a center position
+    #[inline(always)]
+    #[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)]
     pub fn within_radius(
         &self,
         center: IVec2,
@@ -351,34 +377,42 @@ impl ParticleMap {
         self.within_rect_impl(min_pos, max_pos)
             .filter(move |(pos, _)| {
                 let diff = *pos - center;
-                (diff.x * diff.x + diff.y * diff.y) as f32 <= radius_squared
+                let dist_sq = (diff.x * diff.x + diff.y * diff.y) as f32;
+                dist_sq <= radius_squared
             })
     }
 
     /// Find all particles within a rectangular area
+    #[inline(always)]
     pub fn within_rect(&self, rect: IRect) -> impl Iterator<Item = (IVec2, &Entity)> {
         self.within_rect_impl(rect.min, rect.max)
     }
 
+    #[inline(always)]
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     fn within_rect_impl(
         &self,
         min_pos: IVec2,
         max_pos: IVec2,
     ) -> impl Iterator<Item = (IVec2, &Entity)> {
-        let min_chunk_x =
-            ((min_pos.x + self.flat_map_offset_value as i32) >> self.chunk_shift).max(0) as usize;
-        let max_chunk_x = ((max_pos.x + self.flat_map_offset_value as i32) >> self.chunk_shift)
-            .min(self.size as i32 - 1) as usize;
-        let min_chunk_y =
-            ((self.flat_map_offset_value as i32 - max_pos.y) >> self.chunk_shift).max(0) as usize;
-        let max_chunk_y = ((self.flat_map_offset_value as i32 - min_pos.y) >> self.chunk_shift)
-            .min(self.size as i32 - 1) as usize;
+        let offset = self.flat_map_offset_value;
+        let shift = self.chunk_shift;
+        let size_minus_1 = self.size as i32 - 1;
+
+        let min_chunk_x = ((min_pos.x + offset) >> shift).max(0) as usize;
+        let max_chunk_x = ((max_pos.x + offset) >> shift).min(size_minus_1) as usize;
+        let min_chunk_y = ((offset - max_pos.y) >> shift).max(0) as usize;
+        let max_chunk_y = ((offset - min_pos.y) >> shift).min(size_minus_1) as usize;
+
+        let chunks = &self.chunks;
+        let map_shift = self.map_shift;
 
         (min_chunk_y..=max_chunk_y)
             .flat_map(move |chunk_row| {
-                (min_chunk_x..=max_chunk_x).map(move |chunk_col| chunk_row * self.size + chunk_col)
+                (min_chunk_x..=max_chunk_x)
+                    .map(move |chunk_col| (chunk_row << map_shift) + chunk_col)
             })
-            .filter_map(move |chunk_index| self.chunks.get(chunk_index))
+            .filter_map(move |chunk_index| chunks.get(chunk_index))
             .flat_map(move |chunk| {
                 chunk
                     .iter()
@@ -414,11 +448,11 @@ impl Chunk {
         }
     }
 
+    #[inline(always)]
     fn dirty_rect_union_point(&mut self, position: IVec2) {
-        if let Some(dirty_rect) = self.next_dirty_rect {
-            self.next_dirty_rect = Some(dirty_rect.union_point(position));
-        } else {
-            self.next_dirty_rect = Some(IRect::from_center_size(position, IVec2::ONE));
+        match &mut self.next_dirty_rect {
+            Some(rect) => *rect = rect.union_point(position),
+            None => self.next_dirty_rect = Some(IRect::from_center_size(position, IVec2::ONE)),
         }
     }
 }
@@ -432,11 +466,13 @@ impl Chunk {
 
     /// Get the entity at position.
     #[must_use]
+    #[inline(always)]
     pub fn get(&self, position: &IVec2) -> Option<&Entity> {
         self.map.get(position)
     }
 
     /// Insert an entity at position.
+    #[inline(always)]
     pub fn insert(&mut self, position: IVec2, item: Entity) -> Option<Entity> {
         self.dirty_rect_union_point(position);
         self.map.insert(position, item)
@@ -450,6 +486,7 @@ impl Chunk {
     }
 
     /// Remove the entity at position.
+    #[inline(always)]
     pub fn remove(&mut self, position: &IVec2) -> Option<Entity> {
         self.dirty_rect_union_point(*position);
         self.map.remove(position)
