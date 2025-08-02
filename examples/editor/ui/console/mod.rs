@@ -44,8 +44,9 @@ impl Console {
 
                         if resize_response.dragged() {
                             let drag_delta = resize_response.drag_delta().y;
+                            let max_height = available_height * 0.7;
                             console_state.height =
-                                (console_state.height - drag_delta).clamp(80.0, 600.0);
+                                (console_state.height - drag_delta).clamp(80.0, max_height);
                         }
 
                         if resize_response.hovered() {

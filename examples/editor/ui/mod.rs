@@ -149,47 +149,30 @@ fn render_ui_panels(
         });
     });
 
+    // Calculate responsive panel width
+    let screen_width = ctx.screen_rect().width();
+    let panel_width = if screen_width < 1200.0 {
+        (screen_width * 0.35).max(300.0).min(500.0)
+    } else if screen_width < 1920.0 {
+        (screen_width * 0.4).max(400.0).min(650.0)
+    } else {
+        (screen_width * 0.36).max(500.0).min(800.0)
+    };
+
     let _left_response = egui::SidePanel::left("Left panel")
-        .resizable(false)
-        .exact_width(700.0)
+        .resizable(true)
+        .width_range(300.0..=panel_width * 1.2)
+        .default_width(panel_width)
         .show(ctx, |ui| {
-            ui.spacing_mut().indent = 0.0;
-            ui.spacing_mut().button_padding = egui::Vec2::ZERO;
-            ui.spacing_mut().menu_margin = egui::Margin::ZERO;
-            ui.spacing_mut().indent_ends_with_horizontal_line = false;
-
-            ui.painter()
-                .rect_filled(ui.max_rect(), 0.0, egui::Color32::from_rgb(30, 30, 30));
-
-            ui.vertical(|ui| {
-                ui.set_width(ui.available_width());
-                ui.spacing_mut().item_spacing.y = 8.0;
-
-                let total_height = ui.available_height();
-                let spacing = 8.0;
-                let panel_height = (total_height - spacing) / 2.0;
-
-                ui.group(|ui| {
-                    ui.set_width(ui.available_width());
-                    ui.set_height(panel_height);
-                    ParticleEditor.render(
-                        ui,
-                        &particle_materials,
-                        &current_editor,
-                        &mut editor_data_query,
-                        &mut load_particle_events,
-                        &mut create_particle_events,
-                        &mut apply_editor_events,
-                        &mut apply_editor_and_reset_events,
-                        &mut reset_particle_children_events,
-                        &particle_type_map,
-                    );
-                });
-
-                ui.group(|ui| {
-                    ui.set_width(ui.available_width());
-                    ui.set_height(panel_height);
-
+            // Use TopBottomPanel pattern within the side panel for proper layout
+            egui::TopBottomPanel::bottom("Statistics panel")
+                .resizable(true)
+                .height_range(200.0..=ui.available_height() * 0.6)
+                .default_height(ui.available_height() * 0.4)
+                .show_inside(ui, |ui| {
+                    ui.heading("Statistics");
+                    ui.separator();
+                    
                     let fps = diagnostics
                         .get(&FrameTimeDiagnosticsPlugin::FPS)
                         .and_then(|fps| fps.smoothed())
@@ -205,13 +188,30 @@ fn render_ui_panels(
                         active_particle_count.0 as u32,
                     );
                 });
-            });
+
+            // The remaining space is automatically used for the particle editor
+            egui::CentralPanel::default()
+                .show_inside(ui, |ui| {
+                    ParticleEditor.render(
+                        ui,
+                        &particle_materials,
+                        &current_editor,
+                        &mut editor_data_query,
+                        &mut load_particle_events,
+                        &mut create_particle_events,
+                        &mut apply_editor_events,
+                        &mut apply_editor_and_reset_events,
+                        &mut reset_particle_children_events,
+                        &particle_type_map,
+                    );
+                });
         });
 
+    let screen_height = ctx.screen_rect().height();
     let console_height = if console_state.expanded {
-        console_state.height
+        console_state.height.min(screen_height * 0.5).max(80.0)
     } else {
-        40.0
+        (screen_height * 0.04).max(30.0).min(50.0)
     };
 
     let _console_response = egui::TopBottomPanel::bottom("Console panel")
