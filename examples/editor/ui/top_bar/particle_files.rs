@@ -3,8 +3,9 @@ use std::path::PathBuf;
 use crate::ui::file_browser::{FileBrowser, FileBrowserState};
 use bevy::prelude::*;
 use bevy_egui::egui;
-use bfs_assets::{LoadParticleDefinitionsSceneEvent, SaveParticleDefinitionsEvent};
-use bfs_core::ParticleType;
+use bevy_falling_sand::prelude::{
+    LoadParticleDefinitionsSceneEvent, ParticleType, SaveParticleDefinitionsEvent,
+};
 
 pub struct ParticleFilesPlugin;
 

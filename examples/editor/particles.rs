@@ -1,6 +1,5 @@
 use bevy::prelude::*;
 use bevy_falling_sand::prelude::*;
-use bfs_assets::LoadParticleDefinitionsSceneEvent;
 
 use crate::app_state::InitializationState;
 

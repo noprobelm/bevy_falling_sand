@@ -42,11 +42,6 @@ bevy = { version = "0.16", default-features = false, features = [
 
 [dependencies]
 bfs_internal = { path = "crates/bfs_internal" }
-bfs_assets = { path = "crates/bfs_assets" }
-bfs_core = { path = "crates/bfs_core" }
-bfs_color = { path = "crates/bfs_color" }
-bfs_movement = { path = "crates/bfs_movement" }
-bfs_reactions = { path = "crates/bfs_reactions" }
 bevy.workspace = true
 
 [dev-dependencies]
