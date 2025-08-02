@@ -28,26 +28,34 @@ fn handle_fire(
     map: Res<ParticleMap>,
 ) {
     fire_query.iter_mut().for_each(|(fire, position, mut rng)| {
-        let mut destroy_fire: bool = false;
         if !rng.chance(fire.chance_to_spread) {
             return;
         }
+        
+        let mut destroy_fire = false;
+        let mut entities_to_ignite = Vec::new();
+        
         map.within_radius(position.0, fire.burn_radius)
             .for_each(|(_, entity)| {
                 if let Ok((entity, burns)) = burns_query.get(*entity) {
-                    commands.entity(entity).insert(burns.to_burning());
-                    if let Some(colors) = &burns.color {
-                        commands.entity(entity).insert(colors.clone());
-                        commands.entity(entity).insert(ChangesColor::new(0.75));
-                    }
-                    if let Some(fire) = &burns.spreads {
-                        commands.entity(entity).insert(*fire);
-                    }
+                    entities_to_ignite.push((entity, burns));
                     if fire.destroys_on_spread {
                         destroy_fire = true;
                     }
                 }
             });
+            
+        for (entity, burns) in entities_to_ignite {
+            let mut entity_commands = commands.entity(entity);
+            entity_commands.insert(burns.to_burning());
+            
+            if let Some(colors) = &burns.color {
+                entity_commands.insert((colors.clone(), ChangesColor::new(0.75)));
+            }
+            if let Some(fire) = &burns.spreads {
+                entity_commands.insert(*fire);
+            }
+        }
         if destroy_fire {
             if let Some(entity) = map.get(&position.0) {
                 commands.entity(*entity).despawn();
@@ -69,7 +77,7 @@ fn handle_burning(
     time: Res<Time>,
     mut ev_reset_particle_color: EventWriter<ResetParticleColorEvent>,
 ) {
-    let mut entities: Vec<Entity> = vec![];
+    let mut entities = Vec::with_capacity(burning_query.iter().len());
     burning_query
         .iter_mut()
         .for_each(|(entity, mut burns, mut burning, mut rng, position)| {

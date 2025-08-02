@@ -161,9 +161,10 @@ impl Reacting {
         position: &ParticlePosition,
     ) {
         if self.chance(rng) {
+            let spawn_pos = position.0 + IVec2::Y;
             commands.spawn((
                 self.produces.clone(),
-                Transform::from_xyz(position.0.x as f32, position.0.y as f32 + 1., 0.),
+                Transform::from_translation(Vec3::new(spawn_pos.x as f32, spawn_pos.y as f32, 0.0)),
             ));
         }
     }
@@ -184,27 +185,32 @@ fn handle_particle_components(
     for entity in entities {
         if let Ok(attached_to) = particle_query.get(*entity) {
             if let Ok((fire, burns, burning)) = parent_query.get(attached_to.0) {
-                commands.entity(*entity).insert(ReactionRng::default());
-                if let Some(fire) = fire {
-                    commands.entity(*entity).insert(*fire);
-                } else {
-                    commands.entity(*entity).remove::<Fire>();
-                }
-                if let Some(burning) = burning {
-                    commands.entity(*entity).insert(burning.clone());
-                } else {
-                    commands.entity(*entity).remove::<Burning>();
-                }
-                if let Some(burns) = burns {
-                    commands.entity(*entity).insert(burns.clone());
-                    if burns.ignites_on_spawn {
-                        commands.entity(*entity).insert(burns.to_burning());
-                        if let Some(fire) = burns.spreads {
-                            commands.entity(*entity).insert(fire);
+                let mut entity_commands = commands.entity(*entity);
+                entity_commands.insert(ReactionRng::default());
+
+                match fire {
+                    Some(fire) => entity_commands.insert(*fire),
+                    None => entity_commands.remove::<Fire>(),
+                };
+
+                match burning {
+                    Some(burning) => entity_commands.insert(burning.clone()),
+                    None => entity_commands.remove::<Burning>(),
+                };
+
+                match burns {
+                    Some(burns) => {
+                        entity_commands.insert(burns.clone());
+                        if burns.ignites_on_spawn {
+                            entity_commands.insert(burns.to_burning());
+                            if let Some(fire) = burns.spreads {
+                                entity_commands.insert(fire);
+                            }
                         }
                     }
-                } else {
-                    commands.entity(*entity).remove::<Burns>();
+                    None => {
+                        entity_commands.remove::<Burns>();
+                    }
                 }
             }
         }
