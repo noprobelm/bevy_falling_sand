@@ -6,7 +6,12 @@
     rustdoc::broken_intra_doc_links,
     missing_docs
 )]
-#![allow(clippy::default_trait_access, clippy::module_name_repetitions)]
+#![allow(
+    clippy::default_trait_access,
+    clippy::module_name_repetitions,
+    clippy::inline_always,
+    clippy::cast_possible_wrap
+)]
 //! Provides movement functionality for particles in the Falling Sand simulation. Custom movement
 //! behavior can be implemented by omitting this plugin and writing your own constructs and systems.
 use bevy::prelude::{App, Plugin};

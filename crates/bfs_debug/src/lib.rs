@@ -6,7 +6,12 @@
     rustdoc::broken_intra_doc_links,
     missing_docs
 )]
-#![allow(clippy::default_trait_access, clippy::module_name_repetitions)]
+#![allow(
+    clippy::default_trait_access,
+    clippy::module_name_repetitions,
+    clippy::inline_always,
+    clippy::cast_possible_wrap
+)]
 //! Provides debug functionality for the Falling Sand simulation. This includes visualizing
 //! chunks, dirty rectangles, and more.
 use bevy::prelude::*;

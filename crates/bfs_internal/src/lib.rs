@@ -1,5 +1,3 @@
-//! This crate sources all peripheral plugins for *Bevy Falling Sand* and provides some convenient
-//! plugins and commonly used particle bundles.
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![warn(
     clippy::nursery,
@@ -8,7 +6,14 @@
     rustdoc::broken_intra_doc_links,
     missing_docs
 )]
-#![allow(clippy::default_trait_access, clippy::module_name_repetitions)]
+#![allow(
+    clippy::default_trait_access,
+    clippy::module_name_repetitions,
+    clippy::inline_always,
+    clippy::cast_possible_wrap
+)]
+//! This crate sources all peripheral plugins for *Bevy Falling Sand* and provides some convenient
+//! plugins and commonly used particle bundles.
 
 /// Provides bundles for commonly used particle types.
 pub mod bundles;
