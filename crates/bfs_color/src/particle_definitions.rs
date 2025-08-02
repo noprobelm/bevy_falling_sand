@@ -77,7 +77,7 @@ impl ColorProfile {
         let color_index = rng.index(0..self.palette.len());
         Self {
             index: color_index,
-            color: *self.palette.get(color_index).unwrap(), // safe because of assert
+            color: self.palette[color_index],
             palette: self.palette.clone(),
         }
     }
@@ -93,7 +93,7 @@ impl ColorProfile {
             "ColorProfile palette cannot be empty setting color to random."
         );
         self.index = rng.index(0..self.palette.len());
-        self.color = *self.palette.get(self.index).unwrap();
+        self.color = self.palette[self.index];
     }
 
     /// Set the particle color to the next color in the palette, returning to the start if at the end.
@@ -106,11 +106,7 @@ impl ColorProfile {
             !self.palette.is_empty(),
             "Palette cannot be empty if setting to next color."
         );
-        if self.index >= self.palette.len() - 1 {
-            self.index = 0;
-        } else {
-            self.index += 1;
-        }
+        self.index = (self.index + 1) % self.palette.len();
         self.color = self.palette[self.index];
     }
 
@@ -193,30 +189,32 @@ fn handle_particle_components(
     particle_query: &Query<&AttachedToParticleType, With<Particle>>,
     entities: &[Entity],
 ) {
+    
     for entity in entities {
         if let Ok(attached_to) = particle_query.get(*entity) {
-            commands.entity(*entity).insert(ColorRng::default());
             if let Ok((particle_color, flows_color)) = parent_query.get(attached_to.0) {
-                commands.entity(*entity).insert((
+                let mut entity_commands = commands.entity(*entity);
+                
+                entity_commands.insert((
                     Sprite {
-                        color: Color::srgba(0., 0., 0., 0.),
-                        ..default()
+                        color: Color::NONE,
+                        ..Default::default()
                     },
                     ColorRng::default(),
+                    Visibility::default(),
                 ));
-                commands.entity(*entity).insert(Visibility::default());
+                
                 if let Some(particle_color) = particle_color {
-                    let rng = rng.get_mut();
-                    commands
-                        .entity(*entity)
-                        .insert(particle_color.new_with_random(rng));
+                    let random_color = particle_color.new_with_random(rng.get_mut());
+                    entity_commands.insert(random_color);
                 } else {
-                    commands.entity(*entity).remove::<ColorProfile>();
+                    entity_commands.remove::<ColorProfile>();
                 }
+                
                 if let Some(flows_color) = flows_color {
-                    commands.entity(*entity).insert(*flows_color);
+                    entity_commands.insert(*flows_color);
                 } else {
-                    commands.entity(*entity).remove::<ChangesColor>();
+                    entity_commands.remove::<ChangesColor>();
                 }
             }
         }
