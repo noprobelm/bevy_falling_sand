@@ -1,5 +1,7 @@
 use bevy::{input::mouse::MouseWheel, platform::collections::HashSet, prelude::*};
-use bfs_core::{DespawnParticleEvent, Particle, ParticleMap, ParticleSimulationSet};
+use bevy_falling_sand::prelude::{
+    DespawnParticleEvent, Particle, ParticleMap, ParticleSimulationSet,
+};
 
 use super::{
     cursor::{update_cursor_position, CursorPosition},
