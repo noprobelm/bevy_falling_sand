@@ -1,5 +1,5 @@
 use bevy::{input::mouse::MouseWheel, platform::collections::HashSet, prelude::*};
-use bfs_core::{Particle, ParticleMap, ParticleSimulationSet, RemoveParticleEvent};
+use bfs_core::{DespawnParticleEvent, Particle, ParticleMap, ParticleSimulationSet};
 
 use super::{
     cursor::{update_cursor_position, CursorPosition},
@@ -319,7 +319,7 @@ impl BrushType {
 
     pub fn remove_particles(
         &self,
-        ev_remove_particle: &mut EventWriter<RemoveParticleEvent>,
+        ev_remove_particle: &mut EventWriter<DespawnParticleEvent>,
         coords: IVec2,
         brush_size: f32,
     ) {
@@ -332,10 +332,7 @@ impl BrushType {
             BrushType::Line => {
                 for x in min_x * 3..=max_x * 3 {
                     let position = IVec2::new(coords.x + x, coords.y);
-                    ev_remove_particle.write(RemoveParticleEvent {
-                        position,
-                        despawn: true,
-                    });
+                    ev_remove_particle.write(DespawnParticleEvent::from_position(position));
                 }
             }
             BrushType::Circle => {
@@ -349,18 +346,12 @@ impl BrushType {
                     }
                 }
                 for position in circle_coords {
-                    ev_remove_particle.write(RemoveParticleEvent {
-                        position,
-                        despawn: true,
-                    });
+                    ev_remove_particle.write(DespawnParticleEvent::from_position(position));
                 }
             }
             BrushType::Cursor => {
                 let position = IVec2::new(coords.x, coords.y);
-                ev_remove_particle.write(RemoveParticleEvent {
-                    position,
-                    despawn: true,
-                });
+                ev_remove_particle.write(DespawnParticleEvent::from_position(position));
             }
         }
     }
@@ -483,7 +474,7 @@ pub fn spawn_particles(
 }
 
 pub fn despawn_particles(
-    mut ev_remove_particle: EventWriter<RemoveParticleEvent>,
+    mut ev_remove_particle: EventWriter<DespawnParticleEvent>,
     cursor_coords: Res<CursorPosition>,
     brush_type: Res<State<BrushType>>,
     brush_query: Query<&Brush>,
