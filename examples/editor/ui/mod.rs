@@ -149,58 +149,39 @@ fn render_ui_panels(
         });
     });
 
-    // Calculate responsive panel width
     let screen_width = ctx.screen_rect().width();
-    let panel_width = if screen_width < 1200.0 {
-        (screen_width * 0.35).max(300.0).min(500.0)
-    } else if screen_width < 1920.0 {
-        (screen_width * 0.4).max(400.0).min(650.0)
-    } else {
-        (screen_width * 0.36).max(500.0).min(800.0)
-    };
+    let panel_width = if screen_width < 1600.0 { 500.0 } else { 700.0 };
 
     let _left_response = egui::SidePanel::left("Left panel")
         .resizable(false)
         .exact_width(panel_width)
         .show(ctx, |ui| {
-            // Use auto-sizing vertical layout with proper scroll areas
-            ui.vertical(|ui| {
-                // Particle Editor in a scroll area that takes most of the space
-                ui.group(|ui| {
+            egui::ScrollArea::vertical()
+                .auto_shrink([false, false])
+                .show(ui, |ui| {
                     ui.heading("Particle Editor");
                     ui.separator();
-                    
-                    // Use a scroll area that auto-sizes to content but has reasonable limits
-                    let available_height = ui.available_height();
-                    let min_editor_height = (available_height * 0.5).max(300.0);
-                    let max_editor_height = (available_height - 250.0).max(min_editor_height); // Reserve 250px for statistics
-                    
-                    egui::ScrollArea::vertical()
-                        .auto_shrink([false, true])
-                        .max_height(max_editor_height)
-                        .show(ui, |ui| {
-                            ParticleEditor.render(
-                                ui,
-                                &particle_materials,
-                                &current_editor,
-                                &mut editor_data_query,
-                                &mut load_particle_events,
-                                &mut create_particle_events,
-                                &mut apply_editor_events,
-                                &mut apply_editor_and_reset_events,
-                                &mut reset_particle_children_events,
-                                &particle_type_map,
-                            );
-                        });
-                });
 
-                ui.add_space(8.0);
+                    ParticleEditor.render(
+                        ui,
+                        &particle_materials,
+                        &current_editor,
+                        &mut editor_data_query,
+                        &mut load_particle_events,
+                        &mut create_particle_events,
+                        &mut apply_editor_events,
+                        &mut apply_editor_and_reset_events,
+                        &mut reset_particle_children_events,
+                        &particle_type_map,
+                    );
 
-                // Statistics panel at the bottom, auto-sizing to content
-                ui.group(|ui| {
+                    ui.add_space(16.0);
+                    ui.separator();
+                    ui.add_space(16.0);
+
                     ui.heading("Statistics");
                     ui.separator();
-                    
+
                     let fps = diagnostics
                         .get(&FrameTimeDiagnosticsPlugin::FPS)
                         .and_then(|fps| fps.smoothed())
@@ -215,8 +196,9 @@ fn render_ui_panels(
                         total_particle_count.0 as u32,
                         active_particle_count.0 as u32,
                     );
+
+                    ui.add_space(16.0);
                 });
-            });
         });
 
     let screen_height = ctx.screen_rect().height();
