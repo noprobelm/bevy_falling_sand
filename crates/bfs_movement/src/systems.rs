@@ -8,8 +8,14 @@ use bfs_core::{Particle, ParticleMap, ParticlePosition, ParticleSimulationSet};
 
 type ObstructedDirections = [bool; 9];
 
-const fn direction_to_index(dir: IVec2) -> usize {
-    ((dir.y + 1) * 3 + (dir.x + 1)) as usize
+fn get_direction_index(dir: IVec2) -> usize {
+    let signum = dir.signum();
+    match (signum.x, signum.y) {
+        (-1, -1) => 0, (0, -1) => 1, (1, -1) => 2,
+        (-1,  0) => 3, (0,  0) => 4, (1,  0) => 5,
+        (-1,  1) => 6, (0,  1) => 7, (1,  1) => 8,
+        _ => 4,
+    }
 }
 
 #[derive(Resource, Default)]
@@ -104,7 +110,6 @@ fn handle_movement_by_chunks(
                             mut particle_moved,
                         )) = particle_query.get_unchecked(*entity)
                         {
-                            // Early exit for particles with no velocity
                             if velocity.current() == 0 {
                                 particle_moved.0 = false;
                                 continue;
@@ -119,15 +124,13 @@ fn handle_movement_by_chunks(
                                     momentum.as_deref().copied().as_ref(),
                                 ) {
                                     let neighbor_position = position.0 + *relative_position;
-                                    let signum = relative_position.signum();
-                                    let obstruct_idx = direction_to_index(signum);
+                                    let obstruct_idx = get_direction_index(*relative_position);
 
                                     if obstructed[obstruct_idx] {
                                         continue;
                                     }
 
-                                    let neighbor_entity =
-                                        (*map_ptr).get(&neighbor_position).copied();
+                                    let neighbor_entity = (*map_ptr).get(&neighbor_position).copied();
 
                                     match neighbor_entity {
                                         Some(neighbor_entity) => {
@@ -181,12 +184,8 @@ fn handle_movement_by_chunks(
                                                 .is_ok()
                                             {
                                                 position.0 = neighbor_position;
-                                                // Batch transform update
-                                                transform.translation = Vec3::new(
-                                                    neighbor_position.x as f32,
-                                                    neighbor_position.y as f32,
-                                                    transform.translation.z,
-                                                );
+                                                transform.translation.x = neighbor_position.x as f32;
+                                                transform.translation.y = neighbor_position.y as f32;
                                                 if let Some(ref mut m) = momentum {
                                                     m.0 = *relative_position;
                                                 }
@@ -244,7 +243,6 @@ fn handle_movement_by_particles(
                 mut movement_priority,
                 mut particle_moved,
             )| {
-                // Early exit for particles with no velocity
                 if velocity.current() == 0 {
                     particle_moved.0 = false;
                     return;
@@ -267,8 +265,7 @@ fn handle_movement_by_particles(
                         .iter_candidates(&mut rng, momentum.as_deref().copied().as_ref())
                     {
                         let neighbor_position = position.0 + *relative_position;
-                        let signum = relative_position.signum();
-                        let obstruct_idx = direction_to_index(signum);
+                        let obstruct_idx = get_direction_index(*relative_position);
 
                         if movement_state.visited_positions.contains(&neighbor_position) || obstructed[obstruct_idx] {
                             continue;
@@ -324,12 +321,8 @@ fn handle_movement_by_particles(
                                 match  map.swap(position.0, neighbor_position) {
                                     Ok(()) => {
                                         position.0 = neighbor_position;
-                                        // Batch transform update
-                                        transform.translation = Vec3::new(
-                                            neighbor_position.x as f32,
-                                            neighbor_position.y as f32,
-                                            transform.translation.z,
-                                        );
+                                        transform.translation.x = neighbor_position.x as f32;
+                                        transform.translation.y = neighbor_position.y as f32;
                                         if let Some(ref mut momentum) = momentum {
                                             momentum.0 = *relative_position;
                                         }

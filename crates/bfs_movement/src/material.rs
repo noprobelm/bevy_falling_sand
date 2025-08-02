@@ -206,11 +206,12 @@ impl Liquid {
 
 impl Material for Liquid {
     fn to_movement_priority(&self) -> Movement {
-        let mut neighbors: Vec<Vec<IVec2>> = vec![
-            vec![IVec2::NEG_Y],
-            vec![IVec2::NEG_ONE, IVec2::new(1, -1)],
-            vec![IVec2::X, IVec2::NEG_X],
-        ];
+        let base_capacity = 3 + self.fluidity;
+        let mut neighbors = Vec::with_capacity(base_capacity);
+        
+        neighbors.push(vec![IVec2::NEG_Y]);
+        neighbors.push(vec![IVec2::NEG_ONE, IVec2::new(1, -1)]);
+        neighbors.push(vec![IVec2::X, IVec2::NEG_X]);
 
         for i in 0..self.fluidity {
             neighbors.push(vec![
@@ -270,8 +271,10 @@ impl Gas {
 
 impl Material for Gas {
     fn to_movement_priority(&self) -> Movement {
-        let mut neighbors: Vec<Vec<IVec2>> =
-            vec![vec![IVec2::Y, IVec2::new(1, 1), IVec2::new(-1, 1)]];
+        let base_capacity = 1 + self.fluidity;
+        let mut neighbors = Vec::with_capacity(base_capacity);
+        
+        neighbors.push(vec![IVec2::Y, IVec2::new(1, 1), IVec2::new(-1, 1)]);
 
         for i in 0..self.fluidity {
             neighbors.push(vec![
