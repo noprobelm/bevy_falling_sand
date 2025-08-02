@@ -9,6 +9,7 @@ readme = "README.md"
 description = "Falling Sand simulation plugin for Bevy"
 keywords = ["bevy", "falling-sand", "simulation", "particles"]
 exclude = [
+  "assets",
   "examples",
   "docs",
   ".github",
