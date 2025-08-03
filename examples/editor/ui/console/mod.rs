@@ -28,63 +28,67 @@ impl Console {
 
         let available_height = ui.available_height();
 
-        let _frame_response = egui::Frame::new()
-            .fill(egui::Color32::from_rgb(46, 46, 46))
-            .corner_radius(4.0)
-            .inner_margin(egui::Margin::same(8))
-            .show(ui, |ui| {
-                let console_is_hovered = ui.rect_contains_pointer(ui.max_rect());
+        let frame = if console_state.expanded {
+            egui::Frame::new()
+                .fill(egui::Color32::from_rgb(46, 46, 46))
+                .corner_radius(4.0)
+                .inner_margin(egui::Margin::same(8))
+        } else {
+            egui::Frame::NONE
+        };
 
+        let _frame_response = frame.show(ui, |ui| {
+            let console_is_hovered = ui.rect_contains_pointer(ui.max_rect());
+
+            if console_state.expanded {
                 ui.vertical(|ui| {
-                    if console_state.expanded {
-                        let resize_response = ui.allocate_response(
-                            egui::Vec2::new(ui.available_width(), 8.0),
-                            egui::Sense::drag(),
-                        );
+                    let resize_response = ui.allocate_response(
+                        egui::Vec2::new(ui.available_width(), 8.0),
+                        egui::Sense::drag(),
+                    );
 
-                        if resize_response.dragged() {
-                            let drag_delta = resize_response.drag_delta().y;
-                            let max_height = available_height * 0.7;
-                            console_state.height =
-                                (console_state.height - drag_delta).clamp(80.0, max_height);
-                        }
-
-                        if resize_response.hovered() {
-                            ui.ctx().set_cursor_icon(egui::CursorIcon::ResizeVertical);
-                        }
-
-                        let handle_rect = resize_response.rect;
-                        let handle_center = handle_rect.center();
-                        ui.painter().hline(
-                            handle_center.x - 20.0..=handle_center.x + 20.0,
-                            handle_center.y - 1.0,
-                            egui::Stroke::new(1.0, egui::Color32::from_rgb(100, 100, 100)),
-                        );
-                        ui.painter().hline(
-                            handle_center.x - 20.0..=handle_center.x + 20.0,
-                            handle_center.y + 1.0,
-                            egui::Stroke::new(1.0, egui::Color32::from_rgb(100, 100, 100)),
-                        );
-
-                        let text_height = available_height - 50.0;
-
-                        egui::ScrollArea::vertical()
-                            .auto_shrink([false, false])
-                            .max_height(text_height)
-                            .stick_to_bottom(true)
-                            .show(ui, |ui| {
-                                for message in &console_state.messages {
-                                    let color = if message.starts_with("error:") {
-                                        egui::Color32::from_rgb(255, 100, 100)
-                                    } else {
-                                        egui::Color32::from_rgb(200, 200, 200)
-                                    };
-                                    ui.label(egui::RichText::new(message).monospace().color(color));
-                                }
-                            });
-
-                        ui.separator();
+                    if resize_response.dragged() {
+                        let drag_delta = resize_response.drag_delta().y;
+                        let max_height = available_height * 0.7;
+                        console_state.height =
+                            (console_state.height - drag_delta).clamp(80.0, max_height);
                     }
+
+                    if resize_response.hovered() {
+                        ui.ctx().set_cursor_icon(egui::CursorIcon::ResizeVertical);
+                    }
+
+                    let handle_rect = resize_response.rect;
+                    let handle_center = handle_rect.center();
+                    ui.painter().hline(
+                        handle_center.x - 20.0..=handle_center.x + 20.0,
+                        handle_center.y - 1.0,
+                        egui::Stroke::new(1.0, egui::Color32::from_rgb(100, 100, 100)),
+                    );
+                    ui.painter().hline(
+                        handle_center.x - 20.0..=handle_center.x + 20.0,
+                        handle_center.y + 1.0,
+                        egui::Stroke::new(1.0, egui::Color32::from_rgb(100, 100, 100)),
+                    );
+
+                    let text_height = available_height - 50.0;
+
+                    egui::ScrollArea::vertical()
+                        .auto_shrink([false, false])
+                        .max_height(text_height)
+                        .stick_to_bottom(true)
+                        .show(ui, |ui| {
+                            for message in &console_state.messages {
+                                let color = if message.starts_with("error:") {
+                                    egui::Color32::from_rgb(255, 100, 100)
+                                } else {
+                                    egui::Color32::from_rgb(200, 200, 200)
+                                };
+                                ui.label(egui::RichText::new(message).monospace().color(color));
+                            }
+                        });
+
+                    ui.separator();
 
                     ui.horizontal(|ui| {
                         ui.label(
@@ -101,11 +105,10 @@ impl Console {
 
                         let text_edit_id = egui::Id::new("console_input");
 
-                        // Filter out backtick characters from input events
                         ui.input_mut(|i| {
-                            i.events.retain(|event| {
-                                !matches!(event, egui::Event::Text(text) if text.contains('`'))
-                            });
+                            i.events.retain(
+                            |event| !matches!(event, egui::Event::Text(text) if text.contains('`')),
+                        );
                         });
 
                         let response = ui.add(
@@ -268,7 +271,46 @@ impl Console {
                         }
                     });
                 });
-            });
+            } else {
+                ui.horizontal(|ui| {
+                    ui.label(
+                        egui::RichText::new(">")
+                            .monospace()
+                            .color(egui::Color32::from_rgb(100, 200, 100)),
+                    );
+
+                    let text_edit_id = egui::Id::new("console_input_collapsed");
+
+                    ui.input_mut(|i| {
+                        i.events.retain(
+                            |event| !matches!(event, egui::Event::Text(text) if text.contains('`')),
+                        );
+                    });
+
+                    let response = ui.add(
+                        egui::TextEdit::singleline(&mut console_state.input)
+                            .font(egui::TextStyle::Monospace)
+                            .desired_width(ui.available_width())
+                            .lock_focus(true)
+                            .id(text_edit_id),
+                    );
+
+                    if response.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
+                        if !console_state.input.trim().is_empty() {
+                            let command = console_state.input.clone();
+                            console_state.input.clear();
+                            console_state.execute_command(command, config, command_writer);
+                            console_state.expanded = true;
+                        }
+                        response.request_focus();
+                    }
+
+                    if console_is_hovered && !response.has_focus() {
+                        response.request_focus();
+                    }
+                });
+            }
+        });
     }
 }
 

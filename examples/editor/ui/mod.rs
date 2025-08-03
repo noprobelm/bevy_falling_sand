@@ -205,13 +205,25 @@ fn render_ui_panels(
     let console_height = if console_state.expanded {
         console_state.height.min(screen_height * 0.5).max(80.0)
     } else {
-        (screen_height * 0.04).max(30.0).min(50.0)
+        25.0
+    };
+
+    let console_frame = if console_state.expanded {
+        egui::Frame::NONE.fill(egui::Color32::from_rgb(46, 46, 46))
+    } else {
+        egui::Frame::NONE
     };
 
     let _console_response = egui::TopBottomPanel::bottom("Console panel")
         .exact_height(console_height)
-        .frame(egui::Frame::NONE)
+        .frame(console_frame)
         .show(ctx, |ui| {
+            if !console_state.expanded {
+                ui.spacing_mut().item_spacing = egui::Vec2::ZERO;
+                ui.spacing_mut().button_padding = egui::Vec2::ZERO;
+                ui.spacing_mut().menu_margin = egui::Margin::ZERO;
+            }
+
             Console.render(
                 ui,
                 &mut console_state,
