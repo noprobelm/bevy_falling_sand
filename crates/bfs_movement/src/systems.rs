@@ -1,4 +1,4 @@
-use crate::{Density, Momentum, Moved, Movement, MovementRng, Velocity};
+use crate::{Density, Momentum, Movement, MovementRng, Velocity};
 use std::mem;
 
 use bevy::platform::collections::HashSet;
@@ -11,9 +11,15 @@ type ObstructedDirections = [bool; 9];
 fn get_direction_index(dir: IVec2) -> usize {
     let signum = dir.signum();
     match (signum.x, signum.y) {
-        (-1, -1) => 0, (0, -1) => 1, (1, -1) => 2,
-        (-1,  0) => 3, (0,  0) => 4, (1,  0) => 5,
-        (-1,  1) => 6, (0,  1) => 7, (1,  1) => 8,
+        (-1, -1) => 0,
+        (0, -1) => 1,
+        (1, -1) => 2,
+        (-1, 0) => 3,
+        (0, 0) => 4,
+        (1, 0) => 5,
+        (-1, 1) => 6,
+        (0, 1) => 7,
+        (1, 1) => 8,
         _ => 4,
     }
 }
@@ -65,7 +71,6 @@ type ParticleMovementQuery<'a> = (
     Option<&'a mut Momentum>,
     &'a Density,
     &'a mut Movement,
-    &'a mut Moved,
 );
 
 #[allow(unused_mut, clippy::too_many_lines)]
@@ -107,11 +112,9 @@ fn handle_movement_by_chunks(
                             mut momentum,
                             density,
                             mut movement_priority,
-                            mut particle_moved,
                         )) = particle_query.get_unchecked(*entity)
                         {
                             if velocity.current() == 0 {
-                                particle_moved.0 = false;
                                 continue;
                             }
 
@@ -130,7 +133,8 @@ fn handle_movement_by_chunks(
                                         continue;
                                     }
 
-                                    let neighbor_entity = (*map_ptr).get(&neighbor_position).copied();
+                                    let neighbor_entity =
+                                        (*map_ptr).get(&neighbor_position).copied();
 
                                     match neighbor_entity {
                                         Some(neighbor_entity) => {
@@ -143,7 +147,6 @@ fn handle_movement_by_chunks(
                                                 _,
                                                 _,
                                                 neighbor_density,
-                                                _,
                                                 _,
                                             )) = particle_query.get_unchecked(neighbor_entity)
                                             {
@@ -184,8 +187,10 @@ fn handle_movement_by_chunks(
                                                 .is_ok()
                                             {
                                                 position.0 = neighbor_position;
-                                                transform.translation.x = neighbor_position.x as f32;
-                                                transform.translation.y = neighbor_position.y as f32;
+                                                transform.translation.x =
+                                                    neighbor_position.x as f32;
+                                                transform.translation.y =
+                                                    neighbor_position.y as f32;
                                                 if let Some(ref mut m) = momentum {
                                                     m.0 = *relative_position;
                                                 }
@@ -201,7 +206,6 @@ fn handle_movement_by_chunks(
                                 if !moved {
                                     break 'velocity_loop;
                                 }
-                                particle_moved.0 = moved;
                             }
 
                             if moved {
@@ -212,7 +216,6 @@ fn handle_movement_by_chunks(
                                 }
                                 velocity.decrement();
                             }
-                            particle_moved.0 = moved;
                         }
                     }
                 }
@@ -241,10 +244,8 @@ fn handle_movement_by_particles(
                 mut momentum,
                 density,
                 mut movement_priority,
-                mut particle_moved,
             )| {
                 if velocity.current() == 0 {
-                    particle_moved.0 = false;
                     return;
                 }
 
@@ -282,7 +283,6 @@ fn handle_movement_by_particles(
                                     _,
                                     _,
                                     neighbor_density,
-                                    _,
                                     _,
                                 )) = particle_query.get_unchecked(*neighbor_entity)
                                 {
@@ -348,7 +348,6 @@ fn handle_movement_by_particles(
                     }
                     velocity.decrement();
                 }
-                particle_moved.0 = moved;
             },
         );
     }

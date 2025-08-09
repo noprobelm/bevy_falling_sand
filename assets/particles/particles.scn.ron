@@ -42,7 +42,6 @@
           name: "Rock Wall",
         ),
         "bfs_movement::material::Wall": (),
-        "bfs_movement::particle_definitions::Moved": (false),
       },
     ),
     4294967328: (
@@ -105,7 +104,6 @@
         ),
         "bfs_movement::particle_definitions::Density": (850),
         "bfs_movement::particle_definitions::Momentum": ((0, 0)),
-        "bfs_movement::particle_definitions::Moved": (true),
         "bfs_movement::particle_definitions::Movement": (
           neighbor_groups: [
             (
@@ -162,7 +160,6 @@
           name: "Ice Wall",
         ),
         "bfs_movement::material::Wall": (),
-        "bfs_movement::particle_definitions::Moved": (false),
         "bfs_reactions::particle_definitions::Burns": (
           duration: (
             secs: 2,
@@ -208,7 +205,6 @@
           name: "Wood Wall",
         ),
         "bfs_movement::material::Wall": (),
-        "bfs_movement::particle_definitions::Moved": (false),
         "bfs_reactions::particle_definitions::Burns": (
           duration: (
             secs: 10,
@@ -302,7 +298,6 @@
         ),
         "bfs_movement::particle_definitions::Density": (800),
         "bfs_movement::particle_definitions::Momentum": ((0, 0)),
-        "bfs_movement::particle_definitions::Moved": (true),
         "bfs_movement::particle_definitions::Movement": (
           neighbor_groups: [
             (
@@ -387,7 +382,6 @@
         ),
         "bfs_movement::particle_definitions::Density": (850),
         "bfs_movement::particle_definitions::Momentum": ((0, 0)),
-        "bfs_movement::particle_definitions::Moved": (true),
         "bfs_movement::particle_definitions::Movement": (
           neighbor_groups: [
             (
@@ -486,7 +480,6 @@
           name: "Grass Wall",
         ),
         "bfs_movement::material::Wall": (),
-        "bfs_movement::particle_definitions::Moved": (false),
         "bfs_reactions::particle_definitions::Burns": (
           duration: (
             secs: 1,
@@ -602,7 +595,6 @@
         "bfs_movement::material::MovableSolid": (),
         "bfs_movement::particle_definitions::Density": (1250),
         "bfs_movement::particle_definitions::Momentum": ((0, 0)),
-        "bfs_movement::particle_definitions::Moved": (true),
         "bfs_movement::particle_definitions::Movement": (
           neighbor_groups: [
             (
@@ -651,7 +643,6 @@
         ),
         "bfs_movement::particle_definitions::Density": (730),
         "bfs_movement::particle_definitions::Momentum": ((0, 0)),
-        "bfs_movement::particle_definitions::Moved": (true),
         "bfs_movement::particle_definitions::Movement": (
           neighbor_groups: [
             (
@@ -796,7 +787,6 @@
           fluidity: 1,
         ),
         "bfs_movement::particle_definitions::Density": (275),
-        "bfs_movement::particle_definitions::Moved": (true),
         "bfs_movement::particle_definitions::Movement": (
           neighbor_groups: [
             (
@@ -849,7 +839,6 @@
           name: "Dirt Wall",
         ),
         "bfs_movement::material::Wall": (),
-        "bfs_movement::particle_definitions::Moved": (false),
       },
     ),
     4294967338: (
@@ -883,7 +872,6 @@
         "bfs_movement::material::MovableSolid": (),
         "bfs_movement::particle_definitions::Density": (1250),
         "bfs_movement::particle_definitions::Momentum": ((0, 0)),
-        "bfs_movement::particle_definitions::Moved": (true),
         "bfs_movement::particle_definitions::Movement": (
           neighbor_groups: [
             (
@@ -952,7 +940,6 @@
           name: "My Custom Wall Particle",
         ),
         "bfs_movement::material::Wall": (),
-        "bfs_movement::particle_definitions::Moved": (false),
       },
     ),
     4294967340: (
@@ -990,7 +977,6 @@
           fluidity: 1,
         ),
         "bfs_movement::particle_definitions::Density": (200),
-        "bfs_movement::particle_definitions::Moved": (true),
         "bfs_movement::particle_definitions::Movement": (
           neighbor_groups: [
             (
@@ -1104,7 +1090,6 @@
         "bfs_movement::material::MovableSolid": (),
         "bfs_movement::particle_definitions::Density": (1250),
         "bfs_movement::particle_definitions::Momentum": ((0, 0)),
-        "bfs_movement::particle_definitions::Moved": (true),
         "bfs_movement::particle_definitions::Movement": (
           neighbor_groups: [
             (
@@ -1173,7 +1158,6 @@
           fluidity: 1,
         ),
         "bfs_movement::particle_definitions::Density": (450),
-        "bfs_movement::particle_definitions::Moved": (true),
         "bfs_movement::particle_definitions::Movement": (
           neighbor_groups: [
             (
@@ -1252,7 +1236,6 @@
         ),
         "bfs_movement::material::Solid": (),
         "bfs_movement::particle_definitions::Density": (1250),
-        "bfs_movement::particle_definitions::Moved": (true),
         "bfs_movement::particle_definitions::Movement": (
           neighbor_groups: [
             (
@@ -1295,7 +1278,6 @@
         ),
         "bfs_movement::particle_definitions::Density": (750),
         "bfs_movement::particle_definitions::Momentum": ((0, 0)),
-        "bfs_movement::particle_definitions::Moved": (true),
         "bfs_movement::particle_definitions::Movement": (
           neighbor_groups: [
             (
@@ -1389,7 +1371,6 @@
         ),
         "bfs_movement::particle_definitions::Density": (850),
         "bfs_movement::particle_definitions::Momentum": ((0, 0)),
-        "bfs_movement::particle_definitions::Moved": (true),
         "bfs_movement::particle_definitions::Movement": (
           neighbor_groups: [
             (
@@ -1458,7 +1439,6 @@
           fluidity: 3,
         ),
         "bfs_movement::particle_definitions::Density": (250),
-        "bfs_movement::particle_definitions::Moved": (true),
         "bfs_movement::particle_definitions::Movement": (
           neighbor_groups: [
             (
@@ -1545,7 +1525,6 @@
         "bfs_movement::material::MovableSolid": (),
         "bfs_movement::particle_definitions::Density": (1250),
         "bfs_movement::particle_definitions::Momentum": ((0, 0)),
-        "bfs_movement::particle_definitions::Moved": (true),
         "bfs_movement::particle_definitions::Movement": (
           neighbor_groups: [
             (
@@ -1602,7 +1581,6 @@
           name: "Dense Rock Wall",
         ),
         "bfs_movement::material::Wall": (),
-        "bfs_movement::particle_definitions::Moved": (false),
       },
     ),
   },

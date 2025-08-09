@@ -15,8 +15,7 @@ pub(super) struct ParticleDefinitionsPlugin;
 
 impl Plugin for ParticleDefinitionsPlugin {
     fn build(&self, app: &mut App) {
-        app.register_type::<Moved>()
-            .register_type::<MovementRng>()
+        app.register_type::<MovementRng>()
             .register_type::<Density>()
             .register_type::<Velocity>()
             .register_type::<Momentum>()
@@ -35,24 +34,6 @@ impl_particle_rng!(MovementRng, RngComponent);
 #[derive(Clone, PartialEq, Debug, Default, Component, Reflect)]
 #[reflect(Component)]
 pub struct MovementRng(pub RngComponent);
-
-/// Marker component to indicate that a particle has been moved.
-#[derive(
-    Copy,
-    Clone,
-    Hash,
-    Debug,
-    Default,
-    Eq,
-    PartialEq,
-    PartialOrd,
-    Component,
-    Reflect,
-    Serialize,
-    Deserialize,
-)]
-#[reflect(Component)]
-pub struct Moved(pub bool);
 
 /// Stores the density of a particle
 #[derive(
@@ -491,23 +472,19 @@ fn handle_particle_registration(
                     }
                     if let Some(liquid) = liquid {
                         commands.entity(*entity).insert(liquid.clone());
-                        commands.entity(*entity).insert(Moved(true));
                         commands
                             .entity(*entity)
                             .insert(liquid.to_movement_priority());
                     } else if let Some(gas) = gas {
                         commands.entity(*entity).insert(gas.clone());
-                        commands.entity(*entity).insert(Moved(true));
                         commands.entity(*entity).insert(gas.to_movement_priority());
                     } else if let Some(movable_solid) = movable_solid {
                         commands.entity(*entity).insert(movable_solid.clone());
-                        commands.entity(*entity).insert(Moved(true));
                         commands
                             .entity(*entity)
                             .insert(movable_solid.to_movement_priority());
                     } else if let Some(solid) = solid {
                         commands.entity(*entity).insert(solid.clone());
-                        commands.entity(*entity).insert(Moved(true));
                         commands
                             .entity(*entity)
                             .insert(solid.to_movement_priority());
@@ -517,7 +494,6 @@ fn handle_particle_registration(
                         commands.entity(*entity).remove::<Movement>();
                     }
                 }
-                commands.entity(*entity).insert(Moved(true));
             }
         });
     });

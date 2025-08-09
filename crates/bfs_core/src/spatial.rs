@@ -504,9 +504,19 @@ impl Chunk {
         self.dirty_rect
     }
 
-    /// Iterate through all entities in the chunk.
+    /// Iterate through all positions and entities in the chunk.
     pub fn iter(&self) -> impl Iterator<Item = (&IVec2, &Entity)> {
         self.map.iter()
+    }
+
+    /// Iterate through all entities in the chunk.
+    pub fn entities(&self) -> impl Iterator<Item = &Entity> {
+        self.map.values()
+    }
+
+    /// Iterate through all positions in the chunk.
+    pub fn positions(&self) -> impl Iterator<Item = &IVec2> {
+        self.map.keys()
     }
 }
 

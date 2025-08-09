@@ -8,8 +8,6 @@ use bevy::{
 use bfs_core::{ClearParticleTypeChildrenEvent, Particle, ParticleRegistrationSet, ParticleType};
 use serde::{Deserialize, Serialize};
 
-use crate::Moved;
-
 use super::Movement;
 
 pub(super) struct MaterialPlugin;
@@ -81,7 +79,6 @@ impl Component for Wall {
                 world.commands().entity(context.entity).remove::<Gas>();
             }
             world.commands().entity(context.entity).remove::<Movement>();
-            world.commands().entity(context.entity).insert(Moved(false));
         });
     }
 }
@@ -129,7 +126,6 @@ impl Component for Solid {
             if world.get::<Gas>(context.entity).is_some() {
                 world.commands().entity(context.entity).remove::<Gas>();
             }
-            world.commands().entity(context.entity).insert(Moved(true));
         });
     }
 }
@@ -177,7 +173,6 @@ impl Component for MovableSolid {
             if world.get::<Gas>(context.entity).is_some() {
                 world.commands().entity(context.entity).remove::<Gas>();
             }
-            world.commands().entity(context.entity).insert(Moved(true));
         });
     }
 }
@@ -208,7 +203,7 @@ impl Material for Liquid {
     fn to_movement_priority(&self) -> Movement {
         let base_capacity = 3 + self.fluidity;
         let mut neighbors = Vec::with_capacity(base_capacity);
-        
+
         neighbors.push(vec![IVec2::NEG_Y]);
         neighbors.push(vec![IVec2::NEG_ONE, IVec2::new(1, -1)]);
         neighbors.push(vec![IVec2::X, IVec2::NEG_X]);
@@ -246,7 +241,6 @@ impl Component for Liquid {
             if world.get::<Gas>(context.entity).is_some() {
                 world.commands().entity(context.entity).remove::<Gas>();
             }
-            world.commands().entity(context.entity).insert(Moved(true));
         });
     }
 }
@@ -273,7 +267,7 @@ impl Material for Gas {
     fn to_movement_priority(&self) -> Movement {
         let base_capacity = 1 + self.fluidity;
         let mut neighbors = Vec::with_capacity(base_capacity);
-        
+
         neighbors.push(vec![IVec2::Y, IVec2::new(1, 1), IVec2::new(-1, 1)]);
 
         for i in 0..self.fluidity {
@@ -309,7 +303,6 @@ impl Component for Gas {
             if world.get::<Liquid>(context.entity).is_some() {
                 world.commands().entity(context.entity).remove::<Liquid>();
             }
-            world.commands().entity(context.entity).insert(Moved(true));
         });
     }
 }

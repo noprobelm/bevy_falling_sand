@@ -18,7 +18,7 @@ pub use avian2d::prelude::*;
 
 use bevy::prelude::*;
 use bfs_core::{ParticleMap, ParticlePosition, ParticleSimulationSet};
-use bfs_movement::{MovableSolid, Moved, Solid, Wall};
+use bfs_movement::{MovableSolid, Solid, Wall};
 
 /// Provides the constructs and systems necessary to integrate avian2d in the Falling Sand simulation.
 pub struct FallingSandPhysicsPlugin {
@@ -124,8 +124,8 @@ struct SolidTerrainColliders(bevy::platform::collections::HashMap<usize, Vec<Ent
 fn recalculate_and_spawn_static_bodies_for_dirty_chunks(
     mut commands: Commands,
     wall_query: Query<&ParticlePosition, With<Wall>>,
-    movable_solid_query: Query<(&ParticlePosition, &Moved), With<MovableSolid>>,
-    solid_query: Query<(&ParticlePosition, &Moved), With<Solid>>,
+    movable_solid_query: Query<&ParticlePosition, With<MovableSolid>>,
+    solid_query: Query<&ParticlePosition, With<Solid>>,
     mut wall_mesh_data: ResMut<WallMeshData>,
     mut movable_solid_mesh_data: ResMut<MovableSolidMeshData>,
     mut solid_mesh_data: ResMut<SolidMeshData>,
@@ -221,8 +221,8 @@ fn recalculate_and_spawn_static_bodies_for_dirty_chunks(
             let movable_solid_positions: Vec<IVec2> = chunk
                 .iter()
                 .filter_map(|(pos, entity)| {
-                    if let Ok((_, moved)) = movable_solid_query.get(*entity) {
-                        if !moved.0 { Some(*pos) } else { None }
+                    if movable_solid_query.get(*entity).is_ok() {
+                        Some(*pos)
                     } else {
                         None
                     }
@@ -262,8 +262,8 @@ fn recalculate_and_spawn_static_bodies_for_dirty_chunks(
             let solid_positions: Vec<IVec2> = chunk
                 .iter()
                 .filter_map(|(pos, entity)| {
-                    if let Ok((_, moved)) = solid_query.get(*entity) {
-                        if !moved.0 { Some(*pos) } else { None }
+                    if solid_query.get(*entity).is_ok() {
+                        Some(*pos)
                     } else {
                         None
                     }
