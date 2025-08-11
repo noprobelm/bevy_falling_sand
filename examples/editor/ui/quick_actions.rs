@@ -10,7 +10,10 @@ use bevy_falling_sand::prelude::*;
 
 use crate::{
     app_state::{AppState, CanvasState},
-    brush::{BrushModeState, BrushSize, BrushTypeState, MaxBrushSize},
+    brush::{
+        BrushModeSpawnState, BrushModeState, BrushSize, BrushTypeState, DynamicRigidBodiesSpawning,
+        DynamicRigidBodyParticle, MaxBrushSize,
+    },
     cursor::{update_cursor_position, CursorPosition},
     particles::SelectedParticle,
 };
@@ -150,10 +153,18 @@ fn spawn_particles(
     cursor_position: Res<CursorPosition>,
     selected: Res<SelectedParticle>,
     brush_type_state: Res<State<BrushTypeState>>,
+    brush_mode_spawn_state: Option<Res<State<BrushModeSpawnState>>>,
     brush_query: Query<&BrushSize>,
 ) -> Result {
     let brush_size = brush_query.single()?;
     let half_length = (cursor_position.current - cursor_position.previous).length() / 2.0;
+    let mut spawn_dynamic_rigid_body_particle = false;
+
+    if let Some(brush_mode_spawn_state) = brush_mode_spawn_state {
+        if brush_mode_spawn_state.get() == &BrushModeSpawnState::DynamicRigidBodies {
+            spawn_dynamic_rigid_body_particle = true;
+        }
+    }
 
     match brush_type_state.get() {
         BrushTypeState::Line => {
@@ -165,6 +176,7 @@ fn spawn_particles(
                     particle.0.clone(),
                     cursor_position.previous,
                     brush_size.0,
+                    spawn_dynamic_rigid_body_particle,
                 );
             } else {
                 spawn_line_interpolated(
@@ -173,6 +185,7 @@ fn spawn_particles(
                     cursor_position.previous,
                     cursor_position.previous_previous,
                     brush_size.0,
+                    spawn_dynamic_rigid_body_particle,
                 );
             }
 
@@ -182,6 +195,7 @@ fn spawn_particles(
                     particle.0.clone(),
                     cursor_position.current,
                     brush_size.0,
+                    spawn_dynamic_rigid_body_particle,
                 );
             } else {
                 spawn_line_interpolated(
@@ -190,6 +204,7 @@ fn spawn_particles(
                     cursor_position.previous,
                     cursor_position.current,
                     brush_size.0,
+                    spawn_dynamic_rigid_body_particle,
                 );
             }
         }
@@ -202,6 +217,7 @@ fn spawn_particles(
                     particle.0.clone(),
                     cursor_position.previous,
                     brush_size.0,
+                    spawn_dynamic_rigid_body_particle,
                 );
             } else {
                 spawn_capsule(
@@ -211,6 +227,7 @@ fn spawn_particles(
                     cursor_position.previous_previous,
                     brush_size.0,
                     half_length,
+                    spawn_dynamic_rigid_body_particle,
                 );
             }
 
@@ -220,6 +237,7 @@ fn spawn_particles(
                     particle.0.clone(),
                     cursor_position.current,
                     brush_size.0,
+                    spawn_dynamic_rigid_body_particle,
                 );
             } else {
                 spawn_capsule(
@@ -229,6 +247,7 @@ fn spawn_particles(
                     cursor_position.current,
                     brush_size.0,
                     half_length,
+                    spawn_dynamic_rigid_body_particle,
                 );
             }
         }
@@ -241,6 +260,7 @@ fn spawn_particles(
                     particle.0.clone(),
                     cursor_position.previous_previous,
                     cursor_position.previous,
+                    spawn_dynamic_rigid_body_particle,
                 );
             }
 
@@ -250,17 +270,31 @@ fn spawn_particles(
                     particle.0.clone(),
                     cursor_position.previous,
                     cursor_position.current,
+                    spawn_dynamic_rigid_body_particle,
                 );
             } else {
                 // Spawn particle at current cursor position when not moving
-                commands.spawn((
-                    particle.0.clone(),
-                    Transform::from_xyz(
-                        cursor_position.current.x.round(),
-                        cursor_position.current.y.round(),
-                        0.0,
-                    ),
-                ));
+                if spawn_dynamic_rigid_body_particle {
+                    commands.spawn((
+                        particle.0.clone(),
+                        Wall,
+                        Transform::from_xyz(
+                            cursor_position.current.x.round(),
+                            cursor_position.current.y.round(),
+                            0.0,
+                        ),
+                        DynamicRigidBodyParticle,
+                    ));
+                } else {
+                    commands.spawn((
+                        particle.0.clone(),
+                        Transform::from_xyz(
+                            cursor_position.current.x.round(),
+                            cursor_position.current.y.round(),
+                            0.0,
+                        ),
+                    ));
+                }
             }
         }
     }
@@ -399,7 +433,13 @@ fn points_within_capsule(capsule: &Capsule2d, start: Vec2, end: Vec2) -> Vec<IVe
     points_inside
 }
 
-fn spawn_circle(commands: &mut Commands, particle: Particle, center: Vec2, radius: usize) {
+fn spawn_circle(
+    commands: &mut Commands,
+    particle: Particle,
+    center: Vec2,
+    radius: usize,
+    dynamic_rigid_body_particle: bool,
+) {
     let mut points: HashSet<IVec2> = HashSet::default();
 
     let min_x = (center.x - radius as f32).floor() as i32;
@@ -416,12 +456,23 @@ fn spawn_circle(commands: &mut Commands, particle: Particle, center: Vec2, radiu
         }
     }
 
-    commands.spawn_batch(points.into_iter().map(move |point| {
-        (
-            particle.clone(),
-            Transform::from_xyz(point.x as f32, point.y as f32, 0.0),
-        )
-    }));
+    if dynamic_rigid_body_particle {
+        commands.spawn_batch(points.into_iter().map(move |point| {
+            (
+                particle.clone(),
+                Wall,
+                Transform::from_xyz(point.x as f32, point.y as f32, 0.0),
+                DynamicRigidBodyParticle,
+            )
+        }));
+    } else {
+        commands.spawn_batch(points.into_iter().map(move |point| {
+            (
+                particle.clone(),
+                Transform::from_xyz(point.x as f32, point.y as f32, 0.0),
+            )
+        }));
+    }
 }
 
 fn spawn_capsule(
@@ -431,6 +482,7 @@ fn spawn_capsule(
     end: Vec2,
     radius: usize,
     half_length: f32,
+    dynamic_rigid_body_particle: bool,
 ) {
     let capsule = Capsule2d {
         radius: radius as f32,
@@ -438,24 +490,52 @@ fn spawn_capsule(
     };
 
     let points = points_within_capsule(&capsule, start, end);
-    commands.spawn_batch(points.into_iter().map(move |point| {
-        (
-            particle.clone(),
-            Transform::from_xyz(point.x as f32, point.y as f32, 0.0),
-        )
-    }));
+    if dynamic_rigid_body_particle {
+        commands.spawn_batch(points.into_iter().map(move |point| {
+            (
+                particle.clone(),
+                Wall,
+                Transform::from_xyz(point.x as f32, point.y as f32, 0.0),
+                DynamicRigidBodyParticle,
+            )
+        }));
+    } else {
+        commands.spawn_batch(points.into_iter().map(move |point| {
+            (
+                particle.clone(),
+                Transform::from_xyz(point.x as f32, point.y as f32, 0.0),
+            )
+        }));
+    }
 }
 
-fn spawn_line(commands: &mut Commands, particle: Particle, center: Vec2, brush_size: usize) {
+fn spawn_line(
+    commands: &mut Commands,
+    particle: Particle,
+    center: Vec2,
+    brush_size: usize,
+    dynamic_rigid_body_particle: bool,
+) {
     let min_x = -(brush_size as i32) / 2;
     let max_x = (brush_size as f32 / 2.0) as i32;
 
-    commands.spawn_batch((min_x * 3..=max_x * 3).map(move |x| {
-        (
-            particle.clone(),
-            Transform::from_xyz((center.x + x as f32).round(), center.y.round(), 0.0),
-        )
-    }));
+    if dynamic_rigid_body_particle {
+        commands.spawn_batch((min_x * 3..=max_x * 3).map(move |x| {
+            (
+                particle.clone(),
+                Wall,
+                Transform::from_xyz((center.x + x as f32).round(), center.y.round(), 0.0),
+                DynamicRigidBodyParticle,
+            )
+        }));
+    } else {
+        commands.spawn_batch((min_x * 3..=max_x * 3).map(move |x| {
+            (
+                particle.clone(),
+                Transform::from_xyz((center.x + x as f32).round(), center.y.round(), 0.0),
+            )
+        }));
+    }
 }
 
 fn spawn_line_interpolated(
@@ -464,6 +544,7 @@ fn spawn_line_interpolated(
     start: Vec2,
     end: Vec2,
     brush_size: usize,
+    dynamic_rigid_body_particle: bool,
 ) {
     let mut points: HashSet<IVec2> = HashSet::default();
     let direction = (end - start).normalize();
@@ -482,15 +563,32 @@ fn spawn_line_interpolated(
         }
     }
 
-    commands.spawn_batch(points.into_iter().map(move |point| {
-        (
-            particle.clone(),
-            Transform::from_xyz(point.x as f32, point.y as f32, 0.0),
-        )
-    }));
+    if dynamic_rigid_body_particle {
+        commands.spawn_batch(points.into_iter().map(move |point| {
+            (
+                particle.clone(),
+                Wall,
+                Transform::from_xyz(point.x as f32, point.y as f32, 0.0),
+                DynamicRigidBodyParticle,
+            )
+        }));
+    } else {
+        commands.spawn_batch(points.into_iter().map(move |point| {
+            (
+                particle.clone(),
+                Transform::from_xyz(point.x as f32, point.y as f32, 0.0),
+            )
+        }));
+    }
 }
 
-fn spawn_cursor_interpolated(commands: &mut Commands, particle: Particle, start: Vec2, end: Vec2) {
+fn spawn_cursor_interpolated(
+    commands: &mut Commands,
+    particle: Particle,
+    start: Vec2,
+    end: Vec2,
+    dynamic_rigid_body_particle: bool,
+) {
     let mut points: HashSet<IVec2> = HashSet::default();
     let direction = (end - start).normalize();
     let length = (end - start).length();
@@ -506,12 +604,23 @@ fn spawn_cursor_interpolated(commands: &mut Commands, particle: Particle, start:
         ));
     }
 
-    commands.spawn_batch(points.into_iter().map(move |point| {
-        (
-            particle.clone(),
-            Transform::from_xyz(point.x as f32, point.y as f32, 0.0),
-        )
-    }));
+    if dynamic_rigid_body_particle {
+        commands.spawn_batch(points.into_iter().map(move |point| {
+            (
+                particle.clone(),
+                Wall,
+                Transform::from_xyz(point.x as f32, point.y as f32, 0.0),
+                DynamicRigidBodyParticle,
+            )
+        }));
+    } else {
+        commands.spawn_batch(points.into_iter().map(move |point| {
+            (
+                particle.clone(),
+                Transform::from_xyz(point.x as f32, point.y as f32, 0.0),
+            )
+        }));
+    }
 }
 
 fn despawn_circle(

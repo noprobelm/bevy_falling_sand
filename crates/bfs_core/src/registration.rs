@@ -312,6 +312,7 @@ fn handle_new_particles(
         let mut entities = vec![];
 
         for (particle_type, transform, entity) in particle_query.iter() {
+            println!("{:?}", particle_type);
             let coordinates = IVec2::new(
                 transform.translation.x as i32,
                 transform.translation.y as i32,
