@@ -11,7 +11,7 @@ use bevy_falling_sand::prelude::*;
 use crate::{
     app_state::{AppState, CanvasState},
     brush::{
-        BrushModeSpawnState, BrushModeState, BrushSize, BrushTypeState, DynamicRigidBodiesSpawning,
+        BrushModeSpawnState, BrushModeState, BrushSize, BrushTypeState,
         DynamicRigidBodyParticle, MaxBrushSize,
     },
     cursor::{update_cursor_position, CursorPosition},

@@ -1,8 +1,6 @@
 use crate::cursor::CursorPosition;
 use bevy::{
-    input::common_conditions::{input_just_released, input_pressed},
-    platform::collections::HashSet,
-    prelude::*,
+    input::common_conditions::input_just_released, platform::collections::HashSet, prelude::*,
 };
 use bevy_falling_sand::prelude::*;
 use std::collections::VecDeque;
@@ -17,7 +15,13 @@ impl Plugin for BrushPlugin {
             .init_state::<BrushModeState>()
             .add_sub_state::<BrushModeSpawnState>()
             .add_systems(Startup, setup)
-            .add_systems(Update, update_brush_gizmos)
+            .add_systems(
+                Update,
+                (
+                    update_brush_gizmos,
+                    //synchronize_particle_transform,
+                ),
+            )
             .add_systems(
                 Update,
                 spawn_dynamic_rigid_bodies
@@ -116,29 +120,33 @@ fn update_brush_gizmos(
 fn spawn_dynamic_rigid_bodies(
     mut commands: Commands,
     dynamic_rigid_body_particles_query: Query<
-        (Entity, &ParticlePosition),
+        (Entity, &ParticlePosition, &Particle),
         With<DynamicRigidBodyParticle>,
     >,
 ) {
-    let positions: Vec<(Entity, IVec2)> = dynamic_rigid_body_particles_query
+    let positions: Vec<(Entity, IVec2, String)> = dynamic_rigid_body_particles_query
         .iter()
-        .map(|(entity, pos)| (entity, pos.0))
+        .map(|(entity, pos, particle)| (entity, pos.0, particle.name.to_string()))
         .collect();
 
     if positions.is_empty() {
         return;
     }
-    
+
     // First, remove the DynamicRigidBodyParticle component from all entities
     // This prevents them from being processed again on the next mouse release
-    for (entity, _) in &positions {
-        commands.entity(*entity).remove::<DynamicRigidBodyParticle>();
+    for (entity, _, _) in &positions {
+        commands
+            .entity(*entity)
+            .remove::<DynamicRigidBodyParticle>();
     }
 
-    let mut unvisited: HashSet<IVec2> = positions.iter().map(|(_, pos)| *pos).collect();
+    // Note: particle type removed as we're using a fixed color for now
+
+    let mut unvisited: HashSet<IVec2> = positions.iter().map(|(_, pos, _)| *pos).collect();
     let position_to_data: bevy::platform::collections::HashMap<IVec2, Entity> = positions
         .into_iter()
-        .map(|(entity, pos)| (pos, (entity)))
+        .map(|(entity, pos, _)| (pos, (entity)))
         .collect();
 
     while let Some(&start) = unvisited.iter().next() {
@@ -195,17 +203,15 @@ fn spawn_dynamic_rigid_bodies(
         // Create a trimesh collider from the perimeter using triangulation
         if loop_vertices.len() >= 3 {
             use earcutr::earcut;
-            
+
             let vertices: Vec<Vec2> = loop_vertices;
 
             let center_of_mass =
                 vertices.iter().fold(Vec2::ZERO, |acc, v| acc + *v) / vertices.len() as f32;
 
             // Translate vertices to be relative to the center of mass
-            let relative_vertices: Vec<Vec2> = vertices
-                .iter()
-                .map(|v| *v - center_of_mass)
-                .collect();
+            let relative_vertices: Vec<Vec2> =
+                vertices.iter().map(|v| *v - center_of_mass).collect();
 
             // Flatten vertices for triangulation
             let flattened: Vec<f64> = relative_vertices
@@ -224,15 +230,40 @@ fn spawn_dynamic_rigid_bodies(
                     commands.entity(entity).despawn();
                 }
 
+                // Store ALL particle positions relative to center of mass for rendering
+                let all_particle_positions: Vec<Vec2> = group
+                    .iter()
+                    .map(|pos| pos.as_vec2() - center_of_mass)
+                    .collect();
+
                 // Create a trimesh collider with vertices relative to center of mass
-                commands.spawn((
-                    RigidBody::Dynamic,
-                    Collider::trimesh(relative_vertices, triangle_indices),
-                    Transform::from_xyz(center_of_mass.x, center_of_mass.y, 0.0),
-                    TransformInterpolation,
-                    LinearVelocity::default(),
-                    GlobalTransform::default(),
-                ));
+                // and spawn child entities for visual particles
+                let rigid_body_entity = commands
+                    .spawn((
+                        RigidBody::Dynamic,
+                        Collider::trimesh(relative_vertices, triangle_indices),
+                        Transform::from_xyz(center_of_mass.x, center_of_mass.y, 0.0),
+                        TransformInterpolation,
+                        LinearVelocity::default(),
+                        GlobalTransform::default(),
+                    ))
+                    .id();
+
+                // Spawn child entities for each particle position
+                // These will automatically transform with the parent rigid body
+                for particle_pos in all_particle_positions {
+                    commands
+                        .spawn((
+                            Transform::from_xyz(particle_pos.x, particle_pos.y, 0.0),
+                            Sprite {
+                                color: Color::srgba(0.5, 0.3, 0.2, 1.0), // Brown color for wall particles
+                                custom_size: Some(Vec2::ONE),
+                                ..Default::default()
+                            },
+                            Visibility::default(),
+                        ))
+                        .set_parent(rigid_body_entity);
+                }
             } else {
                 // Triangulation failed, just despawn particles
                 for entity in entities_to_despawn {
@@ -374,4 +405,18 @@ fn extract_perimeter_edges(grid: &Grid) -> Vec<[Vec2; 2]> {
     }
 
     edges
+}
+
+fn synchronize_particle_transform(
+    mut transform_query: Query<
+        (&mut Transform, &ParticlePosition),
+        (Changed<ParticlePosition>, With<Particle>),
+    >,
+) {
+    transform_query
+        .iter_mut()
+        .for_each(|(mut transform, position)| {
+            transform.translation.x = position.0.x as f32;
+            transform.translation.y = position.0.y as f32;
+        })
 }
