@@ -14,12 +14,20 @@ impl Plugin for PhysicsPlugin {
             spawn_dynamic_rigid_bodies
                 .run_if(in_state(BrushModeSpawnState::DynamicRigidBodies))
                 .run_if(input_just_released(MouseButton::Left)),
-        );
+        )
+        .add_observer(on_despawn_rigid_bodies);
     }
 }
 
 #[derive(Default, Copy, Clone, Hash, Eq, PartialEq, Ord, PartialOrd, Debug, Component)]
 pub struct DynamicRigidBodyParticle;
+
+#[derive(Event)]
+pub enum DespawnRigidBodies {
+    Dynamic,
+    Static,
+    All,
+}
 
 fn spawn_dynamic_rigid_bodies(
     mut commands: Commands,
@@ -164,6 +172,28 @@ fn spawn_dynamic_rigid_bodies(
                 commands.entity(entity).despawn();
             }
         }
+    }
+}
+
+pub fn on_despawn_rigid_bodies(
+    trigger: Trigger<DespawnRigidBodies>,
+    mut commands: Commands,
+    rigid_body_query: Query<(Entity, &RigidBody)>,
+) {
+    match trigger.event() {
+        DespawnRigidBodies::Dynamic => rigid_body_query.iter().for_each(|(entity, rigid_body)| {
+            if rigid_body == &RigidBody::Dynamic {
+                commands.entity(entity).despawn();
+            }
+        }),
+        DespawnRigidBodies::Static => rigid_body_query.iter().for_each(|(entity, rigid_body)| {
+            if rigid_body == &RigidBody::Static {
+                commands.entity(entity).despawn();
+            }
+        }),
+        DespawnRigidBodies::All => rigid_body_query.iter().for_each(|(entity, _)| {
+            commands.entity(entity).despawn();
+        }),
     }
 }
 

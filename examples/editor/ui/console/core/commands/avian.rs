@@ -1,14 +1,13 @@
 use bevy::prelude::*;
-use bfs_internal::prelude::RigidBody;
+
+use crate::physics::DespawnRigidBodies;
 
 use super::super::core::{ConsoleCommand, PrintConsoleLine};
 
 pub struct AvianCommandPlugin;
 
 impl Plugin for AvianCommandPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_observer(on_despawn_rigid_bodies);
-    }
+    fn build(&self, _app: &mut App) {}
 }
 
 #[derive(Default)]
@@ -121,34 +120,5 @@ impl ConsoleCommand for AvianDespawnAll {
             "Executing avian despawn all...".to_string(),
         ));
         commands.trigger(DespawnRigidBodies::All)
-    }
-}
-
-#[derive(Event)]
-pub enum DespawnRigidBodies {
-    Dynamic,
-    Static,
-    All,
-}
-
-fn on_despawn_rigid_bodies(
-    trigger: Trigger<DespawnRigidBodies>,
-    mut commands: Commands,
-    rigid_body_query: Query<(Entity, &RigidBody)>,
-) {
-    match trigger.event() {
-        DespawnRigidBodies::Dynamic => rigid_body_query.iter().for_each(|(entity, rigid_body)| {
-            if rigid_body == &RigidBody::Dynamic {
-                commands.entity(entity).despawn();
-            }
-        }),
-        DespawnRigidBodies::Static => rigid_body_query.iter().for_each(|(entity, rigid_body)| {
-            if rigid_body == &RigidBody::Static {
-                commands.entity(entity).despawn();
-            }
-        }),
-        DespawnRigidBodies::All => rigid_body_query.iter().for_each(|(entity, _)| {
-            commands.entity(entity).despawn();
-        }),
     }
 }
