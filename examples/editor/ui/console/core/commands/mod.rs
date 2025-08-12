@@ -7,6 +7,7 @@ pub mod exit;
 pub mod help;
 pub mod particles;
 pub mod physics;
+pub mod avian;
 
 use brush::BrushCommandPlugin;
 use camera::CameraCommandPlugin;
@@ -15,6 +16,7 @@ use exit::ExitCommandPlugin;
 use help::HelpCommandPlugin;
 use particles::ParticlesCommandPlugin;
 use physics::PhysicsCommandPlugin;
+use avian::AvianCommandPlugin;
 
 use crate::ui::console::core::commands;
 
@@ -33,6 +35,7 @@ impl Plugin for ConsoleCommandsPlugin {
                 CameraCommandPlugin,
                 PhysicsCommandPlugin,
                 BrushCommandPlugin,
+            AvianCommandPlugin,
             ));
     }
 }
@@ -42,7 +45,7 @@ fn init_command_registry(
     mut config: ResMut<ConsoleConfiguration>,
     mut cache: ResMut<ConsoleCache>,
 ) {
-    use commands::{brush::*, camera::*, clear::*, exit::*, help::*, particles::*, physics::*};
+        use commands::{brush::*, camera::*, clear::*, exit::*, help::*, particles::*, physics::*, avian::*};
 
     registry.register::<ClearCommand>();
     registry.register::<ExitCommand>();
@@ -51,6 +54,7 @@ fn init_command_registry(
     registry.register::<CameraCommand>();
     registry.register::<PhysicsCommand>();
     registry.register::<BrushCommand>();
+    registry.register::<AvianCommand>();
 
     config.register_command::<ClearCommand>();
     config.register_command::<ExitCommand>();
@@ -59,5 +63,6 @@ fn init_command_registry(
     config.register_command::<CameraCommand>();
     config.register_command::<PhysicsCommand>();
     config.register_command::<BrushCommand>();
+    config.register_command::<AvianCommand>();
     cache.rebuild_tries(&config);
 }
