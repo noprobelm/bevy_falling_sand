@@ -124,7 +124,6 @@ impl ConsoleCommand for AvianDespawnAll {
     }
 }
 
-/// Clear all dynamic particles from the world.
 #[derive(Event)]
 pub enum DespawnRigidBodies {
     Dynamic,
