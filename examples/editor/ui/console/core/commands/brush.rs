@@ -1,8 +1,6 @@
 use bevy::prelude::*;
 
-use crate::brush::{
-    Brush, BrushModeSpawnState, BrushModeState, BrushSize, BrushTypeState, MaxBrushSize,
-};
+use crate::brush::{Brush, BrushMode, BrushModeSpawnState, BrushSize, BrushType, MaxBrushSize};
 use crate::particles::SelectedParticle;
 use crate::ui::particle_search::ParticleSearchCache;
 use bevy_falling_sand::prelude::Particle;
@@ -103,7 +101,7 @@ impl ConsoleCommand for BrushSetTypeLineCommand {
         console_writer.write(PrintConsoleLine::new(
             "Setting brush type to 'line'".to_string(),
         ));
-        commands.trigger(SetBrushTypeEvent(BrushTypeState::Line));
+        commands.trigger(SetBrushTypeEvent(BrushType::Line));
     }
 }
 
@@ -128,7 +126,7 @@ impl ConsoleCommand for BrushSetTypeCircleCommand {
         console_writer.write(PrintConsoleLine::new(
             "Setting brush type to 'circle'".to_string(),
         ));
-        commands.trigger(SetBrushTypeEvent(BrushTypeState::Circle));
+        commands.trigger(SetBrushTypeEvent(BrushType::Circle));
     }
 }
 
@@ -153,7 +151,7 @@ impl ConsoleCommand for BrushSetTypeCursorCommand {
         console_writer.write(PrintConsoleLine::new(
             "Setting brush type to 'cursor'".to_string(),
         ));
-        commands.trigger(SetBrushTypeEvent(BrushTypeState::Cursor));
+        commands.trigger(SetBrushTypeEvent(BrushType::Cursor));
     }
 }
 
@@ -173,7 +171,8 @@ impl ConsoleCommand for BrushSetModeCommand {
         vec![
             Box::new(BrushSetModeSpawnCommand),
             Box::new(BrushSetModeDespawnCommand),
-            Box::new(BrushSetModeDynamicRigidBodiesCommand),
+            Box::new(BrushSetModeSpawnDynamicRigidBodiesCommand),
+            Box::new(BrushSetModeSpawnParticles),
         ]
     }
 }
@@ -199,7 +198,7 @@ impl ConsoleCommand for BrushSetModeSpawnCommand {
         console_writer.write(PrintConsoleLine::new(
             "Setting brush mode to 'spawn'".to_string(),
         ));
-        commands.trigger(BrushSetModeEvent(BrushModeState::Spawn));
+        commands.trigger(BrushSetModeEvent(BrushMode::Spawn));
     }
 }
 
@@ -224,20 +223,20 @@ impl ConsoleCommand for BrushSetModeDespawnCommand {
         console_writer.write(PrintConsoleLine::new(
             "Setting brush mode to 'despawn'".to_string(),
         ));
-        commands.trigger(BrushSetModeEvent(BrushModeState::Despawn));
+        commands.trigger(BrushSetModeEvent(BrushMode::Despawn));
     }
 }
 
 #[derive(Default)]
-pub struct BrushSetModeDynamicRigidBodiesCommand;
+pub struct BrushSetModeSpawnDynamicRigidBodiesCommand;
 
-impl ConsoleCommand for BrushSetModeDynamicRigidBodiesCommand {
+impl ConsoleCommand for BrushSetModeSpawnDynamicRigidBodiesCommand {
     fn name(&self) -> &'static str {
         "avian"
     }
 
     fn description(&self) -> &'static str {
-        "Set the brush mode to 'avian'"
+        "Set the brush spawn mode to 'avian'"
     }
 
     fn execute_action(
@@ -252,6 +251,31 @@ impl ConsoleCommand for BrushSetModeDynamicRigidBodiesCommand {
         commands.trigger(BrushSetSpawnModeEvent(
             BrushModeSpawnState::DynamicRigidBodies,
         ));
+    }
+}
+
+#[derive(Default)]
+pub struct BrushSetModeSpawnParticles;
+
+impl ConsoleCommand for BrushSetModeSpawnParticles {
+    fn name(&self) -> &'static str {
+        "particles"
+    }
+
+    fn description(&self) -> &'static str {
+        "Set the brush spawn mode to 'particles'"
+    }
+
+    fn execute_action(
+        &self,
+        _args: &[String],
+        console_writer: &mut EventWriter<PrintConsoleLine>,
+        commands: &mut Commands,
+    ) {
+        console_writer.write(PrintConsoleLine::new(
+            "Setting brush mode to 'particles'".to_string(),
+        ));
+        commands.trigger(BrushSetSpawnModeEvent(BrushModeSpawnState::Particles));
     }
 }
 
@@ -358,10 +382,10 @@ impl ConsoleCommand for BrushInfoCommand {
 }
 
 #[derive(Clone, Event, Hash, Debug, Eq, PartialEq, PartialOrd)]
-struct SetBrushTypeEvent(pub BrushTypeState);
+struct SetBrushTypeEvent(pub BrushType);
 
 #[derive(Clone, Event, Hash, Debug, Eq, PartialEq, PartialOrd)]
-struct BrushSetModeEvent(pub BrushModeState);
+struct BrushSetModeEvent(pub BrushMode);
 
 #[derive(Clone, Event, Hash, Debug, Eq, PartialEq, PartialOrd)]
 struct BrushSetSpawnModeEvent(pub BrushModeSpawnState);
@@ -377,24 +401,24 @@ struct BrushSetParticleEvent(pub String);
 
 fn on_update_brush_type(
     trigger: Trigger<SetBrushTypeEvent>,
-    mut brush_type_state_next: ResMut<NextState<BrushTypeState>>,
+    mut brush_type_state_next: ResMut<NextState<BrushType>>,
 ) {
     brush_type_state_next.set(trigger.event().0);
 }
 
 fn on_update_brush_mode(
     trigger: Trigger<BrushSetModeEvent>,
-    mut brush_mode_state_next: ResMut<NextState<BrushModeState>>,
+    mut brush_mode_state_next: ResMut<NextState<BrushMode>>,
 ) {
     brush_mode_state_next.set(trigger.event().0);
 }
 
 fn on_update_brush_spawn_mode(
     trigger: Trigger<BrushSetSpawnModeEvent>,
-    mut brush_mode_state_next: ResMut<NextState<BrushModeState>>,
-    mut brush_mode_spawn_state_next: Option<ResMut<NextState<BrushModeSpawnState>>>,
+    mut brush_mode_state_next: ResMut<NextState<BrushMode>>,
+    brush_mode_spawn_state_next: Option<ResMut<NextState<BrushModeSpawnState>>>,
 ) {
-    brush_mode_state_next.set(BrushModeState::Spawn);
+    brush_mode_state_next.set(BrushMode::Spawn);
     if let Some(mut brush_mode_spawn_state_next) = brush_mode_spawn_state_next {
         brush_mode_spawn_state_next.set(trigger.event().0);
     }
@@ -415,8 +439,8 @@ fn on_show_brush_info(
     _trigger: Trigger<ShowBrushInfoEvent>,
     brush_size_query: Query<&BrushSize, With<Brush>>,
     max_brush_size: Res<MaxBrushSize>,
-    brush_type_state: Res<State<BrushTypeState>>,
-    brush_mode_state: Res<State<BrushModeState>>,
+    brush_type_state: Res<State<BrushType>>,
+    brush_mode_state: Res<State<BrushMode>>,
     selected_particle: Res<SelectedParticle>,
     mut console_writer: EventWriter<PrintConsoleLine>,
 ) {

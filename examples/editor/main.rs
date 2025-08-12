@@ -3,16 +3,17 @@ mod brush;
 mod camera;
 mod cursor;
 mod particles;
+mod physics;
 mod scenes;
 mod ui;
 
 use app_state::StatesPlugin;
 use bevy_falling_sand::prelude::{DebugParticleCount, FallingSandDebugPlugin, FallingSandPlugin};
-use bfs_internal::prelude::PhysicsDebugPlugin;
 use brush::*;
 use camera::*;
 use cursor::*;
 use particles::*;
+use physics::*;
 use scenes::*;
 use ui::*;
 
@@ -29,7 +30,6 @@ fn main() {
                 }),
                 ..default()
             }),
-            PhysicsDebugPlugin::default(),
             FallingSandPlugin::default(),
             FallingSandDebugPlugin,
             ParticleSetupPlugin,
@@ -39,6 +39,7 @@ fn main() {
             StatesPlugin,
             ScenesPlugin,
             UiPlugin,
+            PhysicsPlugin,
         ))
         .insert_resource(ClearColor(Color::srgba(0.17, 0.16, 0.15, 1.0)))
         .init_resource::<DebugParticleCount>()

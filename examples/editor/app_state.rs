@@ -3,7 +3,7 @@ use crate::ui::ConsoleState;
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use bevy_egui::{EguiContextPass, EguiContexts};
-use bevy_falling_sand::prelude::{DebugDirtyRects, DebugParticleMap};
+use bevy_falling_sand::prelude::*;
 
 pub struct StatesPlugin;
 
@@ -151,4 +151,50 @@ pub fn show_cursor(mut primary_window: Query<&mut Window, With<PrimaryWindow>>) 
 fn remove_debug_overlays(mut commands: Commands) {
     commands.remove_resource::<DebugParticleMap>();
     commands.remove_resource::<DebugDirtyRects>();
+}
+
+pub fn toggle_resource<T: Resource + Default>(mut commands: Commands, resource: Option<Res<T>>) {
+    if resource.is_some() {
+        commands.remove_resource::<T>();
+    } else {
+        commands.init_resource::<T>();
+    }
+}
+
+pub fn toggle_particle_movement_logic(
+    particle_movement_state_current: Res<State<MovementSource>>,
+    mut particle_movement_state_next: ResMut<NextState<MovementSource>>,
+) {
+    match particle_movement_state_current.get() {
+        MovementSource::Chunks => {
+            particle_movement_state_next.set(MovementSource::Particles);
+        }
+        MovementSource::Particles => {
+            particle_movement_state_next.set(MovementSource::Chunks);
+        }
+    }
+}
+
+pub fn toggle_simulation_run(
+    mut commands: Commands,
+    simulation_pause: Option<Res<ParticleSimulationRun>>,
+    app_state: Res<State<AppState>>,
+    mut time: ResMut<Time<Physics>>,
+) {
+    if app_state.get() == &AppState::Canvas {
+        if simulation_pause.is_some() {
+            commands.remove_resource::<ParticleSimulationRun>();
+        } else {
+            commands.init_resource::<ParticleSimulationRun>();
+        }
+        if time.is_paused() {
+            time.unpause();
+        } else {
+            time.pause();
+        }
+    }
+}
+
+pub fn step_simulation(mut evw_simulation_step: EventWriter<SimulationStepEvent>) {
+    evw_simulation_step.write(SimulationStepEvent);
 }

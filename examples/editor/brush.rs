@@ -1,9 +1,11 @@
-use crate::cursor::CursorPosition;
-use bevy::{
-    input::common_conditions::input_just_released, platform::collections::HashSet, prelude::*,
+use crate::{
+    cursor::CursorPosition, particles::SelectedParticle, physics::DynamicRigidBodyParticle,
 };
-use bevy_falling_sand::prelude::*;
-use std::collections::VecDeque;
+use bevy::{input::mouse::MouseWheel, platform::collections::HashSet, prelude::*};
+use bfs_internal::{
+    core::{DespawnParticleEvent, Particle},
+    prelude::Wall,
+};
 
 pub(crate) struct BrushPlugin;
 
@@ -11,23 +13,11 @@ impl Plugin for BrushPlugin {
     fn build(&self, app: &mut App) {
         app.init_gizmo_group::<BrushGizmos>()
             .init_resource::<MaxBrushSize>()
-            .init_state::<BrushTypeState>()
-            .init_state::<BrushModeState>()
+            .init_state::<BrushType>()
+            .init_state::<BrushMode>()
             .add_sub_state::<BrushModeSpawnState>()
             .add_systems(Startup, setup)
-            .add_systems(
-                Update,
-                (
-                    update_brush_gizmos,
-                    //synchronize_particle_transform,
-                ),
-            )
-            .add_systems(
-                Update,
-                spawn_dynamic_rigid_bodies
-                    .run_if(in_state(BrushModeSpawnState::DynamicRigidBodies))
-                    .run_if(input_just_released(MouseButton::Left)),
-            );
+            .add_systems(Update, update_brush_gizmos);
     }
 }
 
@@ -56,14 +46,14 @@ impl Default for MaxBrushSize {
 pub struct DynamicRigidBodiesSpawning;
 
 #[derive(States, Reflect, Default, Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub enum BrushModeState {
+pub enum BrushMode {
     #[default]
     Spawn,
     Despawn,
 }
 
 #[derive(SubStates, Reflect, Default, Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
-#[source(BrushModeState = BrushModeState::Spawn)]
+#[source(BrushMode = BrushMode::Spawn)]
 pub enum BrushModeSpawnState {
     #[default]
     Particles,
@@ -71,15 +61,12 @@ pub enum BrushModeSpawnState {
 }
 
 #[derive(Default, Copy, Clone, Hash, Eq, PartialEq, Ord, PartialOrd, Debug, States)]
-pub enum BrushTypeState {
+pub enum BrushType {
     Line,
     #[default]
     Circle,
     Cursor,
 }
-
-#[derive(Default, Copy, Clone, Hash, Eq, PartialEq, Ord, PartialOrd, Debug, Component)]
-pub struct DynamicRigidBodyParticle;
 
 fn setup(mut commands: Commands) {
     commands.spawn((
@@ -92,13 +79,13 @@ fn setup(mut commands: Commands) {
 fn update_brush_gizmos(
     cursor_position: Res<CursorPosition>,
     mut brush_gizmos: Gizmos<BrushGizmos>,
-    brush_type: Res<State<BrushTypeState>>,
+    brush_type: Res<State<BrushType>>,
     brush_query: Query<(&BrushSize, &BrushColor), With<Brush>>,
 ) -> Result {
     let (size, color) = brush_query.single()?;
 
     match brush_type.get() {
-        BrushTypeState::Line => brush_gizmos.line_2d(
+        BrushType::Line => brush_gizmos.line_2d(
             Vec2::new(
                 cursor_position.current.x - size.0 as f32 * 3. / 2.,
                 cursor_position.current.y,
@@ -109,7 +96,7 @@ fn update_brush_gizmos(
             ),
             color.0,
         ),
-        BrushTypeState::Circle => {
+        BrushType::Circle => {
             brush_gizmos.circle_2d(cursor_position.current, size.0 as f32, color.0);
         }
         _ => brush_gizmos.cross_2d(cursor_position.current, 6., color.0),
@@ -117,306 +104,628 @@ fn update_brush_gizmos(
     Ok(())
 }
 
-fn spawn_dynamic_rigid_bodies(
+pub fn update_brush_spawn_state(
+    brush_spawn_state: Res<State<BrushMode>>,
+    mut brush_spawn_state_next: ResMut<NextState<BrushMode>>,
+) {
+    match brush_spawn_state.get() {
+        BrushMode::Spawn => brush_spawn_state_next.set(BrushMode::Despawn),
+        BrushMode::Despawn => brush_spawn_state_next.set(BrushMode::Spawn),
+    }
+}
+
+pub fn resize_brush(
+    mut evr_mouse_wheel: EventReader<MouseWheel>,
+    mut brush_size_query: Query<&mut BrushSize>,
+    max_brush_size: Res<MaxBrushSize>,
+) -> Result {
+    if !evr_mouse_wheel.is_empty() {
+        let mut brush_size = brush_size_query.single_mut()?;
+        evr_mouse_wheel.read().for_each(|ev| {
+            if ev.y < 0. && 1 <= brush_size.0.wrapping_sub(1) {
+                brush_size.0 -= 1;
+            } else if ev.y > 0. && brush_size.0.wrapping_add(1) <= max_brush_size.0 {
+                brush_size.0 += 1;
+            }
+        });
+    }
+    Ok(())
+}
+
+pub fn update_brush_type_state(
+    brush_type_state_current: Res<State<BrushType>>,
+    mut brush_type_state_next: ResMut<NextState<BrushType>>,
+) {
+    match brush_type_state_current.get() {
+        BrushType::Line => brush_type_state_next.set(BrushType::Circle),
+        BrushType::Circle => brush_type_state_next.set(BrushType::Cursor),
+        BrushType::Cursor => brush_type_state_next.set(BrushType::Line),
+    }
+}
+
+pub fn spawn_particles(
     mut commands: Commands,
-    dynamic_rigid_body_particles_query: Query<
-        (Entity, &ParticlePosition, &Particle),
-        With<DynamicRigidBodyParticle>,
-    >,
-) {
-    let positions: Vec<(Entity, IVec2, String)> = dynamic_rigid_body_particles_query
-        .iter()
-        .map(|(entity, pos, particle)| (entity, pos.0, particle.name.to_string()))
-        .collect();
+    cursor_position: Res<CursorPosition>,
+    selected: Res<SelectedParticle>,
+    brush_type_state: Res<State<BrushType>>,
+    brush_mode_spawn_state: Option<Res<State<BrushModeSpawnState>>>,
+    brush_query: Query<&BrushSize>,
+) -> Result {
+    let brush_size = brush_query.single()?;
+    let half_length = (cursor_position.current - cursor_position.previous).length() / 2.0;
+    let mut spawn_dynamic_rigid_body_particle = false;
 
-    if positions.is_empty() {
-        return;
+    if let Some(brush_mode_spawn_state) = brush_mode_spawn_state {
+        if brush_mode_spawn_state.get() == &BrushModeSpawnState::DynamicRigidBodies {
+            spawn_dynamic_rigid_body_particle = true;
+        }
     }
 
-    // First, remove the DynamicRigidBodyParticle component from all entities
-    // This prevents them from being processed again on the next mouse release
-    for (entity, _, _) in &positions {
-        commands
-            .entity(*entity)
-            .remove::<DynamicRigidBodyParticle>();
-    }
+    match brush_type_state.get() {
+        BrushType::Line => {
+            let particle = selected.clone();
 
-    // Note: particle type removed as we're using a fixed color for now
-
-    let mut unvisited: HashSet<IVec2> = positions.iter().map(|(_, pos, _)| *pos).collect();
-    let position_to_data: bevy::platform::collections::HashMap<IVec2, Entity> = positions
-        .into_iter()
-        .map(|(entity, pos, _)| (pos, (entity)))
-        .collect();
-
-    while let Some(&start) = unvisited.iter().next() {
-        let mut group = Vec::new();
-        let mut queue = VecDeque::new();
-        let mut entities_to_despawn = Vec::new();
-
-        queue.push_back(start);
-        unvisited.remove(&start);
-
-        while let Some(current) = queue.pop_front() {
-            group.push(current);
-
-            if let Some(entity) = position_to_data.get(&current) {
-                entities_to_despawn.push(*entity);
-            }
-
-            for dir in [IVec2::X, -IVec2::X, IVec2::Y, -IVec2::Y] {
-                let neighbor = current + dir;
-                if unvisited.remove(&neighbor) {
-                    queue.push_back(neighbor);
-                }
-            }
-        }
-
-        if group.len() < 3 {
-            for entity in entities_to_despawn {
-                commands.entity(entity).despawn();
-            }
-            continue;
-        }
-
-        let min = group
-            .iter()
-            .copied()
-            .fold(IVec2::splat(i32::MAX), IVec2::min);
-        let max = group
-            .iter()
-            .copied()
-            .fold(IVec2::splat(i32::MIN), IVec2::max);
-        let mut grid = Grid::new(min, max);
-        for position in &group {
-            grid.set(*position);
-        }
-
-        let loop_vertices = extract_ordered_perimeter_loop(&grid);
-        if loop_vertices.len() < 3 {
-            for entity in entities_to_despawn {
-                commands.entity(entity).despawn();
-            }
-            continue;
-        }
-
-        // Create a trimesh collider from the perimeter using triangulation
-        if loop_vertices.len() >= 3 {
-            use earcutr::earcut;
-
-            let vertices: Vec<Vec2> = loop_vertices;
-
-            let center_of_mass =
-                vertices.iter().fold(Vec2::ZERO, |acc, v| acc + *v) / vertices.len() as f32;
-
-            // Translate vertices to be relative to the center of mass
-            let relative_vertices: Vec<Vec2> =
-                vertices.iter().map(|v| *v - center_of_mass).collect();
-
-            // Flatten vertices for triangulation
-            let flattened: Vec<f64> = relative_vertices
-                .iter()
-                .flat_map(|v| vec![v.x as f64, v.y as f64])
-                .collect();
-
-            // Triangulate the polygon
-            if let Ok(indices_raw) = earcut(&flattened, &[], 2) {
-                let triangle_indices: Vec<[u32; 3]> = indices_raw
-                    .chunks(3)
-                    .map(|c| [c[0] as u32, c[1] as u32, c[2] as u32])
-                    .collect();
-
-                for entity in entities_to_despawn {
-                    commands.entity(entity).despawn();
-                }
-
-                // Store ALL particle positions relative to center of mass for rendering
-                let all_particle_positions: Vec<Vec2> = group
-                    .iter()
-                    .map(|pos| pos.as_vec2() - center_of_mass)
-                    .collect();
-
-                // Create a trimesh collider with vertices relative to center of mass
-                // and spawn child entities for visual particles
-                let rigid_body_entity = commands
-                    .spawn((
-                        RigidBody::Dynamic,
-                        Collider::trimesh(relative_vertices, triangle_indices),
-                        Transform::from_xyz(center_of_mass.x, center_of_mass.y, 0.0),
-                        TransformInterpolation,
-                        LinearVelocity::default(),
-                        GlobalTransform::default(),
-                    ))
-                    .id();
-
-                // Spawn child entities for each particle position
-                // These will automatically transform with the parent rigid body
-                for particle_pos in all_particle_positions {
-                    commands
-                        .spawn((
-                            Transform::from_xyz(particle_pos.x, particle_pos.y, 0.0),
-                            Sprite {
-                                color: Color::srgba(0.5, 0.3, 0.2, 1.0), // Brown color for wall particles
-                                custom_size: Some(Vec2::ONE),
-                                ..Default::default()
-                            },
-                            Visibility::default(),
-                        ))
-                        .set_parent(rigid_body_entity);
-                }
+            if (cursor_position.previous - cursor_position.previous_previous).length() < 1.0 {
+                spawn_line(
+                    &mut commands,
+                    particle.0.clone(),
+                    cursor_position.previous,
+                    brush_size.0,
+                    spawn_dynamic_rigid_body_particle,
+                );
             } else {
-                // Triangulation failed, just despawn particles
-                for entity in entities_to_despawn {
-                    commands.entity(entity).despawn();
+                spawn_line_interpolated(
+                    &mut commands,
+                    particle.0.clone(),
+                    cursor_position.previous,
+                    cursor_position.previous_previous,
+                    brush_size.0,
+                    spawn_dynamic_rigid_body_particle,
+                );
+            }
+
+            if (cursor_position.current - cursor_position.previous).length() < 1.0 {
+                spawn_line(
+                    &mut commands,
+                    particle.0.clone(),
+                    cursor_position.current,
+                    brush_size.0,
+                    spawn_dynamic_rigid_body_particle,
+                );
+            } else {
+                spawn_line_interpolated(
+                    &mut commands,
+                    particle.0.clone(),
+                    cursor_position.previous,
+                    cursor_position.current,
+                    brush_size.0,
+                    spawn_dynamic_rigid_body_particle,
+                );
+            }
+        }
+        BrushType::Circle => {
+            let particle = selected.clone();
+
+            if (cursor_position.previous - cursor_position.previous_previous).length() < 1.0 {
+                spawn_circle(
+                    &mut commands,
+                    particle.0.clone(),
+                    cursor_position.previous,
+                    brush_size.0,
+                    spawn_dynamic_rigid_body_particle,
+                );
+            } else {
+                spawn_capsule(
+                    &mut commands,
+                    particle.0.clone(),
+                    cursor_position.previous,
+                    cursor_position.previous_previous,
+                    brush_size.0,
+                    half_length,
+                    spawn_dynamic_rigid_body_particle,
+                );
+            }
+
+            if (cursor_position.current - cursor_position.previous).length() < 1.0 {
+                spawn_circle(
+                    &mut commands,
+                    particle.0.clone(),
+                    cursor_position.current,
+                    brush_size.0,
+                    spawn_dynamic_rigid_body_particle,
+                );
+            } else {
+                spawn_capsule(
+                    &mut commands,
+                    particle.0.clone(),
+                    cursor_position.previous,
+                    cursor_position.current,
+                    brush_size.0,
+                    half_length,
+                    spawn_dynamic_rigid_body_particle,
+                );
+            }
+        }
+        BrushType::Cursor => {
+            let particle = selected.clone();
+
+            if (cursor_position.previous - cursor_position.previous_previous).length() >= 1.0 {
+                spawn_cursor_interpolated(
+                    &mut commands,
+                    particle.0.clone(),
+                    cursor_position.previous_previous,
+                    cursor_position.previous,
+                    spawn_dynamic_rigid_body_particle,
+                );
+            }
+
+            if (cursor_position.current - cursor_position.previous).length() >= 1.0 {
+                spawn_cursor_interpolated(
+                    &mut commands,
+                    particle.0.clone(),
+                    cursor_position.previous,
+                    cursor_position.current,
+                    spawn_dynamic_rigid_body_particle,
+                );
+            } else {
+                if spawn_dynamic_rigid_body_particle {
+                    commands.spawn((
+                        particle.0.clone(),
+                        Wall,
+                        Transform::from_xyz(
+                            cursor_position.current.x.round(),
+                            cursor_position.current.y.round(),
+                            0.0,
+                        ),
+                        DynamicRigidBodyParticle,
+                    ));
+                } else {
+                    commands.spawn((
+                        particle.0.clone(),
+                        Transform::from_xyz(
+                            cursor_position.current.x.round(),
+                            cursor_position.current.y.round(),
+                            0.0,
+                        ),
+                    ));
                 }
             }
-        } else {
-            // Not enough vertices for a proper shape, just despawn particles
-            for entity in entities_to_despawn {
-                commands.entity(entity).despawn();
-            }
         }
     }
+
+    Ok(())
 }
 
-#[derive(Debug)]
-struct Grid {
-    min: IVec2,
-    size: IVec2,
-    data: Vec<bool>,
-}
+pub fn despawn_particles(
+    mut evw_remove_particle: EventWriter<DespawnParticleEvent>,
+    cursor_position: Res<CursorPosition>,
+    brush_type_state: Res<State<BrushType>>,
+    brush_size_query: Query<&BrushSize>,
+) -> Result {
+    let brush_size = brush_size_query.single()?.0;
+    let half_length = (cursor_position.current - cursor_position.previous).length() / 2.0;
 
-impl Grid {
-    fn new(min: IVec2, max: IVec2) -> Self {
-        let size = max - min + IVec2::ONE;
-        let data = vec![false; (size.x * size.y) as usize];
-        Self { min, size, data }
-    }
-
-    fn index(&self, position: IVec2) -> usize {
-        let local = position - self.min;
-        (local.y * self.size.x + local.x) as usize
-    }
-
-    fn set(&mut self, position: IVec2) {
-        let idx = self.index(position);
-        self.data[idx] = true;
-    }
-
-    fn get(&self, position: IVec2) -> bool {
-        if position.x < self.min.x
-            || position.y < self.min.y
-            || position.x > self.min.x + self.size.x - 1
-            || position.y > self.min.y + self.size.y - 1
-        {
-            return false;
-        }
-        let idx = self.index(position);
-        self.data[idx]
-    }
-
-    fn iter_occupied(&self) -> impl Iterator<Item = IVec2> + '_ {
-        self.data.iter().enumerate().filter_map(move |(i, &b)| {
-            if b {
-                let x = i as i32 % self.size.x;
-                let y = i as i32 / self.size.x;
-                Some(self.min + IVec2::new(x, y))
+    match brush_type_state.get() {
+        BrushType::Line => {
+            if (cursor_position.previous - cursor_position.previous_previous).length() < 1.0 {
+                despawn_line(
+                    &mut evw_remove_particle,
+                    cursor_position.previous,
+                    brush_size,
+                );
             } else {
-                None
+                despawn_line_interpolated(
+                    &mut evw_remove_particle,
+                    cursor_position.previous,
+                    cursor_position.previous_previous,
+                    brush_size,
+                );
             }
-        })
-    }
-}
 
-fn extract_ordered_perimeter_loop(grid: &Grid) -> Vec<Vec2> {
-    let edges = extract_perimeter_edges(grid);
-    if edges.is_empty() {
-        return Vec::new();
-    }
-
-    let mut ordered = Vec::new();
-    let mut remaining = edges;
-
-    let [current_start, mut current_end] = remaining.swap_remove(0);
-    ordered.push(current_start);
-    ordered.push(current_end);
-
-    while !remaining.is_empty() {
-        let mut found = false;
-        for i in 0..remaining.len() {
-            let [start, end] = remaining[i];
-            if start == current_end {
-                ordered.push(end);
-                current_end = end;
-                remaining.swap_remove(i);
-                found = true;
-                break;
-            } else if end == current_end {
-                ordered.push(start);
-                current_end = start;
-                remaining.swap_remove(i);
-                found = true;
-                break;
+            if (cursor_position.current - cursor_position.previous).length() < 1.0 {
+                despawn_line(
+                    &mut evw_remove_particle,
+                    cursor_position.current,
+                    brush_size,
+                );
+            } else {
+                despawn_line_interpolated(
+                    &mut evw_remove_particle,
+                    cursor_position.previous,
+                    cursor_position.current,
+                    brush_size,
+                );
             }
         }
+        BrushType::Circle => {
+            if (cursor_position.previous - cursor_position.previous_previous).length() < 1.0 {
+                despawn_circle(
+                    &mut evw_remove_particle,
+                    cursor_position.previous,
+                    brush_size,
+                );
+            } else {
+                despawn_capsule(
+                    &mut evw_remove_particle,
+                    cursor_position.previous,
+                    cursor_position.previous_previous,
+                    brush_size,
+                    half_length,
+                );
+            }
 
-        if !found {
-            warn!("Could not form closed perimeter loop; perimeter might be disjoint or broken.");
-            break;
+            if (cursor_position.current - cursor_position.previous).length() < 1.0 {
+                despawn_circle(
+                    &mut evw_remove_particle,
+                    cursor_position.current,
+                    brush_size,
+                );
+            } else {
+                despawn_capsule(
+                    &mut evw_remove_particle,
+                    cursor_position.previous,
+                    cursor_position.current,
+                    brush_size,
+                    half_length,
+                );
+            }
         }
+        BrushType::Cursor => {
+            if (cursor_position.previous - cursor_position.previous_previous).length() >= 1.0 {
+                despawn_cursor_interpolated(
+                    &mut evw_remove_particle,
+                    cursor_position.previous_previous,
+                    cursor_position.previous,
+                );
+            }
 
-        if ordered[0] == current_end {
-            break;
-        }
-    }
-
-    if ordered.len() > 1 && ordered[0] == *ordered.last().unwrap() {
-        ordered.pop();
-    }
-
-    ordered
-}
-
-fn extract_perimeter_edges(grid: &Grid) -> Vec<[Vec2; 2]> {
-    let mut edges = Vec::new();
-
-    let directions = [
-        (IVec2::new(1, 0), Vec2::new(0.5, 0.5), Vec2::new(0.5, -0.5)),
-        (
-            IVec2::new(-1, 0),
-            Vec2::new(-0.5, -0.5),
-            Vec2::new(-0.5, 0.5),
-        ),
-        (IVec2::new(0, 1), Vec2::new(-0.5, 0.5), Vec2::new(0.5, 0.5)),
-        (
-            IVec2::new(0, -1),
-            Vec2::new(0.5, -0.5),
-            Vec2::new(-0.5, -0.5),
-        ),
-    ];
-
-    for position in grid.iter_occupied() {
-        let base = position.as_vec2();
-        for (offset, v0, v1) in directions {
-            if !grid.get(position + offset) {
-                edges.push([base + v0, base + v1]);
+            if (cursor_position.current - cursor_position.previous).length() >= 1.0 {
+                despawn_cursor_interpolated(
+                    &mut evw_remove_particle,
+                    cursor_position.previous,
+                    cursor_position.current,
+                );
+            } else {
+                evw_remove_particle.write(DespawnParticleEvent::from_position(IVec2::new(
+                    cursor_position.current.x.round() as i32,
+                    cursor_position.current.y.round() as i32,
+                )));
             }
         }
     }
 
-    edges
+    Ok(())
 }
 
-fn synchronize_particle_transform(
-    mut transform_query: Query<
-        (&mut Transform, &ParticlePosition),
-        (Changed<ParticlePosition>, With<Particle>),
-    >,
+fn points_within_capsule(capsule: &Capsule2d, start: Vec2, end: Vec2) -> Vec<IVec2> {
+    let mut points_inside = Vec::new();
+
+    let min_x = (start.x.min(end.x) - capsule.radius).floor() as i32;
+    let max_x = (start.x.max(end.x) + capsule.radius).ceil() as i32;
+    let min_y = (start.y.min(end.y) - capsule.radius).floor() as i32;
+    let max_y = (start.y.max(end.y) + capsule.radius).ceil() as i32;
+    let capsule_direction = (end - start).normalize();
+
+    for x in min_x..=max_x {
+        for y in min_y..=max_y {
+            let point = Vec2::new(x as f32, y as f32);
+
+            let to_point = point - start;
+            let projected_length = to_point.dot(capsule_direction);
+            let clamped_length = projected_length.clamp(-capsule.half_length, capsule.half_length);
+
+            let closest_point = start + capsule_direction * clamped_length;
+            let distance_to_line = (point - closest_point).length();
+
+            if distance_to_line <= capsule.radius {
+                points_inside.push(IVec2::new(x, y));
+            }
+        }
+    }
+
+    points_inside
+}
+
+fn spawn_circle(
+    commands: &mut Commands,
+    particle: Particle,
+    center: Vec2,
+    radius: usize,
+    dynamic_rigid_body_particle: bool,
 ) {
-    transform_query
-        .iter_mut()
-        .for_each(|(mut transform, position)| {
-            transform.translation.x = position.0.x as f32;
-            transform.translation.y = position.0.y as f32;
-        })
+    let mut points: HashSet<IVec2> = HashSet::default();
+
+    let min_x = (center.x - radius as f32).floor() as i32;
+    let max_x = (center.x + radius as f32).ceil() as i32;
+    let min_y = (center.y - radius as f32).floor() as i32;
+    let max_y = (center.y + radius as f32).ceil() as i32;
+
+    for x in min_x..=max_x {
+        for y in min_y..=max_y {
+            let point = Vec2::new(x as f32, y as f32);
+            if (point - center).length() <= radius as f32 {
+                points.insert(point.as_ivec2());
+            }
+        }
+    }
+
+    if dynamic_rigid_body_particle {
+        commands.spawn_batch(points.into_iter().map(move |point| {
+            (
+                particle.clone(),
+                Wall,
+                Transform::from_xyz(point.x as f32, point.y as f32, 0.0),
+                DynamicRigidBodyParticle,
+            )
+        }));
+    } else {
+        commands.spawn_batch(points.into_iter().map(move |point| {
+            (
+                particle.clone(),
+                Transform::from_xyz(point.x as f32, point.y as f32, 0.0),
+            )
+        }));
+    }
+}
+
+fn spawn_capsule(
+    commands: &mut Commands,
+    particle: Particle,
+    start: Vec2,
+    end: Vec2,
+    radius: usize,
+    half_length: f32,
+    dynamic_rigid_body_particle: bool,
+) {
+    let capsule = Capsule2d {
+        radius: radius as f32,
+        half_length,
+    };
+
+    let points = points_within_capsule(&capsule, start, end);
+    if dynamic_rigid_body_particle {
+        commands.spawn_batch(points.into_iter().map(move |point| {
+            (
+                particle.clone(),
+                Wall,
+                Transform::from_xyz(point.x as f32, point.y as f32, 0.0),
+                DynamicRigidBodyParticle,
+            )
+        }));
+    } else {
+        commands.spawn_batch(points.into_iter().map(move |point| {
+            (
+                particle.clone(),
+                Transform::from_xyz(point.x as f32, point.y as f32, 0.0),
+            )
+        }));
+    }
+}
+
+fn spawn_line(
+    commands: &mut Commands,
+    particle: Particle,
+    center: Vec2,
+    brush_size: usize,
+    dynamic_rigid_body_particle: bool,
+) {
+    let min_x = -(brush_size as i32) / 2;
+    let max_x = (brush_size as f32 / 2.0) as i32;
+
+    if dynamic_rigid_body_particle {
+        commands.spawn_batch((min_x * 3..=max_x * 3).map(move |x| {
+            (
+                particle.clone(),
+                Wall,
+                Transform::from_xyz((center.x + x as f32).round(), center.y.round(), 0.0),
+                DynamicRigidBodyParticle,
+            )
+        }));
+    } else {
+        commands.spawn_batch((min_x * 3..=max_x * 3).map(move |x| {
+            (
+                particle.clone(),
+                Transform::from_xyz((center.x + x as f32).round(), center.y.round(), 0.0),
+            )
+        }));
+    }
+}
+
+fn spawn_line_interpolated(
+    commands: &mut Commands,
+    particle: Particle,
+    start: Vec2,
+    end: Vec2,
+    brush_size: usize,
+    dynamic_rigid_body_particle: bool,
+) {
+    let mut points: HashSet<IVec2> = HashSet::default();
+    let direction = (end - start).normalize();
+    let length = (end - start).length();
+    let min_x = -(brush_size as i32) / 2;
+    let max_x = (brush_size as f32 / 2.0) as i32;
+
+    let num_samples = (length.ceil() as usize).max(1);
+    for i in 0..=num_samples {
+        let t = i as f32 / num_samples.max(1) as f32;
+        let sample_point = start + direction * length * t;
+
+        for x in min_x * 3..=max_x * 3 {
+            let position = Vec2::new((sample_point.x + x as f32).round(), sample_point.y.round());
+            points.insert(position.as_ivec2());
+        }
+    }
+
+    if dynamic_rigid_body_particle {
+        commands.spawn_batch(points.into_iter().map(move |point| {
+            (
+                particle.clone(),
+                Wall,
+                Transform::from_xyz(point.x as f32, point.y as f32, 0.0),
+                DynamicRigidBodyParticle,
+            )
+        }));
+    } else {
+        commands.spawn_batch(points.into_iter().map(move |point| {
+            (
+                particle.clone(),
+                Transform::from_xyz(point.x as f32, point.y as f32, 0.0),
+            )
+        }));
+    }
+}
+
+fn spawn_cursor_interpolated(
+    commands: &mut Commands,
+    particle: Particle,
+    start: Vec2,
+    end: Vec2,
+    dynamic_rigid_body_particle: bool,
+) {
+    let mut points: HashSet<IVec2> = HashSet::default();
+    let direction = (end - start).normalize();
+    let length = (end - start).length();
+
+    let num_samples = (length.ceil() as usize).max(1);
+    for i in 0..=num_samples {
+        let t = i as f32 / num_samples.max(1) as f32;
+        let sample_point = start + direction * length * t;
+
+        points.insert(IVec2::new(
+            sample_point.x.round() as i32,
+            sample_point.y.round() as i32,
+        ));
+    }
+
+    if dynamic_rigid_body_particle {
+        commands.spawn_batch(points.into_iter().map(move |point| {
+            (
+                particle.clone(),
+                Wall,
+                Transform::from_xyz(point.x as f32, point.y as f32, 0.0),
+                DynamicRigidBodyParticle,
+            )
+        }));
+    } else {
+        commands.spawn_batch(points.into_iter().map(move |point| {
+            (
+                particle.clone(),
+                Transform::from_xyz(point.x as f32, point.y as f32, 0.0),
+            )
+        }));
+    }
+}
+
+fn despawn_circle(
+    evw_remove_particle: &mut EventWriter<DespawnParticleEvent>,
+    center: Vec2,
+    radius: usize,
+) {
+    let mut points: HashSet<IVec2> = HashSet::default();
+
+    let min_x = (center.x - radius as f32).floor() as i32;
+    let max_x = (center.x + radius as f32).ceil() as i32;
+    let min_y = (center.y - radius as f32).floor() as i32;
+    let max_y = (center.y + radius as f32).ceil() as i32;
+
+    for x in min_x..=max_x {
+        for y in min_y..=max_y {
+            let point = Vec2::new(x as f32, y as f32);
+            if (point - center).length() <= radius as f32 {
+                points.insert(point.as_ivec2());
+            }
+        }
+    }
+
+    for position in points {
+        evw_remove_particle.write(DespawnParticleEvent::from_position(position));
+    }
+}
+
+fn despawn_capsule(
+    evw_remove_particle: &mut EventWriter<DespawnParticleEvent>,
+    start: Vec2,
+    end: Vec2,
+    radius: usize,
+    half_length: f32,
+) {
+    let capsule = Capsule2d {
+        radius: radius as f32,
+        half_length,
+    };
+
+    let points = points_within_capsule(&capsule, start, end);
+    for position in points {
+        evw_remove_particle.write(DespawnParticleEvent::from_position(position));
+    }
+}
+
+fn despawn_line(
+    evw_remove_particle: &mut EventWriter<DespawnParticleEvent>,
+    center: Vec2,
+    brush_size: usize,
+) {
+    let min_x = -(brush_size as i32) / 2;
+    let max_x = (brush_size as f32 / 2.0) as i32;
+
+    for x in min_x * 3..=max_x * 3 {
+        let position = IVec2::new(
+            (center.x + x as f32).round() as i32,
+            center.y.round() as i32,
+        );
+        evw_remove_particle.write(DespawnParticleEvent::from_position(position));
+    }
+}
+
+fn despawn_line_interpolated(
+    evw_remove_particle: &mut EventWriter<DespawnParticleEvent>,
+    start: Vec2,
+    end: Vec2,
+    brush_size: usize,
+) {
+    let mut points: HashSet<IVec2> = HashSet::default();
+    let direction = (end - start).normalize();
+    let length = (end - start).length();
+    let min_x = -(brush_size as i32) / 2;
+    let max_x = (brush_size as f32 / 2.0) as i32;
+
+    let num_samples = (length.ceil() as usize).max(1);
+    for i in 0..=num_samples {
+        let t = i as f32 / num_samples.max(1) as f32;
+        let sample_point = start + direction * length * t;
+
+        for x in min_x * 3..=max_x * 3 {
+            let position = Vec2::new((sample_point.x + x as f32).round(), sample_point.y.round());
+            points.insert(position.as_ivec2());
+        }
+    }
+
+    for position in points {
+        evw_remove_particle.write(DespawnParticleEvent::from_position(position));
+    }
+}
+
+fn despawn_cursor_interpolated(
+    evw_remove_particle: &mut EventWriter<DespawnParticleEvent>,
+    start: Vec2,
+    end: Vec2,
+) {
+    let mut points: HashSet<IVec2> = HashSet::default();
+    let direction = (end - start).normalize();
+    let length = (end - start).length();
+
+    let num_samples = (length.ceil() as usize).max(1);
+    for i in 0..=num_samples {
+        let t = i as f32 / num_samples.max(1) as f32;
+        let sample_point = start + direction * length * t;
+
+        points.insert(IVec2::new(
+            sample_point.x.round() as i32,
+            sample_point.y.round() as i32,
+        ));
+    }
+
+    for position in points {
+        evw_remove_particle.write(DespawnParticleEvent::from_position(position));
+    }
 }
