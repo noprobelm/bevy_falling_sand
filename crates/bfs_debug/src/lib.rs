@@ -18,6 +18,7 @@ use bevy::prelude::*;
 
 use bfs_core::{Particle, ParticleMap, ParticlePosition, ParticleSimulationSet};
 use bfs_movement::ParticleMaterialsParam;
+use bfs_physics::RigidBody;
 
 /// Adds the constructs and systems necessary for debugging the Falling Sand simulation.
 pub struct FallingSandDebugPlugin;
@@ -29,6 +30,7 @@ impl Plugin for FallingSandDebugPlugin {
             .init_resource::<WallParticleCount>()
             .init_resource::<TotalParticleCount>()
             .init_resource::<ActiveParticleCount>()
+            .init_resource::<RigidBodyCount>()
             .init_resource::<ChunkBorderColor>()
             .init_resource::<DirtyRectColor>()
             .init_resource::<DebugParticleCount>()
@@ -50,6 +52,7 @@ impl Plugin for FallingSandDebugPlugin {
                         count_wall_particles,
                         count_total_particles,
                         count_active_particles,
+                        count_rigid_bodies,
                     )
                         .in_set(ParticleDebugSet)
                         .run_if(resource_exists::<DebugParticleCount>),
@@ -92,6 +95,10 @@ pub struct TotalParticleCount(pub u64);
 #[derive(Default, Resource)]
 /// Resource to hold the number of active particles in the simulation.
 pub struct ActiveParticleCount(pub u64);
+
+#[derive(Default, Resource)]
+/// Resource to hold the number of rigid bodies in the simulation
+pub struct RigidBodyCount(pub u64);
 
 #[derive(Resource)]
 /// Resource to hold the color we render active chunks as.
@@ -190,4 +197,11 @@ fn count_active_particles(
     particle_query: Query<&Particle, Changed<ParticlePosition>>,
 ) {
     active_particle_count.0 = particle_query.iter().fold(0, |acc, _| acc + 1);
+}
+
+fn count_rigid_bodies(
+    mut rigid_body_count: ResMut<RigidBodyCount>,
+    rigid_body_query: Query<&RigidBody>,
+) {
+    rigid_body_count.0 = rigid_body_query.iter().len() as u64;
 }

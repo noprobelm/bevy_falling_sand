@@ -15,6 +15,7 @@ impl StatisticsPanel {
         wall_particles: u32,
         total_particles: u32,
         active_particles: u32,
+        num_rigid_bodies: u32,
     ) {
         let text_color = egui::Color32::from_rgb(204, 204, 204);
         ui.visuals_mut().override_text_color = Some(text_color);
@@ -103,7 +104,7 @@ impl StatisticsPanel {
             .show(ui, |ui| {
                 ui.label("Dynamic Rigid Bodies:");
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    ui.label("0");
+                    ui.label(format!("{}", num_rigid_bodies));
                 });
                 ui.end_row();
             });

@@ -2,10 +2,7 @@ use crate::{
     cursor::CursorPosition, particles::SelectedParticle, physics::DynamicRigidBodyParticle,
 };
 use bevy::{input::mouse::MouseWheel, platform::collections::HashSet, prelude::*};
-use bfs_internal::{
-    core::{DespawnParticleEvent, Particle},
-    prelude::Wall,
-};
+use bfs_internal::core::{DespawnParticleEvent, Particle};
 
 pub(crate) struct BrushPlugin;
 
@@ -270,8 +267,6 @@ pub fn spawn_particles(
             } else {
                 if spawn_dynamic_rigid_body_particle {
                     commands.spawn((
-                        particle.0.clone(),
-                        Wall,
                         Transform::from_xyz(
                             cursor_position.current.x.round(),
                             cursor_position.current.y.round(),
@@ -452,8 +447,6 @@ fn spawn_circle(
     if dynamic_rigid_body_particle {
         commands.spawn_batch(points.into_iter().map(move |point| {
             (
-                particle.clone(),
-                Wall,
                 Transform::from_xyz(point.x as f32, point.y as f32, 0.0),
                 DynamicRigidBodyParticle,
             )
@@ -486,8 +479,6 @@ fn spawn_capsule(
     if dynamic_rigid_body_particle {
         commands.spawn_batch(points.into_iter().map(move |point| {
             (
-                particle.clone(),
-                Wall,
                 Transform::from_xyz(point.x as f32, point.y as f32, 0.0),
                 DynamicRigidBodyParticle,
             )
@@ -515,8 +506,6 @@ fn spawn_line(
     if dynamic_rigid_body_particle {
         commands.spawn_batch((min_x * 3..=max_x * 3).map(move |x| {
             (
-                particle.clone(),
-                Wall,
                 Transform::from_xyz((center.x + x as f32).round(), center.y.round(), 0.0),
                 DynamicRigidBodyParticle,
             )
@@ -559,8 +548,6 @@ fn spawn_line_interpolated(
     if dynamic_rigid_body_particle {
         commands.spawn_batch(points.into_iter().map(move |point| {
             (
-                particle.clone(),
-                Wall,
                 Transform::from_xyz(point.x as f32, point.y as f32, 0.0),
                 DynamicRigidBodyParticle,
             )
@@ -600,8 +587,6 @@ fn spawn_cursor_interpolated(
     if dynamic_rigid_body_particle {
         commands.spawn_batch(points.into_iter().map(move |point| {
             (
-                particle.clone(),
-                Wall,
                 Transform::from_xyz(point.x as f32, point.y as f32, 0.0),
                 DynamicRigidBodyParticle,
             )

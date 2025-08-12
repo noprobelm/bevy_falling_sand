@@ -7,3 +7,4 @@ edition = "2021"
 bevy.workspace = true
 bfs_core = { path = "../bfs_core" }
 bfs_movement = { path = "../bfs_movement" }
+bfs_physics = { path = "../bfs_physics" }

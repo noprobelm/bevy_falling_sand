@@ -29,32 +29,37 @@ pub enum DespawnRigidBodies {
     All,
 }
 
+#[derive(Event)]
+pub struct DespawnRigidBodyParticleEvent;
+
 fn spawn_dynamic_rigid_bodies(
     mut commands: Commands,
-    dynamic_rigid_body_particles_query: Query<
-        (Entity, &ParticlePosition, &Particle),
-        With<DynamicRigidBodyParticle>,
-    >,
+    dynamic_rigid_body_particles_query: Query<(Entity, &Transform), With<DynamicRigidBodyParticle>>,
 ) {
-    let positions: Vec<(Entity, IVec2, String)> = dynamic_rigid_body_particles_query
+    let positions: Vec<(Entity, IVec2)> = dynamic_rigid_body_particles_query
         .iter()
-        .map(|(entity, pos, particle)| (entity, pos.0, particle.name.to_string()))
+        .map(|(entity, pos)| {
+            (
+                entity,
+                IVec2::new(pos.translation.x as i32, pos.translation.y as i32),
+            )
+        })
         .collect();
 
     if positions.is_empty() {
         return;
     }
 
-    for (entity, _, _) in &positions {
+    for (entity, _) in &positions {
         commands
             .entity(*entity)
             .remove::<DynamicRigidBodyParticle>();
     }
 
-    let mut unvisited: HashSet<IVec2> = positions.iter().map(|(_, pos, _)| *pos).collect();
+    let mut unvisited: HashSet<IVec2> = positions.iter().map(|(_, pos)| *pos).collect();
     let position_to_data: bevy::platform::collections::HashMap<IVec2, Entity> = positions
         .into_iter()
-        .map(|(entity, pos, _)| (pos, (entity)))
+        .map(|(entity, pos)| (pos, entity))
         .collect();
 
     while let Some(&start) = unvisited.iter().next() {

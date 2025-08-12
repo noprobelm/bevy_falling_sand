@@ -1611,6 +1611,7 @@ dependencies = [
  "bevy",
  "bfs_core",
  "bfs_movement",
+ "bfs_physics",
 ]
 
 [[package]]
