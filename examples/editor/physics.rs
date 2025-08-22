@@ -29,9 +29,6 @@ pub enum DespawnRigidBodies {
     All,
 }
 
-#[derive(Event)]
-pub struct DespawnRigidBodyParticleEvent;
-
 fn spawn_dynamic_rigid_bodies(
     mut commands: Commands,
     dynamic_rigid_body_particles_query: Query<(Entity, &Transform), With<DynamicRigidBodyParticle>>,
