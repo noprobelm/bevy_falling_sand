@@ -1620,6 +1620,7 @@ dependencies = [
  "bevy_turborand",
  "bfs_color",
  "bfs_core",
+ "bfs_movement",
 ]
 
 [[package]]

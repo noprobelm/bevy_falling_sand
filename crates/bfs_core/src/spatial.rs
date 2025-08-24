@@ -428,6 +428,84 @@ impl ParticleMap {
             })
     }
 
+    /// Find all particles within radius that have line-of-sight to center
+    /// Filters out entities specified by a query.
+    #[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)]
+    #[inline(always)]
+    #[must_use]
+    pub fn within_radius_los<'a>(
+        &'a self,
+        center: IVec2,
+        radius: f32,
+        blocker_query: &'a Query<(), impl bevy::ecs::query::QueryFilter>,
+    ) -> Vec<(IVec2, &'a Entity)> {
+        let radius_i32 = radius.ceil() as i32;
+        let min_pos = center - IVec2::splat(radius_i32);
+        let max_pos = center + IVec2::splat(radius_i32);
+        let radius_squared = radius * radius;
+
+        self.within_rect_impl(min_pos, max_pos)
+            .filter(|(pos, _)| {
+                let diff = *pos - center;
+                let dist_sq = (diff.x * diff.x + diff.y * diff.y) as f32;
+                dist_sq <= radius_squared
+            })
+            .filter(|(pos, _)| self.has_line_of_sight(center, *pos, blocker_query))
+            .collect()
+    }
+
+    /// Check if there's a clear line of sight between two positions
+    /// Returns false if any blocking entity is found along the path
+    #[inline(always)]
+    #[must_use]
+    pub fn has_line_of_sight(
+        &self,
+        from: IVec2,
+        to: IVec2,
+        blocker_query: &Query<(), impl bevy::ecs::query::QueryFilter>,
+    ) -> bool {
+        // Same position always has LOS
+        if from == to {
+            return true;
+        }
+
+        // Use DDA (Digital Differential Analyzer) for line tracing
+        let diff = to - from;
+        let steps = diff.x.abs().max(diff.y.abs());
+
+        if steps <= 1 {
+            return true; // Adjacent cells always have LOS
+        }
+
+        let step_x = diff.x as f32 / steps as f32;
+        let step_y = diff.y as f32 / steps as f32;
+
+        let mut x = from.x as f32 + 0.5;
+        let mut y = from.y as f32 + 0.5;
+
+        // Check each position along the line (excluding endpoints)
+        for _ in 1..steps {
+            x += step_x;
+            y += step_y;
+
+            let check_pos = IVec2::new(x.floor() as i32, y.floor() as i32);
+
+            // Skip if still at starting position
+            if check_pos == from {
+                continue;
+            }
+
+            // Check if there's a blocking particle at this position
+            if let Some(entity) = self.get(&check_pos) {
+                if blocker_query.get(*entity).is_ok() {
+                    return false;
+                }
+            }
+        }
+
+        true
+    }
+
     /// Find all particles within a rectangular area
     #[inline(always)]
     pub fn within_rect(&self, rect: IRect) -> impl Iterator<Item = (IVec2, &Entity)> {

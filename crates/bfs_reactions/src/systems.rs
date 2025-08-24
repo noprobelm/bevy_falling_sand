@@ -2,6 +2,7 @@ use super::ReactionRng;
 use bevy::prelude::*;
 use bfs_color::{ChangesColor, ResetParticleColorEvent};
 use bfs_core::{Particle, ParticleMap, ParticlePosition, ParticleRng, ParticleSimulationSet};
+use bfs_movement::{MovableSolid, Solid, Wall};
 
 use crate::{Burning, Burns, Fire};
 
@@ -25,17 +26,19 @@ fn handle_fire(
     mut commands: Commands,
     mut fire_query: Query<(&Fire, &ParticlePosition, &mut ReactionRng)>,
     burns_query: Query<(Entity, &Burns), (With<Particle>, Without<Burning>)>,
+    blocker_query: Query<(), Or<(With<Wall>, With<MovableSolid>, With<Solid>)>>,
     map: Res<ParticleMap>,
 ) {
     fire_query.iter_mut().for_each(|(fire, position, mut rng)| {
         if !rng.chance(fire.chance_to_spread) {
             return;
         }
-        
+
         let mut destroy_fire = false;
         let mut entities_to_ignite = Vec::new();
-        
-        map.within_radius(position.0, fire.burn_radius)
+
+        map.within_radius_los(position.0, fire.burn_radius, &blocker_query)
+            .into_iter()
             .for_each(|(_, entity)| {
                 if let Ok((entity, burns)) = burns_query.get(*entity) {
                     entities_to_ignite.push((entity, burns));
@@ -44,11 +47,11 @@ fn handle_fire(
                     }
                 }
             });
-            
+
         for (entity, burns) in entities_to_ignite {
             let mut entity_commands = commands.entity(entity);
             entity_commands.insert(burns.to_burning());
-            
+
             if let Some(colors) = &burns.color {
                 entity_commands.insert((colors.clone(), ChangesColor::new(0.75)));
             }
