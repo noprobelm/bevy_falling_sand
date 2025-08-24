@@ -1544,7 +1544,7 @@ dependencies = [
 
 [[package]]
 name = "bfs_color"
-version = "0.1.0"
+version = "0.5.0"
 dependencies = [
  "bevy",
  "bevy_turborand",
@@ -1554,7 +1554,7 @@ dependencies = [
 
 [[package]]
 name = "bfs_core"
-version = "0.1.0"
+version = "0.5.0"
 dependencies = [
  "ahash",
  "bevy",
@@ -1564,7 +1564,7 @@ dependencies = [
 
 [[package]]
 name = "bfs_debug"
-version = "0.1.0"
+version = "0.5.0"
 dependencies = [
  "bevy",
  "bfs_core",
@@ -1574,7 +1574,7 @@ dependencies = [
 
 [[package]]
 name = "bfs_internal"
-version = "0.1.0"
+version = "0.5.0"
 dependencies = [
  "bevy",
  "bevy_turborand",
@@ -1592,7 +1592,7 @@ dependencies = [
 
 [[package]]
 name = "bfs_movement"
-version = "0.1.0"
+version = "0.5.0"
 dependencies = [
  "bevy",
  "bevy_turborand",
@@ -1603,7 +1603,7 @@ dependencies = [
 
 [[package]]
 name = "bfs_physics"
-version = "0.1.0"
+version = "0.5.0"
 dependencies = [
  "avian2d",
  "bevy",
@@ -1614,7 +1614,7 @@ dependencies = [
 
 [[package]]
 name = "bfs_reactions"
-version = "0.1.0"
+version = "0.5.0"
 dependencies = [
  "bevy",
  "bevy_turborand",
@@ -1625,7 +1625,7 @@ dependencies = [
 
 [[package]]
 name = "bfs_scenes"
-version = "0.1.0"
+version = "0.5.0"
 dependencies = [
  "bevy",
  "bfs_assets",
