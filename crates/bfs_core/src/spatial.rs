@@ -282,23 +282,12 @@ impl ParticleMap {
         }
     }
 
-    #[allow(clippy::cast_sign_loss)]
+    #[allow(clippy::cast_sign_loss, clippy::too_many_lines)]
     fn reset_chunks(&mut self) {
-        const NEIGHBOR_OFFSETS: [(isize, isize); 8] = [
-            (0, -1),  // Left
-            (0, 1),   // Right
-            (-1, 0),  // Up
-            (1, 0),   // Down
-            (-1, -1), // Up-Left
-            (-1, 1),  // Up-Right
-            (1, -1),  // Down-Left
-            (1, 1),   // Down-Right
-        ];
-
-        let map_size = self.size as isize;
+        let map_size = self.size;
+        let map_size_minus_1 = map_size - 1;
         let chunk_ptr = self.chunks.as_mut_ptr();
-        let max_updates = self.chunks.len() * 8;
-        let mut pending_updates = Vec::with_capacity(max_updates.min(256));
+        let mut pending_updates = Vec::with_capacity(256);
 
         // First pass: process dirty rects and collect neighbor updates
         for index in 0..self.chunks.len() {
@@ -309,24 +298,81 @@ impl ParticleMap {
                 chunk.dirty_rect = Some(inflated.intersect(chunk.region));
                 let expanded = dirty_rect.inflate(2);
 
-                let chunk_row = (index as isize) >> self.map_shift;
-                let chunk_col = (index as isize) & ((1 << self.map_shift) - 1);
+                let chunk_row = index >> self.map_shift;
+                let chunk_col = index & ((1 << self.map_shift) - 1);
 
-                // Unroll neighbor checking for better performance
-                for &(row_offset, col_offset) in &NEIGHBOR_OFFSETS {
-                    let n_row = chunk_row + row_offset;
-                    let n_col = chunk_col + col_offset;
-
-                    // Branchless bounds check
-                    let in_bounds = (n_row as usize) < (map_size as usize)
-                        && (n_col as usize) < (map_size as usize);
-
-                    if in_bounds {
-                        let n_index = ((n_row << self.map_shift) + n_col) as usize;
+                // Left
+                if chunk_col > 0 {
+                    let n_index = index - 1;
+                    let neighbor_region = unsafe { (*chunk_ptr.add(n_index)).region };
+                    let intersection = neighbor_region.intersect(expanded);
+                    if !intersection.is_empty() {
+                        pending_updates.push((n_index, intersection));
+                    }
+                }
+                // Right
+                if chunk_col < map_size_minus_1 {
+                    let n_index = index + 1;
+                    let neighbor_region = unsafe { (*chunk_ptr.add(n_index)).region };
+                    let intersection = neighbor_region.intersect(expanded);
+                    if !intersection.is_empty() {
+                        pending_updates.push((n_index, intersection));
+                    }
+                }
+                // Up
+                if chunk_row > 0 {
+                    let n_index = index - map_size;
+                    let neighbor_region = unsafe { (*chunk_ptr.add(n_index)).region };
+                    let intersection = neighbor_region.intersect(expanded);
+                    if !intersection.is_empty() {
+                        pending_updates.push((n_index, intersection));
+                    }
+                }
+                // Down
+                if chunk_row < map_size_minus_1 {
+                    let n_index = index + map_size;
+                    let neighbor_region = unsafe { (*chunk_ptr.add(n_index)).region };
+                    let intersection = neighbor_region.intersect(expanded);
+                    if !intersection.is_empty() {
+                        pending_updates.push((n_index, intersection));
+                    }
+                }
+                // Diagonals
+                if chunk_row > 0 {
+                    // Up-Left
+                    if chunk_col > 0 {
+                        let n_index = index - map_size - 1;
                         let neighbor_region = unsafe { (*chunk_ptr.add(n_index)).region };
                         let intersection = neighbor_region.intersect(expanded);
-
-                        // Store update only if intersection is non-empty
+                        if !intersection.is_empty() {
+                            pending_updates.push((n_index, intersection));
+                        }
+                    }
+                    // Up-Right
+                    if chunk_col < map_size_minus_1 {
+                        let n_index = index - map_size + 1;
+                        let neighbor_region = unsafe { (*chunk_ptr.add(n_index)).region };
+                        let intersection = neighbor_region.intersect(expanded);
+                        if !intersection.is_empty() {
+                            pending_updates.push((n_index, intersection));
+                        }
+                    }
+                }
+                if chunk_row < map_size_minus_1 {
+                    // Down-Left
+                    if chunk_col > 0 {
+                        let n_index = index + map_size - 1;
+                        let neighbor_region = unsafe { (*chunk_ptr.add(n_index)).region };
+                        let intersection = neighbor_region.intersect(expanded);
+                        if !intersection.is_empty() {
+                            pending_updates.push((n_index, intersection));
+                        }
+                    }
+                    // Down-Right
+                    if chunk_col < map_size_minus_1 {
+                        let n_index = index + map_size + 1;
+                        let neighbor_region = unsafe { (*chunk_ptr.add(n_index)).region };
+                        let intersection = neighbor_region.intersect(expanded);
                         if !intersection.is_empty() {
                             pending_updates.push((n_index, intersection));
                         }
