@@ -6,8 +6,6 @@ use bevy::{
     window::PrimaryWindow,
 };
 use bevy_falling_sand::prelude::*;
-use bfs_assets::{FallingSandAssetsPlugin, ParticleDefinitionsAsset, ParticleDefinitionsHandle};
-use bfs_core::{Particle, ParticleTypeMap};
 use ron::ser::{to_string_pretty, PrettyConfig};
 use std::collections::HashMap;
 use utils::status_ui::{FpsText, StatusUIPlugin};

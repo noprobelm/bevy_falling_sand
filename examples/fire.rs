@@ -3,7 +3,7 @@ mod utils;
 use std::time::Duration;
 
 use bevy::{input::common_conditions::input_just_pressed, prelude::*};
-use bevy_egui::{egui, EguiContextPass, EguiContexts, EguiPlugin};
+use bevy_egui::{egui, EguiContexts, EguiPlugin, EguiPrimaryContextPass};
 use bevy_falling_sand::prelude::*;
 use utils::{
     boundary::SetupBoundary,
@@ -21,9 +21,7 @@ fn main() {
             DefaultPlugins,
             FallingSandPlugin::default(),
             FallingSandDebugPlugin,
-            EguiPlugin {
-                enable_multipass_for_primary_context: false,
-            },
+            EguiPlugin::default(),
             utils::states::StatesPlugin,
             utils::brush::BrushPlugin::default(),
             utils::cursor::CursorPlugin,
@@ -37,7 +35,7 @@ fn main() {
         .init_resource::<DefaultFlammableGas>()
         .add_systems(Startup, (setup, utils::camera::setup_camera))
         .add_systems(
-            EguiContextPass,
+            EguiPrimaryContextPass,
             render_fire_settings_gui.run_if(resource_exists::<RenderGUI>),
         )
         .add_systems(
@@ -318,7 +316,7 @@ fn render_fire_settings_gui(
     let fire_entity = *particle_type_map.get(&"FIRE".to_string()).unwrap();
     let flammable_gas_entity = *particle_type_map.get(&"Flammable Gas".to_string()).unwrap();
 
-    egui::Window::new("Particle Properties").show(contexts.ctx_mut(), |ui| {
+    egui::Window::new("Particle Properties").show(contexts.ctx_mut().unwrap(), |ui| {
         {
             ui.heading("🔥 Fire Settings");
             ui.separator();
