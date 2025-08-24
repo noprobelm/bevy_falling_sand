@@ -239,61 +239,55 @@ impl ParticleMap {
         if first_index == second_index {
             let chunk = unsafe { self.chunks.get_unchecked_mut(first_index) };
 
-            let entity_first = chunk
-                .remove(&first)
-                .ok_or(SwapError::PositionNotFound { position: first })?;
-
-            if let Some(entity_second) = chunk.remove(&second) {
-                chunk.insert(first, entity_second);
+            match (chunk.map.remove(&first), chunk.map.remove(&second)) {
+                (Some(entity_first), Some(entity_second)) => {
+                    chunk.dirty_rect_union_point(first);
+                    chunk.dirty_rect_union_point(second);
+                    chunk.map.insert(first, entity_second);
+                    chunk.map.insert(second, entity_first);
+                    Ok(())
+                }
+                (Some(entity_first), None) => {
+                    chunk.dirty_rect_union_point(first);
+                    chunk.dirty_rect_union_point(second);
+                    chunk.map.insert(second, entity_first);
+                    Ok(())
+                }
+                (None, _) => Err(SwapError::PositionNotFound { position: first }),
             }
-            chunk.insert(second, entity_first);
-
-            return Ok(());
-        }
-
-        let (chunk_a, chunk_b) = if first_index < second_index {
-            let (left, right) = self.chunks.split_at_mut(second_index);
-            (left.get_mut(first_index), right.get_mut(0))
         } else {
-            let (left, right) = self.chunks.split_at_mut(first_index);
-            (right.get_mut(0), left.get_mut(second_index))
-        };
+            let chunks_ptr = self.chunks.as_mut_ptr();
+            let chunk_first = unsafe { &mut *chunks_ptr.add(first_index) };
+            let chunk_second = unsafe { &mut *chunks_ptr.add(second_index) };
 
-        let (Some(chunk_first), Some(chunk_second)) = (chunk_a, chunk_b) else {
-            return Err(SwapError::ChunkOutOfBounds {
-                index: first_index.max(second_index),
-            });
-        };
-
-        let entity_first = chunk_first
-            .remove(&first)
-            .ok_or(SwapError::PositionNotFound { position: first })?;
-
-        if let Some(entity_second) = chunk_second.remove(&second) {
-            chunk_first.insert(first, entity_second);
+            match (
+                chunk_first.map.remove(&first),
+                chunk_second.map.remove(&second),
+            ) {
+                (Some(entity_first), Some(entity_second)) => {
+                    chunk_first.dirty_rect_union_point(first);
+                    chunk_second.dirty_rect_union_point(second);
+                    chunk_first.map.insert(first, entity_second);
+                    chunk_second.map.insert(second, entity_first);
+                    Ok(())
+                }
+                (Some(entity_first), None) => {
+                    chunk_first.dirty_rect_union_point(first);
+                    chunk_second.dirty_rect_union_point(second);
+                    chunk_second.map.insert(second, entity_first);
+                    Ok(())
+                }
+                (None, _) => Err(SwapError::PositionNotFound { position: first }),
+            }
         }
-        chunk_second.insert(second, entity_first);
-
-        Ok(())
     }
 
-    #[allow(clippy::cast_sign_loss)]
+    #[allow(clippy::cast_sign_loss, clippy::too_many_lines)]
     fn reset_chunks(&mut self) {
-        const NEIGHBOR_OFFSETS: [(isize, isize); 8] = [
-            (0, -1),  // Left
-            (0, 1),   // Right
-            (-1, 0),  // Up
-            (1, 0),   // Down
-            (-1, -1), // Up-Left
-            (-1, 1),  // Up-Right
-            (1, -1),  // Down-Left
-            (1, 1),   // Down-Right
-        ];
-
-        let map_size = self.size as isize;
+        let map_size = self.size;
+        let map_size_minus_1 = map_size - 1;
         let chunk_ptr = self.chunks.as_mut_ptr();
-        let max_updates = self.chunks.len() * 8;
-        let mut pending_updates = Vec::with_capacity(max_updates.min(256));
+        let mut pending_updates = Vec::with_capacity(256);
 
         // First pass: process dirty rects and collect neighbor updates
         for index in 0..self.chunks.len() {
@@ -304,24 +298,81 @@ impl ParticleMap {
                 chunk.dirty_rect = Some(inflated.intersect(chunk.region));
                 let expanded = dirty_rect.inflate(2);
 
-                let chunk_row = (index as isize) >> self.map_shift;
-                let chunk_col = (index as isize) & ((1 << self.map_shift) - 1);
+                let chunk_row = index >> self.map_shift;
+                let chunk_col = index & ((1 << self.map_shift) - 1);
 
-                // Unroll neighbor checking for better performance
-                for &(row_offset, col_offset) in &NEIGHBOR_OFFSETS {
-                    let n_row = chunk_row + row_offset;
-                    let n_col = chunk_col + col_offset;
-
-                    // Branchless bounds check
-                    let in_bounds = (n_row as usize) < (map_size as usize)
-                        && (n_col as usize) < (map_size as usize);
-
-                    if in_bounds {
-                        let n_index = ((n_row << self.map_shift) + n_col) as usize;
+                // Left
+                if chunk_col > 0 {
+                    let n_index = index - 1;
+                    let neighbor_region = unsafe { (*chunk_ptr.add(n_index)).region };
+                    let intersection = neighbor_region.intersect(expanded);
+                    if !intersection.is_empty() {
+                        pending_updates.push((n_index, intersection));
+                    }
+                }
+                // Right
+                if chunk_col < map_size_minus_1 {
+                    let n_index = index + 1;
+                    let neighbor_region = unsafe { (*chunk_ptr.add(n_index)).region };
+                    let intersection = neighbor_region.intersect(expanded);
+                    if !intersection.is_empty() {
+                        pending_updates.push((n_index, intersection));
+                    }
+                }
+                // Up
+                if chunk_row > 0 {
+                    let n_index = index - map_size;
+                    let neighbor_region = unsafe { (*chunk_ptr.add(n_index)).region };
+                    let intersection = neighbor_region.intersect(expanded);
+                    if !intersection.is_empty() {
+                        pending_updates.push((n_index, intersection));
+                    }
+                }
+                // Down
+                if chunk_row < map_size_minus_1 {
+                    let n_index = index + map_size;
+                    let neighbor_region = unsafe { (*chunk_ptr.add(n_index)).region };
+                    let intersection = neighbor_region.intersect(expanded);
+                    if !intersection.is_empty() {
+                        pending_updates.push((n_index, intersection));
+                    }
+                }
+                // Diagonals
+                if chunk_row > 0 {
+                    // Up-Left
+                    if chunk_col > 0 {
+                        let n_index = index - map_size - 1;
                         let neighbor_region = unsafe { (*chunk_ptr.add(n_index)).region };
                         let intersection = neighbor_region.intersect(expanded);
-
-                        // Store update only if intersection is non-empty
+                        if !intersection.is_empty() {
+                            pending_updates.push((n_index, intersection));
+                        }
+                    }
+                    // Up-Right
+                    if chunk_col < map_size_minus_1 {
+                        let n_index = index - map_size + 1;
+                        let neighbor_region = unsafe { (*chunk_ptr.add(n_index)).region };
+                        let intersection = neighbor_region.intersect(expanded);
+                        if !intersection.is_empty() {
+                            pending_updates.push((n_index, intersection));
+                        }
+                    }
+                }
+                if chunk_row < map_size_minus_1 {
+                    // Down-Left
+                    if chunk_col > 0 {
+                        let n_index = index + map_size - 1;
+                        let neighbor_region = unsafe { (*chunk_ptr.add(n_index)).region };
+                        let intersection = neighbor_region.intersect(expanded);
+                        if !intersection.is_empty() {
+                            pending_updates.push((n_index, intersection));
+                        }
+                    }
+                    // Down-Right
+                    if chunk_col < map_size_minus_1 {
+                        let n_index = index + map_size + 1;
+                        let neighbor_region = unsafe { (*chunk_ptr.add(n_index)).region };
+                        let intersection = neighbor_region.intersect(expanded);
                         if !intersection.is_empty() {
                             pending_updates.push((n_index, intersection));
                         }
@@ -375,6 +426,165 @@ impl ParticleMap {
                 let dist_sq = (diff.x * diff.x + diff.y * diff.y) as f32;
                 dist_sq <= radius_squared
             })
+    }
+
+    /// Find all particles within radius that have line-of-sight to center
+    /// Filters out entities specified by a query.
+    #[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)]
+    #[inline(always)]
+    #[must_use]
+    pub fn within_radius_los<'a>(
+        &'a self,
+        center: IVec2,
+        radius: f32,
+        blocker_query: &'a Query<(), impl bevy::ecs::query::QueryFilter>,
+    ) -> Vec<(IVec2, &'a Entity)> {
+        let radius_i32 = radius.ceil() as i32;
+        let min_pos = center - IVec2::splat(radius_i32);
+        let max_pos = center + IVec2::splat(radius_i32);
+        let radius_squared = radius * radius;
+
+        self.within_rect_impl(min_pos, max_pos)
+            .filter(|(pos, _)| {
+                let diff = *pos - center;
+                let dist_sq = (diff.x * diff.x + diff.y * diff.y) as f32;
+                dist_sq <= radius_squared
+            })
+            .filter(|(pos, _)| self.has_line_of_sight(center, *pos, blocker_query))
+            .collect()
+    }
+
+    /// Check if there's a clear line of sight between two positions
+    /// Returns false if any blocking entity is found along the path
+    #[inline(always)]
+    #[must_use]
+    pub fn has_line_of_sight(
+        &self,
+        from: IVec2,
+        to: IVec2,
+        blocker_query: &Query<(), impl bevy::ecs::query::QueryFilter>,
+    ) -> bool {
+        // Same position always has LOS
+        if from == to {
+            return true;
+        }
+
+        // Use DDA (Digital Differential Analyzer) for line tracing
+        let diff = to - from;
+        let steps = diff.x.abs().max(diff.y.abs());
+
+        if steps <= 1 {
+            return true; // Adjacent cells always have LOS
+        }
+
+        let step_x = diff.x as f32 / steps as f32;
+        let step_y = diff.y as f32 / steps as f32;
+
+        let mut x = from.x as f32 + 0.5;
+        let mut y = from.y as f32 + 0.5;
+
+        // Check each position along the line (excluding endpoints)
+        for _ in 1..steps {
+            x += step_x;
+            y += step_y;
+
+            let check_pos = IVec2::new(x.floor() as i32, y.floor() as i32);
+
+            // Skip if still at starting position
+            if check_pos == from {
+                continue;
+            }
+
+            // Check if there's a blocking particle at this position
+            if let Some(entity) = self.get(&check_pos) {
+                if blocker_query.get(*entity).is_ok() {
+                    return false;
+                }
+            }
+        }
+
+        true
+    }
+
+    /// Find all particles within radius with line-of-sight, blocked by entities matching the predicate
+    /// The predicate receives an entity and should return true if that entity blocks line of sight
+    #[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)]
+    pub fn within_radius_los_by<F>(
+        &self,
+        center: IVec2,
+        radius: f32,
+        is_blocker: F,
+    ) -> Vec<(IVec2, &Entity)>
+    where
+        F: Fn(&Entity) -> bool,
+    {
+        let radius_i32 = radius.ceil() as i32;
+        let min_pos = center - IVec2::splat(radius_i32);
+        let max_pos = center + IVec2::splat(radius_i32);
+        let radius_squared = radius * radius;
+
+        self.within_rect_impl(min_pos, max_pos)
+            .filter(|(pos, _)| {
+                let diff = *pos - center;
+                let dist_sq = (diff.x * diff.x + diff.y * diff.y) as f32;
+                dist_sq <= radius_squared
+            })
+            .filter(|(pos, _)| self.has_line_of_sight_by(center, *pos, &is_blocker))
+            .collect()
+    }
+    
+    /// Check if there's a clear line of sight between two positions, blocked by entities matching the predicate
+    /// The predicate receives an entity and should return true if that entity blocks line of sight
+    #[inline]
+    pub fn has_line_of_sight_by<F>(
+        &self,
+        from: IVec2,
+        to: IVec2,
+        is_blocker: &F,
+    ) -> bool
+    where
+        F: Fn(&Entity) -> bool,
+    {
+        // Same position always has LOS
+        if from == to {
+            return true;
+        }
+        
+        // Use DDA (Digital Differential Analyzer) for line tracing
+        let diff = to - from;
+        let steps = diff.x.abs().max(diff.y.abs());
+        
+        if steps <= 1 {
+            return true; // Adjacent cells always have LOS
+        }
+        
+        let step_x = diff.x as f32 / steps as f32;
+        let step_y = diff.y as f32 / steps as f32;
+        
+        let mut x = from.x as f32 + 0.5;
+        let mut y = from.y as f32 + 0.5;
+        
+        // Check each position along the line (excluding endpoints)
+        for _ in 1..steps {
+            x += step_x;
+            y += step_y;
+            
+            let check_pos = IVec2::new(x.floor() as i32, y.floor() as i32);
+            
+            // Skip if still at starting position
+            if check_pos == from {
+                continue;
+            }
+            
+            // Check if there's a blocking particle at this position
+            if let Some(entity) = self.get(&check_pos) {
+                if is_blocker(entity) {
+                    return false; // Found a blocker
+                }
+            }
+        }
+        
+        true
     }
 
     /// Find all particles within a rectangular area

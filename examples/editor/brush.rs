@@ -2,7 +2,7 @@ use crate::{
     cursor::CursorPosition, particles::SelectedParticle, physics::DynamicRigidBodyParticle,
 };
 use bevy::{input::mouse::MouseWheel, platform::collections::HashSet, prelude::*};
-use bfs_internal::core::{DespawnParticleEvent, Particle};
+use bevy_falling_sand::prelude::{DespawnParticleEvent, Particle};
 
 pub(crate) struct BrushPlugin;
 

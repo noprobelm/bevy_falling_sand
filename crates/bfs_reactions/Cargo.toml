@@ -1,6 +1,6 @@
 [package]
 name = "bfs_reactions"
-version = "0.1.0"
+version = "0.5.0"
 edition = "2021"
 
 [dependencies]
@@ -8,3 +8,4 @@ bevy.workspace = true
 bevy_turborand = "0.11.0"
 bfs_color = { path = "../bfs_color" }
 bfs_core = { path = "../bfs_core" }
+bfs_movement = { path = "../bfs_movement" }

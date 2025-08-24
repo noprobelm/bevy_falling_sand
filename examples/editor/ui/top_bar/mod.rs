@@ -22,31 +22,31 @@ impl UiTopBar {
         ui.menu_button(egui::RichText::new("File").size(16.0), |ui| {
             if ui.button("Save Scene").clicked() {
                 spawn_save_scene_dialog(commands);
-                ui.close_menu();
+                egui::Ui::close(ui);
             }
             if ui.button("Load Scene").clicked() {
                 spawn_load_scene_dialog(commands);
-                ui.close_menu();
+                egui::Ui::close(ui);
             }
             ui.separator();
             if ui.button("Save Particle Set").clicked() {
                 spawn_save_particles_scene_dialog(particle_browser_state);
-                ui.close_menu();
+                egui::Ui::close(ui);
             }
             if ui.button("Load Particle Set").clicked() {
                 spawn_load_particles_scene_dialog(particle_browser_state);
-                ui.close_menu();
+                egui::Ui::close(ui);
             }
             ui.separator();
             if ui.button("Settings").clicked() {
-                ui.close_menu();
+                egui::Ui::close(ui);
             }
             if ui.button("Documentation").clicked() {
-                ui.close_menu();
+                egui::Ui::close(ui);
             }
             ui.separator();
             if ui.button("Exit").clicked() {
-                ui.close_menu();
+                egui::Ui::close(ui);
             }
         });
     }

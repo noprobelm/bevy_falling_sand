@@ -1,8 +1,8 @@
-use crate::ui::particle_search::ParticleSearchState;
 use crate::ui::ConsoleState;
+use crate::ui::particle_search::ParticleSearchState;
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
-use bevy_egui::{EguiContextPass, EguiContexts};
+use bevy_egui::{EguiContexts, EguiPrimaryContextPass};
 use bevy_falling_sand::prelude::*;
 
 pub struct StatesPlugin;
@@ -16,7 +16,7 @@ impl Plugin for StatesPlugin {
             .init_state::<InitializationState>()
             .add_systems(Startup, remove_debug_overlays)
             .add_systems(
-                EguiContextPass,
+                EguiPrimaryContextPass,
                 (
                     detect_ui_interaction,
                     manage_ui_states
@@ -72,8 +72,8 @@ fn detect_ui_interaction(
     mut next_state: ResMut<NextState<AppState>>,
     particle_search_state: Option<Res<ParticleSearchState>>,
     console_state: Option<Res<ConsoleState>>,
-) {
-    let ctx = contexts.ctx_mut();
+) -> Result {
+    let ctx = contexts.ctx_mut()?;
 
     let is_over_area = ctx.is_pointer_over_area();
     let search_is_active = particle_search_state.map_or(false, |state| state.active);
@@ -96,6 +96,7 @@ fn detect_ui_interaction(
             }
         }
     }
+    Ok(())
 }
 
 fn manage_ui_states(
