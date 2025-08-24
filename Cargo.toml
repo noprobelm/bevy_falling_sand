@@ -64,7 +64,7 @@ bevy = { version = "0.16", default-features = false, features = [
 ] }
 
 [dependencies]
-bfs_internal = { path = "crates/bfs_internal", default-features = false }
+bfs_internal = { version = "0.5.0", path = "crates/bfs_internal", default-features = false }
 bevy.workspace = true
 
 [dev-dependencies]

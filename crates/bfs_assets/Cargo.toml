@@ -10,10 +10,10 @@ keywords = ["falling-sand", "simulation", "assets"]
 
 [dependencies]
 bevy.workspace = true
-bfs_core = { path = "../bfs_core" }
-bfs_color = { path = "../bfs_color" }
-bfs_movement = { path = "../bfs_movement" }
-bfs_reactions = { path = "../bfs_reactions" }
+bfs_core = { version = "0.5.0", path = "../bfs_core" }
+bfs_color = { version = "0.5.0", path = "../bfs_color" }
+bfs_movement = { version = "0.5.0", path = "../bfs_movement" }
+bfs_reactions = { version = "0.5.0", path = "../bfs_reactions" }
 serde = { version = "1.0", features = ["derive"] }
 ron = "0.8"
 anyhow = "1.0"

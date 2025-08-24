@@ -5,14 +5,14 @@ edition = "2021"
 
 [dependencies]
 bevy.workspace = true
-bfs_core = { path = "../bfs_core" }
-bfs_movement = { path = "../bfs_movement", optional = true }
-bfs_color = { path = "../bfs_color", optional = true }
-bfs_debug = { path = "../bfs_debug", optional = true }
-bfs_reactions = { path = "../bfs_reactions", optional = true }
-bfs_scenes = { path = "../bfs_scenes", optional = true }
-bfs_physics = { path = "../bfs_physics", optional = true }
-bfs_assets = { path = "../bfs_assets", optional = true }
+bfs_core = { version = "0.5.0", path = "../bfs_core" }
+bfs_movement = { version = "0.5.0", path = "../bfs_movement", optional = true }
+bfs_color = { version = "0.5.0", path = "../bfs_color", optional = true }
+bfs_debug = { version = "0.5.0", path = "../bfs_debug", optional = true }
+bfs_reactions = { version = "0.5.0", path = "../bfs_reactions", optional = true }
+bfs_scenes = { version = "0.5.0", path = "../bfs_scenes", optional = true }
+bfs_physics = { version = "0.5.0", path = "../bfs_physics", optional = true }
+bfs_assets = { version = "0.5.0", path = "../bfs_assets", optional = true }
 bevy_turborand = "0.11.0"
 serde = "1.0.210"
 ron = "0.8"

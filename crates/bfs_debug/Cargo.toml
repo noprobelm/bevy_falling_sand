@@ -5,6 +5,6 @@ edition = "2021"
 
 [dependencies]
 bevy.workspace = true
-bfs_core = { path = "../bfs_core" }
-bfs_movement = { path = "../bfs_movement" }
-bfs_physics = { path = "../bfs_physics" }
+bfs_core = { version = "0.5.0", path = "../bfs_core" }
+bfs_movement = { version = "0.5.0", path = "../bfs_movement" }
+bfs_physics = { version = "0.5.0", path = "../bfs_physics" }
