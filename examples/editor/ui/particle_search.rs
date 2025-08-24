@@ -4,25 +4,13 @@ use bevy_falling_sand::prelude::ParticleTypeMaterialsParam;
 
 use super::particle_editor::LoadParticleIntoEditor;
 
-#[derive(Resource)]
+#[derive(Resource, Default)]
 pub struct ParticleSearchState {
     pub active: bool,
     pub input: String,
     pub suggestions: Vec<String>,
     pub suggestion_index: Option<usize>,
     pub needs_initial_focus: bool,
-}
-
-impl Default for ParticleSearchState {
-    fn default() -> Self {
-        Self {
-            active: false,
-            input: String::new(),
-            suggestions: Vec::new(),
-            suggestion_index: None,
-            needs_initial_focus: false,
-        }
-    }
 }
 
 #[derive(Resource, Default)]
@@ -283,13 +271,13 @@ pub fn handle_particle_search_input(
     mut search_state: ResMut<ParticleSearchState>,
     mut contexts: bevy_egui::EguiContexts,
 ) {
-    let console_input_id = bevy_egui::egui::Id::new("console_input");
-    let console_has_focus = contexts
+    let any_widget_has_focus = contexts
         .ctx_mut()
-        .memory(|mem| mem.focused() == Some(console_input_id));
+        .unwrap()
+        .memory(|mem| mem.focused().is_some());
 
     if keyboard_input.just_pressed(KeyCode::KeyN) {
-        if !search_state.active && !console_has_focus {
+        if !search_state.active && !any_widget_has_focus {
             search_state.activate();
         }
     }

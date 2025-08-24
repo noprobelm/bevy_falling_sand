@@ -27,8 +27,8 @@ use particle_editor::{
 };
 use particle_editor::{ParticleEditor, ParticleEditorPlugin};
 use particle_search::{
-    handle_particle_search_input, update_particle_search_cache, ParticleSearch,
-    ParticleSearchCache, ParticleSearchState,
+    ParticleSearch, ParticleSearchCache, ParticleSearchState, handle_particle_search_input,
+    update_particle_search_cache,
 };
 use statistics_panel::StatisticsPanel;
 pub use top_bar::particle_files::ParticleFileDialog;
@@ -45,9 +45,7 @@ pub struct UiPlugin;
 impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
-            EguiPlugin {
-                enable_multipass_for_primary_context: false,
-            },
+            EguiPlugin::default(),
             ConsolePlugin,
             ParticleEditorPlugin,
             ParticleFilesPlugin,
@@ -64,7 +62,7 @@ impl Plugin for UiPlugin {
             (console::receive_console_line, update_particle_search_cache),
         )
         .add_systems(
-            EguiContextPass,
+            EguiPrimaryContextPass,
             (
                 render_ui_panels,
                 render_particle_search,
@@ -131,11 +129,11 @@ fn render_ui_panels(
     mut ev_load_particles_scene: EventWriter<LoadParticlesSceneEvent>,
     particle_movement_state_current: Res<State<MovementSource>>,
     particle_search_cache: Res<ParticleSearchCache>,
-) {
-    let ctx = contexts.ctx_mut();
+) -> Result {
+    let ctx = contexts.ctx_mut()?;
 
     let _top_response = egui::TopBottomPanel::top("Top panel").show(ctx, |ui| {
-        egui::menu::bar(ui, |ui| {
+        egui::MenuBar::new().ui(ui, |ui| {
             UiTopBar.render(ui, &mut commands, &mut particle_file_browser_state);
 
             if let Some(ref error) = particle_file_dialog.last_error {
@@ -257,6 +255,7 @@ fn render_ui_panels(
         &mut ev_save_particles_scene,
         &mut ev_load_particles_scene,
     );
+    Ok(())
 }
 
 type ParticleSearchParams<'w, 's> = (
@@ -273,8 +272,8 @@ fn render_particle_search(
         particle_search_cache,
         mut load_particle_events,
     ): ParticleSearchParams,
-) {
-    let ctx = contexts.ctx_mut();
+) -> Result {
+    let ctx = contexts.ctx_mut()?;
 
     let mut particle_search_ui = egui::Ui::new(
         ctx.clone(),
@@ -288,4 +287,5 @@ fn render_particle_search(
         &particle_search_cache,
         &mut load_particle_events,
     );
+    Ok(())
 }

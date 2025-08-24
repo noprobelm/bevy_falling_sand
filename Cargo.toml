@@ -60,6 +60,7 @@ bevy = { version = "0.16", default-features = false, features = [
   "std",
   "bevy_state",
   "bevy_sprite",
+  "wayland",
 ] }
 
 [dependencies]
@@ -67,7 +68,7 @@ bfs_internal = { path = "crates/bfs_internal", default-features = false }
 bevy.workspace = true
 
 [dev-dependencies]
-bevy_egui = "0.34.1"
+bevy_egui = "0.36.0"
 bevy_turborand = "0.11.0"
 ron = "0.8"
 clap = { version = "4.5", features = ["derive"] }
