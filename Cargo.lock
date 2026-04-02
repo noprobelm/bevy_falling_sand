@@ -880,7 +880,7 @@ dependencies = [
 
 [[package]]
 name = "bevy_falling_sand"
-version = "0.7.0-dev"
+version = "0.7.0"
 dependencies = [
  "avian2d",
  "bevy",

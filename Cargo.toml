@@ -1,6 +1,6 @@
 [package]
 name = "bevy_falling_sand"
-version = "0.7.0-dev"
+version = "0.7.0"
 edition = "2021"
 authors = ["Jeff Barfield <jeffreybarfield@protonmail.com>"]
 license = "MIT OR Apache-2.0"
