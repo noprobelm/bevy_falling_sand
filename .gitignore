@@ -1,0 +1,6 @@
+target/
+CHANGELOG.org
+*.gif
+
+assets/scenes/
+.markdownlint*

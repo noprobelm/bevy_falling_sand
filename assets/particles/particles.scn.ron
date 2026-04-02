@@ -1,0 +1,1719 @@
+(
+  resources: {},
+  entities: {
+    4294966371: (
+      components: {
+        "bevy_falling_sand::color::particle::components::ColorRng": ((((
+          state: (18170951853948598787),
+        )))),
+        "bfs_color::particle::ColorProfile": (
+          source: Palette((
+            index: 0,
+            colors: [
+              Srgba((
+                red: 0.23137255,
+                green: 0.2,
+                blue: 0.2,
+                alpha: 1.0,
+              )),
+              Srgba((
+                red: 0.2901961,
+                green: 0.23921569,
+                blue: 0.23921569,
+                alpha: 1.0,
+              )),
+              Srgba((
+                red: 0.36078432,
+                green: 0.2901961,
+                blue: 0.2901961,
+                alpha: 1.0,
+              )),
+              Srgba((
+                red: 0.4,
+                green: 0.32941177,
+                blue: 0.32941177,
+                alpha: 1.0,
+              )),
+            ],
+          )),
+          assignment: Random,
+        ),
+        "bfs_core::particle::ParticleType": (
+          name: "Rock Wall",
+        ),
+        "bfs_movement::material::Wall": (),
+        "bfs_movement::particle::Density": (100),
+        "bfs_movement::particle::Speed": (
+          current: 1,
+          threshold: 0,
+          max: 3,
+        ),
+        "bfs_physics::StaticRigidBodyParticle": (),
+      },
+    ),
+    4294966372: (
+      components: {
+        "bevy_falling_sand::color::particle::components::ColorRng": ((((
+          state: (5124827734620074631),
+        )))),
+        "bfs_color::particle::ChanceColorChange": (0.1),
+        "bfs_color::particle::ColorProfile": (
+          source: Palette((
+            index: 0,
+            colors: [
+              Srgba((
+                red: 0.5803922,
+                green: 0.70980394,
+                blue: 0.78039217,
+                alpha: 1.0,
+              )),
+              Srgba((
+                red: 0.87058824,
+                green: 0.92941177,
+                blue: 0.67058825,
+                alpha: 1.0,
+              )),
+              Srgba((
+                red: 0.9411765,
+                green: 0.8117647,
+                blue: 0.4,
+                alpha: 1.0,
+              )),
+              Srgba((
+                red: 0.8392157,
+                green: 0.50980395,
+                blue: 0.41960785,
+                alpha: 1.0,
+              )),
+              Srgba((
+                red: 0.7411765,
+                green: 0.30980393,
+                blue: 0.41960785,
+                alpha: 1.0,
+              )),
+              Srgba((
+                red: 0.9411765,
+                green: 0.36078432,
+                blue: 0.36862746,
+                alpha: 1.0,
+              )),
+            ],
+          )),
+          assignment: Random,
+        ),
+        "bfs_core::particle::ParticleType": (
+          name: "Sparkly Slime",
+        ),
+        "bfs_movement::material::Liquid": (
+          fluidity: 1,
+          liquid_resistance: 0.3,
+        ),
+        "bfs_movement::particle::Density": (850),
+        "bfs_movement::particle::Momentum": ((0, 0)),
+        "bfs_movement::particle::Movement": (
+          neighbor_groups: [
+            (
+              neighbor_group: [
+                (0, -1),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (-1, -1),
+                (1, -1),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (1, 0),
+                (-1, 0),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (2, 0),
+                (-2, 0),
+              ],
+            ),
+          ],
+        ),
+        "bfs_movement::particle::Speed": (
+          current: 1,
+          threshold: 0,
+          max: 2,
+        ),
+      },
+    ),
+    4294966373: (
+      components: {
+        "bevy_falling_sand::color::particle::components::ColorRng": ((((
+          state: (14624528172144000945),
+        )))),
+        "bfs_color::particle::ColorProfile": (
+          source: Palette((
+            index: 0,
+            colors: [
+              Srgba((
+                red: 0.54901963,
+                green: 0.85882354,
+                blue: 0.972549,
+                alpha: 0.5019608,
+              )),
+            ],
+          )),
+          assignment: Random,
+        ),
+        "bfs_core::particle::ParticleType": (
+          name: "Ice Wall",
+        ),
+        "bfs_movement::material::Wall": (),
+        "bfs_movement::particle::Density": (100),
+        "bfs_movement::particle::Speed": (
+          current: 1,
+          threshold: 0,
+          max: 3,
+        ),
+        "bfs_physics::StaticRigidBodyParticle": (),
+        "bfs_reactions::particle::Flammable": (
+          duration: (
+            secs: 2,
+            nanos: 0,
+          ),
+          tick_rate: (
+            secs: 0,
+            nanos: 100000000,
+          ),
+          chance_despawn_per_tick: 0.01,
+          reaction: Some((
+            produces: (
+              name: "Water",
+            ),
+            chance_to_produce: 0.2,
+          )),
+          color: None,
+          spreads: None,
+          ignites_on_spawn: false,
+        ),
+      },
+    ),
+    4294966374: (
+      components: {
+        "bevy_falling_sand::color::particle::components::ColorRng": ((((
+          state: (6234454592950633364),
+        )))),
+        "bfs_color::particle::ColorProfile": (
+          source: Palette((
+            index: 0,
+            colors: [
+              Srgba((
+                red: 0.6313726,
+                green: 0.4,
+                blue: 0.18039216,
+                alpha: 1.0,
+              )),
+            ],
+          )),
+          assignment: Random,
+        ),
+        "bfs_core::particle::ParticleType": (
+          name: "Wood Wall",
+        ),
+        "bfs_movement::material::Wall": (),
+        "bfs_movement::particle::Density": (100),
+        "bfs_movement::particle::Speed": (
+          current: 1,
+          threshold: 0,
+          max: 3,
+        ),
+        "bfs_physics::StaticRigidBodyParticle": (),
+        "bfs_reactions::particle::Flammable": (
+          duration: (
+            secs: 10,
+            nanos: 0,
+          ),
+          tick_rate: (
+            secs: 0,
+            nanos: 100000000,
+          ),
+          chance_despawn_per_tick: 0.0,
+          reaction: Some((
+            produces: (
+              name: "Smoke",
+            ),
+            chance_to_produce: 0.035,
+          )),
+          color: Some((
+            source: Palette((
+              index: 0,
+              colors: [
+                Srgba((
+                  red: 1.0,
+                  green: 0.34901962,
+                  blue: 0.0,
+                  alpha: 1.0,
+                )),
+                Srgba((
+                  red: 1.0,
+                  green: 0.0,
+                  blue: 0.0,
+                  alpha: 1.0,
+                )),
+                Srgba((
+                  red: 1.0,
+                  green: 0.6,
+                  blue: 0.0,
+                  alpha: 1.0,
+                )),
+                Srgba((
+                  red: 1.0,
+                  green: 0.8117647,
+                  blue: 0.0,
+                  alpha: 1.0,
+                )),
+                Srgba((
+                  red: 1.0,
+                  green: 0.9098039,
+                  blue: 0.03137255,
+                  alpha: 1.0,
+                )),
+              ],
+            )),
+            assignment: Sequential,
+          )),
+          spreads: Some((
+            burn_radius: 1.5,
+            chance_to_spread: 0.005,
+            destroys_on_spread: false,
+          )),
+          ignites_on_spawn: false,
+        ),
+      },
+    ),
+    4294966375: (
+      components: {
+        "bevy_falling_sand::color::particle::components::ColorRng": ((((
+          state: (4195136673692441487),
+        )))),
+        "bfs_color::particle::ColorProfile": (
+          source: Palette((
+            index: 0,
+            colors: [
+              Srgba((
+                red: 0.47058824,
+                green: 0.023529412,
+                blue: 0.023529412,
+                alpha: 1.0,
+              )),
+            ],
+          )),
+          assignment: Random,
+        ),
+        "bfs_core::particle::ParticleType": (
+          name: "Blood",
+        ),
+        "bfs_movement::material::Liquid": (
+          fluidity: 5,
+          liquid_resistance: 0.2,
+        ),
+        "bfs_movement::particle::Density": (800),
+        "bfs_movement::particle::Momentum": ((0, 0)),
+        "bfs_movement::particle::Movement": (
+          neighbor_groups: [
+            (
+              neighbor_group: [
+                (0, -1),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (-1, -1),
+                (1, -1),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (1, 0),
+                (-1, 0),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (2, 0),
+                (-2, 0),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (3, 0),
+                (-3, 0),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (4, 0),
+                (-4, 0),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (5, 0),
+                (-5, 0),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (6, 0),
+                (-6, 0),
+              ],
+            ),
+          ],
+        ),
+        "bfs_movement::particle::Speed": (
+          current: 1,
+          threshold: 0,
+          max: 3,
+        ),
+      },
+    ),
+    4294966376: (
+      components: {
+        "bevy_falling_sand::color::particle::components::ColorRng": ((((
+          state: (2749350277783062015),
+        )))),
+        "bfs_color::particle::ColorProfile": (
+          source: Palette((
+            index: 0,
+            colors: [
+              Srgba((
+                red: 0.8392157,
+                green: 0.6,
+                blue: 0.4392157,
+                alpha: 0.5019608,
+              )),
+            ],
+          )),
+          assignment: Random,
+        ),
+        "bfs_core::particle::ParticleType": (
+          name: "Whiskey",
+        ),
+        "bfs_movement::material::Liquid": (
+          fluidity: 5,
+          liquid_resistance: 0.15,
+        ),
+        "bfs_movement::particle::Density": (850),
+        "bfs_movement::particle::Momentum": ((0, 0)),
+        "bfs_movement::particle::Movement": (
+          neighbor_groups: [
+            (
+              neighbor_group: [
+                (0, -1),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (-1, -1),
+                (1, -1),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (1, 0),
+                (-1, 0),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (2, 0),
+                (-2, 0),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (3, 0),
+                (-3, 0),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (4, 0),
+                (-4, 0),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (5, 0),
+                (-5, 0),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (6, 0),
+                (-6, 0),
+              ],
+            ),
+          ],
+        ),
+        "bfs_movement::particle::Speed": (
+          current: 1,
+          threshold: 0,
+          max: 3,
+        ),
+      },
+    ),
+    4294966377: (
+      components: {
+        "bevy_falling_sand::color::particle::components::ColorRng": ((((
+          state: (1351622700080147317),
+        )))),
+        "bfs_color::particle::ColorProfile": (
+          source: Palette((
+            index: 0,
+            colors: [
+              Srgba((
+                red: 0.36078432,
+                green: 0.5294118,
+                blue: 0.1882353,
+                alpha: 1.0,
+              )),
+              Srgba((
+                red: 0.23921569,
+                green: 0.36078432,
+                blue: 0.12941177,
+                alpha: 1.0,
+              )),
+              Srgba((
+                red: 0.32156864,
+                green: 0.47843137,
+                blue: 0.18039216,
+                alpha: 1.0,
+              )),
+              Srgba((
+                red: 0.36078432,
+                green: 0.54901963,
+                blue: 0.2,
+                alpha: 1.0,
+              )),
+            ],
+          )),
+          assignment: Random,
+        ),
+        "bfs_core::particle::ParticleType": (
+          name: "Grass Wall",
+        ),
+        "bfs_movement::material::Wall": (),
+        "bfs_movement::particle::Density": (100),
+        "bfs_movement::particle::Speed": (
+          current: 1,
+          threshold: 0,
+          max: 3,
+        ),
+        "bfs_physics::StaticRigidBodyParticle": (),
+        "bfs_reactions::particle::Flammable": (
+          duration: (
+            secs: 1,
+            nanos: 0,
+          ),
+          tick_rate: (
+            secs: 0,
+            nanos: 100000000,
+          ),
+          chance_despawn_per_tick: 0.5,
+          reaction: Some((
+            produces: (
+              name: "FIRE",
+            ),
+            chance_to_produce: 1.0,
+          )),
+          color: Some((
+            source: Palette((
+              index: 0,
+              colors: [
+                Srgba((
+                  red: 1.0,
+                  green: 0.34901962,
+                  blue: 0.0,
+                  alpha: 1.0,
+                )),
+                Srgba((
+                  red: 1.0,
+                  green: 0.0,
+                  blue: 0.0,
+                  alpha: 1.0,
+                )),
+                Srgba((
+                  red: 1.0,
+                  green: 0.6,
+                  blue: 0.0,
+                  alpha: 1.0,
+                )),
+                Srgba((
+                  red: 1.0,
+                  green: 0.8117647,
+                  blue: 0.0,
+                  alpha: 1.0,
+                )),
+                Srgba((
+                  red: 1.0,
+                  green: 0.9098039,
+                  blue: 0.03137255,
+                  alpha: 1.0,
+                )),
+              ],
+            )),
+            assignment: Sequential,
+          )),
+          spreads: Some((
+            burn_radius: 1.5,
+            chance_to_spread: 0.36000000000000004,
+            destroys_on_spread: false,
+          )),
+          ignites_on_spawn: false,
+        ),
+      },
+    ),
+    4294966378: (
+      components: {
+        "bevy_falling_sand::color::particle::components::ColorRng": ((((
+          state: (2297297865092059587),
+        )))),
+        "bfs_color::particle::ColorProfile": (
+          source: Palette((
+            index: 0,
+            colors: [
+              Srgba((
+                red: 0.21960784,
+                green: 0.10980392,
+                blue: 0.15686275,
+                alpha: 1.0,
+              )),
+              Srgba((
+                red: 0.23921569,
+                green: 0.40784314,
+                blue: 0.5568628,
+                alpha: 1.0,
+              )),
+              Srgba((
+                red: 0.6666667,
+                green: 0.7372549,
+                blue: 0.54901963,
+                alpha: 1.0,
+              )),
+              Srgba((
+                red: 0.9098039,
+                green: 0.8862745,
+                blue: 0.70980394,
+                alpha: 1.0,
+              )),
+              Srgba((
+                red: 0.9490196,
+                green: 0.60784316,
+                blue: 0.42745098,
+                alpha: 1.0,
+              )),
+            ],
+          )),
+          assignment: Random,
+        ),
+        "bfs_core::particle::ParticleType": (
+          name: "My Custom Particle",
+        ),
+        "bfs_movement::material::MovableSolid": (
+          liquid_resistance: 0.5,
+          air_resistance: 0.4,
+        ),
+        "bfs_movement::particle::Density": (1250),
+        "bfs_movement::particle::Momentum": ((0, 0)),
+        "bfs_movement::particle::Movement": (
+          neighbor_groups: [
+            (
+              neighbor_group: [
+                (0, -1),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (-1, -1),
+                (1, -1),
+              ],
+            ),
+          ],
+        ),
+        "bfs_movement::particle::Speed": (
+          current: 1,
+          threshold: 5,
+          max: 10,
+        ),
+        "bfs_physics::StaticRigidBodyParticle": (),
+      },
+    ),
+    4294966379: (
+      components: {
+        "bevy_falling_sand::color::particle::components::ColorRng": ((((
+          state: (13479323591422416409),
+        )))),
+        "bfs_color::particle::ColorProfile": (
+          source: Palette((
+            index: 0,
+            colors: [
+              Srgba((
+                red: 0.16862746,
+                green: 0.07058824,
+                blue: 0.16078432,
+                alpha: 1.0,
+              )),
+            ],
+          )),
+          assignment: Random,
+        ),
+        "bfs_core::particle::ParticleType": (
+          name: "Oil",
+        ),
+        "bfs_movement::material::Liquid": (
+          fluidity: 3,
+          liquid_resistance: 0.25,
+        ),
+        "bfs_movement::particle::Density": (730),
+        "bfs_movement::particle::Momentum": ((0, 0)),
+        "bfs_movement::particle::Movement": (
+          neighbor_groups: [
+            (
+              neighbor_group: [
+                (0, -1),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (-1, -1),
+                (1, -1),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (1, 0),
+                (-1, 0),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (2, 0),
+                (-2, 0),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (3, 0),
+                (-3, 0),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (4, 0),
+                (-4, 0),
+              ],
+            ),
+          ],
+        ),
+        "bfs_movement::particle::Speed": (
+          current: 1,
+          threshold: 0,
+          max: 3,
+        ),
+        "bfs_reactions::particle::Flammable": (
+          duration: (
+            secs: 5,
+            nanos: 0,
+          ),
+          tick_rate: (
+            secs: 0,
+            nanos: 100000000,
+          ),
+          chance_despawn_per_tick: 0.1,
+          reaction: Some((
+            produces: (
+              name: "Smoke",
+            ),
+            chance_to_produce: 0.035,
+          )),
+          color: Some((
+            source: Palette((
+              index: 0,
+              colors: [
+                Srgba((
+                  red: 1.0,
+                  green: 0.34901962,
+                  blue: 0.0,
+                  alpha: 1.0,
+                )),
+                Srgba((
+                  red: 1.0,
+                  green: 0.0,
+                  blue: 0.0,
+                  alpha: 1.0,
+                )),
+                Srgba((
+                  red: 1.0,
+                  green: 0.6,
+                  blue: 0.0,
+                  alpha: 1.0,
+                )),
+                Srgba((
+                  red: 1.0,
+                  green: 0.8117647,
+                  blue: 0.0,
+                  alpha: 1.0,
+                )),
+                Srgba((
+                  red: 1.0,
+                  green: 0.9098039,
+                  blue: 0.03137255,
+                  alpha: 1.0,
+                )),
+              ],
+            )),
+            assignment: Sequential,
+          )),
+          spreads: Some((
+            burn_radius: 2.0,
+            chance_to_spread: 0.2,
+            destroys_on_spread: false,
+          )),
+          ignites_on_spawn: false,
+        ),
+      },
+    ),
+    4294966380: (
+      components: {
+        "bevy_falling_sand::color::particle::components::ColorRng": ((((
+          state: (6806006520752271954),
+        )))),
+        "bfs_color::particle::ChanceColorChange": (0.1),
+        "bfs_color::particle::ColorProfile": (
+          source: Palette((
+            index: 0,
+            colors: [
+              Srgba((
+                red: 0.4392157,
+                green: 0.4117647,
+                blue: 0.4,
+                alpha: 1.0,
+              )),
+              Srgba((
+                red: 0.52156866,
+                green: 0.5019608,
+                blue: 0.4509804,
+                alpha: 1.0,
+              )),
+            ],
+          )),
+          assignment: Random,
+        ),
+        "bfs_core::particle::ParticleType": (
+          name: "Smoke",
+        ),
+        "bfs_movement::material::Gas": (
+          fluidity: 1,
+        ),
+        "bfs_movement::particle::Density": (275),
+        "bfs_movement::particle::Movement": (
+          neighbor_groups: [
+            (
+              neighbor_group: [
+                (0, 1),
+                (1, 1),
+                (-1, 1),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (2, 0),
+                (-2, 0),
+              ],
+            ),
+          ],
+        ),
+        "bfs_movement::particle::Speed": (
+          current: 1,
+          threshold: 0,
+          max: 1,
+        ),
+      },
+    ),
+    4294966381: (
+      components: {
+        "bevy_falling_sand::color::particle::components::ColorRng": ((((
+          state: (16804005117514309409),
+        )))),
+        "bfs_color::particle::ColorProfile": (
+          source: Palette((
+            index: 0,
+            colors: [
+              Srgba((
+                red: 0.5686275,
+                green: 0.41960785,
+                blue: 0.29803923,
+                alpha: 1.0,
+              )),
+              Srgba((
+                red: 0.4509804,
+                green: 0.34117648,
+                blue: 0.23921569,
+                alpha: 1.0,
+              )),
+            ],
+          )),
+          assignment: Random,
+        ),
+        "bfs_core::particle::ParticleType": (
+          name: "Dirt Wall",
+        ),
+        "bfs_movement::material::Wall": (),
+        "bfs_movement::particle::Density": (100),
+        "bfs_movement::particle::Speed": (
+          current: 1,
+          threshold: 0,
+          max: 3,
+        ),
+        "bfs_physics::StaticRigidBodyParticle": (),
+      },
+    ),
+    4294966382: (
+      components: {
+        "bevy_falling_sand::color::particle::components::ColorRng": ((((
+          state: (8885909299698391583),
+        )))),
+        "bfs_color::particle::ColorProfile": (
+          source: Palette((
+            index: 0,
+            colors: [
+              Srgba((
+                red: 0.5686275,
+                green: 0.41960785,
+                blue: 0.29803923,
+                alpha: 1.0,
+              )),
+              Srgba((
+                red: 0.4509804,
+                green: 0.34117648,
+                blue: 0.23921569,
+                alpha: 1.0,
+              )),
+            ],
+          )),
+          assignment: Random,
+        ),
+        "bfs_core::particle::ParticleType": (
+          name: "Dirt",
+        ),
+        "bfs_movement::material::MovableSolid": (
+          liquid_resistance: 0.7,
+          air_resistance: 0.6,
+        ),
+        "bfs_movement::particle::Density": (1250),
+        "bfs_movement::particle::Momentum": ((0, 0)),
+        "bfs_movement::particle::Movement": (
+          neighbor_groups: [
+            (
+              neighbor_group: [
+                (0, -1),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (-1, -1),
+                (1, -1),
+              ],
+            ),
+          ],
+        ),
+        "bfs_movement::particle::Speed": (
+          current: 1,
+          threshold: 5,
+          max: 10,
+        ),
+        "bfs_physics::StaticRigidBodyParticle": (),
+      },
+    ),
+    4294966383: (
+      components: {
+        "bevy_falling_sand::color::particle::components::ColorRng": ((((
+          state: (5430933845223764771),
+        )))),
+        "bfs_color::particle::ColorProfile": (
+          source: Palette((
+            index: 0,
+            colors: [
+              Srgba((
+                red: 0.21960784,
+                green: 0.10980392,
+                blue: 0.15686275,
+                alpha: 1.0,
+              )),
+              Srgba((
+                red: 0.23921569,
+                green: 0.40784314,
+                blue: 0.5568628,
+                alpha: 1.0,
+              )),
+              Srgba((
+                red: 0.6666667,
+                green: 0.7372549,
+                blue: 0.54901963,
+                alpha: 1.0,
+              )),
+              Srgba((
+                red: 0.9098039,
+                green: 0.8862745,
+                blue: 0.70980394,
+                alpha: 1.0,
+              )),
+              Srgba((
+                red: 0.9490196,
+                green: 0.60784316,
+                blue: 0.42745098,
+                alpha: 1.0,
+              )),
+            ],
+          )),
+          assignment: Random,
+        ),
+        "bfs_core::particle::ParticleType": (
+          name: "My Custom Wall Particle",
+        ),
+        "bfs_movement::material::Wall": (),
+        "bfs_movement::particle::Density": (100),
+        "bfs_movement::particle::Speed": (
+          current: 1,
+          threshold: 0,
+          max: 3,
+        ),
+        "bfs_physics::StaticRigidBodyParticle": (),
+      },
+    ),
+    4294966384: (
+      components: {
+        "bevy_falling_sand::color::particle::components::ColorRng": ((((
+          state: (16665494064429485914),
+        )))),
+        "bfs_color::particle::ChanceColorChange": (0.1),
+        "bfs_color::particle::ColorProfile": (
+          source: Palette((
+            index: 0,
+            colors: [
+              Srgba((
+                red: 0.2509804,
+                green: 0.38431373,
+                blue: 0.09411765,
+                alpha: 0.5019608,
+              )),
+              Srgba((
+                red: 0.2901961,
+                green: 0.4509804,
+                blue: 0.10980392,
+                alpha: 0.5019608,
+              )),
+            ],
+          )),
+          assignment: Random,
+        ),
+        "bfs_core::particle::ParticleType": (
+          name: "Flammable Gas",
+        ),
+        "bfs_movement::material::Gas": (
+          fluidity: 1,
+        ),
+        "bfs_movement::particle::Density": (200),
+        "bfs_movement::particle::Movement": (
+          neighbor_groups: [
+            (
+              neighbor_group: [
+                (0, 1),
+                (1, 1),
+                (-1, 1),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (2, 0),
+                (-2, 0),
+              ],
+            ),
+          ],
+        ),
+        "bfs_movement::particle::Speed": (
+          current: 1,
+          threshold: 0,
+          max: 1,
+        ),
+        "bfs_reactions::particle::Flammable": (
+          duration: (
+            secs: 1,
+            nanos: 0,
+          ),
+          tick_rate: (
+            secs: 0,
+            nanos: 100000000,
+          ),
+          chance_despawn_per_tick: 0.5,
+          reaction: None,
+          color: Some((
+            source: Palette((
+              index: 0,
+              colors: [
+                Srgba((
+                  red: 1.0,
+                  green: 0.34901962,
+                  blue: 0.0,
+                  alpha: 1.0,
+                )),
+                Srgba((
+                  red: 1.0,
+                  green: 0.0,
+                  blue: 0.0,
+                  alpha: 1.0,
+                )),
+                Srgba((
+                  red: 1.0,
+                  green: 0.6,
+                  blue: 0.0,
+                  alpha: 1.0,
+                )),
+                Srgba((
+                  red: 1.0,
+                  green: 0.8117647,
+                  blue: 0.0,
+                  alpha: 1.0,
+                )),
+                Srgba((
+                  red: 1.0,
+                  green: 0.9098039,
+                  blue: 0.03137255,
+                  alpha: 1.0,
+                )),
+              ],
+            )),
+            assignment: Sequential,
+          )),
+          spreads: Some((
+            burn_radius: 2.0,
+            chance_to_spread: 0.35000000000000003,
+            destroys_on_spread: true,
+          )),
+          ignites_on_spawn: false,
+        ),
+      },
+    ),
+    4294966385: (
+      components: {
+        "bevy_falling_sand::color::particle::components::ColorRng": ((((
+          state: (13948684740126968897),
+        )))),
+        "bfs_color::particle::ColorProfile": (
+          source: Palette((
+            index: 0,
+            colors: [
+              Srgba((
+                red: 1.0,
+                green: 0.92156863,
+                blue: 0.5411765,
+                alpha: 1.0,
+              )),
+              Srgba((
+                red: 0.9490196,
+                green: 0.8784314,
+                blue: 0.41960785,
+                alpha: 1.0,
+              )),
+            ],
+          )),
+          assignment: Random,
+        ),
+        "bfs_core::particle::ParticleType": (
+          name: "Sand",
+        ),
+        "bfs_movement::material::MovableSolid": (
+          liquid_resistance: 0.75,
+          air_resistance: 0.9,
+        ),
+        "bfs_movement::particle::Density": (1250),
+        "bfs_movement::particle::Momentum": ((0, 0)),
+        "bfs_movement::particle::Movement": (
+          neighbor_groups: [
+            (
+              neighbor_group: [
+                (0, -1),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (-1, -1),
+                (1, -1),
+              ],
+            ),
+          ],
+        ),
+        "bfs_movement::particle::Speed": (
+          current: 1,
+          threshold: 5,
+          max: 10,
+        ),
+        "bfs_physics::StaticRigidBodyParticle": (),
+      },
+    ),
+    4294966386: (
+      components: {
+        "bevy_falling_sand::color::particle::components::ColorRng": ((((
+          state: (15151636439865496520),
+        )))),
+        "bfs_color::particle::ChanceColorChange": (0.1),
+        "bfs_color::particle::ColorProfile": (
+          source: Palette((
+            index: 0,
+            colors: [
+              Srgba((
+                red: 1.0,
+                green: 0.34901962,
+                blue: 0.0,
+                alpha: 1.0,
+              )),
+              Srgba((
+                red: 1.0,
+                green: 0.5686275,
+                blue: 0.0,
+                alpha: 1.0,
+              )),
+              Srgba((
+                red: 1.0,
+                green: 0.8117647,
+                blue: 0.0,
+                alpha: 1.0,
+              )),
+              Srgba((
+                red: 0.78039217,
+                green: 0.2901961,
+                blue: 0.019607844,
+                alpha: 1.0,
+              )),
+            ],
+          )),
+          assignment: Random,
+        ),
+        "bfs_core::particle::ParticleType": (
+          name: "FIRE",
+        ),
+        "bfs_movement::material::Gas": (
+          fluidity: 3,
+        ),
+        "bfs_movement::particle::Density": (450),
+        "bfs_movement::particle::Movement": (
+          neighbor_groups: [
+            (
+              neighbor_group: [
+                (0, 1),
+                (1, 1),
+                (-1, 1),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (2, 0),
+                (-2, 0),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (3, 0),
+                (-3, 0),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (4, 0),
+                (-4, 0),
+              ],
+            ),
+          ],
+        ),
+        "bfs_movement::particle::Speed": (
+          current: 1,
+          threshold: 0,
+          max: 3,
+        ),
+        "bfs_reactions::particle::Flammable": (
+          duration: (
+            secs: 1,
+            nanos: 0,
+          ),
+          tick_rate: (
+            secs: 0,
+            nanos: 100000000,
+          ),
+          chance_despawn_per_tick: 0.5,
+          reaction: None,
+          color: None,
+          spreads: Some((
+            burn_radius: 1.5,
+            chance_to_spread: 0.01,
+            destroys_on_spread: false,
+          )),
+          ignites_on_spawn: true,
+        ),
+      },
+    ),
+    4294966387: (
+      components: {
+        "bevy_falling_sand::color::particle::components::ColorRng": ((((
+          state: (10731964522450534887),
+        )))),
+        "bfs_color::particle::ColorProfile": (
+          source: Palette((
+            index: 0,
+            colors: [
+              Srgba((
+                red: 0.41960785,
+                green: 0.4509804,
+                blue: 0.54901963,
+                alpha: 1.0,
+              )),
+              Srgba((
+                red: 0.54901963,
+                green: 0.5882353,
+                blue: 0.67058825,
+                alpha: 1.0,
+              )),
+              Srgba((
+                red: 0.69803923,
+                green: 0.76862746,
+                blue: 0.8392157,
+                alpha: 1.0,
+              )),
+            ],
+          )),
+          assignment: Random,
+        ),
+        "bfs_core::particle::ParticleType": (
+          name: "Rock",
+        ),
+        "bfs_movement::material::Solid": (),
+        "bfs_movement::particle::Density": (1250),
+        "bfs_movement::particle::Movement": (
+          neighbor_groups: [
+            (
+              neighbor_group: [
+                (0, -1),
+              ],
+            ),
+          ],
+        ),
+        "bfs_movement::particle::Speed": (
+          current: 1,
+          threshold: 0,
+          max: 3,
+        ),
+        "bfs_physics::StaticRigidBodyParticle": (),
+      },
+    ),
+    4294966388: (
+      components: {
+        "bevy_falling_sand::color::particle::components::ColorRng": ((((
+          state: (13918822473982374260),
+        )))),
+        "bfs_color::particle::ColorProfile": (
+          source: Palette((
+            index: 0,
+            colors: [
+              Srgba((
+                red: 0.043137256,
+                green: 0.5019608,
+                blue: 0.67058825,
+                alpha: 0.5019608,
+              )),
+            ],
+          )),
+          assignment: Random,
+        ),
+        "bfs_core::particle::ParticleType": (
+          name: "Water",
+        ),
+        "bfs_movement::material::Liquid": (
+          fluidity: 5,
+          liquid_resistance: 0.1,
+        ),
+        "bfs_movement::particle::Density": (750),
+        "bfs_movement::particle::Momentum": ((0, 0)),
+        "bfs_movement::particle::Movement": (
+          neighbor_groups: [
+            (
+              neighbor_group: [
+                (0, -1),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (-1, -1),
+                (1, -1),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (1, 0),
+                (-1, 0),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (2, 0),
+                (-2, 0),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (3, 0),
+                (-3, 0),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (4, 0),
+                (-4, 0),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (5, 0),
+                (-5, 0),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (6, 0),
+                (-6, 0),
+              ],
+            ),
+          ],
+        ),
+        "bfs_movement::particle::Speed": (
+          current: 1,
+          threshold: 0,
+          max: 3,
+        ),
+      },
+    ),
+    4294966389: (
+      components: {
+        "bevy_falling_sand::color::particle::components::ColorRng": ((((
+          state: (10190548807858515782),
+        )))),
+        "bfs_color::particle::ChanceColorChange": (0.1),
+        "bfs_color::particle::ColorProfile": (
+          source: Palette((
+            index: 0,
+            colors: [
+              Srgba((
+                red: 0.50980395,
+                green: 0.59607846,
+                blue: 0.20392157,
+                alpha: 0.5019608,
+              )),
+              Srgba((
+                red: 0.56078434,
+                green: 0.654902,
+                blue: 0.22352941,
+                alpha: 0.5019608,
+              )),
+            ],
+          )),
+          assignment: Random,
+        ),
+        "bfs_core::particle::ParticleType": (
+          name: "Slime",
+        ),
+        "bfs_movement::material::Liquid": (
+          fluidity: 1,
+          liquid_resistance: 0.4,
+        ),
+        "bfs_movement::particle::Density": (850),
+        "bfs_movement::particle::Momentum": ((0, 0)),
+        "bfs_movement::particle::Movement": (
+          neighbor_groups: [
+            (
+              neighbor_group: [
+                (0, -1),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (-1, -1),
+                (1, -1),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (1, 0),
+                (-1, 0),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (2, 0),
+                (-2, 0),
+              ],
+            ),
+          ],
+        ),
+        "bfs_movement::particle::Speed": (
+          current: 1,
+          threshold: 0,
+          max: 2,
+        ),
+      },
+    ),
+    4294966390: (
+      components: {
+        "bevy_falling_sand::color::particle::components::ColorRng": ((((
+          state: (7842092094648030120),
+        )))),
+        "bfs_color::particle::ChanceColorChange": (0.1),
+        "bfs_color::particle::ColorProfile": (
+          source: Palette((
+            index: 0,
+            colors: [
+              Srgba((
+                red: 0.93333334,
+                green: 0.9490196,
+                blue: 0.95686275,
+                alpha: 1.0,
+              )),
+              Srgba((
+                red: 0.78039217,
+                green: 0.8392157,
+                blue: 0.8784314,
+                alpha: 1.0,
+              )),
+            ],
+          )),
+          assignment: Random,
+        ),
+        "bfs_core::particle::ParticleType": (
+          name: "Steam",
+        ),
+        "bfs_movement::material::Gas": (
+          fluidity: 3,
+        ),
+        "bfs_movement::particle::Density": (250),
+        "bfs_movement::particle::Movement": (
+          neighbor_groups: [
+            (
+              neighbor_group: [
+                (0, 1),
+                (1, 1),
+                (-1, 1),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (2, 0),
+                (-2, 0),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (3, 0),
+                (-3, 0),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (4, 0),
+                (-4, 0),
+              ],
+            ),
+          ],
+        ),
+        "bfs_movement::particle::Speed": (
+          current: 1,
+          threshold: 0,
+          max: 1,
+        ),
+        "bfs_reactions::particle::Flammable": (
+          duration: (
+            secs: 0,
+            nanos: 200000000,
+          ),
+          tick_rate: (
+            secs: 0,
+            nanos: 100000000,
+          ),
+          chance_despawn_per_tick: 1.0,
+          reaction: Some((
+            produces: (
+              name: "Water",
+            ),
+            chance_to_produce: 1.0,
+          )),
+          color: None,
+          spreads: None,
+          ignites_on_spawn: false,
+        ),
+      },
+    ),
+    4294966391: (
+      components: {
+        "bevy_falling_sand::color::particle::components::ColorRng": ((((
+          state: (10781586177991150028),
+        )))),
+        "bfs_color::particle::ColorProfile": (
+          source: Palette((
+            index: 0,
+            colors: [
+              Srgba((
+                red: 0.91764706,
+                green: 0.99215686,
+                blue: 0.972549,
+                alpha: 1.0,
+              )),
+              Srgba((
+                red: 1.0,
+                green: 1.0,
+                blue: 1.0,
+                alpha: 1.0,
+              )),
+            ],
+          )),
+          assignment: Random,
+        ),
+        "bfs_core::particle::ParticleType": (
+          name: "Snow",
+        ),
+        "bfs_movement::material::MovableSolid": (
+          liquid_resistance: 0.3,
+          air_resistance: 0.2,
+        ),
+        "bfs_movement::particle::Density": (1250),
+        "bfs_movement::particle::Momentum": ((0, 0)),
+        "bfs_movement::particle::Movement": (
+          neighbor_groups: [
+            (
+              neighbor_group: [
+                (0, -1),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (-1, -1),
+                (1, -1),
+              ],
+            ),
+          ],
+        ),
+        "bfs_movement::particle::Speed": (
+          current: 1,
+          threshold: 5,
+          max: 10,
+        ),
+        "bfs_physics::StaticRigidBodyParticle": (),
+      },
+    ),
+    4294966392: (
+      components: {
+        "bevy_falling_sand::color::particle::components::ColorRng": ((((
+          state: (18400022474921586873),
+        )))),
+        "bfs_color::particle::ColorProfile": (
+          source: Palette((
+            index: 0,
+            colors: [
+              Srgba((
+                red: 0.41960785,
+                green: 0.4509804,
+                blue: 0.54901963,
+                alpha: 1.0,
+              )),
+              Srgba((
+                red: 0.54901963,
+                green: 0.5882353,
+                blue: 0.67058825,
+                alpha: 1.0,
+              )),
+              Srgba((
+                red: 0.69803923,
+                green: 0.76862746,
+                blue: 0.8392157,
+                alpha: 1.0,
+              )),
+            ],
+          )),
+          assignment: Random,
+        ),
+        "bfs_core::particle::ParticleType": (
+          name: "Dense Rock Wall",
+        ),
+        "bfs_movement::material::Wall": (),
+        "bfs_movement::particle::Density": (100),
+        "bfs_movement::particle::Speed": (
+          current: 1,
+          threshold: 0,
+          max: 3,
+        ),
+        "bfs_physics::StaticRigidBodyParticle": (),
+      },
+    ),
+    4294966393: (
+      components: {
+        "bevy_falling_sand::color::particle::components::ColorRng": ((((
+          state: (4579569766091906389),
+        )))),
+        "bfs_color::particle::ColorProfile": (
+          source: Gradient((
+            start: Hsla((
+              hue: 0.0,
+              saturation: 1.0,
+              lightness: 0.5,
+              alpha: 1.0,
+            )),
+            end: Hsla((
+              hue: 360.0,
+              saturation: 1.0,
+              lightness: 0.5,
+              alpha: 1.0,
+            )),
+            index: 0,
+            steps: 5000,
+            hsv_interpolation: true,
+          )),
+          assignment: Sequential,
+        ),
+        "bfs_core::particle::ParticleType": (
+          name: "Colorful",
+        ),
+        "bfs_movement::material::MovableSolid": (
+          liquid_resistance: 0.5,
+          air_resistance: 0.4,
+        ),
+        "bfs_movement::particle::Density": (1250),
+        "bfs_movement::particle::Momentum": ((0, 0)),
+        "bfs_movement::particle::Movement": (
+          neighbor_groups: [
+            (
+              neighbor_group: [
+                (0, -1),
+              ],
+            ),
+            (
+              neighbor_group: [
+                (-1, -1),
+                (1, -1),
+              ],
+            ),
+          ],
+        ),
+        "bfs_movement::particle::Speed": (
+          current: 1,
+          threshold: 5,
+          max: 10,
+        ),
+        "bfs_physics::StaticRigidBodyParticle": (),
+      },
+    ),
+  },
+)
