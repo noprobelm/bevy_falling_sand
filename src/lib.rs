@@ -169,7 +169,7 @@
 //! - [Configuring collision mesh calculation intervals](DirtyChunkUpdateInterval)
 //! - [Configuring polygon simplification tolerances](`DouglasPeuckerEpsilon`)
 //!
-//! ## [World peristence](crate::persistence)
+//! ## [World persistence](crate::persistence)
 //!
 //! - [Saving chunks to disk](PersistChunksSignal)
 //! - [Saving particle types to disk](`PersistParticleTypesSignal`)
@@ -177,9 +177,9 @@
 //!
 //! ## [Scenes](crate::scenes)
 //!
-//! - [Defining a particle scene](ParticleScene)
-//! - [Registering scenes for spawning](ParticleSceneRegistry)
-//! - [Spawning a scene into the world](SpawnSceneSignal)
+//! - [Scene asset format](ParticleScene)
+//! - [Scene registry](ParticleSceneRegistry)
+//! - [Spawning a scene](SpawnSceneSignal)
 //!
 //! ## Map origin shifts and dynamic chunk loading
 //!

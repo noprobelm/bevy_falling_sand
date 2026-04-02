@@ -10,17 +10,9 @@
 //!
 //! - A palette-indexed PNG where each distinct color represents a particle type
 //!   (transparent pixels are empty).
-//! - A `.scn.ron` manifest mapping RGBA byte tuples to particle type names:
+//! - A `.scn.ron` manifest mapping RGBA byte tuples to particle type names.
 //!
-//! ```ron
-//! (
-//!   image: "scenes/my_scene.png",
-//!   layers: {
-//!     (255, 0, 0, 255): "Sand",
-//!     (0, 128, 0, 255): "Grass Wall",
-//!   },
-//! )
-//! ```
+//! See [`ParticleScene`] for the manifest format.
 use std::borrow::Cow;
 use std::collections::HashMap;
 
