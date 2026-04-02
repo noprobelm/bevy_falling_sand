@@ -17,15 +17,10 @@
 | `bevy_falling_sand`   | `bevy`    |
 |-----------------------|-----------|
 | 0.7.x                 | 0.18.x    |
-| 0.6.x                 | 0.17.x    |
-| 0.5.x                 | 0.16.x    |
-| 0.4.x                 | 0.15.x    |
-| 0.3.x                 | 0.14.x    |
-| 0.1.x                 | 0.13.x    |
 
 # Getting Started
 
-Add the `FallingSandPlugin` to your Bevy app, overriding defaults as desired:
+In addition to this boilerplate, several examples are available to help you get started.
 
 ```rust
 use bevy::prelude::*;
