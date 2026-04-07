@@ -37,7 +37,7 @@
 //! | [`mod@render`]       | Particle color profiles and chunk-based rendering                        | —                          |
 //! | [`mod@movement`]     | Particle movement systems                                                | —                          |
 //! | [`mod@reactions`]    | Inter-particle reactions                                                 | `render`, `movement`       |
-//! | [`mod@physics`]      | [avian2d](https://docs.rs/avian2d) integration. Adds the avian plugin.   | —                          |
+//! | [`mod@physics`]      | [avian2d](https://docs.rs/avian2d) static and dynamic rigid body integration | —                          |
 //! | [`mod@debug`]        | Debug resources                                                          | —                          |
 //! | [`mod@persistence`]  | Save/load chunks, particle types, and scenes to disk                     | `bfs`, `bfc`               |
 //! | `bfs`                | Enables [`persistence::bfs`] — compact particle scene format             | —                          |
@@ -161,6 +161,7 @@
 //! ## [Avian2d integration](`crate::physics`)
 //!
 //! - [Tagging particles as static rigid bodies](`StaticRigidBodyParticle`)
+//! - [Promoting particles to dynamic rigid bodies](`DynamicRigidBodySignal`)
 //! - [Configuring collision mesh calculation intervals](DirtyChunkUpdateInterval)
 //! - [Configuring polygon simplification tolerances](`DouglasPeuckerEpsilon`)
 //!

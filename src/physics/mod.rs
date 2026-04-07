@@ -1,7 +1,18 @@
 //! Integrates [avian2d](https://docs.rs/avian2d) physics with the falling sand simulation
 //!
-//! This module generates static rigid body collision meshes from particles marked with
-//! [`StaticRigidBodyParticle`]. The mesh generation pipeline runs each frame and works
+//! This module provides two main functions:
+//!
+//! - **Static rigid bodies** — particles marked with [`StaticRigidBodyParticle`] (on the
+//!   [`ParticleType`](crate::ParticleType)) contribute to per-chunk collision meshes.
+//! - **Dynamic rigid bodies** — sending a [`DynamicRigidBodySignal`] for a particle removes it
+//!   from the simulation and spawns a separate physics-driven rigid body entity at its position.
+//!   Each frame, if the rigid body is within one cell of any particle in the
+//!   [`ParticleMap`](crate::ParticleMap) (or at the map edge), the rigid body is despawned and
+//!   the original particle is restored to the simulation at the nearest vacant position.
+//!
+//! ## Static mesh generation
+//!
+//! The static mesh generation pipeline runs each frame and works
 //! per-chunk:
 //!
 //! 1. **Identify dirty chunks** — chunks whose dirty state just cleared ("settled") are
@@ -37,12 +48,16 @@ mod systems;
 
 use bevy::prelude::*;
 
-pub use components::StaticRigidBodyParticle;
+pub use components::{
+    DynamicRigidBodyProxy, DynamicRigidBodySignal, StaticRigidBodyParticle, SuspendedParticle,
+};
 pub use resources::{DirtyChunkUpdateInterval, DouglasPeuckerEpsilon};
 
 use components::ComponentsPlugin;
 use resources::ResourcesPlugin;
-use systems::calculate_static_rigid_bodies;
+use systems::{
+    calculate_static_rigid_bodies, promote_dynamic_rigid_bodies, rejoin_dynamic_rigid_bodies,
+};
 
 /// Plugin providing avian2d rigid body integration for the falling sand simulation.
 ///
@@ -94,6 +109,13 @@ impl Plugin for FallingSandPhysicsPlugin {
         app.add_plugins(avian2d::PhysicsPlugins::default().with_length_unit(self.length_unit))
             .insert_resource(avian2d::prelude::Gravity(self.rigid_body_gravity))
             .add_plugins((ComponentsPlugin, ResourcesPlugin))
-            .add_systems(Update, calculate_static_rigid_bodies);
+            .add_systems(
+                Update,
+                (
+                    promote_dynamic_rigid_bodies,
+                    rejoin_dynamic_rigid_bodies.after(promote_dynamic_rigid_bodies),
+                    calculate_static_rigid_bodies.after(promote_dynamic_rigid_bodies),
+                ),
+            );
     }
 }

@@ -4,14 +4,20 @@ use bevy::prelude::*;
 use bevy::tasks::AsyncComputeTaskPool;
 use futures_lite::future;
 
-use super::components::StaticRigidBodyParticle;
+use super::components::{
+    DynamicRigidBodyProxy, DynamicRigidBodySignal, StaticRigidBodyParticle, SuspendedParticle,
+};
 use super::geometry::generate_mesh_from_bitmap;
 use super::resources::{
     ChunkLastProcessedTime, ChunkOccupancy, PendingMeshTasks, PreviousFrameDirtyChunks,
     StaticRigidBodyParticleColliders, StaticRigidBodyParticleMeshData,
 };
-use crate::core::{ChunkCoord, ChunkDirtyState, ChunkIndex, ChunkRegion, ParticleMap};
+use crate::core::{
+    ChunkCoord, ChunkDirtyState, ChunkIndex, ChunkRegion, GridPosition, Particle, ParticleMap,
+    SyncParticleSignal,
+};
 use crate::physics::resources::{DirtyChunkUpdateInterval, DouglasPeuckerEpsilon};
+use crate::render::ParticleColor;
 
 #[allow(
     clippy::too_many_arguments,
@@ -20,7 +26,7 @@ use crate::physics::resources::{DirtyChunkUpdateInterval, DouglasPeuckerEpsilon}
 )]
 pub(super) fn calculate_static_rigid_bodies(
     mut commands: Commands,
-    static_body_query: Query<(), With<StaticRigidBodyParticle>>,
+    static_body_query: Query<(), (With<StaticRigidBodyParticle>, Without<SuspendedParticle>)>,
     sleeping_dynamic_bodies: Query<(Entity, &Transform), (With<RigidBody>, With<Sleeping>)>,
     mut pending_tasks: ResMut<PendingMeshTasks>,
     mut previous_dirty_chunks: ResMut<PreviousFrameDirtyChunks>,
@@ -196,6 +202,765 @@ pub(super) fn calculate_static_rigid_bodies(
                     break;
                 }
             }
+        }
+    }
+}
+
+const NEIGHBOR_OFFSETS: [IVec2; 8] = [
+    IVec2::new(-1, -1),
+    IVec2::new(0, -1),
+    IVec2::new(1, -1),
+    IVec2::new(-1, 0),
+    IVec2::new(1, 0),
+    IVec2::new(-1, 1),
+    IVec2::new(0, 1),
+    IVec2::new(1, 1),
+];
+
+#[allow(clippy::needless_pass_by_value, clippy::too_many_arguments)]
+pub(super) fn promote_dynamic_rigid_bodies(
+    mut commands: Commands,
+    mut msgr: MessageReader<DynamicRigidBodySignal>,
+    mut map: ResMut<ParticleMap>,
+    chunk_index: Res<ChunkIndex>,
+    mut chunk_query: Query<&mut ChunkDirtyState>,
+    particle_query: Query<
+        (
+            &GridPosition,
+            Has<RigidBodyDisabled>,
+            Option<&ParticleColor>,
+        ),
+        With<Particle>,
+    >,
+) {
+    for signal in msgr.read() {
+        let entity = signal.entity;
+        let Ok((grid_pos, is_disabled, particle_color)) = particle_query.get(entity) else {
+            continue;
+        };
+        let position = grid_pos.0;
+
+        if map.get_copied(position) == Ok(Some(entity)) {
+            let _ = map.remove(position);
+        }
+
+        let chunk_coord = chunk_index.world_to_chunk_coord(position);
+        if let Some(chunk_entity) = chunk_index.get(chunk_coord) {
+            if let Ok(mut dirty_state) = chunk_query.get_mut(chunk_entity) {
+                dirty_state.mark_dirty(position);
+            }
+        }
+
+        let color = particle_color.map_or(Color::WHITE, |pc| pc.0);
+        let mut rb_commands = commands.spawn((
+            Transform::from_xyz(position.x as f32, position.y as f32, 0.0),
+            RigidBody::Dynamic,
+            Collider::rectangle(1.0, 1.0),
+            LinearVelocity(signal.linear_velocity),
+            AngularVelocity(signal.angular_velocity),
+            GravityScale(signal.gravity_scale),
+            DynamicRigidBodyProxy {
+                particle_entity: entity,
+            },
+            Sprite {
+                color,
+                custom_size: Some(Vec2::ONE),
+                ..default()
+            },
+        ));
+        if is_disabled {
+            rb_commands.insert(RigidBodyDisabled);
+        }
+        let rb_entity = rb_commands.id();
+
+        commands
+            .entity(entity)
+            .remove::<(GridPosition, RigidBodyDisabled)>()
+            .insert(SuspendedParticle {
+                rigid_body_entity: rb_entity,
+            });
+    }
+}
+
+#[allow(clippy::needless_pass_by_value, clippy::too_many_arguments)]
+pub(super) fn rejoin_dynamic_rigid_bodies(
+    mut commands: Commands,
+    mut map: ResMut<ParticleMap>,
+    chunk_index: Res<ChunkIndex>,
+    mut chunk_query: Query<&mut ChunkDirtyState>,
+    mut sync_writer: MessageWriter<SyncParticleSignal>,
+    proxy_query: Query<
+        (Entity, &Transform, &DynamicRigidBodyProxy, Has<Sleeping>),
+        Without<RigidBodyDisabled>,
+    >,
+    particle_query: Query<(), With<Particle>>,
+    static_query: Query<(), With<StaticRigidBodyParticle>>,
+) {
+    let mut claimed: HashSet<IVec2> = HashSet::default();
+
+    for (rb_entity, transform, proxy, is_sleeping) in &proxy_query {
+        let particle_entity = proxy.particle_entity;
+
+        if particle_query.get(particle_entity).is_err() {
+            commands.entity(rb_entity).try_despawn();
+            continue;
+        }
+
+        let pos = IVec2::new(
+            transform.translation.x.round() as i32,
+            transform.translation.y.round() as i32,
+        );
+
+        let has_neighbor_or_edge = std::iter::once(pos)
+            .chain(NEIGHBOR_OFFSETS.iter().map(|o| pos + *o))
+            .any(|p| match map.get(p) {
+                Ok(Some(entity)) => !static_query.contains(*entity),
+                Err(_) => true,
+                Ok(None) => false,
+            });
+
+        if !has_neighbor_or_edge && !is_sleeping {
+            continue;
+        }
+
+        let max_upward_search = 50;
+
+        let candidates = std::iter::once(pos).chain(NEIGHBOR_OFFSETS.iter().map(|o| pos + *o));
+
+        let target = candidates
+            .filter(|p| !claimed.contains(p))
+            .find(|p| matches!(map.get_copied(*p), Ok(None)));
+
+        let target = target.or_else(|| {
+            (1..=max_upward_search)
+                .map(|dy| pos + IVec2::new(0, dy))
+                .filter(|p| !claimed.contains(p))
+                .find(|p| matches!(map.get_copied(*p), Ok(None)))
+        });
+
+        let Some(target) = target else {
+            commands.entity(rb_entity).despawn();
+            commands.entity(particle_entity).despawn();
+            continue;
+        };
+
+        claimed.insert(target);
+
+        if let Ok(Some(_)) = map.insert(target, particle_entity) {
+            unreachable!("claimed position should be vacant");
+        }
+
+        let chunk_coord = chunk_index.world_to_chunk_coord(target);
+        if let Some(chunk_entity) = chunk_index.get(chunk_coord) {
+            if let Ok(mut dirty_state) = chunk_query.get_mut(chunk_entity) {
+                dirty_state.mark_dirty(target);
+            }
+        }
+
+        commands.entity(rb_entity).despawn();
+        commands
+            .entity(particle_entity)
+            .remove::<SuspendedParticle>()
+            .insert(GridPosition(target));
+
+        sync_writer.write(SyncParticleSignal::from_entity(particle_entity));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::core::{AttachedToParticleType, ParticleType, SpawnParticleSignal};
+    use crate::physics::components::ComponentsPlugin;
+    use crate::FallingSandMinimalPlugin;
+
+    fn create_test_app() -> App {
+        let mut app = App::new();
+        app.add_plugins((MinimalPlugins, FallingSandMinimalPlugin::default()));
+        app.add_plugins(ComponentsPlugin);
+        app.add_systems(
+            Update,
+            (
+                promote_dynamic_rigid_bodies,
+                rejoin_dynamic_rigid_bodies.after(promote_dynamic_rigid_bodies),
+            ),
+        );
+        app
+    }
+
+    fn create_small_test_app() -> App {
+        let mut app = App::new();
+        app.add_plugins((
+            MinimalPlugins,
+            FallingSandMinimalPlugin {
+                map_size: 4,
+                chunk_size: 4,
+            },
+        ));
+        app.add_plugins(ComponentsPlugin);
+        app.add_systems(
+            Update,
+            (
+                promote_dynamic_rigid_bodies,
+                rejoin_dynamic_rigid_bodies.after(promote_dynamic_rigid_bodies),
+            ),
+        );
+        app
+    }
+
+    fn spawn_particle(app: &mut App, name: &'static str, position: IVec2) -> Entity {
+        app.world_mut()
+            .write_message(SpawnParticleSignal::new(Particle::new(name), position));
+        app.update();
+
+        app.world()
+            .resource::<ParticleMap>()
+            .get_copied(position)
+            .unwrap()
+            .expect("particle should exist after spawn")
+    }
+
+    fn send_promote(app: &mut App, entity: Entity) {
+        app.world_mut()
+            .write_message(DynamicRigidBodySignal::new(entity));
+    }
+
+    fn send_promote_with(app: &mut App, signal: DynamicRigidBodySignal) {
+        app.world_mut().write_message(signal);
+    }
+
+    // ---- promote_dynamic_rigid_bodies ----
+
+    #[test]
+    fn promote_removes_particle_from_map() {
+        let mut app = create_test_app();
+        app.world_mut().spawn(ParticleType::new("sand"));
+        app.update();
+
+        let pos = IVec2::new(5, 5);
+        let entity = spawn_particle(&mut app, "sand", pos);
+
+        send_promote(&mut app, entity);
+        app.update();
+
+        let map = app.world().resource::<ParticleMap>();
+        assert_eq!(
+            map.get_copied(pos).ok().flatten(),
+            None,
+            "promoted particle should be removed from ParticleMap"
+        );
+    }
+
+    #[test]
+    fn promote_removes_grid_position() {
+        let mut app = create_test_app();
+        app.world_mut().spawn(ParticleType::new("sand"));
+        app.update();
+
+        let entity = spawn_particle(&mut app, "sand", IVec2::new(5, 5));
+
+        send_promote(&mut app, entity);
+        app.update();
+
+        assert!(
+            app.world().entity(entity).get::<GridPosition>().is_none(),
+            "promoted particle should not have GridPosition"
+        );
+    }
+
+    #[test]
+    fn promote_spawns_separate_rigid_body() {
+        let mut app = create_test_app();
+        app.world_mut().spawn(ParticleType::new("sand"));
+        app.update();
+
+        let pos = IVec2::new(5, 5);
+        let entity = spawn_particle(&mut app, "sand", pos);
+
+        send_promote(&mut app, entity);
+        app.update();
+
+        assert!(
+            app.world().entity(entity).get::<RigidBody>().is_none(),
+            "particle entity should NOT have RigidBody"
+        );
+
+        let suspended = app
+            .world()
+            .entity(entity)
+            .get::<SuspendedParticle>()
+            .expect("particle should have SuspendedParticle");
+        let rb_entity = suspended.rigid_body_entity;
+
+        let rb_ref = app.world().entity(rb_entity);
+        assert!(rb_ref.get::<RigidBody>().is_some());
+        assert!(rb_ref.get::<Collider>().is_some());
+        assert!(rb_ref.get::<Transform>().is_some());
+
+        let proxy = rb_ref.get::<DynamicRigidBodyProxy>().unwrap();
+        assert_eq!(proxy.particle_entity, entity);
+
+        let transform = rb_ref.get::<Transform>().unwrap();
+        assert_eq!(transform.translation.x, 5.0);
+        assert_eq!(transform.translation.y, 5.0);
+    }
+
+    #[test]
+    fn promote_applies_velocity_and_gravity() {
+        let mut app = create_test_app();
+        app.world_mut().spawn(ParticleType::new("sand"));
+        app.update();
+
+        let entity = spawn_particle(&mut app, "sand", IVec2::new(5, 5));
+
+        send_promote_with(
+            &mut app,
+            DynamicRigidBodySignal::new(entity)
+                .with_linear_velocity(Vec2::new(10.0, 20.0))
+                .with_angular_velocity(3.14)
+                .with_gravity_scale(2.5),
+        );
+        app.update();
+
+        let suspended = app
+            .world()
+            .entity(entity)
+            .get::<SuspendedParticle>()
+            .unwrap();
+        let rb_ref = app.world().entity(suspended.rigid_body_entity);
+
+        assert_eq!(
+            rb_ref.get::<LinearVelocity>().unwrap().0,
+            Vec2::new(10.0, 20.0)
+        );
+        assert_eq!(rb_ref.get::<AngularVelocity>().unwrap().0, 3.14);
+        assert_eq!(rb_ref.get::<GravityScale>().unwrap().0, 2.5);
+    }
+
+    #[test]
+    fn promote_preserves_particle_component() {
+        let mut app = create_test_app();
+        app.world_mut().spawn(ParticleType::new("sand"));
+        app.update();
+
+        let entity = spawn_particle(&mut app, "sand", IVec2::new(5, 5));
+
+        send_promote(&mut app, entity);
+        app.update();
+
+        let particle = app.world().entity(entity).get::<Particle>().unwrap();
+        assert_eq!(particle.name, "sand");
+    }
+
+    // ---- rejoin_dynamic_rigid_bodies ----
+
+    #[test]
+    fn rejoin_when_neighbor_exists() {
+        let mut app = create_test_app();
+        app.world_mut().spawn(ParticleType::new("sand"));
+        app.update();
+
+        let neighbor_pos = IVec2::new(5, 5);
+        let _neighbor = spawn_particle(&mut app, "sand", neighbor_pos);
+
+        let dynamic_pos = IVec2::new(6, 5);
+        let dynamic_entity = spawn_particle(&mut app, "sand", dynamic_pos);
+
+        send_promote(&mut app, dynamic_entity);
+        app.update();
+
+        let entity_ref = app.world().entity(dynamic_entity);
+        assert!(
+            entity_ref.get::<GridPosition>().is_some(),
+            "should rejoin the simulation when adjacent to a neighbor"
+        );
+        assert!(
+            entity_ref.get::<SuspendedParticle>().is_none(),
+            "SuspendedParticle should be removed after rejoin"
+        );
+    }
+
+    #[test]
+    fn rejoin_despawns_rigid_body_proxy() {
+        let mut app = create_test_app();
+        app.world_mut().spawn(ParticleType::new("sand"));
+        app.update();
+
+        let neighbor_pos = IVec2::new(5, 5);
+        let _neighbor = spawn_particle(&mut app, "sand", neighbor_pos);
+
+        let dynamic_pos = IVec2::new(6, 5);
+        let dynamic_entity = spawn_particle(&mut app, "sand", dynamic_pos);
+
+        send_promote(&mut app, dynamic_entity);
+        app.update();
+
+        let proxy_count = app
+            .world_mut()
+            .query::<&DynamicRigidBodyProxy>()
+            .iter(app.world())
+            .count();
+        assert_eq!(
+            proxy_count, 0,
+            "rigid body proxy should be despawned after rejoin"
+        );
+    }
+
+    #[test]
+    fn no_rejoin_without_neighbor() {
+        let mut app = create_test_app();
+        app.world_mut().spawn(ParticleType::new("sand"));
+        app.update();
+
+        let pos = IVec2::new(20, 20);
+        let entity = spawn_particle(&mut app, "sand", pos);
+
+        send_promote(&mut app, entity);
+        app.update();
+        app.update();
+
+        assert!(
+            app.world()
+                .entity(entity)
+                .get::<SuspendedParticle>()
+                .is_some(),
+            "should remain suspended when no neighbors exist"
+        );
+        assert!(
+            app.world().entity(entity).get::<GridPosition>().is_none(),
+            "should not have GridPosition when still suspended"
+        );
+    }
+
+    #[test]
+    fn rejoin_restores_particle_to_map() {
+        let mut app = create_test_app();
+        app.world_mut().spawn(ParticleType::new("sand"));
+        app.update();
+
+        let neighbor_pos = IVec2::new(10, 10);
+        let _neighbor = spawn_particle(&mut app, "sand", neighbor_pos);
+
+        let dynamic_pos = IVec2::new(11, 10);
+        let dynamic_entity = spawn_particle(&mut app, "sand", dynamic_pos);
+
+        send_promote(&mut app, dynamic_entity);
+        app.update();
+
+        let grid_pos = app
+            .world()
+            .entity(dynamic_entity)
+            .get::<GridPosition>()
+            .expect("should have rejoined")
+            .0;
+
+        let map = app.world().resource::<ParticleMap>();
+        assert_eq!(
+            map.get_copied(grid_pos).ok().flatten(),
+            Some(dynamic_entity),
+            "rejoined particle should be in the ParticleMap at its GridPosition"
+        );
+    }
+
+    #[test]
+    fn rejoin_prefers_own_position_when_vacant() {
+        let mut app = create_test_app();
+        app.world_mut().spawn(ParticleType::new("sand"));
+        app.update();
+
+        let neighbor_pos = IVec2::new(10, 10);
+        let _neighbor = spawn_particle(&mut app, "sand", neighbor_pos);
+
+        let dynamic_pos = IVec2::new(11, 10);
+        let dynamic_entity = spawn_particle(&mut app, "sand", dynamic_pos);
+
+        send_promote(&mut app, dynamic_entity);
+        app.update();
+
+        let grid_pos = app
+            .world()
+            .entity(dynamic_entity)
+            .get::<GridPosition>()
+            .unwrap()
+            .0;
+
+        assert_eq!(
+            grid_pos, dynamic_pos,
+            "should rejoin at its own position when that position is vacant"
+        );
+    }
+
+    #[test]
+    fn rejoin_finds_alternate_position_when_own_is_occupied() {
+        let mut app = create_test_app();
+        app.world_mut().spawn(ParticleType::new("sand"));
+        app.update();
+
+        let dynamic_pos = IVec2::new(10, 10);
+        let dynamic_entity = spawn_particle(&mut app, "sand", dynamic_pos);
+
+        send_promote(&mut app, dynamic_entity);
+        app.update();
+
+        let blocker = spawn_particle(&mut app, "sand", dynamic_pos);
+        app.update();
+
+        let entity_ref = app.world().entity(dynamic_entity);
+        let grid_pos = entity_ref
+            .get::<GridPosition>()
+            .expect("should rejoin (blocker is a neighbor)")
+            .0;
+
+        assert_ne!(grid_pos, dynamic_pos);
+
+        let dist = (grid_pos - dynamic_pos).abs();
+        assert!(dist.x <= 1 && dist.y <= 1);
+
+        let map = app.world().resource::<ParticleMap>();
+        assert_eq!(
+            map.get_copied(grid_pos).ok().flatten(),
+            Some(dynamic_entity)
+        );
+        assert_eq!(map.get_copied(dynamic_pos).ok().flatten(), Some(blocker));
+    }
+
+    #[test]
+    fn rejoin_at_map_edge() {
+        let mut app = create_small_test_app();
+        app.world_mut().spawn(ParticleType::new("sand"));
+        app.update();
+
+        let origin = app.world().resource::<ParticleMap>().origin();
+        let edge_pos = origin;
+        let entity = spawn_particle(&mut app, "sand", edge_pos);
+
+        send_promote(&mut app, entity);
+        app.update();
+
+        let entity_ref = app.world().entity(entity);
+        assert!(
+            entity_ref.get::<GridPosition>().is_some(),
+            "should rejoin at map edge because neighbor lookup returns PositionUnloaded"
+        );
+        assert!(
+            entity_ref.get::<SuspendedParticle>().is_none(),
+            "SuspendedParticle should be removed after rejoin at edge"
+        );
+    }
+
+    // ---- no particle loss ----
+
+    #[test]
+    fn no_particle_loss_single() {
+        let mut app = create_test_app();
+        app.world_mut().spawn(ParticleType::new("sand"));
+        app.update();
+
+        let pos = IVec2::new(5, 5);
+        let entity = spawn_particle(&mut app, "sand", pos);
+
+        send_promote(&mut app, entity);
+        app.update();
+
+        assert!(app.world().entities().contains(entity));
+        assert!(app.world().entity(entity).get::<Particle>().is_some());
+        assert!(app
+            .world()
+            .entity(entity)
+            .get::<AttachedToParticleType>()
+            .is_some());
+    }
+
+    #[test]
+    fn no_particle_loss_through_full_cycle() {
+        let mut app = create_test_app();
+        app.world_mut().spawn(ParticleType::new("sand"));
+        app.update();
+
+        let anchor = IVec2::new(10, 10);
+        let _anchor_entity = spawn_particle(&mut app, "sand", anchor);
+
+        let dynamic_pos = IVec2::new(11, 10);
+        let dynamic_entity = spawn_particle(&mut app, "sand", dynamic_pos);
+
+        let initial_count = app
+            .world_mut()
+            .query_filtered::<Entity, With<Particle>>()
+            .iter(app.world())
+            .count();
+
+        send_promote(&mut app, dynamic_entity);
+        app.update();
+
+        let count_while_dynamic = app
+            .world_mut()
+            .query_filtered::<Entity, With<Particle>>()
+            .iter(app.world())
+            .count();
+        assert_eq!(count_while_dynamic, initial_count);
+
+        let count_after_rejoin = app
+            .world_mut()
+            .query_filtered::<Entity, With<Particle>>()
+            .iter(app.world())
+            .count();
+        assert_eq!(count_after_rejoin, initial_count);
+
+        assert!(app.world().entities().contains(dynamic_entity));
+        assert_eq!(
+            app.world()
+                .entity(dynamic_entity)
+                .get::<Particle>()
+                .unwrap()
+                .name,
+            "sand"
+        );
+    }
+
+    #[test]
+    fn no_particle_loss_multiple_dynamic_bodies() {
+        let mut app = create_test_app();
+        app.world_mut().spawn(ParticleType::new("sand"));
+        app.update();
+
+        let anchor = IVec2::new(10, 10);
+        let _anchor = spawn_particle(&mut app, "sand", anchor);
+
+        let positions = [IVec2::new(11, 10), IVec2::new(9, 10), IVec2::new(10, 11)];
+        let mut dynamic_entities = Vec::new();
+        for &pos in &positions {
+            dynamic_entities.push(spawn_particle(&mut app, "sand", pos));
+        }
+
+        let total_before = app
+            .world_mut()
+            .query_filtered::<Entity, With<Particle>>()
+            .iter(app.world())
+            .count();
+
+        for &entity in &dynamic_entities {
+            send_promote(&mut app, entity);
+        }
+        app.update();
+
+        let total_after = app
+            .world_mut()
+            .query_filtered::<Entity, With<Particle>>()
+            .iter(app.world())
+            .count();
+        assert_eq!(total_after, total_before);
+
+        for &entity in &dynamic_entities {
+            assert!(app.world().entities().contains(entity));
+        }
+    }
+
+    // ---- collision avoidance ----
+
+    #[test]
+    fn two_dynamic_bodies_do_not_rejoin_at_same_position() {
+        let mut app = create_test_app();
+        app.world_mut().spawn(ParticleType::new("sand"));
+        app.update();
+
+        let anchor = IVec2::new(10, 10);
+        let _anchor = spawn_particle(&mut app, "sand", anchor);
+
+        let pos_a = IVec2::new(11, 10);
+        let pos_b = IVec2::new(11, 11);
+        let entity_a = spawn_particle(&mut app, "sand", pos_a);
+        let entity_b = spawn_particle(&mut app, "sand", pos_b);
+
+        send_promote(&mut app, entity_a);
+        send_promote(&mut app, entity_b);
+        app.update();
+
+        let rejoined: Vec<(Entity, IVec2)> = app
+            .world_mut()
+            .query_filtered::<(Entity, &GridPosition), With<Particle>>()
+            .iter(app.world())
+            .map(|(e, gp)| (e, gp.0))
+            .collect();
+
+        let positions: Vec<IVec2> = rejoined.iter().map(|(_, p)| *p).collect();
+        let unique: HashSet<IVec2> = positions.iter().copied().collect();
+        assert_eq!(positions.len(), unique.len());
+    }
+
+    // ---- original state restoration ----
+
+    #[test]
+    fn rejoin_restores_original_state() {
+        let mut app = create_test_app();
+        app.world_mut().spawn(ParticleType::new("sand"));
+        app.update();
+
+        let anchor = IVec2::new(10, 10);
+        let _anchor = spawn_particle(&mut app, "sand", anchor);
+
+        let pos = IVec2::new(11, 10);
+        let entity = spawn_particle(&mut app, "sand", pos);
+
+        let particle_before = app.world().entity(entity).get::<Particle>().cloned();
+        let attached_before = app
+            .world()
+            .entity(entity)
+            .get::<AttachedToParticleType>()
+            .map(|a| a.0);
+
+        send_promote(&mut app, entity);
+        app.update();
+
+        let entity_ref = app.world().entity(entity);
+        assert_eq!(entity_ref.get::<Particle>().cloned(), particle_before);
+        assert_eq!(
+            entity_ref.get::<AttachedToParticleType>().map(|a| a.0),
+            attached_before,
+        );
+        assert!(entity_ref.get::<GridPosition>().is_some());
+        assert!(entity_ref.get::<SuspendedParticle>().is_none());
+    }
+
+    #[test]
+    fn all_dynamic_bodies_return_to_original_state_near_neighbors() {
+        let mut app = create_test_app();
+        app.world_mut().spawn(ParticleType::new("sand"));
+        app.update();
+
+        let anchor = IVec2::new(15, 15);
+        let _anchor = spawn_particle(&mut app, "sand", anchor);
+
+        let dynamic_positions = [
+            IVec2::new(16, 15),
+            IVec2::new(14, 15),
+            IVec2::new(15, 16),
+            IVec2::new(15, 14),
+        ];
+
+        let mut entities = Vec::new();
+        for &pos in &dynamic_positions {
+            entities.push(spawn_particle(&mut app, "sand", pos));
+        }
+
+        for &entity in &entities {
+            send_promote(&mut app, entity);
+        }
+        app.update();
+
+        for &entity in &entities {
+            let entity_ref = app.world().entity(entity);
+            assert!(entity_ref.get::<GridPosition>().is_some());
+            assert!(entity_ref.get::<SuspendedParticle>().is_none());
+            assert!(entity_ref.get::<Particle>().is_some());
+            assert!(entity_ref.get::<AttachedToParticleType>().is_some());
+        }
+
+        let map = app.world().resource::<ParticleMap>();
+        let mut map_positions: HashSet<IVec2> = HashSet::default();
+        for &entity in &entities {
+            let gp = app.world().entity(entity).get::<GridPosition>().unwrap().0;
+            assert_eq!(map.get_copied(gp).ok().flatten(), Some(entity));
+            assert!(map_positions.insert(gp));
         }
     }
 }
