@@ -5,7 +5,8 @@ use bevy::tasks::AsyncComputeTaskPool;
 use futures_lite::future;
 
 use super::components::{
-    DynamicRigidBodyProxy, DynamicRigidBodySignal, StaticRigidBodyParticle, SuspendedParticle,
+    DynamicParticleLayer, DynamicRigidBodyLifetime, DynamicRigidBodyProxy, DynamicRigidBodySignal,
+    StaticRigidBodyParticle, SuspendedParticle,
 };
 use super::geometry::generate_mesh_from_bitmap;
 use super::resources::{
@@ -252,15 +253,28 @@ pub(super) fn promote_dynamic_rigid_bodies(
         }
 
         let color = particle_color.map_or(Color::WHITE, |pc| pc.0);
+        let collision_layers = if signal.collide_with_other_dynamic {
+            CollisionLayers::new(DynamicParticleLayer::DynamicParticle, LayerMask::ALL)
+        } else {
+            CollisionLayers::new(
+                DynamicParticleLayer::DynamicParticle,
+                LayerMask::ALL ^ LayerMask::from(DynamicParticleLayer::DynamicParticle),
+            )
+        };
         let mut rb_commands = commands.spawn((
             Transform::from_xyz(position.x as f32, position.y as f32, 0.0),
             RigidBody::Dynamic,
             Collider::rectangle(1.0, 1.0),
+            collision_layers,
             LinearVelocity(signal.linear_velocity),
             AngularVelocity(signal.angular_velocity),
             GravityScale(signal.gravity_scale),
             DynamicRigidBodyProxy {
                 particle_entity: entity,
+            },
+            DynamicRigidBodyLifetime {
+                timer: Timer::new(signal.max_lifetime, TimerMode::Once),
+                rejoin_speed_threshold: signal.rejoin_speed_threshold,
             },
             Sprite {
                 color,
@@ -289,8 +303,16 @@ pub(super) fn rejoin_dynamic_rigid_bodies(
     chunk_index: Res<ChunkIndex>,
     mut chunk_query: Query<&mut ChunkDirtyState>,
     mut sync_writer: MessageWriter<SyncParticleSignal>,
-    proxy_query: Query<
-        (Entity, &Transform, &DynamicRigidBodyProxy, Has<Sleeping>),
+    time: Res<Time>,
+    mut proxy_query: Query<
+        (
+            Entity,
+            &Transform,
+            &LinearVelocity,
+            &DynamicRigidBodyProxy,
+            &mut DynamicRigidBodyLifetime,
+            Has<Sleeping>,
+        ),
         Without<RigidBodyDisabled>,
     >,
     particle_query: Query<(), With<Particle>>,
@@ -298,7 +320,12 @@ pub(super) fn rejoin_dynamic_rigid_bodies(
 ) {
     let mut claimed: HashSet<IVec2> = HashSet::default();
 
-    for (rb_entity, transform, proxy, is_sleeping) in &proxy_query {
+    for (rb_entity, transform, linear_velocity, proxy, mut lifetime, is_sleeping) in
+        &mut proxy_query
+    {
+        lifetime.timer.tick(time.delta());
+        let expired = lifetime.timer.is_finished()
+            && linear_velocity.0.length() < lifetime.rejoin_speed_threshold;
         let particle_entity = proxy.particle_entity;
 
         if particle_query.get(particle_entity).is_err() {
@@ -319,7 +346,7 @@ pub(super) fn rejoin_dynamic_rigid_bodies(
                 Ok(None) => false,
             });
 
-        if !has_neighbor_or_edge && !is_sleeping {
+        if !has_neighbor_or_edge && !is_sleeping && !expired {
             continue;
         }
 

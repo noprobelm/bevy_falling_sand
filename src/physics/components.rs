@@ -1,7 +1,19 @@
+use std::time::Duration;
+
+use avian2d::prelude::PhysicsLayer;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::ParticleSyncExt;
+
+/// Collision layers for falling sand physics.
+#[derive(PhysicsLayer, Default, Copy, Clone, Debug)]
+pub enum DynamicParticleLayer {
+    #[default]
+    Default,
+    /// Dynamic rigid body particle proxies. By default, members do not collide with each other.
+    DynamicParticle,
+}
 
 pub(super) struct ComponentsPlugin;
 
@@ -78,6 +90,9 @@ pub struct DynamicRigidBodySignal {
     pub(super) linear_velocity: Vec2,
     pub(super) angular_velocity: f32,
     pub(super) gravity_scale: f32,
+    pub(super) collide_with_other_dynamic: bool,
+    pub(super) max_lifetime: Duration,
+    pub(super) rejoin_speed_threshold: f32,
 }
 
 impl DynamicRigidBodySignal {
@@ -89,7 +104,40 @@ impl DynamicRigidBodySignal {
             linear_velocity: Vec2::ZERO,
             angular_velocity: 0.0,
             gravity_scale: 1.0,
+            collide_with_other_dynamic: false,
+            max_lifetime: Duration::from_secs(10),
+            rejoin_speed_threshold: 1.0,
         }
+    }
+
+    /// Set the linear speed (length of linear velocity) below which an expired
+    /// dynamic rigid body proxy will rejoin the falling sand simulation.
+    ///
+    /// Defaults to `1.0`.
+    #[must_use]
+    pub const fn with_rejoin_speed_threshold(mut self, threshold: f32) -> Self {
+        self.rejoin_speed_threshold = threshold;
+        self
+    }
+
+    /// Set the maximum amount of time the particle remains a dynamic rigid body
+    /// before being forcibly returned to the falling sand simulation.
+    ///
+    /// Defaults to 10 seconds.
+    #[must_use]
+    pub const fn with_max_lifetime(mut self, max_lifetime: Duration) -> Self {
+        self.max_lifetime = max_lifetime;
+        self
+    }
+
+    /// Allow this dynamic rigid body to collide with other dynamic rigid body particles.
+    ///
+    /// Defaults to `false`: dynamic particle proxies do not collide with each other,
+    /// only with static rigid bodies.
+    #[must_use]
+    pub const fn with_collide_with_other_dynamic(mut self, enabled: bool) -> Self {
+        self.collide_with_other_dynamic = enabled;
+        self
     }
 
     /// Set the initial linear velocity.
@@ -119,6 +167,17 @@ impl DynamicRigidBodySignal {
 pub struct DynamicRigidBodyProxy {
     /// The particle entity that this rigid body is a proxy for.
     pub particle_entity: Entity,
+}
+
+/// Tracks how long a dynamic rigid body proxy has been alive and the speed at which
+/// it should rejoin the falling sand simulation once its [`Timer`] expires.
+#[derive(Component, Clone, Debug)]
+pub struct DynamicRigidBodyLifetime {
+    /// Ticks while the proxy is alive. Once finished, the proxy is eligible to rejoin
+    /// when its linear speed falls below `rejoin_speed_threshold`.
+    pub timer: Timer,
+    /// Linear speed below which an expired proxy rejoins the simulation.
+    pub rejoin_speed_threshold: f32,
 }
 
 /// Placed on the suspended particle entity. Links to its rigid body proxy.

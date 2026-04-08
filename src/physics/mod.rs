@@ -46,6 +46,7 @@ mod geometry;
 mod resources;
 mod systems;
 
+use avian2d::prelude::PhysicsInterpolationPlugin;
 use bevy::prelude::*;
 
 pub use components::{
@@ -106,16 +107,20 @@ impl FallingSandPhysicsPlugin {
 
 impl Plugin for FallingSandPhysicsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(avian2d::PhysicsPlugins::default().with_length_unit(self.length_unit))
-            .insert_resource(avian2d::prelude::Gravity(self.rigid_body_gravity))
-            .add_plugins((ComponentsPlugin, ResourcesPlugin))
-            .add_systems(
-                Update,
-                (
-                    promote_dynamic_rigid_bodies,
-                    rejoin_dynamic_rigid_bodies.after(promote_dynamic_rigid_bodies),
-                    calculate_static_rigid_bodies.after(promote_dynamic_rigid_bodies),
-                ),
-            );
+        app.add_plugins(
+            avian2d::PhysicsPlugins::default()
+                .with_length_unit(self.length_unit)
+                .set(PhysicsInterpolationPlugin::interpolate_all()),
+        )
+        .insert_resource(avian2d::prelude::Gravity(self.rigid_body_gravity))
+        .add_plugins((ComponentsPlugin, ResourcesPlugin))
+        .add_systems(
+            Update,
+            (
+                promote_dynamic_rigid_bodies,
+                rejoin_dynamic_rigid_bodies.after(promote_dynamic_rigid_bodies),
+                calculate_static_rigid_bodies.after(promote_dynamic_rigid_bodies),
+            ),
+        );
     }
 }
