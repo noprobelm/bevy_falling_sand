@@ -1,210 +1,206 @@
+//! Dynamic rigid body promotion and rejoining for falling sand particles.
+//!
+//! Sending a [`DynamicRigidBodySignal`] removes a particle from the simulation and spawns a
+//! physics-driven rigid body proxy. Each frame the proxy is checked: when it neighbours another
+//! particle, reaches a map edge, or its lifetime expires below its speed threshold, the proxy is
+//! despawned and the original particle is restored at the nearest vacant position.
+
+use std::time::Duration;
+
 use avian2d::prelude::*;
 use bevy::platform::collections::HashSet;
 use bevy::prelude::*;
-use bevy::tasks::AsyncComputeTaskPool;
-use futures_lite::future;
+use serde::{Deserialize, Serialize};
 
-use super::components::{
-    DynamicParticleLayer, DynamicRigidBodyLifetime, DynamicRigidBodyProxy, DynamicRigidBodySignal,
-    StaticRigidBodyParticle, SuspendedParticle,
-};
-use super::geometry::generate_mesh_from_bitmap;
-use super::resources::{
-    ChunkLastProcessedTime, ChunkOccupancy, PendingMeshTasks, PreviousFrameDirtyChunks,
-    StaticRigidBodyParticleColliders, StaticRigidBodyParticleMeshData,
-};
 use crate::core::{
-    ChunkCoord, ChunkDirtyState, ChunkIndex, ChunkRegion, GridPosition, Particle, ParticleMap,
-    SyncParticleSignal,
+    ChunkDirtyState, ChunkIndex, GridPosition, Particle, ParticleMap, SyncParticleSignal,
 };
-use crate::physics::resources::{DirtyChunkUpdateInterval, DouglasPeuckerEpsilon};
 use crate::render::ParticleColor;
+use crate::ParticleSyncExt;
 
-#[allow(
-    clippy::too_many_arguments,
-    clippy::too_many_lines,
-    clippy::needless_pass_by_value
-)]
-pub(super) fn calculate_static_rigid_bodies(
-    mut commands: Commands,
-    static_body_query: Query<(), (With<StaticRigidBodyParticle>, Without<SuspendedParticle>)>,
-    sleeping_dynamic_bodies: Query<(Entity, &Transform), (With<RigidBody>, With<Sleeping>)>,
-    mut pending_tasks: ResMut<PendingMeshTasks>,
-    mut previous_dirty_chunks: ResMut<PreviousFrameDirtyChunks>,
-    mut chunk_last_processed: ResMut<ChunkLastProcessedTime>,
-    mut mesh_data: ResMut<StaticRigidBodyParticleMeshData>,
-    mut colliders: ResMut<StaticRigidBodyParticleColliders>,
-    mut occupancy: ResMut<ChunkOccupancy>,
-    douglas_peucker_epsilon: Res<DouglasPeuckerEpsilon>,
-    dirty_chunk_interval: Res<DirtyChunkUpdateInterval>,
-    time: Res<Time>,
-    map: Res<ParticleMap>,
-    chunk_index: Res<ChunkIndex>,
-    chunk_query: Query<(&ChunkRegion, &ChunkDirtyState)>,
-) {
-    let current_time = time.elapsed_secs();
-    let update_interval = dirty_chunk_interval.0;
-    let chunk_size = chunk_index.chunk_size() as usize;
-    let bitmap_len = chunk_size * chunk_size;
+/// Collision layers for falling sand physics.
+#[derive(PhysicsLayer, Default, Copy, Clone, Debug)]
+pub enum DynamicParticleLayer {
+    /// The default collision layer for static rigid bodies.
+    #[default]
+    Default,
+    /// Dynamic rigid body particle proxies. By default, members do not collide with each other.
+    DynamicParticle,
+}
 
-    let current_dirty_chunks: HashSet<ChunkCoord> = chunk_index
-        .iter()
-        .filter_map(|(coord, entity)| {
-            if let Ok((_, dirty_state)) = chunk_query.get(entity) {
-                if dirty_state.current.is_some() {
-                    return Some(coord);
-                }
-            }
-            None
-        })
-        .collect();
+pub(super) struct DynamicPlugin;
 
-    let just_stopped_chunks: HashSet<ChunkCoord> = previous_dirty_chunks
-        .0
-        .difference(&current_dirty_chunks)
-        .copied()
-        .collect();
+impl Plugin for DynamicPlugin {
+    fn build(&self, app: &mut App) {
+        app.register_type::<StaticRigidBodyParticle>()
+            .register_type::<EmitDynamicRigidBodyParticleSignal>()
+            .register_particle_sync_component::<StaticRigidBodyParticle>()
+            .add_message::<EmitDynamicRigidBodyParticleSignal>();
+    }
+}
 
-    let throttled_dirty_chunks: HashSet<ChunkCoord> = current_dirty_chunks
-        .iter()
-        .filter(|&coord| {
-            let last_processed = chunk_last_processed.0.get(coord).copied().unwrap_or(0.0);
-            current_time - last_processed >= update_interval
-        })
-        .copied()
-        .collect();
+/// Marker component for particles that contribute to static rigid body collision.
+///
+/// Add this to a [`ParticleType`](crate::ParticleType) entity so that all
+/// particles of that type are included when generating per-chunk collision meshes.
+/// Typically used for solid particles like walls, rocks, and settled sand.
+///
+/// # Examples
+///
+/// ```no_run
+/// use bevy::prelude::*;
+/// use bevy_falling_sand::core::ParticleType;
+/// use bevy_falling_sand::physics::StaticRigidBodyParticle;
+///
+/// fn setup(mut commands: Commands) {
+///     commands.spawn((
+///         ParticleType::new("Stone"),
+///         StaticRigidBodyParticle,
+///     ));
+/// }
+/// ```
+#[derive(Component, Copy, Clone, Default, Debug, Reflect)]
+#[reflect(Component)]
+#[type_path = "bfs_physics"]
+pub struct StaticRigidBodyParticle;
 
-    let chunks_to_process: HashSet<ChunkCoord> = just_stopped_chunks
-        .union(&throttled_dirty_chunks)
-        .copied()
-        .collect();
+/// Signal to promote a [`Particle`](crate::Particle) entity into a dynamic rigid body.
+///
+/// When processed, the particle is removed from the falling sand simulation (its
+/// [`GridPosition`](crate::GridPosition) is removed and it is taken out of the
+/// [`ParticleMap`](crate::ParticleMap)). A separate rigid body entity is spawned at the
+/// particle's former position with the configured velocity and gravity.
+///
+/// Each frame, the rigid body's position is checked against the `ParticleMap`. If any
+/// neighboring cell (or the cell itself) is occupied or at the map edge, the rigid body is
+/// despawned and the original particle is restored to the simulation at the nearest vacant
+/// position.
+///
+/// # Examples
+///
+/// ```no_run
+/// use bevy::prelude::*;
+/// use bevy_falling_sand::core::{Particle, GridPosition};
+/// use bevy_falling_sand::physics::DynamicRigidBodySignal;
+///
+/// fn launch_particle(
+///     mut writer: MessageWriter<DynamicRigidBodySignal>,
+///     query: Query<Entity, With<Particle>>,
+/// ) {
+///     for entity in &query {
+///         writer.write(
+///             DynamicRigidBodySignal::new(entity)
+///                 .with_linear_velocity(Vec2::new(50.0, 100.0)),
+///         );
+///     }
+/// }
+/// ```
+#[derive(Event, Message, Copy, Clone, Debug, Reflect, Serialize, Deserialize)]
+#[reflect(Debug)]
+#[type_path = "bfs_physics"]
+pub struct EmitDynamicRigidBodyParticleSignal {
+    pub(super) entity: Entity,
+    pub(super) linear_velocity: Vec2,
+    pub(super) angular_velocity: f32,
+    pub(super) gravity_scale: f32,
+    pub(super) collide_with_other_dynamic: bool,
+    pub(super) max_lifetime: Duration,
+    pub(super) rejoin_speed_threshold: f32,
+}
 
-    previous_dirty_chunks.0 = current_dirty_chunks;
+/// Convenience alias used throughout the public API.
+pub type DynamicRigidBodySignal = EmitDynamicRigidBodyParticleSignal;
 
-    if !chunks_to_process.is_empty() {
-        let task_pool = AsyncComputeTaskPool::get();
-        let epsilon = douglas_peucker_epsilon.0;
-
-        for coord in &chunks_to_process {
-            if pending_tasks.tasks.contains_key(coord) {
-                continue;
-            }
-
-            chunk_last_processed.0.insert(*coord, current_time);
-
-            let base_x = coord.x() * chunk_size as i32;
-            let base_y = coord.y() * chunk_size as i32;
-
-            let mut new_bitmap = vec![false; bitmap_len];
-            for ly in 0..chunk_size {
-                for lx in 0..chunk_size {
-                    let pos = IVec2::new(base_x + lx as i32, base_y + ly as i32);
-                    if let Ok(Some(entity)) = map.get(pos) {
-                        if static_body_query.contains(*entity) {
-                            new_bitmap[ly * chunk_size + lx] = true;
-                        }
-                    }
-                }
-            }
-
-            let changed = occupancy
-                .bitmaps
-                .get(coord)
-                .is_none_or(|old| *old != new_bitmap);
-
-            if !changed {
-                continue;
-            }
-
-            occupancy.bitmaps.insert(*coord, new_bitmap.clone());
-
-            let cs = chunk_size;
-            let origin = IVec2::new(base_x, base_y);
-            let task = task_pool.spawn(generate_mesh_from_bitmap(
-                *coord, new_bitmap, origin, cs, epsilon,
-            ));
-            pending_tasks.tasks.insert(*coord, task);
+impl EmitDynamicRigidBodyParticleSignal {
+    /// Create a signal targeting the given particle entity with default physics parameters.
+    #[must_use]
+    pub const fn new(entity: Entity) -> Self {
+        Self {
+            entity,
+            linear_velocity: Vec2::ZERO,
+            angular_velocity: 0.0,
+            gravity_scale: 1.0,
+            collide_with_other_dynamic: false,
+            max_lifetime: Duration::from_secs(10),
+            rejoin_speed_threshold: 1.0,
         }
     }
 
-    let mut recalculated_chunks: Vec<ChunkCoord> = Vec::new();
-
-    pending_tasks.tasks.retain(
-        |_key, task| match future::block_on(future::poll_once(task)) {
-            Some(result) => {
-                recalculated_chunks.push(result.chunk_coord);
-
-                mesh_data.chunks.remove(&result.chunk_coord);
-
-                let mut merged_verts = Vec::new();
-                let mut merged_indices = Vec::new();
-                for (vertices, indices) in result.vertices.iter().zip(&result.indices) {
-                    if vertices.is_empty() || indices.is_empty() {
-                        continue;
-                    }
-                    let offset = merged_verts.len() as u32;
-                    merged_verts.extend_from_slice(vertices);
-                    merged_indices.extend(
-                        indices
-                            .iter()
-                            .map(|[a, b, c]| [a + offset, b + offset, c + offset]),
-                    );
-                }
-
-                if merged_verts.is_empty() {
-                    if let Some(old_entity) = colliders.0.remove(&result.chunk_coord) {
-                        commands.entity(old_entity).despawn();
-                    }
-                } else {
-                    mesh_data.chunks.insert(
-                        result.chunk_coord,
-                        (result.vertices.clone(), result.indices.clone()),
-                    );
-
-                    let collider = Collider::trimesh(merged_verts, merged_indices);
-                    if let Some(&existing) = colliders.0.get(&result.chunk_coord) {
-                        commands.entity(existing).insert(collider);
-                    } else {
-                        let entity = commands.spawn((RigidBody::Static, collider)).id();
-                        colliders.0.insert(result.chunk_coord, entity);
-                    }
-                }
-
-                false
-            }
-            None => true,
-        },
-    );
-
-    if !recalculated_chunks.is_empty() {
-        let chunk_regions: Vec<IRect> = recalculated_chunks
-            .iter()
-            .filter_map(|coord| {
-                chunk_index
-                    .get(*coord)
-                    .and_then(|e| chunk_query.get(e).ok())
-                    .map(|(region, _)| region.region())
-            })
-            .collect();
-
-        for (entity, transform) in sleeping_dynamic_bodies.iter() {
-            let pos = IVec2::new(
-                transform.translation.x.round() as i32,
-                transform.translation.y.round() as i32,
-            );
-
-            for region in &chunk_regions {
-                if pos.x >= region.min.x
-                    && pos.x <= region.max.x
-                    && pos.y >= region.min.y
-                    && pos.y <= region.max.y
-                {
-                    commands.entity(entity).remove::<Sleeping>();
-                    break;
-                }
-            }
-        }
+    /// Set the linear speed (length of linear velocity) below which an expired
+    /// dynamic rigid body proxy will rejoin the falling sand simulation.
+    ///
+    /// Defaults to `1.0`.
+    #[must_use]
+    pub const fn with_rejoin_speed_threshold(mut self, threshold: f32) -> Self {
+        self.rejoin_speed_threshold = threshold;
+        self
     }
+
+    /// Set the maximum amount of time the particle remains a dynamic rigid body
+    /// before being forcibly returned to the falling sand simulation.
+    ///
+    /// Defaults to 10 seconds.
+    #[must_use]
+    pub const fn with_max_lifetime(mut self, max_lifetime: Duration) -> Self {
+        self.max_lifetime = max_lifetime;
+        self
+    }
+
+    /// Allow this dynamic rigid body to collide with other dynamic rigid body particles.
+    ///
+    /// Defaults to `false`: dynamic particle proxies do not collide with each other,
+    /// only with static rigid bodies.
+    #[must_use]
+    pub const fn with_collide_with_other_dynamic(mut self, enabled: bool) -> Self {
+        self.collide_with_other_dynamic = enabled;
+        self
+    }
+
+    /// Set the initial linear velocity.
+    #[must_use]
+    pub const fn with_linear_velocity(mut self, velocity: Vec2) -> Self {
+        self.linear_velocity = velocity;
+        self
+    }
+
+    /// Set the initial angular velocity in radians per second.
+    #[must_use]
+    pub const fn with_angular_velocity(mut self, velocity: f32) -> Self {
+        self.angular_velocity = velocity;
+        self
+    }
+
+    /// Set the gravity scale.
+    #[must_use]
+    pub const fn with_gravity_scale(mut self, scale: f32) -> Self {
+        self.gravity_scale = scale;
+        self
+    }
+}
+
+/// Placed on the spawned rigid body entity. Links back to the suspended particle.
+#[derive(Component, Copy, Clone, Debug)]
+pub struct DynamicRigidBodyProxy {
+    /// The particle entity that this rigid body is a proxy for.
+    pub particle_entity: Entity,
+}
+
+/// Tracks how long a dynamic rigid body proxy has been alive and the speed at which
+/// it should rejoin the falling sand simulation once its [`Timer`] expires.
+#[derive(Component, Clone, Debug)]
+pub struct DynamicRigidBodyLifetime {
+    /// Ticks while the proxy is alive. Once finished, the proxy is eligible to rejoin
+    /// when its linear speed falls below `rejoin_speed_threshold`.
+    pub timer: Timer,
+    /// Linear speed below which an expired proxy rejoins the simulation.
+    pub rejoin_speed_threshold: f32,
+}
+
+/// Placed on the suspended particle entity. Links to its rigid body proxy.
+#[derive(Component, Copy, Clone, Debug)]
+pub struct SuspendedParticle {
+    /// The rigid body entity that acts as a physics proxy for this particle.
+    pub rigid_body_entity: Entity,
 }
 
 const NEIGHBOR_OFFSETS: [IVec2; 8] = [
@@ -398,13 +394,12 @@ pub(super) fn rejoin_dynamic_rigid_bodies(
 mod tests {
     use super::*;
     use crate::core::{AttachedToParticleType, ParticleType, SpawnParticleSignal};
-    use crate::physics::components::ComponentsPlugin;
     use crate::FallingSandMinimalPlugin;
 
     fn create_test_app() -> App {
         let mut app = App::new();
         app.add_plugins((MinimalPlugins, FallingSandMinimalPlugin::default()));
-        app.add_plugins(ComponentsPlugin);
+        app.add_plugins(DynamicPlugin);
         app.add_systems(
             Update,
             (
@@ -424,7 +419,7 @@ mod tests {
                 chunk_size: 4,
             },
         ));
-        app.add_plugins(ComponentsPlugin);
+        app.add_plugins(DynamicPlugin);
         app.add_systems(
             Update,
             (
