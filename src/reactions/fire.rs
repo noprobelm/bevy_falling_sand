@@ -14,7 +14,6 @@ use crate::{
         SpawnParticleSignal,
     },
     movement::Movement,
-    render::ColorProfile,
 };
 
 /// Marker component for particles that ignite nearby neighbors.
@@ -120,8 +119,6 @@ pub struct Flammable {
     pub chance_despawn_per_tick: f64,
     /// Indicates the burn effect might produce a new particle type.
     pub reaction: Option<BurnProduct>,
-    /// Indicates the burn effect should have its own [`ColorProfile`].
-    pub color: Option<ColorProfile>,
     /// The chance this particle will be ignited per contact check from a neighboring
     /// [`Fire`] source. Set to 0.0 to prevent contact ignition.
     pub chance_to_ignite: f64,
@@ -143,7 +140,6 @@ impl Default for Flammable {
             tick_rate: Duration::default(),
             chance_despawn_per_tick: 0.0,
             reaction: None,
-            color: None,
             chance_to_ignite: 0.0,
             spreads_fire: false,
             spread_radius: 1.0,
@@ -188,7 +184,6 @@ impl Flammable {
         tick_rate: Duration,
         chance_destroy_per_tick: f64,
         reaction: Option<BurnProduct>,
-        color: Option<ColorProfile>,
         chance_to_ignite: f64,
         spreads_fire: bool,
         spread_radius: f32,
@@ -200,7 +195,6 @@ impl Flammable {
             tick_rate,
             chance_despawn_per_tick: chance_destroy_per_tick,
             reaction,
-            color,
             chance_to_ignite,
             spreads_fire,
             spread_radius,
@@ -507,9 +501,6 @@ fn handle_fire(
                     }
                     if let Some(reaction) = &burns.reaction {
                         entity_commands.insert(reaction.clone());
-                    }
-                    if let Some(colors) = &burns.color {
-                        entity_commands.insert(colors.clone());
                     }
                     if burns.spreads_fire {
                         entity_commands.insert(Fire {
