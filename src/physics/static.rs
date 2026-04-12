@@ -1,17 +1,110 @@
+//! Static rigid body collision mesh generation for falling sand particles.
+//!
+//! Particles marked with [`StaticRigidBodyParticle`] contribute to per-chunk collision meshes.
+//! The pipeline identifies dirty chunks, builds occupancy bitmaps, generates meshes
+//! asynchronously (flood-fill, perimeter extraction, Douglas-Peucker simplification,
+//! ear-cut triangulation), and attaches the resulting trimesh colliders to static rigid body
+//! entities.
+
+use avian2d::math::Vector;
 use avian2d::prelude::*;
-use bevy::platform::collections::HashSet;
+use bevy::platform::collections::{HashMap, HashSet};
 use bevy::prelude::*;
-use bevy::tasks::AsyncComputeTaskPool;
+use bevy::tasks::{AsyncComputeTaskPool, Task};
 use futures_lite::future;
 
-use super::components::StaticRigidBodyParticle;
-use super::geometry::generate_mesh_from_bitmap;
-use super::resources::{
-    ChunkLastProcessedTime, ChunkOccupancy, PendingMeshTasks, PreviousFrameDirtyChunks,
-    StaticRigidBodyParticleColliders, StaticRigidBodyParticleMeshData,
-};
+use super::dynamic::{StaticRigidBodyParticle, SuspendedParticle};
+use super::geometry::{generate_mesh_from_bitmap, MeshGenerationResult};
 use crate::core::{ChunkCoord, ChunkDirtyState, ChunkIndex, ChunkRegion, ParticleMap};
-use crate::physics::resources::{DirtyChunkUpdateInterval, DouglasPeuckerEpsilon};
+
+pub(super) struct StaticPlugin;
+
+impl Plugin for StaticPlugin {
+    fn build(&self, app: &mut App) {
+        app.init_resource::<StaticRigidBodyParticleMeshData>()
+            .init_resource::<StaticRigidBodyParticleColliders>()
+            .init_resource::<PreviousFrameDirtyChunks>()
+            .init_resource::<DouglasPeuckerEpsilon>()
+            .init_resource::<DirtyChunkUpdateInterval>()
+            .init_resource::<ChunkLastProcessedTime>()
+            .init_resource::<PendingMeshTasks>()
+            .init_resource::<ChunkOccupancy>();
+    }
+}
+
+/// Configures the epsilon tolerance for the Douglas-Peucker polygon simplification algorithm.
+///
+/// Lower values preserve more detail in collision meshes but produce more vertices.
+/// Higher values simplify aggressively, improving performance at the cost of precision.
+///
+/// # Examples
+///
+/// ```no_run
+/// use bevy::prelude::*;
+/// use bevy_falling_sand::physics::DouglasPeuckerEpsilon;
+///
+/// fn setup(mut commands: Commands) {
+///     commands.insert_resource(DouglasPeuckerEpsilon(1.0));
+/// }
+/// ```
+#[derive(Resource, Debug)]
+pub struct DouglasPeuckerEpsilon(pub f32);
+
+impl Default for DouglasPeuckerEpsilon {
+    fn default() -> Self {
+        Self(0.5)
+    }
+}
+
+/// Configures how often dirty chunks recalculate their collision meshes (in seconds).
+///
+/// Chunks that just stopped being dirty are always processed immediately.
+/// Currently dirty chunks are throttled to this interval to improve performance.
+///
+/// # Examples
+///
+/// ```no_run
+/// use bevy::prelude::*;
+/// use bevy_falling_sand::physics::DirtyChunkUpdateInterval;
+///
+/// fn setup(mut commands: Commands) {
+///     commands.insert_resource(DirtyChunkUpdateInterval(0.2));
+/// }
+/// ```
+#[derive(Resource, Debug)]
+pub struct DirtyChunkUpdateInterval(pub f32);
+
+impl Default for DirtyChunkUpdateInterval {
+    fn default() -> Self {
+        Self(0.1)
+    }
+}
+
+#[derive(Resource, Default, Debug)]
+pub(super) struct PreviousFrameDirtyChunks(HashSet<ChunkCoord>);
+
+#[derive(Resource, Default, Debug)]
+pub(super) struct ChunkLastProcessedTime(HashMap<ChunkCoord, f32>);
+
+#[derive(Resource, Default)]
+pub(super) struct PendingMeshTasks {
+    tasks: HashMap<ChunkCoord, Task<MeshGenerationResult>>,
+}
+
+type ChunkMeshData = (Vec<Vec<Vector>>, Vec<Vec<[u32; 3]>>);
+
+#[derive(Resource, Default, Debug)]
+pub(super) struct StaticRigidBodyParticleMeshData {
+    chunks: HashMap<ChunkCoord, ChunkMeshData>,
+}
+
+#[derive(Resource, Default, Debug)]
+pub(super) struct StaticRigidBodyParticleColliders(HashMap<ChunkCoord, Entity>);
+
+#[derive(Resource, Default)]
+pub(super) struct ChunkOccupancy {
+    bitmaps: HashMap<ChunkCoord, Vec<bool>>,
+}
 
 #[allow(
     clippy::too_many_arguments,
@@ -20,7 +113,7 @@ use crate::physics::resources::{DirtyChunkUpdateInterval, DouglasPeuckerEpsilon}
 )]
 pub(super) fn calculate_static_rigid_bodies(
     mut commands: Commands,
-    static_body_query: Query<(), With<StaticRigidBodyParticle>>,
+    static_body_query: Query<(), (With<StaticRigidBodyParticle>, Without<SuspendedParticle>)>,
     sleeping_dynamic_bodies: Query<(Entity, &Transform), (With<RigidBody>, With<Sleeping>)>,
     mut pending_tasks: ResMut<PendingMeshTasks>,
     mut previous_dirty_chunks: ResMut<PreviousFrameDirtyChunks>,

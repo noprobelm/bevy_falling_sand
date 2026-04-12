@@ -17,8 +17,8 @@ pub use crate::render::{
     extract_chunk_image, ChunkEffectApp, ChunkEffectLayer, ChunkEffectMaterial,
     ChunkRenderingConfig, ChunkRenderingPlugin, ColorAssignment, ColorGradient, ColorIndex,
     ColorProfile, ColorRng, ColorSource, DefaultChunkEffectMaterial, FallingSandRenderPlugin,
-    ForceColor, Palette, ParticleColor, RenderingSystems, TextureSource,
-    WithColor, WorldColorTexture, WorldEffectTexture,
+    ForceColor, Palette, ParticleColor, RenderingSystems, TextureSource, WithColor,
+    WorldColorTexture, WorldEffectTexture,
 };
 
 #[cfg(feature = "movement")]
@@ -43,8 +43,9 @@ pub use crate::reactions::{
 
 #[cfg(feature = "physics")]
 pub use crate::physics::{
-    DirtyChunkUpdateInterval, DouglasPeuckerEpsilon, FallingSandPhysicsPlugin,
-    StaticRigidBodyParticle,
+    DirtyChunkUpdateInterval, DouglasPeuckerEpsilon, DynamicRigidBodyProxy,
+    PromoteDynamicRigidBodyParticle, FallingSandPhysicsPlugin, StaticRigidBodyParticle,
+    SuspendedParticle,
 };
 
 #[cfg(feature = "persistence")]

@@ -1,7 +1,19 @@
-//! Integrates [avian2d](https://docs.rs/avian2d) physics with the falling sand simulation
+//! Integrates [avian2d](https://docs.rs/avian2d) physics with the falling sand simulation.
 //!
-//! This module generates static rigid body collision meshes from particles marked with
-//! [`StaticRigidBodyParticle`]. The mesh generation pipeline runs each frame and works
+//! This module provides two sub-modules, each owning a distinct domain:
+//!
+//! - **[`dynamic`]** — sending a [`PromoteDynamicRigidBodyParticle`] for a particle removes it from the
+//!   simulation and spawns a separate physics-driven rigid body entity at its position. Each
+//!   frame, if the rigid body is within one cell of any particle in the
+//!   [`ParticleMap`](crate::ParticleMap) (or at the map edge), the rigid body is despawned and
+//!   the original particle is restored to the simulation at the nearest vacant position.
+//!
+//! - **[`static`](mod@self::static)** — particles marked with [`StaticRigidBodyParticle`] (on the
+//!   [`ParticleType`](crate::ParticleType)) contribute to per-chunk collision meshes.
+//!
+//! ## Static mesh generation
+//!
+//! The static mesh generation pipeline runs each frame and works
 //! per-chunk:
 //!
 //! 1. **Identify dirty chunks** — chunks whose dirty state just cleared ("settled") are
@@ -30,19 +42,26 @@
 //!    have their [`Sleeping`](avian2d::prelude::Sleeping) component removed so they
 //!    respond to the new collision geometry.
 
-mod components;
+pub mod dynamic;
 mod geometry;
-mod resources;
-mod systems;
+pub mod r#static;
 
+use avian2d::prelude::PhysicsInterpolationPlugin;
 use bevy::prelude::*;
 
-pub use components::StaticRigidBodyParticle;
-pub use resources::{DirtyChunkUpdateInterval, DouglasPeuckerEpsilon};
+pub use dynamic::{
+    DynamicRigidBodyProxy, PromoteDynamicRigidBodyParticle,
+    StaticRigidBodyParticle, SuspendedParticle,
+};
+pub use r#static::{DirtyChunkUpdateInterval, DouglasPeuckerEpsilon};
 
-use components::ComponentsPlugin;
-use resources::ResourcesPlugin;
-use systems::calculate_static_rigid_bodies;
+use dynamic::DynamicPlugin;
+use dynamic::{promote_dynamic_rigid_bodies, rejoin_dynamic_rigid_bodies};
+use r#static::calculate_static_rigid_bodies;
+use r#static::StaticPlugin;
+
+use crate::movement::ParticleMovementSet;
+use crate::physics::dynamic::sync_dynamic_rigid_bodies_with_particles;
 
 /// Plugin providing avian2d rigid body integration for the falling sand simulation.
 ///
@@ -91,9 +110,24 @@ impl FallingSandPhysicsPlugin {
 
 impl Plugin for FallingSandPhysicsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(avian2d::PhysicsPlugins::default().with_length_unit(self.length_unit))
-            .insert_resource(avian2d::prelude::Gravity(self.rigid_body_gravity))
-            .add_plugins((ComponentsPlugin, ResourcesPlugin))
-            .add_systems(Update, calculate_static_rigid_bodies);
+        app.add_plugins(
+            avian2d::PhysicsPlugins::default()
+                .with_length_unit(self.length_unit)
+                .set(PhysicsInterpolationPlugin::interpolate_all()),
+        )
+        .insert_resource(avian2d::prelude::Gravity(self.rigid_body_gravity))
+        .add_plugins((DynamicPlugin, StaticPlugin))
+        .add_systems(
+            Update,
+            (
+                promote_dynamic_rigid_bodies,
+                rejoin_dynamic_rigid_bodies.after(promote_dynamic_rigid_bodies),
+                calculate_static_rigid_bodies.after(promote_dynamic_rigid_bodies),
+            ),
+        )
+        .add_systems(
+            PostUpdate,
+            sync_dynamic_rigid_bodies_with_particles.after(ParticleMovementSet),
+        );
     }
 }
