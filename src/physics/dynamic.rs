@@ -449,16 +449,22 @@ pub(super) fn sync_dynamic_rigid_bodies_with_particles(
             continue;
         }
 
-        if matches!(map.get_copied(pos), Ok(None)) {
-            if let Some(prev) = proxy.last_map_position.take() {
-                if map.get_copied(prev) == Ok(Some(proxy.particle_entity)) {
-                    let _ = map.remove(prev);
-                }
-                mark_dirty(prev, &chunk_index, &mut chunk_query);
+        if let Some(prev) = proxy.last_map_position.take() {
+            if map.get_copied(prev) == Ok(Some(proxy.particle_entity)) {
+                let _ = map.remove(prev);
             }
-            let _ = map.insert(pos, proxy.particle_entity);
-            mark_dirty(pos, &chunk_index, &mut chunk_query);
-            proxy.last_map_position = Some(pos);
+            mark_dirty(prev, &chunk_index, &mut chunk_query);
+        }
+
+        match map.get_copied(pos) {
+            Ok(None) => {
+                let _ = map.insert(pos, proxy.particle_entity);
+                mark_dirty(pos, &chunk_index, &mut chunk_query);
+                proxy.last_map_position = Some(pos);
+            }
+            _ => {
+                proxy.last_map_position = None;
+            }
         }
     }
 }
