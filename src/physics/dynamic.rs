@@ -225,18 +225,11 @@ pub(super) fn promote_dynamic_rigid_bodies(
     mut map: ResMut<ParticleMap>,
     chunk_index: Res<ChunkIndex>,
     mut chunk_query: Query<&mut ChunkDirtyState>,
-    particle_query: Query<
-        (
-            &GridPosition,
-            Has<RigidBodyDisabled>,
-            Option<&ParticleColor>,
-        ),
-        With<Particle>,
-    >,
+    particle_query: Query<(&GridPosition, Option<&ParticleColor>), With<Particle>>,
 ) {
     for signal in msgr.read() {
         let entity = signal.entity;
-        let Ok((grid_pos, is_disabled, particle_color)) = particle_query.get(entity) else {
+        let Ok((grid_pos, particle_color)) = particle_query.get(entity) else {
             continue;
         };
         let position = grid_pos.0;
@@ -261,38 +254,35 @@ pub(super) fn promote_dynamic_rigid_bodies(
                 LayerMask::ALL ^ LayerMask::from(DynamicParticleLayer::DynamicParticle),
             )
         };
-        let mut rb_commands = commands.spawn((
-            Transform::from_xyz(position.x as f32, position.y as f32, 0.0),
-            RigidBody::Dynamic,
-            Collider::rectangle(1.0, 1.0),
-            collision_layers,
-            LinearVelocity(signal.linear_velocity),
-            AngularVelocity(signal.angular_velocity),
-            GravityScale(signal.gravity_scale),
-            DynamicRigidBodyProxy {
-                particle_entity: entity,
-                last_map_position: None,
-            },
-            DynamicRigidBodyLifetime {
-                timer: Timer::new(signal.max_lifetime, TimerMode::Once),
-                rejoin_speed_threshold: signal.rejoin_speed_threshold,
-            },
-            Sprite {
-                color,
-                custom_size: Some(Vec2::ONE),
-                ..default()
-            },
-        ));
-        if is_disabled {
-            rb_commands.insert(RigidBodyDisabled);
-        }
-        let rb_entity = rb_commands.id();
+        let rb_entity = commands
+            .spawn((
+                Transform::from_xyz(position.x as f32, position.y as f32, 0.0),
+                RigidBody::Dynamic,
+                Collider::rectangle(1.0, 1.0),
+                collision_layers,
+                LinearVelocity(signal.linear_velocity),
+                AngularVelocity(signal.angular_velocity),
+                GravityScale(signal.gravity_scale),
+                DynamicRigidBodyProxy {
+                    particle_entity: entity,
+                    last_map_position: None,
+                },
+                DynamicRigidBodyLifetime {
+                    timer: Timer::new(signal.max_lifetime, TimerMode::Once),
+                    rejoin_speed_threshold: signal.rejoin_speed_threshold,
+                },
+                Sprite {
+                    color,
+                    custom_size: Some(Vec2::ONE),
+                    ..default()
+                },
+            ))
+            .id();
 
         commands
             .entity(entity)
             .remove::<(
                 GridPosition,
-                RigidBodyDisabled,
                 ParticleColor,
                 Movement,
                 Speed,
@@ -323,7 +313,7 @@ pub(super) fn rejoin_dynamic_rigid_bodies(
             &mut DynamicRigidBodyLifetime,
             Has<Sleeping>,
         ),
-        Without<RigidBodyDisabled>,
+        Without<Particle>,
     >,
     particle_query: Query<(), With<Particle>>,
     static_query: Query<(), With<StaticRigidBodyParticle>>,
