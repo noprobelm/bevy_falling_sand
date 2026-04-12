@@ -2,7 +2,7 @@
 //!
 //! This module provides two sub-modules, each owning a distinct domain:
 //!
-//! - **[`dynamic`]** — sending a [`DynamicRigidBodySignal`] for a particle removes it from the
+//! - **[`dynamic`]** — sending a [`PromoteDynamicRigidBodyParticle`] for a particle removes it from the
 //!   simulation and spawns a separate physics-driven rigid body entity at its position. Each
 //!   frame, if the rigid body is within one cell of any particle in the
 //!   [`ParticleMap`](crate::ParticleMap) (or at the map edge), the rigid body is despawned and
@@ -50,7 +50,7 @@ use avian2d::prelude::PhysicsInterpolationPlugin;
 use bevy::prelude::*;
 
 pub use dynamic::{
-    DynamicRigidBodyProxy, DynamicRigidBodySignal, EmitDynamicRigidBodyParticleSignal,
+    DynamicRigidBodyProxy, PromoteDynamicRigidBodyParticle,
     StaticRigidBodyParticle, SuspendedParticle,
 };
 pub use r#static::{DirtyChunkUpdateInterval, DouglasPeuckerEpsilon};

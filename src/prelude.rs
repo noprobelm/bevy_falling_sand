@@ -44,7 +44,7 @@ pub use crate::reactions::{
 #[cfg(feature = "physics")]
 pub use crate::physics::{
     DirtyChunkUpdateInterval, DouglasPeuckerEpsilon, DynamicRigidBodyProxy,
-    EmitDynamicRigidBodyParticleSignal, FallingSandPhysicsPlugin, StaticRigidBodyParticle,
+    PromoteDynamicRigidBodyParticle, FallingSandPhysicsPlugin, StaticRigidBodyParticle,
     SuspendedParticle,
 };
 

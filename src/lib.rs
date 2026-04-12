@@ -165,7 +165,7 @@
 //! - [Static rigid bodies](`crate::physics::static`) — per-chunk collision mesh generation from
 //!   marked particles
 //! - [Tagging particles as static rigid bodies](`StaticRigidBodyParticle`)
-//! - [Promoting particles to dynamic rigid bodies](`crate::physics::DynamicRigidBodySignal`)
+//! - [Promoting particles to dynamic rigid bodies](`crate::physics::PromoteDynamicRigidBodyParticle`)
 //! - [Configuring collision mesh calculation intervals](DirtyChunkUpdateInterval)
 //! - [Configuring polygon simplification tolerances](`DouglasPeuckerEpsilon`)
 //!

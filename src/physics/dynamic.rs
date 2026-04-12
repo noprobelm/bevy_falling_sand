@@ -1,6 +1,6 @@
 //! Dynamic rigid body promotion and rejoining for falling sand particles.
 //!
-//! Sending a [`DynamicRigidBodySignal`] removes a particle from the simulation and spawns a
+//! Sending a [`PromoteDynamicRigidBodyParticle`] removes a particle from the simulation and spawns a
 //! physics-driven rigid body proxy. Each frame the proxy is checked: when it neighbours another
 //! particle, reaches a map edge, or its lifetime expires below its speed threshold, the proxy is
 //! despawned and the original particle is restored at the nearest vacant position.
@@ -34,9 +34,9 @@ pub(super) struct DynamicPlugin;
 impl Plugin for DynamicPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<StaticRigidBodyParticle>()
-            .register_type::<EmitDynamicRigidBodyParticleSignal>()
+            .register_type::<PromoteDynamicRigidBodyParticle>()
             .register_particle_sync_component::<StaticRigidBodyParticle>()
-            .add_message::<EmitDynamicRigidBodyParticleSignal>();
+            .add_message::<PromoteDynamicRigidBodyParticle>();
     }
 }
 
@@ -82,15 +82,15 @@ pub struct StaticRigidBodyParticle;
 /// ```no_run
 /// use bevy::prelude::*;
 /// use bevy_falling_sand::core::{Particle, GridPosition};
-/// use bevy_falling_sand::physics::DynamicRigidBodySignal;
+/// use bevy_falling_sand::physics::PromoteDynamicRigidBodyParticle;
 ///
 /// fn launch_particle(
-///     mut writer: MessageWriter<DynamicRigidBodySignal>,
+///     mut writer: MessageWriter<PromoteDynamicRigidBodyParticle>,
 ///     query: Query<Entity, With<Particle>>,
 /// ) {
 ///     for entity in &query {
 ///         writer.write(
-///             DynamicRigidBodySignal::new(entity)
+///             PromoteDynamicRigidBodyParticle::new(entity)
 ///                 .with_linear_velocity(Vec2::new(50.0, 100.0)),
 ///         );
 ///     }
@@ -99,20 +99,17 @@ pub struct StaticRigidBodyParticle;
 #[derive(Event, Message, Copy, Clone, Debug, Reflect, Serialize, Deserialize)]
 #[reflect(Debug)]
 #[type_path = "bfs_physics"]
-pub struct EmitDynamicRigidBodyParticleSignal {
+pub struct PromoteDynamicRigidBodyParticle {
     pub(super) entity: Entity,
     pub(super) linear_velocity: Vec2,
     pub(super) angular_velocity: f32,
     pub(super) gravity_scale: f32,
     pub(super) collide_with_other_dynamic: bool,
-    pub(super) max_lifetime: Duration,
+    pub(super) minimum_lifetime: Duration,
     pub(super) rejoin_speed_threshold: f32,
 }
 
-/// Convenience alias used throughout the public API.
-pub type DynamicRigidBodySignal = EmitDynamicRigidBodyParticleSignal;
-
-impl EmitDynamicRigidBodyParticleSignal {
+impl PromoteDynamicRigidBodyParticle {
     /// Create a signal targeting the given particle entity with default physics parameters.
     #[must_use]
     pub const fn new(entity: Entity) -> Self {
@@ -122,7 +119,7 @@ impl EmitDynamicRigidBodyParticleSignal {
             angular_velocity: 0.0,
             gravity_scale: 1.0,
             collide_with_other_dynamic: false,
-            max_lifetime: Duration::from_secs(10),
+            minimum_lifetime: Duration::from_secs(10),
             rejoin_speed_threshold: 1.0,
         }
     }
@@ -143,7 +140,7 @@ impl EmitDynamicRigidBodyParticleSignal {
     /// Defaults to 10 seconds.
     #[must_use]
     pub const fn with_max_lifetime(mut self, max_lifetime: Duration) -> Self {
-        self.max_lifetime = max_lifetime;
+        self.minimum_lifetime = max_lifetime;
         self
     }
 
@@ -221,7 +218,7 @@ const NEIGHBOR_OFFSETS: [IVec2; 8] = [
 #[allow(clippy::needless_pass_by_value, clippy::too_many_arguments)]
 pub(super) fn promote_dynamic_rigid_bodies(
     mut commands: Commands,
-    mut msgr: MessageReader<DynamicRigidBodySignal>,
+    mut msgr: MessageReader<PromoteDynamicRigidBodyParticle>,
     mut map: ResMut<ParticleMap>,
     chunk_index: Res<ChunkIndex>,
     mut chunk_query: Query<&mut ChunkDirtyState>,
@@ -268,7 +265,7 @@ pub(super) fn promote_dynamic_rigid_bodies(
                     last_map_position: None,
                 },
                 DynamicRigidBodyLifetime {
-                    timer: Timer::new(signal.max_lifetime, TimerMode::Once),
+                    timer: Timer::new(signal.minimum_lifetime, TimerMode::Once),
                     rejoin_speed_threshold: signal.rejoin_speed_threshold,
                 },
                 Sprite {
@@ -523,10 +520,10 @@ mod tests {
 
     fn send_promote(app: &mut App, entity: Entity) {
         app.world_mut()
-            .write_message(DynamicRigidBodySignal::new(entity));
+            .write_message(PromoteDynamicRigidBodyParticle::new(entity));
     }
 
-    fn send_promote_with(app: &mut App, signal: DynamicRigidBodySignal) {
+    fn send_promote_with(app: &mut App, signal: PromoteDynamicRigidBodyParticle) {
         app.world_mut().write_message(signal);
     }
 
@@ -616,7 +613,7 @@ mod tests {
 
         send_promote_with(
             &mut app,
-            DynamicRigidBodySignal::new(entity)
+            PromoteDynamicRigidBodyParticle::new(entity)
                 .with_linear_velocity(Vec2::new(10.0, 20.0))
                 .with_angular_velocity(3.14)
                 .with_gravity_scale(2.5),
