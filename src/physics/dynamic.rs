@@ -15,6 +15,7 @@ use serde::{Deserialize, Serialize};
 use crate::core::{
     ChunkDirtyState, ChunkIndex, GridPosition, Particle, ParticleMap, SyncParticleSignal,
 };
+use crate::movement::{AirResistance, Density, Momentum, Movement, Speed};
 use crate::render::ParticleColor;
 use crate::ParticleSyncExt;
 
@@ -183,6 +184,9 @@ impl EmitDynamicRigidBodyParticleSignal {
 pub struct DynamicRigidBodyProxy {
     /// The particle entity that this rigid body is a proxy for.
     pub particle_entity: Entity,
+    /// The grid position this proxy last placed its particle at in the [`ParticleMap`],
+    /// or [`None`] if the particle is not currently in the map.
+    pub last_map_position: Option<IVec2>,
 }
 
 /// Tracks how long a dynamic rigid body proxy has been alive and the speed at which
@@ -267,6 +271,7 @@ pub(super) fn promote_dynamic_rigid_bodies(
             GravityScale(signal.gravity_scale),
             DynamicRigidBodyProxy {
                 particle_entity: entity,
+                last_map_position: None,
             },
             DynamicRigidBodyLifetime {
                 timer: Timer::new(signal.max_lifetime, TimerMode::Once),
@@ -285,7 +290,16 @@ pub(super) fn promote_dynamic_rigid_bodies(
 
         commands
             .entity(entity)
-            .remove::<(GridPosition, RigidBodyDisabled)>()
+            .remove::<(
+                GridPosition,
+                RigidBodyDisabled,
+                ParticleColor,
+                Movement,
+                Speed,
+                Density,
+                AirResistance,
+                Momentum,
+            )>()
             .insert(SuspendedParticle {
                 rigid_body_entity: rb_entity,
             });
@@ -305,7 +319,7 @@ pub(super) fn rejoin_dynamic_rigid_bodies(
             Entity,
             &Transform,
             &LinearVelocity,
-            &DynamicRigidBodyProxy,
+            &mut DynamicRigidBodyProxy,
             &mut DynamicRigidBodyLifetime,
             Has<Sleeping>,
         ),
@@ -313,10 +327,11 @@ pub(super) fn rejoin_dynamic_rigid_bodies(
     >,
     particle_query: Query<(), With<Particle>>,
     static_query: Query<(), With<StaticRigidBodyParticle>>,
+    suspended_query: Query<(), With<SuspendedParticle>>,
 ) {
     let mut claimed: HashSet<IVec2> = HashSet::default();
 
-    for (rb_entity, transform, linear_velocity, proxy, mut lifetime, is_sleeping) in
+    for (rb_entity, transform, linear_velocity, mut proxy, mut lifetime, is_sleeping) in
         &mut proxy_query
     {
         lifetime.timer.tick(time.delta());
@@ -330,14 +345,18 @@ pub(super) fn rejoin_dynamic_rigid_bodies(
         }
 
         let pos = IVec2::new(
-            transform.translation.x.round() as i32,
-            transform.translation.y.round() as i32,
+            transform.translation.x.floor() as i32,
+            transform.translation.y.floor() as i32,
         );
 
         let has_neighbor_or_edge = std::iter::once(pos)
             .chain(NEIGHBOR_OFFSETS.iter().map(|o| pos + *o))
             .any(|p| match map.get(p) {
-                Ok(Some(entity)) => !static_query.contains(*entity),
+                Ok(Some(entity)) => {
+                    *entity != particle_entity
+                        && !static_query.contains(*entity)
+                        && !suspended_query.contains(*entity)
+                }
                 Err(_) => true,
                 Ok(None) => false,
             });
@@ -346,19 +365,39 @@ pub(super) fn rejoin_dynamic_rigid_bodies(
             continue;
         }
 
+        if let Some(last) = proxy.last_map_position.take() {
+            if map.get_copied(last) == Ok(Some(particle_entity)) {
+                let _ = map.remove(last);
+                let chunk_coord = chunk_index.world_to_chunk_coord(last);
+                if let Some(chunk_entity) = chunk_index.get(chunk_coord) {
+                    if let Ok(mut dirty_state) = chunk_query.get_mut(chunk_entity) {
+                        dirty_state.mark_dirty(last);
+                    }
+                }
+            }
+        }
+
         let max_upward_search = 50;
 
-        let candidates = std::iter::once(pos).chain(NEIGHBOR_OFFSETS.iter().map(|o| pos + *o));
+        let mut candidates = std::iter::once(pos).chain(NEIGHBOR_OFFSETS.iter().map(|o| pos + *o));
 
-        let target = candidates
-            .filter(|p| !claimed.contains(p))
-            .find(|p| matches!(map.get_copied(*p), Ok(None)));
+        let is_vacant = |p: &IVec2| {
+            if claimed.contains(p) {
+                return false;
+            }
+            match map.get_copied(*p) {
+                Ok(None) => true,
+                Ok(Some(e)) => e == particle_entity,
+                Err(_) => false,
+            }
+        };
+
+        let target = candidates.find(|p| is_vacant(p));
 
         let target = target.or_else(|| {
             (1..=max_upward_search)
                 .map(|dy| pos + IVec2::new(0, dy))
-                .filter(|p| !claimed.contains(p))
-                .find(|p| matches!(map.get_copied(*p), Ok(None)))
+                .find(|p| is_vacant(p))
         });
 
         let Some(target) = target else {
@@ -369,9 +408,7 @@ pub(super) fn rejoin_dynamic_rigid_bodies(
 
         claimed.insert(target);
 
-        if let Ok(Some(_)) = map.insert(target, particle_entity) {
-            unreachable!("claimed position should be vacant");
-        }
+        let _ = map.insert(target, particle_entity);
 
         let chunk_coord = chunk_index.world_to_chunk_coord(target);
         if let Some(chunk_entity) = chunk_index.get(chunk_coord) {
@@ -387,6 +424,52 @@ pub(super) fn rejoin_dynamic_rigid_bodies(
             .insert(GridPosition(target));
 
         sync_writer.write(SyncParticleSignal::from_entity(particle_entity));
+    }
+}
+
+#[allow(clippy::needless_pass_by_value, clippy::too_many_arguments)]
+pub(super) fn sync_dynamic_rigid_bodies_with_particles(
+    mut map: ResMut<ParticleMap>,
+    chunk_index: Res<ChunkIndex>,
+    mut chunk_query: Query<&mut ChunkDirtyState>,
+    mut proxy_query: Query<(&Transform, &mut DynamicRigidBodyProxy), Changed<Transform>>,
+) {
+    let mark_dirty = |position: IVec2,
+                      chunk_index: &ChunkIndex,
+                      chunk_query: &mut Query<&mut ChunkDirtyState>| {
+        let chunk_coord = chunk_index.world_to_chunk_coord(position);
+        if let Some(chunk_entity) = chunk_index.get(chunk_coord) {
+            if let Ok(mut dirty_state) = chunk_query.get_mut(chunk_entity) {
+                dirty_state.mark_dirty(position);
+            }
+        }
+    };
+
+    for (transform, mut proxy) in &mut proxy_query {
+        let pos = IVec2::new(
+            transform.translation.x.floor() as i32,
+            transform.translation.y.floor() as i32,
+        );
+
+        if proxy.last_map_position == Some(pos) {
+            continue;
+        }
+
+        if !map.is_position_loaded(pos) {
+            continue;
+        }
+
+        if matches!(map.get_copied(pos), Ok(None)) {
+            if let Some(prev) = proxy.last_map_position.take() {
+                if map.get_copied(prev) == Ok(Some(proxy.particle_entity)) {
+                    let _ = map.remove(prev);
+                }
+                mark_dirty(prev, &chunk_index, &mut chunk_query);
+            }
+            let _ = map.insert(pos, proxy.particle_entity);
+            mark_dirty(pos, &chunk_index, &mut chunk_query);
+            proxy.last_map_position = Some(pos);
+        }
     }
 }
 

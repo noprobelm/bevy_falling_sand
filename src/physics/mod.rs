@@ -60,6 +60,9 @@ use dynamic::{promote_dynamic_rigid_bodies, rejoin_dynamic_rigid_bodies};
 use r#static::calculate_static_rigid_bodies;
 use r#static::StaticPlugin;
 
+use crate::movement::ParticleMovementSet;
+use crate::physics::dynamic::sync_dynamic_rigid_bodies_with_particles;
+
 /// Plugin providing avian2d rigid body integration for the falling sand simulation.
 ///
 /// Registers all physics components, resources, and systems. Adds the
@@ -121,6 +124,10 @@ impl Plugin for FallingSandPhysicsPlugin {
                 rejoin_dynamic_rigid_bodies.after(promote_dynamic_rigid_bodies),
                 calculate_static_rigid_bodies.after(promote_dynamic_rigid_bodies),
             ),
+        )
+        .add_systems(
+            PostUpdate,
+            sync_dynamic_rigid_bodies_with_particles.after(ParticleMovementSet),
         );
     }
 }
