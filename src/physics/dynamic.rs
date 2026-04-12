@@ -65,11 +65,11 @@ impl Plugin for DynamicPlugin {
 #[type_path = "bfs_physics"]
 pub struct StaticRigidBodyParticle;
 
-/// Signal to promote a [`Particle`](crate::Particle) entity into a dynamic rigid body.
+/// Signal to promote a [`Particle`] entity into a dynamic rigid body.
 ///
 /// When processed, the particle is removed from the falling sand simulation (its
-/// [`GridPosition`](crate::GridPosition) is removed and it is taken out of the
-/// [`ParticleMap`](crate::ParticleMap)). A separate rigid body entity is spawned at the
+/// [`GridPosition`] is removed and it is taken out of the
+/// [`ParticleMap`]). A separate rigid body entity is spawned at the
 /// particle's former position with the configured velocity and gravity.
 ///
 /// Each frame, the rigid body's position is checked against the `ParticleMap`. If any

@@ -8,7 +8,7 @@
 //!   [`ParticleMap`](crate::ParticleMap) (or at the map edge), the rigid body is despawned and
 //!   the original particle is restored to the simulation at the nearest vacant position.
 //!
-//! - **[`r#static`]** — particles marked with [`StaticRigidBodyParticle`] (on the
+//! - **[`static`](mod@self::static)** — particles marked with [`StaticRigidBodyParticle`] (on the
 //!   [`ParticleType`](crate::ParticleType)) contribute to per-chunk collision meshes.
 //!
 //! ## Static mesh generation
