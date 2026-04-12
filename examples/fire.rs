@@ -35,7 +35,10 @@ fn main() {
         .init_resource::<CursorPosition>()
         .init_resource::<DefaultFire>()
         .init_resource::<DefaultFlammableGas>()
-        .add_systems(Startup, (setup, utils::camera::setup_camera, setup_framepace))
+        .add_systems(
+            Startup,
+            (setup, utils::camera::setup_camera, setup_framepace),
+        )
         .add_systems(
             EguiPrimaryContextPass,
             render_fire_settings_gui.run_if(resource_exists::<RenderGUI>),
@@ -83,10 +86,7 @@ impl Default for DefaultFire {
     fn default() -> Self {
         let mut neighbors = vec![vec![IVec2::Y, IVec2::new(1, 1), IVec2::new(-1, 1)]];
         for i in 0..1 {
-            neighbors.push(vec![
-                IVec2::X * (i + 2) as i32,
-                IVec2::NEG_X * (i + 2) as i32,
-            ]);
+            neighbors.push(vec![IVec2::X * (i + 2), IVec2::NEG_X * (i + 2)]);
         }
         DefaultFire(
             ParticleType::new("FIRE"),
@@ -103,7 +103,6 @@ impl Default for DefaultFire {
                 Duration::from_secs(1),
                 Duration::from_millis(100),
                 0.5,
-                None,
                 None,
                 0.01,
                 true,
@@ -150,13 +149,6 @@ impl Default for DefaultFlammableGas {
                 Duration::from_millis(50),
                 0.5,
                 None,
-                Some(ColorProfile::palette(vec![
-                    Color::Srgba(Srgba::hex("#FF5900").unwrap()),
-                    Color::Srgba(Srgba::hex("#FF0000").unwrap()),
-                    Color::Srgba(Srgba::hex("#FF9900").unwrap()),
-                    Color::Srgba(Srgba::hex("#FFCF00").unwrap()),
-                    Color::Srgba(Srgba::hex("#FFE808").unwrap()),
-                ])),
                 0.175,
                 true,
                 1.0,
@@ -341,7 +333,6 @@ fn render_fire_settings_gui(
     mut ev_reset_particle_children: MessageWriter<SyncParticleTypeChildrenSignal>,
     particle_type_map: Res<ParticleTypeRegistry>,
     mut burns_query: Query<&mut Flammable, With<ParticleType>>,
-    mut color_profile_query: Query<&mut ColorProfile, With<ParticleType>>,
     mut commands: Commands,
     default_fire: Res<DefaultFire>,
     default_flammable_gas: Res<DefaultFlammableGas>,
@@ -356,7 +347,6 @@ fn render_fire_settings_gui(
             ui.add_space(4.0);
 
             let mut burns = burns_query.get_mut(fire_entity).unwrap();
-            let mut fire_color = color_profile_query.get_mut(fire_entity).unwrap();
             let mut fire_updated = false;
 
             {
@@ -451,10 +441,6 @@ fn render_fire_settings_gui(
 
             ui.add_space(8.0);
 
-            render_color_profile_editor(ui, "Fire Colors", &mut fire_color, &mut fire_updated);
-
-            ui.add_space(8.0);
-
             if ui.button("🔄 Reset Fire to Default").clicked() {
                 commands.spawn((
                     default_fire.0.clone(),
@@ -537,13 +523,6 @@ fn render_fire_settings_gui(
                 flammable_gas_updated = true;
             }
 
-            render_color_profile_editor(
-                ui,
-                "Fire Colors",
-                flammable_gas_burns.color.as_mut().unwrap(),
-                &mut flammable_gas_updated,
-            );
-
             ui.add_space(8.0);
 
             if ui.button("🔄 Reset Flammable Gas to Default").clicked() {
@@ -565,76 +544,6 @@ fn render_fire_settings_gui(
             }
         }
     });
-}
-
-pub fn render_color_profile_editor(
-    ui: &mut egui::Ui,
-    label: &str,
-    color_profile: &mut ColorProfile,
-    updated: &mut bool,
-) {
-    ui.horizontal(|ui| {
-        ui.label(label);
-        if ui.button("➕").clicked() {
-            color_profile.add_color(Color::srgba_u8(255, 255, 255, 255));
-            *updated = true;
-        }
-    });
-
-    let Some(palette_snapshot) = color_profile.colors() else {
-        return;
-    };
-    let palette_len = palette_snapshot.len();
-
-    let mut to_remove: Option<usize> = None;
-    let mut to_change: Option<(usize, Color)> = None;
-
-    let widgets_per_row = 4;
-
-    ui.vertical(|ui| {
-        for chunk in palette_snapshot.chunks(widgets_per_row) {
-            ui.horizontal(|ui| {
-                for color in chunk {
-                    let color_index = palette_snapshot.iter().position(|c| c == color).unwrap();
-
-                    let srgba = color.to_srgba();
-                    let (r, g, b, a) = (
-                        (srgba.red * 255.) as u8,
-                        (srgba.green * 255.) as u8,
-                        (srgba.blue * 255.) as u8,
-                        (srgba.alpha * 255.) as u8,
-                    );
-
-                    let mut color32 = egui::Color32::from_rgba_unmultiplied(r, g, b, a);
-
-                    ui.horizontal(|ui| {
-                        if ui.color_edit_button_srgba(&mut color32).changed() {
-                            to_change = Some((
-                                color_index,
-                                Color::srgba_u8(color32.r(), color32.g(), color32.b(), color32.a()),
-                            ));
-                        }
-                        let can_remove = palette_len > 1;
-                        if ui
-                            .add_enabled(can_remove, egui::Button::new("❌"))
-                            .clicked()
-                        {
-                            to_remove = Some(color_index);
-                        }
-                    });
-                }
-            });
-        }
-    });
-
-    if let Some((index, new_color)) = to_change {
-        color_profile.edit_color(index, new_color);
-        *updated = true;
-    }
-    if let Some(index) = to_remove {
-        color_profile.remove_color(index);
-        *updated = true;
-    }
 }
 
 fn setup_framepace(mut settings: ResMut<FramepaceSettings>) {
