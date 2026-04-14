@@ -4,6 +4,7 @@ pub mod brush;
 pub mod camera;
 pub mod conditions;
 pub mod cursor;
+pub mod effects;
 pub mod gui;
 pub mod instructions;
 pub mod particles;

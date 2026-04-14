@@ -15,6 +15,8 @@ use utils::{
     },
 };
 
+use crate::utils::effects::{BurnEffect, GasEffect};
+
 fn main() {
     App::new()
         .add_plugins((
@@ -29,6 +31,7 @@ fn main() {
             utils::instructions::InstructionsPlugin::default(),
             utils::status_ui::StatusUIPlugin,
             utils::gui::GuiPlugin,
+            utils::effects::EffectsPlugin,
         ))
         .init_resource::<SpawnFlammableGasParticles>()
         .init_resource::<DefaultFire>()
@@ -84,6 +87,7 @@ struct DefaultFire(
     ColorProfile,
     Movement,
     Flammable,
+    BurnEffect,
     Name,
 );
 
@@ -115,6 +119,7 @@ impl Default for DefaultFire {
                 false,
                 true,
             ),
+            BurnEffect,
             Name::new("FIRE"),
         )
     }
@@ -128,6 +133,7 @@ struct DefaultFlammableGas(
     ColorProfile,
     Movement,
     Flammable,
+    GasEffect,
     Name,
 );
 
@@ -156,6 +162,7 @@ impl Default for DefaultFlammableGas {
                 true,
                 false,
             ),
+            GasEffect,
             Name::new("Flammable Gas"),
         )
     }
@@ -195,6 +202,7 @@ fn setup(
                 Color::Srgba(Srgba::hex("#706966").unwrap()),
                 Color::Srgba(Srgba::hex("#858073").unwrap()),
             ]),
+            GasEffect,
             Movement::from(neighbors),
             Name::new("Smoke"),
         ));
@@ -208,6 +216,7 @@ fn setup(
         default_flammable_gas.4.clone(),
         default_flammable_gas.5.clone(),
         default_flammable_gas.6.clone(),
+        default_flammable_gas.7.clone(),
     ));
 
     commands.spawn((
@@ -434,6 +443,7 @@ fn render_fire_settings_gui(
                     default_fire.4.clone(),
                     default_fire.5.clone(),
                     default_fire.6.clone(),
+                    default_fire.7.clone(),
                 ));
             }
 
