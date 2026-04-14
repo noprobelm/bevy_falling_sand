@@ -15,7 +15,7 @@ pub(super) struct ParticleColorPlugin;
 impl Plugin for ParticleColorPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(components::ComponentsPlugin)
-            .register_particle_propagator(propagate_color)
+            .register_particle_propagator::<ColorProfile>(propagate_color)
             .add_systems(Update, load_texture_handles);
     }
 }

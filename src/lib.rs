@@ -194,6 +194,7 @@
 //!
 //! - [Triggering individual particle resync](SyncParticleSignal)
 //! - [Triggering particle type resync](SyncParticleTypeChildrenSignal)
+//! - [Filtering which components to sync](`PropagatorFilter`)
 //!
 //! ### Registering custom particle components
 //!
