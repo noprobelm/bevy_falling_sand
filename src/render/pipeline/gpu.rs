@@ -283,17 +283,18 @@ fn dispatch_chunk_compute(
     render_queue: Res<RenderQueue>,
     ready_flag: Res<ComputePipelineReadyFlag>,
 ) {
+    let Some(pipeline) = pipeline_cache.get_compute_pipeline(pipeline_res.pipeline_id) else {
+        return;
+    };
+
+    ready_flag.0.store(true, Ordering::Relaxed);
+
     if gpu_buffer.data.is_empty() {
         return;
     }
     let Some(handle) = &gpu_buffer.texture_handle else {
         return;
     };
-    let Some(pipeline) = pipeline_cache.get_compute_pipeline(pipeline_res.pipeline_id) else {
-        return;
-    };
-
-    ready_flag.0.store(true, Ordering::Relaxed);
 
     dispatch_compute(
         "chunk_update",
