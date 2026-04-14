@@ -119,26 +119,23 @@ fn setup(mut commands: Commands) {
         ]),
     ));
 
-    {
-        let mut neighbors = vec![
+    commands.spawn((
+        ParticleType::new("Water"),
+        Density(750),
+        Speed::new(0, 3),
+        ColorProfile::palette(vec![Color::Srgba(Srgba::hex("#0B80AB80").unwrap())]),
+        Movement::from(vec![
             vec![IVec2::NEG_Y],
             vec![IVec2::NEG_ONE, IVec2::new(1, -1)],
             vec![IVec2::X, IVec2::NEG_X],
-        ];
-        for i in 0..5 {
-            neighbors.push(vec![IVec2::X * (i + 2), IVec2::NEG_X * (i + 2)]);
-        }
-        commands.spawn((
-            ParticleType::new("Water"),
-            Density(750),
-            Speed::new(0, 3),
-            ColorProfile::palette(vec![Color::Srgba(Srgba::hex("#0B80AB80").unwrap())]),
-            Movement::from(neighbors),
-            // If momentum effects are desired, insert the marker component.
-            Momentum::default(),
-        ));
-    }
-
+            vec![IVec2::new(2, 0), IVec2::new(-2, 0)],
+            vec![IVec2::new(3, 0), IVec2::new(-3, 0)],
+            vec![IVec2::new(4, 0), IVec2::new(-4, 0)],
+        ]),
+        // If momentum effects are desired, insert the marker component.
+        Momentum::default(),
+        ParticleResistor(0.75),
+    ));
     commands.spawn((
         ParticleType::new("Sand"),
         Density(1250),
@@ -153,23 +150,19 @@ fn setup(mut commands: Commands) {
         ]),
         Momentum::default(),
     ));
-
-    {
-        let mut neighbors = vec![vec![IVec2::Y, IVec2::new(1, 1), IVec2::new(-1, 1)]];
-        for i in 0..1 {
-            neighbors.push(vec![IVec2::X * (i + 2), IVec2::NEG_X * (i + 2)]);
-        }
-        commands.spawn((
-            ParticleType::new("Smoke"),
-            Density(275),
-            Speed::new(0, 1),
-            ColorProfile::palette(vec![
-                Color::Srgba(Srgba::hex("#706966").unwrap()),
-                Color::Srgba(Srgba::hex("#858073").unwrap()),
-            ]),
-            Movement::from(neighbors),
-        ));
-    }
+    commands.spawn((
+        ParticleType::new("Smoke"),
+        Density(275),
+        Speed::new(0, 1),
+        ColorProfile::palette(vec![
+            Color::Srgba(Srgba::hex("#706966").unwrap()),
+            Color::Srgba(Srgba::hex("#858073").unwrap()),
+        ]),
+        Movement::from(vec![
+            vec![IVec2::Y, IVec2::new(1, 1), IVec2::new(-1, 1)],
+            vec![IVec2::new(0, 2), IVec2::new(0, -2)],
+        ]),
+    ));
 
     let setup_boundary = SetupBoundary::from_corners(
         IVec2::new(BOUNDARY_START_X, BOUNDARY_START_Y),
@@ -184,8 +177,7 @@ fn setup(mut commands: Commands) {
         F1: Show/hide particle chunk map\n\
         F2: Show/hide dirty rectangles\n\
         F3: Change movement logic (Particles vs. Chunks)\n\
-        H: Hide/Show this help\n\
-        R: Reset";
+        H: Hide/Show this help";
 
     let panel_id = utils::instructions::setup_standalone_instructions(
         &mut commands,

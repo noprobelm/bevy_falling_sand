@@ -25,14 +25,17 @@ fn main() {
                 .with_length_unit(8.0)
                 .with_gravity(Vec2::NEG_Y * 50.0),
             FallingSandDebugPlugin,
-            PhysicsDebugPlugin::default(),
             utils::states::StatesPlugin,
             utils::brush::BrushPlugin::default().with_keybindings(brush_bindings),
             utils::cursor::CursorPlugin,
             utils::instructions::InstructionsPlugin::default(),
             utils::status_ui::StatusUIPlugin,
         ))
-        .add_systems(Startup, (setup, utils::camera::setup_camera, setup_framepace))
+        .register_particle_sync_component::<Liquid>()
+        .add_systems(
+            Startup,
+            (setup, utils::camera::setup_camera, setup_framepace),
+        )
         .add_systems(
             Update,
             (
@@ -57,10 +60,13 @@ const BOUNDARY_START_Y: i32 = -150;
 const BOUNDARY_END_Y: i32 = 150;
 const RIGID_BODY_SIZE: f32 = 2.5;
 
-#[derive(Clone, PartialEq, PartialOrd, Debug, Default, Component)]
-pub struct DemoRigidBody {
+#[derive(Component, Clone, PartialEq, PartialOrd, Debug, Default)]
+struct DemoRigidBody {
     pub size: f32,
 }
+
+#[derive(Component, Clone, PartialEq, PartialOrd, Debug, Default)]
+struct Liquid;
 
 fn setup(mut commands: Commands) {
     commands.spawn((
@@ -69,28 +75,9 @@ fn setup(mut commands: Commands) {
             Color::Srgba(Srgba::hex("#916B4C").unwrap()),
             Color::Srgba(Srgba::hex("#73573D").unwrap()),
         ]),
+        // Mark this particle type for inclusion in static rigid body mesh generation
+        StaticRigidBodyParticle,
     ));
-
-    {
-        let mut neighbors = vec![
-            vec![IVec2::NEG_Y],
-            vec![IVec2::NEG_ONE, IVec2::new(1, -1)],
-            vec![IVec2::X, IVec2::NEG_X],
-        ];
-        for i in 0..5 {
-            neighbors.push(vec![IVec2::X * (i + 2) as i32, IVec2::NEG_X * (i + 2) as i32]);
-        }
-        commands.spawn((
-            ParticleType::new("Water"),
-            Density(750),
-            Speed::new(3, 7),
-            ColorProfile::palette(vec![Color::Srgba(Srgba::hex("#0B80AB80").unwrap())]),
-            Movement::from(neighbors),
-            // If momentum effects are desired, insert the marker component.
-            Momentum::default(),
-        ));
-    }
-
     commands.spawn((
         ParticleType::new("Sand"),
         Density(1250),
@@ -104,7 +91,28 @@ fn setup(mut commands: Commands) {
             vec![IVec2::NEG_ONE, IVec2::new(1, -1)],
         ]),
         Momentum::default(),
+        // Mark this particle type for inclusion in static rigid body mesh generation
+        StaticRigidBodyParticle,
     ));
+    {
+        commands.spawn((
+            ParticleType::new("Water"),
+            Density(750),
+            Speed::new(0, 3),
+            ColorProfile::palette(vec![Color::Srgba(Srgba::hex("#0B80AB80").unwrap())]),
+            Movement::from(vec![
+                vec![IVec2::NEG_Y],
+                vec![IVec2::NEG_ONE, IVec2::new(1, -1)],
+                vec![IVec2::X, IVec2::NEG_X],
+                vec![IVec2::new(2, 0), IVec2::new(-2, 0)],
+                vec![IVec2::new(3, 0), IVec2::new(-3, 0)],
+                vec![IVec2::new(4, 0), IVec2::new(-4, 0)],
+            ]),
+            Momentum::default(),
+            ParticleResistor(0.75),
+            Liquid,
+        ));
+    }
 
     let setup_boundary = SetupBoundary::from_corners(
         IVec2::new(BOUNDARY_START_X, BOUNDARY_START_Y),
@@ -190,7 +198,7 @@ fn float_rigid_bodies(
         &mut GravityScale,
         &mut LinearVelocity,
     )>,
-    liquid_query: Query<&Particle, With<Movement>>,
+    liquid_query: Query<&Particle, With<Liquid>>,
     chunk_map: Res<ParticleMap>,
 ) {
     let damping_factor = 0.95;
@@ -209,7 +217,7 @@ fn float_rigid_bodies(
                         gravity_scale.0 = -1.0;
                     }
                 } else {
-                    gravity_scale.0 = 1.0;
+                    gravity_scale.set_if_neq(GravityScale(1.0));
                 }
             }
         },
