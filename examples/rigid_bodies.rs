@@ -51,7 +51,7 @@ fn main() {
                 utils::camera::pan_camera,
                 utils::camera::smooth_zoom,
                 utils::brush::handle_alt_release_without_egui,
-                utils::particles::ev_clear_dynamic_particles
+                utils::particles::msgw_clear_dynamic_particles
                     .run_if(input_just_pressed(KeyCode::KeyR)),
                 float_rigid_bodies,
                 spawn_ball.run_if(input_just_pressed(KeyCode::Space)),

@@ -63,7 +63,7 @@ fn main() {
                     .run_if(input_just_pressed(KeyCode::F4))
                     .run_if(in_state(AppState::Canvas)),
                 toggle_render_gui.run_if(input_just_pressed(KeyCode::KeyH)),
-                utils::particles::ev_clear_dynamic_particles
+                utils::particles::msgw_clear_dynamic_particles
                     .run_if(input_just_pressed(KeyCode::KeyR))
                     .run_if(in_state(AppState::Canvas)),
             ),
@@ -314,7 +314,7 @@ fn toggle_render_gui(mut commands: Commands, render_gui: Option<Res<RenderGUI>>)
 
 fn render_fire_settings_gui(
     mut contexts: EguiContexts,
-    mut ev_reset_particle_children: MessageWriter<SyncParticleTypeChildrenSignal>,
+    mut msgw_reset_particle_type_children: MessageWriter<SyncParticleTypeChildrenSignal>,
     particle_type_map: Res<ParticleTypeRegistry>,
     mut burns_query: Query<&mut Flammable, With<ParticleType>>,
     mut commands: Commands,
@@ -438,7 +438,7 @@ fn render_fire_settings_gui(
             }
 
             if fire_updated {
-                ev_reset_particle_children.write(
+                msgw_reset_particle_type_children.write(
                     SyncParticleTypeChildrenSignal::from_parent_handle(fire_entity),
                 );
             }
@@ -522,7 +522,7 @@ fn render_fire_settings_gui(
             }
 
             if flammable_gas_updated {
-                ev_reset_particle_children.write(
+                msgw_reset_particle_type_children.write(
                     SyncParticleTypeChildrenSignal::from_parent_handle(flammable_gas_entity),
                 );
             }

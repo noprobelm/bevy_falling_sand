@@ -5,14 +5,16 @@ pub fn disable_chunk_loading(mut commands: Commands) {
     commands.remove_resource::<ChunkLoadingRun>();
 }
 
-pub fn ev_clear_particle_map(mut ev_clear_particle_map: MessageWriter<DespawnAllParticlesSignal>) {
-    ev_clear_particle_map.write(DespawnAllParticlesSignal);
+pub fn msgw_clear_particle_map(
+    mut msgw_clear_particle_map: MessageWriter<DespawnAllParticlesSignal>,
+) {
+    msgw_clear_particle_map.write(DespawnAllParticlesSignal);
 }
 
-pub fn ev_clear_dynamic_particles(
-    mut ev_clear_dynamic_particles: MessageWriter<DespawnDynamicParticlesSignal>,
+pub fn msgw_clear_dynamic_particles(
+    mut msgw_clear_dynamic_particles: MessageWriter<DespawnDynamicParticlesSignal>,
 ) {
-    ev_clear_dynamic_particles.write(DespawnDynamicParticlesSignal);
+    msgw_clear_dynamic_particles.write(DespawnDynamicParticlesSignal);
 }
 
 pub fn change_movement_source(

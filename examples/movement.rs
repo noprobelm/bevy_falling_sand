@@ -46,7 +46,7 @@ fn main() {
                 utils::camera::zoom_camera.run_if(in_state(AppState::Canvas)),
                 utils::camera::pan_camera,
                 utils::camera::smooth_zoom,
-                utils::particles::ev_clear_dynamic_particles
+                utils::particles::msgw_clear_dynamic_particles
                     .run_if(input_just_pressed(KeyCode::KeyR)),
                 bump_velocity.run_if(input_just_pressed(KeyCode::KeyV)),
                 utils::brush::handle_alt_release_without_egui,
