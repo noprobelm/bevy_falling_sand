@@ -31,7 +31,10 @@ fn main() {
         ))
         .init_resource::<TotalParticleCount>()
         .init_resource::<SpawnParticles>()
-        .add_systems(Startup, (setup, utils::camera::setup_camera, setup_framepace))
+        .add_systems(
+            Startup,
+            (setup, utils::camera::setup_camera, setup_framepace),
+        )
         .add_systems(
             Update,
             (
@@ -62,26 +65,24 @@ fn setup(mut commands: Commands, mut rng: ResMut<GlobalRng>) {
         ]),
     ));
 
-    {
-        let mut neighbors = vec![
+    commands.spawn((
+        ParticleType::new("Water"),
+        Density(750),
+        Speed::new(0, 3),
+        ColorProfile::palette(vec![Color::Srgba(Srgba::hex("#0B80AB80").unwrap())]),
+        Movement::from(vec![
             vec![IVec2::NEG_Y],
             vec![IVec2::NEG_ONE, IVec2::new(1, -1)],
             vec![IVec2::X, IVec2::NEG_X],
-        ];
-        for i in 0..5 {
-            neighbors.push(vec![IVec2::X * (i + 2) as i32, IVec2::NEG_X * (i + 2) as i32]);
-        }
-        commands.spawn((
-            ParticleType::new("Water"),
-            Density(750),
-            Speed::new(3, 10),
-            ColorProfile::palette(vec![Color::Srgba(Srgba::hex("#0B80AB80").unwrap())]),
-            Movement::from(neighbors),
-            // If momentum effects are desired, insert the marker component.
-            Momentum::default(),
-        ));
-    }
-
+            vec![IVec2::new(2, 0), IVec2::new(-2, 0)],
+            vec![IVec2::new(3, 0), IVec2::new(-3, 0)],
+            vec![IVec2::new(4, 0), IVec2::new(-4, 0)],
+        ]),
+        // Makes Water resistant to displacement by other particles.
+        ParticleResistor(0.75),
+        // If momentum effects are desired, insert the marker component.
+        Momentum::default(),
+    ));
     commands.spawn((
         ParticleType::new("Sand"),
         Density(1250),
@@ -160,7 +161,7 @@ fn setup(mut commands: Commands, mut rng: ResMut<GlobalRng>) {
 
     let (grid_width, grid_height) = map.size();
 
-    let colors = vec![
+    let colors = &[
         Srgba::hex("#A0674B").unwrap(), // redder dirt
         Srgba::hex("#B8805D").unwrap(), // light reddish brown dirt
         Srgba::hex("#D8D8D8").unwrap(), // lighter rock
