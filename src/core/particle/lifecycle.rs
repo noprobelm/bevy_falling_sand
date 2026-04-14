@@ -927,3 +927,833 @@ fn register_transform_particles(
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::time::Duration;
+
+    use super::*;
+    use crate::{
+        core::{
+            AttachedToParticleType, ChanceLifetime, ChunkLoader, GridPosition, Particle,
+            ParticleMap, ParticleSyncExt, ParticleType, ParticleTypeRegistry, TimedLifetime,
+        },
+        FallingSandMinimalPlugin,
+    };
+
+    #[derive(Component, Clone, Debug, PartialEq)]
+    struct Marker(u32);
+
+    fn create_test_app() -> App {
+        let mut app = App::new();
+        app.add_plugins(MinimalPlugins);
+        app.add_plugins(FallingSandMinimalPlugin::default());
+        app
+    }
+
+    // ---- particle_type hooks ----
+
+    #[test]
+    fn hook_on_add_particle_type() {
+        let mut app = create_test_app();
+
+        let _entity = app.world_mut().spawn(ParticleType::new("sand")).id();
+        app.update();
+
+        let registry = app.world().resource::<ParticleTypeRegistry>();
+        assert!(registry.contains("sand"));
+    }
+
+    #[test]
+    fn hook_on_remove_particle_type() {
+        let mut app = create_test_app();
+
+        let entity = app.world_mut().spawn(ParticleType::new("sand")).id();
+        app.update();
+
+        app.world_mut().despawn(entity);
+        app.update();
+
+        let registry = app.world().resource::<ParticleTypeRegistry>();
+        assert!(!registry.contains("sand"));
+    }
+
+    #[test]
+    fn hook_on_add_duplicate_particle_type_despawns_old_entity() {
+        let mut app = create_test_app();
+
+        let old_entity = app.world_mut().spawn(ParticleType::new("sand")).id();
+        app.update();
+
+        let new_entity = app.world_mut().spawn(ParticleType::new("sand")).id();
+        app.update();
+
+        let registry = app.world().resource::<ParticleTypeRegistry>();
+        assert_eq!(registry.get("sand"), Some(&new_entity));
+
+        assert!(
+            app.world().get_entity(old_entity).is_err(),
+            "Old ParticleType entity should be despawned when a duplicate name is registered"
+        );
+    }
+
+    // ---- msgr_spawn_particle ----
+
+    #[test]
+    fn msgr_spawn_particle_at_position() {
+        let mut app = create_test_app();
+
+        app.world_mut().spawn(ParticleType::new("sand"));
+        app.update();
+
+        let position = IVec2::new(3, 4);
+        app.world_mut()
+            .write_message(SpawnParticleSignal::new(Particle::new("sand"), position));
+        app.update();
+
+        let map = app.world().resource::<ParticleMap>();
+        let entity = map
+            .get_copied(position)
+            .unwrap()
+            .expect("Particle should exist in map");
+
+        let particle = app.world().entity(entity).get::<Particle>().unwrap();
+        assert_eq!(particle.name, "sand");
+
+        let grid_pos = app.world().entity(entity).get::<GridPosition>().unwrap();
+        assert_eq!(grid_pos.0, position);
+    }
+
+    #[test]
+    fn msgr_spawn_particle_does_not_overwrite_existing() {
+        let mut app = create_test_app();
+
+        app.world_mut().spawn(ParticleType::new("sand"));
+        app.world_mut().spawn(ParticleType::new("water"));
+        app.update();
+
+        let position = IVec2::ZERO;
+
+        app.world_mut()
+            .write_message(SpawnParticleSignal::new(Particle::new("sand"), position));
+        app.update();
+
+        let first_entity = app
+            .world()
+            .resource::<ParticleMap>()
+            .get_copied(position)
+            .unwrap()
+            .unwrap();
+
+        app.world_mut()
+            .write_message(SpawnParticleSignal::new(Particle::new("water"), position));
+        app.update();
+
+        let entity = app
+            .world()
+            .resource::<ParticleMap>()
+            .get_copied(position)
+            .unwrap()
+            .unwrap();
+        assert_eq!(entity, first_entity);
+
+        let particle = app.world().entity(entity).get::<Particle>().unwrap();
+        assert_eq!(particle.name, "sand");
+    }
+
+    #[test]
+    fn msgr_spawn_particle_overwrite_existing() {
+        let mut app = create_test_app();
+
+        app.world_mut().spawn(ParticleType::new("sand"));
+        app.world_mut().spawn(ParticleType::new("water"));
+        app.update();
+
+        let position = IVec2::ZERO;
+
+        app.world_mut()
+            .write_message(SpawnParticleSignal::new(Particle::new("sand"), position));
+        app.update();
+
+        let old_entity = app
+            .world()
+            .resource::<ParticleMap>()
+            .get_copied(position)
+            .unwrap()
+            .unwrap();
+
+        app.world_mut()
+            .write_message(SpawnParticleSignal::overwrite_existing(
+                Particle::new("water"),
+                position,
+            ));
+        app.update();
+
+        let new_entity = app
+            .world()
+            .resource::<ParticleMap>()
+            .get_copied(position)
+            .unwrap()
+            .unwrap();
+
+        assert_ne!(old_entity, new_entity);
+        assert!(!app.world().entities().contains(old_entity));
+
+        let particle = app.world().entity(new_entity).get::<Particle>().unwrap();
+        assert_eq!(particle.name, "water");
+    }
+
+    #[test]
+    fn msgr_spawn_particle_try_multiple_skips_occupied() {
+        let mut app = create_test_app();
+
+        app.world_mut().spawn(ParticleType::new("sand"));
+        app.world_mut().spawn(ParticleType::new("water"));
+        app.update();
+
+        let pos_a = IVec2::ZERO;
+        let pos_b = IVec2::new(1, 0);
+
+        app.world_mut()
+            .write_message(SpawnParticleSignal::new(Particle::new("sand"), pos_a));
+        app.update();
+
+        app.world_mut()
+            .write_message(SpawnParticleSignal::try_multiple(
+                Particle::new("water"),
+                vec![pos_a, pos_b],
+            ));
+        app.update();
+
+        let map = app.world().resource::<ParticleMap>();
+
+        let entity_a = map.get_copied(pos_a).unwrap().unwrap();
+        assert_eq!(
+            app.world().entity(entity_a).get::<Particle>().unwrap().name,
+            "sand"
+        );
+
+        let entity_b = map.get_copied(pos_b).unwrap().unwrap();
+        assert_eq!(
+            app.world().entity(entity_b).get::<Particle>().unwrap().name,
+            "water"
+        );
+    }
+
+    #[test]
+    fn msgr_spawn_particle_with_on_spawn_callback() {
+        let mut app = create_test_app();
+
+        app.world_mut().spawn(ParticleType::new("sand"));
+        app.update();
+
+        app.world_mut().write_message(
+            SpawnParticleSignal::new(Particle::new("sand"), IVec2::ZERO).with_on_spawn(|cmd| {
+                cmd.insert(Marker(99));
+            }),
+        );
+        app.update();
+
+        let particle_entity = app
+            .world_mut()
+            .query_filtered::<Entity, With<Particle>>()
+            .iter(app.world())
+            .next()
+            .unwrap();
+
+        assert_eq!(
+            app.world().entity(particle_entity).get::<Marker>(),
+            Some(&Marker(99)),
+        );
+    }
+
+    #[test]
+    fn msgr_spawn_particle_ignores_unregistered_type() {
+        let mut app = create_test_app();
+        app.update();
+
+        app.world_mut().write_message(SpawnParticleSignal::new(
+            Particle::new("ghost"),
+            IVec2::ZERO,
+        ));
+        app.update();
+
+        let count = app
+            .world_mut()
+            .query_filtered::<Entity, With<Particle>>()
+            .iter(app.world())
+            .count();
+        assert_eq!(count, 0, "No particle should spawn for unregistered type");
+    }
+
+    // ---- msgr_despawn_particle ----
+
+    #[test]
+    fn msgr_despawn_particle_by_position() {
+        let mut app = create_test_app();
+
+        app.world_mut().spawn(ParticleType::new("sand"));
+        app.update();
+
+        let position = IVec2::ZERO;
+        app.world_mut()
+            .write_message(SpawnParticleSignal::new(Particle::new("sand"), position));
+        app.update();
+
+        let entity = app
+            .world()
+            .resource::<ParticleMap>()
+            .get_copied(position)
+            .unwrap()
+            .unwrap();
+
+        app.world_mut()
+            .write_message(DespawnParticleSignal::from_position(position));
+        app.update();
+
+        let map = app.world().resource::<ParticleMap>();
+        assert_eq!(map.get_copied(position).ok().flatten(), None);
+        assert!(!app.world().entities().contains(entity));
+    }
+
+    #[test]
+    fn msgr_despawn_particle_by_entity() {
+        let mut app = create_test_app();
+
+        app.world_mut().spawn(ParticleType::new("sand"));
+        app.update();
+
+        let position = IVec2::ZERO;
+        app.world_mut()
+            .write_message(SpawnParticleSignal::new(Particle::new("sand"), position));
+        app.update();
+
+        let entity = app
+            .world()
+            .resource::<ParticleMap>()
+            .get_copied(position)
+            .unwrap()
+            .unwrap();
+
+        app.world_mut()
+            .write_message(DespawnParticleSignal::from_entity(entity));
+        app.update();
+
+        let map = app.world().resource::<ParticleMap>();
+        assert_eq!(map.get_copied(position).ok().flatten(), None);
+        assert!(!app.world().entities().contains(entity));
+    }
+
+    // ---- hook_on_remove_particle ----
+
+    #[test]
+    fn hook_on_remove_particle_cleans_up_map() {
+        let mut app = create_test_app();
+
+        app.world_mut().spawn(ParticleType::new("sand"));
+        app.update();
+
+        let position = IVec2::ZERO;
+        app.world_mut()
+            .write_message(SpawnParticleSignal::new(Particle::new("sand"), position));
+        app.update();
+
+        let entity = app
+            .world()
+            .resource::<ParticleMap>()
+            .get_copied(position)
+            .unwrap()
+            .unwrap();
+
+        app.world_mut().despawn(entity);
+        app.update();
+
+        let map = app.world().resource::<ParticleMap>();
+        assert_eq!(map.get_copied(position).ok().flatten(), None);
+        assert!(!app.world().entities().contains(entity));
+    }
+
+    // ---- msgr_despawn_particle_type_children ----
+
+    #[test]
+    fn msgr_despawn_particle_type_children_by_name() {
+        let mut app = create_test_app();
+
+        app.world_mut().spawn(ParticleType::new("sand"));
+        app.world_mut().spawn(ParticleType::new("water"));
+        app.update();
+
+        for i in 0..5 {
+            app.world_mut().write_message(SpawnParticleSignal::new(
+                Particle::new("sand"),
+                IVec2::new(i, 0),
+            ));
+        }
+        app.world_mut().write_message(SpawnParticleSignal::new(
+            Particle::new("water"),
+            IVec2::new(10, 0),
+        ));
+        app.update();
+
+        app.world_mut()
+            .write_message(DespawnParticleTypeChildrenSignal::from_name("sand"));
+        app.update();
+
+        let remaining: Vec<String> = app
+            .world_mut()
+            .query::<&Particle>()
+            .iter(app.world())
+            .map(|p| p.name.to_string())
+            .collect();
+
+        assert_eq!(remaining, vec!["water"]);
+    }
+
+    #[test]
+    fn msgr_despawn_particle_type_children_by_entity() {
+        let mut app = create_test_app();
+
+        let sand_pt = app.world_mut().spawn(ParticleType::new("sand")).id();
+        app.world_mut().spawn(ParticleType::new("water"));
+        app.update();
+
+        for i in 0..3 {
+            app.world_mut().write_message(SpawnParticleSignal::new(
+                Particle::new("sand"),
+                IVec2::new(i, 0),
+            ));
+        }
+        app.world_mut().write_message(SpawnParticleSignal::new(
+            Particle::new("water"),
+            IVec2::new(10, 0),
+        ));
+        app.update();
+
+        app.world_mut()
+            .write_message(DespawnParticleTypeChildrenSignal::from_parent_handle(
+                sand_pt,
+            ));
+        app.update();
+
+        let remaining: Vec<String> = app
+            .world_mut()
+            .query::<&Particle>()
+            .iter(app.world())
+            .map(|p| p.name.to_string())
+            .collect();
+
+        assert_eq!(remaining, vec!["water"]);
+    }
+
+    // ---- msgr_despawn_all_particles ----
+
+    #[test]
+    fn msgr_despawn_all_particles() {
+        let mut app = create_test_app();
+
+        app.world_mut().spawn(ParticleType::new("sand"));
+        app.world_mut().spawn(ParticleType::new("water"));
+        app.update();
+
+        let mut entities = vec![];
+        for i in 0..5 {
+            app.world_mut().write_message(SpawnParticleSignal::new(
+                Particle::new("sand"),
+                IVec2::new(i, 0),
+            ));
+        }
+        app.world_mut().write_message(SpawnParticleSignal::new(
+            Particle::new("water"),
+            IVec2::new(10, 0),
+        ));
+        app.update();
+
+        entities.extend(
+            app.world_mut()
+                .query_filtered::<Entity, With<Particle>>()
+                .iter(app.world()),
+        );
+        assert_eq!(entities.len(), 6);
+
+        app.world_mut().write_message(DespawnAllParticlesSignal);
+        app.update();
+
+        let map = app.world().resource::<ParticleMap>();
+        assert!(map.is_empty());
+        for entity in entities {
+            assert!(!app.world().entities().contains(entity));
+        }
+    }
+
+    // ---- register_transform_particles ----
+
+    fn load_chunk_at_origin(app: &mut App) {
+        app.world_mut().spawn((ChunkLoader, Transform::default()));
+        app.update();
+    }
+
+    #[test]
+    fn register_transform_particle_with_position() {
+        let mut app = create_test_app();
+        load_chunk_at_origin(&mut app);
+
+        app.world_mut().spawn(ParticleType::new("sand"));
+        app.update();
+
+        let entity = app
+            .world_mut()
+            .commands()
+            .spawn((Particle::new("sand"), Transform::from_xyz(0., 0., 0.)))
+            .id();
+        app.update();
+
+        assert!(app.world().entities().contains(entity));
+        assert!(app.world().entity(entity).get::<GridPosition>().is_some());
+        assert!(app
+            .world()
+            .entity(entity)
+            .get::<AttachedToParticleType>()
+            .is_some());
+    }
+
+    #[test]
+    fn register_transform_particle_rounds_position() {
+        let mut app = create_test_app();
+        load_chunk_at_origin(&mut app);
+
+        app.world_mut().spawn(ParticleType::new("sand"));
+        app.update();
+
+        let entity = app
+            .world_mut()
+            .commands()
+            .spawn((Particle::new("sand"), Transform::from_xyz(0.7, -0.3, 0.)))
+            .id();
+        app.update();
+
+        let grid_position = app
+            .world()
+            .entity(entity)
+            .get::<GridPosition>()
+            .expect("GridPosition should be assigned");
+        assert_eq!(grid_position.0, IVec2::new(1, 0));
+
+        assert!(
+            app.world().entity(entity).get::<Transform>().is_none(),
+            "Transform should be removed after registration"
+        );
+    }
+
+    #[test]
+    fn register_transform_particle_without_position_is_despawned() {
+        let mut app = create_test_app();
+        load_chunk_at_origin(&mut app);
+
+        app.world_mut().spawn(ParticleType::new("sand"));
+        app.update();
+
+        let entity = app.world_mut().spawn(Particle::new("sand")).id();
+        app.update();
+
+        assert!(
+            !app.world().entities().contains(entity),
+            "Positionless particle should be despawned"
+        );
+    }
+
+    #[test]
+    fn register_transform_particle_propagates_components() {
+        let mut app = create_test_app();
+        app.register_particle_sync_component::<Marker>();
+        load_chunk_at_origin(&mut app);
+
+        app.world_mut()
+            .spawn((ParticleType::new("sand"), Marker(42)));
+        app.update();
+
+        let entity = app
+            .world_mut()
+            .commands()
+            .spawn((Particle::new("sand"), Transform::from_xyz(0., 0., 0.)))
+            .id();
+        app.update();
+
+        assert_eq!(
+            app.world().entity(entity).get::<Marker>(),
+            Some(&Marker(42)),
+            "Registered component should propagate from ParticleType"
+        );
+    }
+
+    #[test]
+    fn register_transform_particle_unregistered_type_is_despawned() {
+        let mut app = create_test_app();
+        load_chunk_at_origin(&mut app);
+
+        let entity = app
+            .world_mut()
+            .commands()
+            .spawn((Particle::new("ghost"), Transform::from_xyz(0., 0., 0.)))
+            .id();
+        app.update();
+
+        assert!(
+            !app.world().entities().contains(entity),
+            "Particle with unregistered type should be despawned"
+        );
+    }
+
+    // ---- despawn_orphaned_particles ----
+
+    #[test]
+    fn despawn_orphaned_particles_on_parent_despawn() {
+        let mut app = create_test_app();
+
+        let pt_entity = app.world_mut().spawn(ParticleType::new("sand")).id();
+        app.update();
+
+        let mut particle_entities = vec![];
+        for i in 0..5 {
+            app.world_mut().write_message(SpawnParticleSignal::new(
+                Particle::new("sand"),
+                IVec2::new(i, 0),
+            ));
+        }
+        app.update();
+
+        particle_entities.extend(
+            app.world_mut()
+                .query_filtered::<Entity, With<Particle>>()
+                .iter(app.world()),
+        );
+        assert_eq!(particle_entities.len(), 5);
+
+        app.world_mut().despawn(pt_entity);
+        app.update();
+
+        let map = app.world().resource::<ParticleMap>();
+        for &entity in &particle_entities {
+            assert!(
+                !app.world().entities().contains(entity),
+                "Child particle should be despawned when parent ParticleType is removed"
+            );
+        }
+        for i in 0..5 {
+            assert_eq!(
+                map.get_copied(IVec2::new(i, 0)).ok().flatten(),
+                None,
+                "Map should be cleared for orphaned particle positions"
+            );
+        }
+    }
+
+    #[test]
+    fn despawn_orphaned_particles_only_affects_children_of_removed_type() {
+        let mut app = create_test_app();
+
+        let sand_pt = app.world_mut().spawn(ParticleType::new("sand")).id();
+        app.world_mut().spawn(ParticleType::new("water"));
+        app.update();
+
+        for i in 0..3 {
+            app.world_mut().write_message(SpawnParticleSignal::new(
+                Particle::new("sand"),
+                IVec2::new(i, 0),
+            ));
+        }
+        app.world_mut().write_message(SpawnParticleSignal::new(
+            Particle::new("water"),
+            IVec2::new(10, 0),
+        ));
+        app.update();
+
+        let water_entity = app
+            .world()
+            .resource::<ParticleMap>()
+            .get_copied(IVec2::new(10, 0))
+            .unwrap()
+            .unwrap();
+
+        app.world_mut().despawn(sand_pt);
+        app.update();
+
+        assert!(app.world().entities().contains(water_entity));
+        assert_eq!(
+            app.world()
+                .entity(water_entity)
+                .get::<Particle>()
+                .unwrap()
+                .name,
+            "water"
+        );
+
+        let map = app.world().resource::<ParticleMap>();
+        for i in 0..3 {
+            assert_eq!(map.get_copied(IVec2::new(i, 0)).ok().flatten(), None);
+        }
+    }
+
+    // ---- timed_lifetime ----
+
+    fn spawn_particle_at(app: &mut App, name: &'static str, position: IVec2) -> Entity {
+        app.world_mut()
+            .write_message(SpawnParticleSignal::new(Particle::new(name), position));
+        app.update();
+
+        app.world()
+            .resource::<ParticleMap>()
+            .get_copied(position)
+            .unwrap()
+            .unwrap()
+    }
+
+    #[test]
+    fn timed_lifetime_despawns_after_duration() {
+        let mut app = create_test_app();
+        app.world_mut().spawn(ParticleType::new("sand"));
+        app.update();
+
+        let position = IVec2::ZERO;
+        let entity = spawn_particle_at(&mut app, "sand", position);
+
+        let mut lifetime = TimedLifetime::new(Duration::from_millis(100));
+        lifetime.tick(Duration::from_millis(150));
+        app.world_mut().entity_mut(entity).insert(lifetime);
+        app.update();
+        app.update();
+
+        assert!(!app.world().entities().contains(entity));
+        let map = app.world().resource::<ParticleMap>();
+        assert_eq!(map.get_copied(position).ok().flatten(), None);
+    }
+
+    #[test]
+    fn timed_lifetime_does_not_despawn_before_duration() {
+        let mut app = create_test_app();
+        app.world_mut().spawn(ParticleType::new("sand"));
+        app.update();
+
+        let position = IVec2::ZERO;
+        let entity = spawn_particle_at(&mut app, "sand", position);
+
+        let mut lifetime = TimedLifetime::new(Duration::from_millis(100));
+        lifetime.tick(Duration::from_millis(50));
+        app.world_mut().entity_mut(entity).insert(lifetime);
+        app.update();
+        app.update();
+
+        assert!(app.world().entities().contains(entity));
+        let map = app.world().resource::<ParticleMap>();
+        assert!(map.get_copied(position).ok().flatten().is_some());
+    }
+
+    #[test]
+    fn timed_lifetime_new_sets_duration() {
+        let lifetime = TimedLifetime::new(Duration::from_secs(5));
+        assert_eq!(lifetime.duration(), Duration::from_secs(5));
+        assert!(!lifetime.finished());
+    }
+
+    #[test]
+    fn timed_lifetime_tick_advances_timer() {
+        let mut lifetime = TimedLifetime::new(Duration::from_millis(100));
+        lifetime.tick(Duration::from_millis(50));
+        assert!(!lifetime.finished());
+        lifetime.tick(Duration::from_millis(60));
+        assert!(lifetime.finished());
+    }
+
+    // ---- chance_lifetime ----
+
+    #[test]
+    fn chance_lifetime_default() {
+        let lifetime = ChanceLifetime::default();
+        assert_eq!(lifetime.chance, 0.0);
+        assert_eq!(lifetime.tick_timer.duration(), Duration::ZERO);
+    }
+
+    #[test]
+    fn chance_lifetime_new() {
+        let lifetime = ChanceLifetime::new(0.5, Duration::ZERO);
+        assert_eq!(lifetime.chance, 0.5);
+        assert_eq!(lifetime.tick_timer.duration(), Duration::ZERO);
+    }
+
+    #[test]
+    fn chance_lifetime_with_tick_rate() {
+        let lifetime = ChanceLifetime::with_tick_rate(0.75, Duration::from_millis(200));
+        assert_eq!(lifetime.chance, 0.75);
+        assert_eq!(lifetime.tick_timer.duration(), Duration::from_millis(200));
+    }
+
+    #[test]
+    fn chance_lifetime_zero_never_despawns() {
+        let mut app = create_test_app();
+        app.world_mut().spawn(ParticleType::new("sand"));
+        app.update();
+
+        let position = IVec2::ZERO;
+        let entity = spawn_particle_at(&mut app, "sand", position);
+
+        app.world_mut()
+            .entity_mut(entity)
+            .insert(ChanceLifetime::new(0.0, Duration::ZERO));
+
+        for _ in 0..100 {
+            app.update();
+        }
+
+        assert!(app.world().entities().contains(entity));
+    }
+
+    #[test]
+    fn chance_lifetime_one_always_despawns() {
+        let mut app = create_test_app();
+        app.world_mut().spawn(ParticleType::new("sand"));
+        app.update();
+
+        let position = IVec2::ZERO;
+        let entity = spawn_particle_at(&mut app, "sand", position);
+
+        app.world_mut()
+            .entity_mut(entity)
+            .insert(ChanceLifetime::new(1.0, Duration::ZERO));
+
+        app.update();
+        app.update();
+
+        assert!(!app.world().entities().contains(entity));
+        let map = app.world().resource::<ParticleMap>();
+        assert_eq!(map.get_copied(position).ok().flatten(), None);
+    }
+
+    #[test]
+    fn chance_lifetime_respects_tick_rate() {
+        let mut app = create_test_app();
+        app.world_mut().spawn(ParticleType::new("sand"));
+        app.update();
+
+        let position = IVec2::ZERO;
+        let entity = spawn_particle_at(&mut app, "sand", position);
+
+        app.world_mut()
+            .entity_mut(entity)
+            .insert(ChanceLifetime::with_tick_rate(
+                1.0,
+                Duration::from_secs(999),
+            ));
+        app.update();
+        app.update();
+
+        assert!(app.world().entities().contains(entity));
+
+        *app.world_mut()
+            .entity_mut(entity)
+            .get_mut::<ChanceLifetime>()
+            .unwrap() = ChanceLifetime::new(1.0, Duration::ZERO);
+        app.update();
+        app.update();
+
+        assert!(!app.world().entities().contains(entity));
+    }
+}
