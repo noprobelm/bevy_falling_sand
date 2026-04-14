@@ -57,7 +57,7 @@ pub use loading::{
     ChunkLoader, ChunkLoadingConfig, ChunkLoadingState, DespawnBatchConfig, PendingDespawn,
 };
 pub use region::ChunkRegion;
-pub use schedule::ChunkSystems;
+pub use schedule::{ChunkLoadingRun, ChunkSystems};
 
 use crate::core::chunk::{
     dirty::DirtyTrackingPlugin, loading::LoadingPlugin,

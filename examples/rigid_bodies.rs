@@ -37,6 +37,12 @@ fn main() {
             (setup, utils::camera::setup_camera, setup_framepace),
         )
         .add_systems(
+            PreUpdate,
+            utils::particles::disable_chunk_loading
+                .after(ChunkSystems::Loading)
+                .run_if(run_once),
+        )
+        .add_systems(
             Update,
             (
                 utils::particles::toggle_debug_map.run_if(input_just_pressed(KeyCode::F1)),

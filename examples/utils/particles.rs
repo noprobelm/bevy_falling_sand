@@ -1,6 +1,10 @@
 use bevy::prelude::*;
 use bevy_falling_sand::prelude::*;
 
+pub fn disable_chunk_loading(mut commands: Commands) {
+    commands.remove_resource::<ChunkLoadingRun>();
+}
+
 pub fn ev_clear_particle_map(mut ev_clear_particle_map: MessageWriter<DespawnAllParticlesSignal>) {
     ev_clear_particle_map.write(DespawnAllParticlesSignal);
 }

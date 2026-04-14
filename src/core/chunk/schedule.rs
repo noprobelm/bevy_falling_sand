@@ -17,17 +17,20 @@ pub(super) struct SchedulePlugin;
 
 impl Plugin for SchedulePlugin {
     fn build(&self, app: &mut App) {
-        app.configure_sets(
-            PreUpdate,
-            (
-                ChunkSystems::Loading,
-                ChunkSystems::DirtyAdvance.run_if(resource_exists::<ParticleSimulationRun>),
-            ),
-        )
-        .configure_sets(
-            PostUpdate,
-            ChunkSystems::Cleanup.run_if(resource_exists::<ParticleSimulationRun>),
-        );
+        app.init_resource::<ChunkLoadingRun>()
+            .configure_sets(
+                PreUpdate,
+                (
+                    ChunkSystems::Loading.run_if(resource_exists::<ChunkLoadingRun>),
+                    ChunkSystems::DirtyAdvance.run_if(resource_exists::<ParticleSimulationRun>),
+                ),
+            )
+            .configure_sets(
+                PostUpdate,
+                ChunkSystems::Cleanup
+                    .run_if(resource_exists::<ParticleSimulationRun>)
+                    .run_if(resource_exists::<ChunkLoadingRun>),
+            );
     }
 }
 
@@ -45,3 +48,7 @@ pub enum ChunkSystems {
     /// processes batched despawns across frames to avoid frame spikes.
     Cleanup,
 }
+
+/// Marker resource to control whether chunk loading sytsems will run.
+#[derive(Resource, Default, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ChunkLoadingRun;
