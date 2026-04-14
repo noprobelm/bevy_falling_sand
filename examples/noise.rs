@@ -19,7 +19,7 @@ fn main() {
         .add_plugins((
             DefaultPlugins,
             FramepacePlugin,
-            FallingSandMinimalPlugin::default(),
+            FallingSandMinimalPlugin::default().with_map_size(8),
             FallingSandMovementPlugin,
             FallingSandRenderPlugin,
             FallingSandDebugPlugin,

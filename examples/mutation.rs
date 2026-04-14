@@ -4,10 +4,7 @@ use bevy::{input::common_conditions::input_just_pressed, prelude::*};
 use bevy_falling_sand::prelude::*;
 use bevy_framepace::{FramepacePlugin, FramepaceSettings, Limiter};
 use bevy_turborand::prelude::*;
-use utils::{
-    boundary::SetupBoundary,
-    status_ui::{FpsText, MovementSourceText, StatusUIPlugin},
-};
+use utils::status_ui::{FpsText, MovementSourceText, StatusUIPlugin};
 
 fn main() {
     App::new()
@@ -57,10 +54,10 @@ fn main() {
         .run();
 }
 
-const BOUNDARY_START_X: i32 = -150;
-const BOUNDARY_END_X: i32 = 150;
-const BOUNDARY_START_Y: i32 = -150;
-const BOUNDARY_END_Y: i32 = 150;
+const START_X: i32 = -200;
+const END_X: i32 = 200;
+const START_Y: i32 = -200;
+const END_Y: i32 = 200;
 
 #[derive(Component)]
 struct ParticleTypeOneText;
@@ -170,14 +167,6 @@ fn setup(mut commands: Commands) {
         ]),
     ));
 
-    let setup_boundary = SetupBoundary::from_corners(
-        IVec2::new(BOUNDARY_START_X, BOUNDARY_START_Y),
-        IVec2::new(BOUNDARY_END_X, BOUNDARY_END_Y),
-        ParticleType::new("Dirt Wall"),
-    )
-    .with_thickness(2);
-    commands.queue(setup_boundary);
-
     let instructions_text = "Left mouse: Mutate particle type one\n\
         Right Mouse: Mutate particle type two\n\
         F1: Show/hide particle chunk map\n\
@@ -203,11 +192,11 @@ fn setup(mut commands: Commands) {
 
 fn spawn_particles(mut commands: Commands, time: Res<Time>, mut rng: ResMut<GlobalRng>) {
     if time.elapsed_secs() < 0.5 {
-        let x_range = ((BOUNDARY_END_X - BOUNDARY_START_X) as f32 * 0.5) as i32;
-        let y_range = ((BOUNDARY_END_Y - BOUNDARY_START_Y) as f32 * 0.5) as i32;
+        let x_range = ((END_X - START_X) as f32 * 0.5) as i32;
+        let y_range = ((END_Y - START_Y) as f32 * 0.5) as i32;
 
-        for x in BOUNDARY_START_X + 50..BOUNDARY_START_X + 50 + x_range {
-            for y in BOUNDARY_START_Y + 50..BOUNDARY_START_Y + 50 + y_range {
+        for x in START_X + 50..START_X + 50 + x_range {
+            for y in START_Y + 50..START_Y + 50 + y_range {
                 if rng.chance(0.5) {
                     commands.spawn((
                         Particle::new("Water"),

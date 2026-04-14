@@ -5,7 +5,6 @@ use bevy::{input::common_conditions::input_just_pressed, prelude::*};
 use bevy_falling_sand::prelude::*;
 use bevy_framepace::{FramepacePlugin, FramepaceSettings, Limiter};
 use utils::{
-    boundary::{SetupBoundary, Sides},
     brush::{BrushInput, BrushKeybindings, ParticleSpawnList, SelectedBrushParticle},
     cursor::Cursor,
     states::AppState,
@@ -61,10 +60,6 @@ fn main() {
         .run();
 }
 
-const BOUNDARY_START_X: i32 = -150;
-const BOUNDARY_END_X: i32 = 150;
-const BOUNDARY_START_Y: i32 = -150;
-const BOUNDARY_END_Y: i32 = 150;
 const RIGID_BODY_SIZE: f32 = 2.5;
 
 #[derive(Component, Clone, PartialEq, PartialOrd, Debug, Default)]
@@ -120,14 +115,6 @@ fn setup(mut commands: Commands) {
             Liquid,
         ));
     }
-
-    let setup_boundary = SetupBoundary::from_corners(
-        IVec2::new(BOUNDARY_START_X, BOUNDARY_START_Y),
-        IVec2::new(BOUNDARY_END_X, BOUNDARY_END_Y),
-        ParticleType::new("Dirt Wall"),
-    )
-    .without_sides(vec![Sides::Top]);
-    commands.queue(setup_boundary);
 
     commands.insert_resource(ParticleSpawnList::new(vec![
         Particle::new("Dirt Wall"),
