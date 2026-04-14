@@ -126,10 +126,7 @@ fn setup(mut commands: Commands) {
             vec![IVec2::X, IVec2::NEG_X],
         ];
         for i in 0..5 {
-            neighbors.push(vec![
-                IVec2::X * (i + 2) as i32,
-                IVec2::NEG_X * (i + 2) as i32,
-            ]);
+            neighbors.push(vec![IVec2::X * (i + 2), IVec2::NEG_X * (i + 2)]);
         }
         commands.spawn((
             ParticleType::new("Water"),
@@ -145,7 +142,7 @@ fn setup(mut commands: Commands) {
     commands.spawn((
         ParticleType::new("Sand"),
         Density(1250),
-        Speed::new(0, 3),
+        Speed::new(5, 10),
         ColorProfile::palette(vec![
             Color::Srgba(Srgba::hex("#FFEB8A").unwrap()),
             Color::Srgba(Srgba::hex("#F2E06B").unwrap()),
@@ -160,10 +157,7 @@ fn setup(mut commands: Commands) {
     {
         let mut neighbors = vec![vec![IVec2::Y, IVec2::new(1, 1), IVec2::new(-1, 1)]];
         for i in 0..1 {
-            neighbors.push(vec![
-                IVec2::X * (i + 2) as i32,
-                IVec2::NEG_X * (i + 2) as i32,
-            ]);
+            neighbors.push(vec![IVec2::X * (i + 2), IVec2::NEG_X * (i + 2)]);
         }
         commands.spawn((
             ParticleType::new("Smoke"),
