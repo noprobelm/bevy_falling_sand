@@ -378,6 +378,9 @@ fn handle_ignites_on_spawn(
                     burns.tick_rate,
                 ));
             }
+            if let Some(reaction) = &burns.reaction {
+                entity_commands.insert(reaction.clone());
+            }
             if burns.spreads_fire {
                 entity_commands.insert(Fire {
                     radius: burns.spread_radius,

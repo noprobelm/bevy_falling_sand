@@ -5,7 +5,7 @@ pub use crate::{FallingSandMinimalPlugin, FallingSandPlugin};
 pub use crate::core::{
     condition_msg_simulation_step_received, AttachedToParticleType, ChanceLifetime, ChunkCoord,
     ChunkDirtyState, ChunkIndex, ChunkLoader, ChunkLoadingConfig, ChunkLoadingState, ChunkRegion,
-    ChunkSystems, DespawnAllParticlesSignal, DespawnBatchConfig, DespawnParticleSignal,
+    ChunkLoadingRun, ChunkSystems, DespawnAllParticlesSignal, DespawnBatchConfig, DespawnParticleSignal,
     DespawnParticleTypeChildrenSignal, GridPosition, OnSpawnCallback, Particle, ParticleMap,
     ParticleRng, ParticleSimulationRun, ParticleSyncExt, ParticleSystems, ParticleType,
     ParticleTypeRegistry, PendingDespawn, PropagatorFilter, SimulationStepSignal, SpatialEntry,

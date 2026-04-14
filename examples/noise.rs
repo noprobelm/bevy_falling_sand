@@ -19,7 +19,7 @@ fn main() {
         .add_plugins((
             DefaultPlugins,
             FramepacePlugin,
-            FallingSandMinimalPlugin::default(),
+            FallingSandMinimalPlugin::default().with_map_size(8),
             FallingSandMovementPlugin,
             FallingSandRenderPlugin,
             FallingSandDebugPlugin,
@@ -31,7 +31,16 @@ fn main() {
         ))
         .init_resource::<TotalParticleCount>()
         .init_resource::<SpawnParticles>()
-        .add_systems(Startup, (setup, utils::camera::setup_camera, setup_framepace))
+        .add_systems(
+            Startup,
+            (setup, utils::camera::setup_camera, setup_framepace),
+        )
+        .add_systems(
+            PreUpdate,
+            utils::particles::disable_chunk_loading
+                .after(ChunkSystems::Loading)
+                .run_if(run_once),
+        )
         .add_systems(
             Update,
             (
@@ -40,7 +49,8 @@ fn main() {
                 utils::particles::change_movement_source.run_if(input_just_pressed(KeyCode::F3)),
                 utils::camera::zoom_camera.run_if(in_state(AppState::Canvas)),
                 utils::camera::pan_camera,
-                utils::particles::ev_clear_particle_map.run_if(input_just_pressed(KeyCode::KeyR)),
+                utils::camera::smooth_zoom,
+                reset_noise.run_if(input_just_pressed(KeyCode::KeyR)),
                 utils::brush::handle_alt_release_without_egui,
             ),
         )
@@ -53,7 +63,6 @@ struct SpawnParticles;
 fn setup(mut commands: Commands, mut rng: ResMut<GlobalRng>) {
     commands.remove_resource::<DebugParticleMap>();
     commands.remove_resource::<DebugDirtyRects>();
-
     commands.spawn((
         ParticleType::new("Dirt Wall"),
         ColorProfile::palette(vec![
@@ -62,26 +71,24 @@ fn setup(mut commands: Commands, mut rng: ResMut<GlobalRng>) {
         ]),
     ));
 
-    {
-        let mut neighbors = vec![
+    commands.spawn((
+        ParticleType::new("Water"),
+        Density(750),
+        Speed::new(0, 3),
+        ColorProfile::palette(vec![Color::Srgba(Srgba::hex("#0B80AB80").unwrap())]),
+        Movement::from(vec![
             vec![IVec2::NEG_Y],
             vec![IVec2::NEG_ONE, IVec2::new(1, -1)],
             vec![IVec2::X, IVec2::NEG_X],
-        ];
-        for i in 0..5 {
-            neighbors.push(vec![IVec2::X * (i + 2) as i32, IVec2::NEG_X * (i + 2) as i32]);
-        }
-        commands.spawn((
-            ParticleType::new("Water"),
-            Density(750),
-            Speed::new(3, 10),
-            ColorProfile::palette(vec![Color::Srgba(Srgba::hex("#0B80AB80").unwrap())]),
-            Movement::from(neighbors),
-            // If momentum effects are desired, insert the marker component.
-            Momentum::default(),
-        ));
-    }
-
+            vec![IVec2::new(2, 0), IVec2::new(-2, 0)],
+            vec![IVec2::new(3, 0), IVec2::new(-3, 0)],
+            vec![IVec2::new(4, 0), IVec2::new(-4, 0)],
+        ]),
+        // Makes Water resistant to displacement by other particles.
+        ParticleResistor(0.75),
+        // If momentum effects are desired, insert the marker component.
+        Momentum::default(),
+    ));
     commands.spawn((
         ParticleType::new("Sand"),
         Density(1250),
@@ -148,6 +155,19 @@ fn setup(mut commands: Commands, mut rng: ResMut<GlobalRng>) {
         ));
     });
 
+    spawn_noise(&mut commands, &mut rng);
+}
+
+fn reset_noise(
+    mut commands: Commands,
+    mut rng: ResMut<GlobalRng>,
+    mut despawn_writer: MessageWriter<DespawnAllParticlesSignal>,
+) {
+    despawn_writer.write(DespawnAllParticlesSignal);
+    spawn_noise(&mut commands, &mut rng);
+}
+
+fn spawn_noise(commands: &mut Commands, rng: &mut GlobalRng) {
     let seed = rng.u32(0..u32::MAX);
 
     let basic_multi = Fbm::<PerlinSurflet>::new(seed);
@@ -160,14 +180,14 @@ fn setup(mut commands: Commands, mut rng: ResMut<GlobalRng>) {
 
     let (grid_width, grid_height) = map.size();
 
-    let colors = vec![
-        Srgba::hex("#A0674B").unwrap(), // redder dirt
-        Srgba::hex("#B8805D").unwrap(), // light reddish brown dirt
-        Srgba::hex("#D8D8D8").unwrap(), // lighter rock
-        Srgba::hex("#A8A8A8").unwrap(), // darker rock
-        Srgba::hex("#787878").unwrap(), // even darker rock
-        Srgba::hex("#000000").unwrap(), // black
-        Srgba::hex("#FFFF00").unwrap(), // white
+    let colors = &[
+        Srgba::hex("#A0674B").unwrap(),
+        Srgba::hex("#B8805D").unwrap(),
+        Srgba::hex("#D8D8D8").unwrap(),
+        Srgba::hex("#A8A8A8").unwrap(),
+        Srgba::hex("#787878").unwrap(),
+        Srgba::hex("#000000").unwrap(),
+        Srgba::hex("#FFFF00").unwrap(),
     ];
     for x in 0..grid_width {
         for y in 0..grid_height {
@@ -188,11 +208,6 @@ fn setup(mut commands: Commands, mut rng: ResMut<GlobalRng>) {
                 continue;
             };
 
-            // let color = start_color.mix(&stop_color, val as f32);
-            // let color = rng.sample(&colors).unwrap();
-            // if val > 0.5 {
-            //     continue;
-            // }
             if val < -0.5 {
                 continue;
             }

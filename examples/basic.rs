@@ -29,7 +29,16 @@ fn main() {
         ))
         .init_resource::<TotalParticleCount>()
         .init_resource::<SpawnParticles>()
-        .add_systems(Startup, (setup, utils::camera::setup_camera, setup_framepace))
+        .add_systems(
+            Startup,
+            (setup, utils::camera::setup_camera, setup_framepace),
+        )
+        .add_systems(
+            PreUpdate,
+            utils::particles::disable_chunk_loading
+                .after(ChunkSystems::Loading)
+                .run_if(run_once),
+        )
         .add_systems(
             Update,
             (
@@ -38,7 +47,8 @@ fn main() {
                 utils::particles::change_movement_source.run_if(input_just_pressed(KeyCode::F3)),
                 utils::camera::zoom_camera.run_if(in_state(AppState::Canvas)),
                 utils::camera::pan_camera,
-                utils::particles::ev_clear_particle_map.run_if(input_just_pressed(KeyCode::KeyR)),
+                utils::camera::smooth_zoom,
+                utils::particles::msgw_clear_particle_map.run_if(input_just_pressed(KeyCode::KeyR)),
                 utils::brush::handle_alt_release_without_egui,
             ),
         )
@@ -51,7 +61,6 @@ struct SpawnParticles;
 fn setup(mut commands: Commands) {
     commands.remove_resource::<DebugParticleMap>();
     commands.remove_resource::<DebugDirtyRects>();
-
     commands.spawn((
         ParticleType::new("Dirt Wall"),
         ColorProfile::palette(vec![
@@ -60,26 +69,24 @@ fn setup(mut commands: Commands) {
         ]),
     ));
 
-    {
-        let mut neighbors = vec![
+    commands.spawn((
+        ParticleType::new("Water"),
+        Density(750),
+        Speed::new(0, 3),
+        ColorProfile::palette(vec![Color::Srgba(Srgba::hex("#0B80AB80").unwrap())]),
+        Movement::from(vec![
             vec![IVec2::NEG_Y],
             vec![IVec2::NEG_ONE, IVec2::new(1, -1)],
             vec![IVec2::X, IVec2::NEG_X],
-        ];
-        for i in 0..5 {
-            neighbors.push(vec![IVec2::X * (i + 2) as i32, IVec2::NEG_X * (i + 2) as i32]);
-        }
-        commands.spawn((
-            ParticleType::new("Water"),
-            Density(750),
-            Speed::new(10, 10),
-            ColorProfile::palette(vec![Color::Srgba(Srgba::hex("#0B80AB80").unwrap())]),
-            Movement::from(neighbors),
-            // If momentum effects are desired, insert the marker component.
-            Momentum::default(),
-        ));
-    }
-
+            vec![IVec2::new(2, 0), IVec2::new(-2, 0)],
+            vec![IVec2::new(3, 0), IVec2::new(-3, 0)],
+            vec![IVec2::new(4, 0), IVec2::new(-4, 0)],
+        ]),
+        // Makes Water resistant to displacement by other particles.
+        ParticleResistor(0.75),
+        // If momentum effects are desired, insert the marker component.
+        Momentum::default(),
+    ));
     commands.spawn((
         ParticleType::new("Sand"),
         Density(1250),

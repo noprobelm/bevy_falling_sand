@@ -490,10 +490,7 @@ mod tests {
         let mut app = App::new();
         app.add_plugins((
             MinimalPlugins,
-            FallingSandMinimalPlugin {
-                map_size: 4,
-                chunk_size: 4,
-            },
+            FallingSandMinimalPlugin::default().with_chunk_size(8),
         ));
         app.add_plugins(DynamicPlugin);
         app.add_systems(

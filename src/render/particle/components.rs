@@ -541,9 +541,9 @@ pub struct WithColor(pub usize);
 #[type_path = "bfs_color::particle"]
 pub enum ColorAssignment {
     /// Colors are assigned sequentially from the palette or gradient
-    #[default]
     Sequential,
     /// Colors are assigned randomly from the palette or gradient
+    #[default]
     Random,
 }
 

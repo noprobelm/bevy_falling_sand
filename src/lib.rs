@@ -390,23 +390,69 @@ impl Plugin for FallingSandPlugin {
 /// This plugin is useful for users who want to selectively import the additional plugins provided
 /// by the *Bevy Falling Sand* subcrates.
 pub struct FallingSandMinimalPlugin {
-    /// The map size for the `ParticleMap` resource.
-    pub map_size: usize,
-    /// The chunk size for the `ParticleMap` resource.
-    pub chunk_size: usize,
+    /// Width of the loaded region in chunks.
+    pub width_chunks: u32,
+    /// Height of the loaded region in chunks.
+    pub height_chunks: u32,
+    /// Size of each chunk in world units (must be power of 2).
+    pub chunk_size: u32,
 }
 
 impl Default for FallingSandMinimalPlugin {
     fn default() -> Self {
         Self {
-            chunk_size: 64,
-            map_size: 64,
+            width_chunks: DEFAULT_MAP_CHUNKS,
+            height_chunks: DEFAULT_MAP_CHUNKS,
+            chunk_size: DEFAULT_CHUNK_SIZE,
         }
+    }
+}
+
+impl FallingSandMinimalPlugin {
+    /// Set the map width in chunks.
+    #[must_use]
+    pub const fn with_map_width(self, chunks: u32) -> Self {
+        Self {
+            width_chunks: chunks,
+            ..self
+        }
+    }
+
+    /// Set the map height in chunks.
+    #[must_use]
+    pub const fn with_map_height(self, chunks: u32) -> Self {
+        Self {
+            height_chunks: chunks,
+            ..self
+        }
+    }
+
+    /// Set the map width and height to the same number of chunks.
+    #[must_use]
+    pub const fn with_map_size(self, chunks: u32) -> Self {
+        Self {
+            width_chunks: chunks,
+            height_chunks: chunks,
+            ..self
+        }
+    }
+
+    /// Change the chunk size in world units.
+    #[must_use]
+    pub const fn with_chunk_size(self, chunk_size: u32) -> Self {
+        Self { chunk_size, ..self }
     }
 }
 
 impl Plugin for FallingSandMinimalPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((RngPlugin::default(), core::FallingSandCorePlugin::default()));
+        app.add_plugins((
+            RngPlugin::default(),
+            core::FallingSandCorePlugin {
+                width: self.width_chunks * self.chunk_size,
+                height: self.height_chunks * self.chunk_size,
+                chunk_size: self.chunk_size,
+            },
+        ));
     }
 }

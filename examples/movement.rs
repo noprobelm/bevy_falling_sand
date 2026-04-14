@@ -8,7 +8,6 @@ use bevy::{
 use bevy_falling_sand::prelude::*;
 use bevy_framepace::{FramepacePlugin, FramepaceSettings, Limiter};
 use utils::{
-    boundary::SetupBoundary,
     brush::{ParticleSpawnList, SelectedBrushParticle},
     states::AppState,
     status_ui::{FpsText, MovementSourceText},
@@ -19,7 +18,7 @@ fn main() {
         .add_plugins((
             DefaultPlugins,
             FramepacePlugin,
-            FallingSandPlugin::default(),
+            FallingSandPlugin::default().with_map_size(16),
             FallingSandDebugPlugin,
             utils::states::StatesPlugin,
             utils::cursor::CursorPlugin,
@@ -28,7 +27,16 @@ fn main() {
             utils::status_ui::StatusUIPlugin,
         ))
         .init_resource::<MaxVelocitySelection>()
-        .add_systems(Startup, (setup, utils::camera::setup_camera, setup_framepace))
+        .add_systems(
+            Startup,
+            (setup, utils::camera::setup_camera, setup_framepace),
+        )
+        .add_systems(
+            PreUpdate,
+            utils::particles::disable_chunk_loading
+                .after(ChunkSystems::Loading)
+                .run_if(run_once),
+        )
         .add_systems(
             Update,
             (
@@ -37,7 +45,8 @@ fn main() {
                 utils::particles::change_movement_source.run_if(input_just_pressed(KeyCode::F3)),
                 utils::camera::zoom_camera.run_if(in_state(AppState::Canvas)),
                 utils::camera::pan_camera,
-                utils::particles::ev_clear_dynamic_particles
+                utils::camera::smooth_zoom,
+                utils::particles::msgw_clear_dynamic_particles
                     .run_if(input_just_pressed(KeyCode::KeyR)),
                 bump_velocity.run_if(input_just_pressed(KeyCode::KeyV)),
                 utils::brush::handle_alt_release_without_egui,
@@ -45,11 +54,6 @@ fn main() {
         )
         .run();
 }
-
-const BOUNDARY_START_X: i32 = -150;
-const BOUNDARY_END_X: i32 = 150;
-const BOUNDARY_START_Y: i32 = -150;
-const BOUNDARY_END_Y: i32 = 150;
 
 #[derive(Resource, Clone, Debug)]
 struct MaxVelocitySelection(u8);
@@ -163,13 +167,6 @@ fn setup(
         color_profile.clone(),
         Momentum::default(),
     ));
-
-    let setup_boundary = SetupBoundary::from_corners(
-        IVec2::new(BOUNDARY_START_X, BOUNDARY_START_Y),
-        IVec2::new(BOUNDARY_END_X, BOUNDARY_END_Y),
-        ParticleType::new("Dirt Wall"),
-    );
-    commands.queue(setup_boundary);
 
     // Setup particle spawn list for brush system
     let particles = vec![

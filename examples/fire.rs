@@ -7,7 +7,6 @@ use bevy_egui::{egui, EguiContexts, EguiPlugin, EguiPrimaryContextPass};
 use bevy_falling_sand::prelude::*;
 use bevy_framepace::{FramepacePlugin, FramepaceSettings, Limiter};
 use utils::{
-    boundary::SetupBoundary,
     brush::{ParticleSpawnList, SelectedBrushParticle},
     states::AppState,
     status_ui::{
@@ -16,12 +15,14 @@ use utils::{
     },
 };
 
+use crate::utils::effects::{BurnEffect, GasEffect};
+
 fn main() {
     App::new()
         .add_plugins((
             DefaultPlugins,
             FramepacePlugin,
-            FallingSandPlugin::default(),
+            FallingSandPlugin::default().with_map_size(8),
             FallingSandDebugPlugin,
             EguiPlugin::default(),
             utils::states::StatesPlugin,
@@ -30,14 +31,20 @@ fn main() {
             utils::instructions::InstructionsPlugin::default(),
             utils::status_ui::StatusUIPlugin,
             utils::gui::GuiPlugin,
+            utils::effects::EffectsPlugin,
         ))
         .init_resource::<SpawnFlammableGasParticles>()
-        .init_resource::<CursorPosition>()
         .init_resource::<DefaultFire>()
         .init_resource::<DefaultFlammableGas>()
         .add_systems(
             Startup,
             (setup, utils::camera::setup_camera, setup_framepace),
+        )
+        .add_systems(
+            PreUpdate,
+            utils::particles::disable_chunk_loading
+                .after(ChunkSystems::Loading)
+                .run_if(run_once),
         )
         .add_systems(
             EguiPrimaryContextPass,
@@ -51,6 +58,7 @@ fn main() {
                 utils::particles::change_movement_source.run_if(input_just_pressed(KeyCode::F3)),
                 utils::camera::zoom_camera.run_if(in_state(AppState::Canvas)),
                 utils::camera::pan_camera.run_if(in_state(AppState::Canvas)),
+                utils::camera::smooth_zoom,
                 spawn_flammable_gas_particles
                     .run_if(resource_exists::<SpawnFlammableGasParticles>)
                     .before(ParticleSystems::Simulation),
@@ -58,7 +66,7 @@ fn main() {
                     .run_if(input_just_pressed(KeyCode::F4))
                     .run_if(in_state(AppState::Canvas)),
                 toggle_render_gui.run_if(input_just_pressed(KeyCode::KeyH)),
-                utils::particles::ev_clear_dynamic_particles
+                utils::particles::msgw_clear_dynamic_particles
                     .run_if(input_just_pressed(KeyCode::KeyR))
                     .run_if(in_state(AppState::Canvas)),
             ),
@@ -66,10 +74,10 @@ fn main() {
         .run();
 }
 
-const BOUNDARY_START_X: i32 = -150;
-const BOUNDARY_END_X: i32 = 150;
-const BOUNDARY_START_Y: i32 = -150;
-const BOUNDARY_END_Y: i32 = 150;
+const START_X: i32 = -150;
+const END_X: i32 = 150;
+const START_Y: i32 = -150;
+const END_Y: i32 = 150;
 
 #[derive(Clone, Resource)]
 struct DefaultFire(
@@ -79,6 +87,7 @@ struct DefaultFire(
     ColorProfile,
     Movement,
     Flammable,
+    BurnEffect,
     Name,
 );
 
@@ -110,6 +119,7 @@ impl Default for DefaultFire {
                 false,
                 true,
             ),
+            BurnEffect,
             Name::new("FIRE"),
         )
     }
@@ -123,18 +133,12 @@ struct DefaultFlammableGas(
     ColorProfile,
     Movement,
     Flammable,
+    GasEffect,
     Name,
 );
 
 impl Default for DefaultFlammableGas {
     fn default() -> Self {
-        let mut neighbors = vec![vec![IVec2::Y, IVec2::new(1, 1), IVec2::new(-1, 1)]];
-        for i in 0..1 {
-            neighbors.push(vec![
-                IVec2::X * (i + 2) as i32,
-                IVec2::NEG_X * (i + 2) as i32,
-            ]);
-        }
         DefaultFlammableGas(
             ParticleType::new("Flammable Gas"),
             Density(200),
@@ -143,7 +147,10 @@ impl Default for DefaultFlammableGas {
                 Color::Srgba(Srgba::hex("#40621880").unwrap()),
                 Color::Srgba(Srgba::hex("#4A731C80").unwrap()),
             ]),
-            Movement::from(neighbors),
+            Movement::from(vec![
+                vec![IVec2::Y, IVec2::new(1, 1), IVec2::new(-1, 1)],
+                vec![IVec2::new(0, 2), IVec2::new(0, -2)],
+            ]),
             Flammable::new(
                 Duration::from_secs(1),
                 Duration::from_millis(50),
@@ -155,6 +162,7 @@ impl Default for DefaultFlammableGas {
                 true,
                 false,
             ),
+            GasEffect,
             Name::new("Flammable Gas"),
         )
     }
@@ -166,11 +174,6 @@ struct RenderGUI;
 #[derive(Default, Resource)]
 struct SpawnFlammableGasParticles;
 
-#[derive(Default, Resource, Clone, Debug)]
-pub struct CursorPosition {
-    pub current: Vec2,
-}
-
 fn setup(
     mut commands: Commands,
     default_flammable_gas: Res<DefaultFlammableGas>,
@@ -178,7 +181,6 @@ fn setup(
 ) {
     commands.remove_resource::<DebugParticleMap>();
     commands.remove_resource::<DebugDirtyRects>();
-
     commands.spawn((
         ParticleType::new("Dirt Wall"),
         ColorProfile::palette(vec![
@@ -190,10 +192,7 @@ fn setup(
     {
         let mut neighbors = vec![vec![IVec2::Y, IVec2::new(1, 1), IVec2::new(-1, 1)]];
         for i in 0..1 {
-            neighbors.push(vec![
-                IVec2::X * (i + 2) as i32,
-                IVec2::NEG_X * (i + 2) as i32,
-            ]);
+            neighbors.push(vec![IVec2::X * (i + 2), IVec2::NEG_X * (i + 2)]);
         }
         commands.spawn((
             ParticleType::new("Smoke"),
@@ -203,6 +202,7 @@ fn setup(
                 Color::Srgba(Srgba::hex("#706966").unwrap()),
                 Color::Srgba(Srgba::hex("#858073").unwrap()),
             ]),
+            GasEffect,
             Movement::from(neighbors),
             Name::new("Smoke"),
         ));
@@ -216,6 +216,7 @@ fn setup(
         default_flammable_gas.4.clone(),
         default_flammable_gas.5.clone(),
         default_flammable_gas.6.clone(),
+        default_flammable_gas.7.clone(),
     ));
 
     commands.spawn((
@@ -227,14 +228,6 @@ fn setup(
         default_fire.5.clone(),
         default_fire.6.clone(),
     ));
-
-    let setup_boundary = SetupBoundary::from_corners(
-        IVec2::new(BOUNDARY_START_X, BOUNDARY_START_Y),
-        IVec2::new(BOUNDARY_END_X, BOUNDARY_END_Y),
-        ParticleType::new("Dirt Wall"),
-    )
-    .with_thickness(2);
-    commands.queue(setup_boundary);
 
     commands.insert_resource(ParticleSpawnList::new(vec![
         Particle::new("FIRE"),
@@ -289,8 +282,8 @@ fn setup(
 }
 
 fn spawn_flammable_gas_particles(mut commands: Commands) {
-    let center_x = (BOUNDARY_START_X + BOUNDARY_END_X) / 2;
-    let center_y = (BOUNDARY_START_Y + BOUNDARY_END_Y) / 2;
+    let center_x = (START_X + END_X) / 2;
+    let center_y = (START_Y + END_Y) / 2;
 
     let radius = 10;
 
@@ -330,15 +323,15 @@ fn toggle_render_gui(mut commands: Commands, render_gui: Option<Res<RenderGUI>>)
 
 fn render_fire_settings_gui(
     mut contexts: EguiContexts,
-    mut ev_reset_particle_children: MessageWriter<SyncParticleTypeChildrenSignal>,
+    mut msgw_reset_particle_type_children: MessageWriter<SyncParticleTypeChildrenSignal>,
     particle_type_map: Res<ParticleTypeRegistry>,
     mut burns_query: Query<&mut Flammable, With<ParticleType>>,
     mut commands: Commands,
     default_fire: Res<DefaultFire>,
     default_flammable_gas: Res<DefaultFlammableGas>,
 ) {
-    let fire_entity = *particle_type_map.get(&"FIRE".to_string()).unwrap();
-    let flammable_gas_entity = *particle_type_map.get(&"Flammable Gas".to_string()).unwrap();
+    let fire_entity = *particle_type_map.get("FIRE").unwrap();
+    let flammable_gas_entity = *particle_type_map.get("Flammable Gas").unwrap();
 
     egui::Window::new("Particle Properties").show(contexts.ctx_mut().unwrap(), |ui| {
         {
@@ -365,6 +358,13 @@ fn render_fire_settings_gui(
                     burns.spreads_fire = checkbox_enabled;
                     fire_updated = true;
                 }
+            }
+
+            if ui
+                .add(egui::Slider::new(&mut burns.spread_radius, 0.0..=10.0).text("Spread Radius"))
+                .drag_stopped()
+            {
+                fire_updated = true;
             }
 
             ui.add_space(8.0);
@@ -450,11 +450,12 @@ fn render_fire_settings_gui(
                     default_fire.4.clone(),
                     default_fire.5.clone(),
                     default_fire.6.clone(),
+                    default_fire.7.clone(),
                 ));
             }
 
             if fire_updated {
-                ev_reset_particle_children.write(
+                msgw_reset_particle_type_children.write(
                     SyncParticleTypeChildrenSignal::from_parent_handle(fire_entity),
                 );
             }
@@ -488,6 +489,16 @@ fn render_fire_settings_gui(
                     flammable_gas_burns.spreads_fire = checkbox_enabled;
                     flammable_gas_updated = true;
                 }
+            }
+
+            if ui
+                .add(
+                    egui::Slider::new(&mut flammable_gas_burns.spread_radius, 0.0..=10.0)
+                        .text("Spread Radius"),
+                )
+                .drag_stopped()
+            {
+                flammable_gas_updated = true;
             }
 
             ui.add_space(8.0);
@@ -538,7 +549,7 @@ fn render_fire_settings_gui(
             }
 
             if flammable_gas_updated {
-                ev_reset_particle_children.write(
+                msgw_reset_particle_type_children.write(
                     SyncParticleTypeChildrenSignal::from_parent_handle(flammable_gas_entity),
                 );
             }
