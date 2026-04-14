@@ -29,7 +29,10 @@ fn main() {
         ))
         .init_resource::<TotalParticleCount>()
         .init_resource::<SpawnParticles>()
-        .add_systems(Startup, (setup, utils::camera::setup_camera, setup_framepace))
+        .add_systems(
+            Startup,
+            (setup, utils::camera::setup_camera, setup_framepace),
+        )
         .add_systems(
             Update,
             (
@@ -65,16 +68,21 @@ fn setup(mut commands: Commands) {
             vec![IVec2::NEG_Y],
             vec![IVec2::NEG_ONE, IVec2::new(1, -1)],
             vec![IVec2::X, IVec2::NEG_X],
+            vec![IVec2::new(2, 0), IVec2::new(-2, 0)],
+            vec![IVec2::new(3, 0), IVec2::new(-3, 0)],
+            vec![IVec2::new(4, 0), IVec2::new(-4, 0)],
         ];
         for i in 0..5 {
-            neighbors.push(vec![IVec2::X * (i + 2) as i32, IVec2::NEG_X * (i + 2) as i32]);
+            neighbors.push(vec![IVec2::X * (i + 2), IVec2::NEG_X * (i + 2)]);
         }
         commands.spawn((
             ParticleType::new("Water"),
             Density(750),
-            Speed::new(10, 10),
+            Speed::new(0, 3),
             ColorProfile::palette(vec![Color::Srgba(Srgba::hex("#0B80AB80").unwrap())]),
             Movement::from(neighbors),
+            // Makes Water resistant to displacement by other particles.
+            ParticleResistor(0.75),
             // If momentum effects are desired, insert the marker component.
             Momentum::default(),
         ));
