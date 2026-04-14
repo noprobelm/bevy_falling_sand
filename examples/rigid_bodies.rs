@@ -7,7 +7,7 @@ use bevy_framepace::{FramepacePlugin, FramepaceSettings, Limiter};
 use utils::{
     boundary::{SetupBoundary, Sides},
     brush::{BrushInput, BrushKeybindings, ParticleSpawnList, SelectedBrushParticle},
-    cursor::CursorPosition,
+    cursor::Cursor,
     states::AppState,
     status_ui::{BrushStateText, BrushTypeText, FpsText, MovementSourceText, SelectedParticleText},
 };
@@ -44,6 +44,7 @@ fn main() {
                 utils::particles::change_movement_source.run_if(input_just_pressed(KeyCode::F3)),
                 utils::camera::zoom_camera.run_if(in_state(AppState::Canvas)),
                 utils::camera::pan_camera,
+                utils::camera::smooth_zoom,
                 utils::brush::handle_alt_release_without_egui,
                 utils::particles::ev_clear_dynamic_particles
                     .run_if(input_just_pressed(KeyCode::KeyR)),
@@ -174,7 +175,7 @@ fn spawn_ball(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
-    cursor_position: Res<CursorPosition>,
+    cursor_position: Res<Cursor>,
 ) -> Result {
     commands.spawn((
         RigidBody::Dynamic,

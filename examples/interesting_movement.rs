@@ -37,6 +37,7 @@ fn main() {
                 utils::particles::change_movement_source.run_if(input_just_pressed(KeyCode::F3)),
                 utils::camera::zoom_camera.run_if(in_state(AppState::Canvas)),
                 utils::camera::pan_camera,
+                utils::camera::smooth_zoom,
                 utils::particles::ev_clear_dynamic_particles
                     .run_if(input_just_pressed(KeyCode::KeyR)),
                 bump_velocity.run_if(input_just_pressed(KeyCode::KeyV)),

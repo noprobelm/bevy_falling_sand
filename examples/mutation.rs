@@ -35,6 +35,7 @@ fn main() {
                 utils::particles::change_movement_source.run_if(input_just_pressed(KeyCode::F3)),
                 utils::camera::zoom_camera,
                 utils::camera::pan_camera,
+                utils::camera::smooth_zoom,
                 spawn_particles.before(ParticleSystems::Simulation),
                 utils::instructions::toggle_standalone_instructions,
                 update_movement_source_text,

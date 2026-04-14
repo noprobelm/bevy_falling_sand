@@ -32,7 +32,6 @@ fn main() {
             utils::gui::GuiPlugin,
         ))
         .init_resource::<SpawnFlammableGasParticles>()
-        .init_resource::<CursorPosition>()
         .init_resource::<DefaultFire>()
         .init_resource::<DefaultFlammableGas>()
         .add_systems(
@@ -51,6 +50,7 @@ fn main() {
                 utils::particles::change_movement_source.run_if(input_just_pressed(KeyCode::F3)),
                 utils::camera::zoom_camera.run_if(in_state(AppState::Canvas)),
                 utils::camera::pan_camera.run_if(in_state(AppState::Canvas)),
+                utils::camera::smooth_zoom,
                 spawn_flammable_gas_particles
                     .run_if(resource_exists::<SpawnFlammableGasParticles>)
                     .before(ParticleSystems::Simulation),
@@ -165,11 +165,6 @@ struct RenderGUI;
 
 #[derive(Default, Resource)]
 struct SpawnFlammableGasParticles;
-
-#[derive(Default, Resource, Clone, Debug)]
-pub struct CursorPosition {
-    pub current: Vec2,
-}
 
 fn setup(
     mut commands: Commands,

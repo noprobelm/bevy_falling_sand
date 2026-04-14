@@ -43,6 +43,7 @@ fn main() {
                 utils::particles::change_movement_source.run_if(input_just_pressed(KeyCode::F3)),
                 utils::camera::zoom_camera.run_if(in_state(AppState::Canvas)),
                 utils::camera::pan_camera,
+                utils::camera::smooth_zoom,
                 reset_noise.run_if(input_just_pressed(KeyCode::KeyR)),
                 utils::brush::handle_alt_release_without_egui,
             ),
