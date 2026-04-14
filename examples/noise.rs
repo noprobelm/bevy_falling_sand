@@ -43,7 +43,7 @@ fn main() {
                 utils::particles::change_movement_source.run_if(input_just_pressed(KeyCode::F3)),
                 utils::camera::zoom_camera.run_if(in_state(AppState::Canvas)),
                 utils::camera::pan_camera,
-                utils::particles::ev_clear_particle_map.run_if(input_just_pressed(KeyCode::KeyR)),
+                reset_noise.run_if(input_just_pressed(KeyCode::KeyR)),
                 utils::brush::handle_alt_release_without_egui,
             ),
         )
@@ -149,6 +149,19 @@ fn setup(mut commands: Commands, mut rng: ResMut<GlobalRng>) {
         ));
     });
 
+    spawn_noise(&mut commands, &mut rng);
+}
+
+fn reset_noise(
+    mut commands: Commands,
+    mut rng: ResMut<GlobalRng>,
+    mut despawn_writer: MessageWriter<DespawnAllParticlesSignal>,
+) {
+    despawn_writer.write(DespawnAllParticlesSignal);
+    spawn_noise(&mut commands, &mut rng);
+}
+
+fn spawn_noise(commands: &mut Commands, rng: &mut GlobalRng) {
     let seed = rng.u32(0..u32::MAX);
 
     let basic_multi = Fbm::<PerlinSurflet>::new(seed);
@@ -162,13 +175,13 @@ fn setup(mut commands: Commands, mut rng: ResMut<GlobalRng>) {
     let (grid_width, grid_height) = map.size();
 
     let colors = &[
-        Srgba::hex("#A0674B").unwrap(), // redder dirt
-        Srgba::hex("#B8805D").unwrap(), // light reddish brown dirt
-        Srgba::hex("#D8D8D8").unwrap(), // lighter rock
-        Srgba::hex("#A8A8A8").unwrap(), // darker rock
-        Srgba::hex("#787878").unwrap(), // even darker rock
-        Srgba::hex("#000000").unwrap(), // black
-        Srgba::hex("#FFFF00").unwrap(), // white
+        Srgba::hex("#A0674B").unwrap(),
+        Srgba::hex("#B8805D").unwrap(),
+        Srgba::hex("#D8D8D8").unwrap(),
+        Srgba::hex("#A8A8A8").unwrap(),
+        Srgba::hex("#787878").unwrap(),
+        Srgba::hex("#000000").unwrap(),
+        Srgba::hex("#FFFF00").unwrap(),
     ];
     for x in 0..grid_width {
         for y in 0..grid_height {
@@ -189,11 +202,6 @@ fn setup(mut commands: Commands, mut rng: ResMut<GlobalRng>) {
                 continue;
             };
 
-            // let color = start_color.mix(&stop_color, val as f32);
-            // let color = rng.sample(&colors).unwrap();
-            // if val > 0.5 {
-            //     continue;
-            // }
             if val < -0.5 {
                 continue;
             }
