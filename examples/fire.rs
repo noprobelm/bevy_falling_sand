@@ -360,6 +360,13 @@ fn render_fire_settings_gui(
                 }
             }
 
+            if ui
+                .add(egui::Slider::new(&mut burns.spread_radius, 0.0..=10.0).text("Spread Radius"))
+                .drag_stopped()
+            {
+                fire_updated = true;
+            }
+
             ui.add_space(8.0);
 
             let mut burns_duration = burns.duration.as_secs_f32();
@@ -482,6 +489,16 @@ fn render_fire_settings_gui(
                     flammable_gas_burns.spreads_fire = checkbox_enabled;
                     flammable_gas_updated = true;
                 }
+            }
+
+            if ui
+                .add(
+                    egui::Slider::new(&mut flammable_gas_burns.spread_radius, 0.0..=10.0)
+                        .text("Spread Radius"),
+                )
+                .drag_stopped()
+            {
+                flammable_gas_updated = true;
             }
 
             ui.add_space(8.0);
