@@ -1665,20 +1665,22 @@
         )))),
         "bfs_color::particle::ColorProfile": (
           source: Gradient((
-            start: Hsla((
-              hue: 0.0,
-              saturation: 1.0,
-              lightness: 0.5,
-              alpha: 1.0,
-            )),
-            end: Hsla((
-              hue: 360.0,
-              saturation: 1.0,
-              lightness: 0.5,
-              alpha: 1.0,
-            )),
+            colors: [
+              Hsla((
+                hue: 0.0,
+                saturation: 1.0,
+                lightness: 0.5,
+                alpha: 1.0,
+              )),
+              Hsla((
+                hue: 360.0,
+                saturation: 1.0,
+                lightness: 0.5,
+                alpha: 1.0,
+              )),
+            ],
+            steps: [5000],
             index: 0,
-            steps: 5000,
             hsv_interpolation: true,
           )),
           assignment: Sequential,

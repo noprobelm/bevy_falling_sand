@@ -56,7 +56,8 @@ pub struct ColorRng(pub RngComponent);
 ///
 /// # Gradient
 ///
-/// A gradient interpolates between two colors over a number of steps:
+/// A gradient interpolates between two or more colors. Each segment between consecutive
+/// colors gets its own configurable number of samples:
 ///
 /// ```
 /// use bevy::prelude::*;
@@ -66,9 +67,12 @@ pub struct ColorRng(pub RngComponent);
 ///     commands.spawn((
 ///         ParticleType::new("Colorful"),
 ///         ColorProfile::gradient(
-///             Color::hsla(0.0, 1.0, 0.5, 1.0),
-///             Color::hsla(360.0, 1.0, 0.5, 1.0),
-///             5000,
+///             vec![
+///                 Color::hsla(0.0, 1.0, 0.5, 1.0),
+///                 Color::hsla(180.0, 1.0, 0.5, 1.0),
+///                 Color::hsla(360.0, 1.0, 0.5, 1.0),
+///             ],
+///             vec![2500, 2500],
 ///         ),
 ///     ));
 /// }
@@ -137,7 +141,12 @@ impl ColorProfile {
     }
 
     #[must_use]
-    /// Creates a color profile with a gradient
+    /// Creates a color profile with a multi-stop gradient.
+    ///
+    /// `colors` must have at least 2 entries, and `steps` must have exactly
+    /// `colors.len() - 1` entries — one per segment between consecutive colors.
+    /// Each `steps[k]` defines how many color samples span the segment from
+    /// `colors[k]` to `colors[k + 1]`.
     ///
     /// ```
     /// use bevy::prelude::*;
@@ -147,20 +156,39 @@ impl ColorProfile {
     ///     commands.spawn((
     ///         ParticleType::new("Colorful"),
     ///         ColorProfile::gradient(
-    ///             Color::hsla(0.0, 1.0, 0.5, 1.0),
-    ///             Color::hsla(360.0, 1.0, 0.5, 1.0),
-    ///             5000,
+    ///             vec![
+    ///                 Color::hsla(0.0, 1.0, 0.5, 1.0),
+    ///                 Color::hsla(180.0, 1.0, 0.5, 1.0),
+    ///                 Color::hsla(360.0, 1.0, 0.5, 1.0),
+    ///             ],
+    ///             vec![2500, 2500],
     ///         ),
     ///     ));
     /// }
     /// ```
-    pub fn gradient(start: Color, end: Color, steps: usize) -> Self {
+    ///
+    /// # Panics
+    ///
+    /// Panics if `colors.len() < 2`, if `steps.len() != colors.len() - 1`,
+    /// or if any segment has zero steps.
+    pub fn gradient(colors: Vec<Color>, steps: Vec<usize>) -> Self {
+        assert!(
+            colors.len() >= 2,
+            "ColorProfile::gradient requires at least 2 colors"
+        );
+        assert!(
+            steps.len() == colors.len() - 1,
+            "ColorProfile::gradient requires steps.len() == colors.len() - 1"
+        );
+        assert!(
+            steps.iter().all(|s| *s > 0),
+            "ColorProfile::gradient requires every segment to have at least 1 step"
+        );
         Self {
             source: ColorSource::Gradient(ColorGradient {
-                start,
-                end,
-                index: 0,
+                colors,
                 steps,
+                index: 0,
                 hsv_interpolation: false,
             }),
             ..default()
@@ -211,24 +239,9 @@ impl ColorProfile {
                 Some((palette.colors[color_index], color_index))
             }
             ColorSource::Gradient(gradient) => {
-                let random_step = rng.index(0..gradient.steps);
-                let t = random_step as f32 / (gradient.steps - 1) as f32;
-
-                let color = if gradient.hsv_interpolation {
-                    let start_hsl: Hsla = gradient.start.into();
-                    let end_hsl: Hsla = gradient.end.into();
-
-                    let h = (end_hsl.hue - start_hsl.hue).mul_add(t, start_hsl.hue);
-                    let s = (end_hsl.saturation - start_hsl.saturation)
-                        .mul_add(t, start_hsl.saturation);
-                    let l =
-                        (end_hsl.lightness - start_hsl.lightness).mul_add(t, start_hsl.lightness);
-
-                    Color::hsl(h, s, l)
-                } else {
-                    gradient.start.mix(&gradient.end, t)
-                };
-                Some((color, random_step))
+                let total = gradient.total_steps();
+                let random_step = rng.index(0..total);
+                Some((gradient.sample(random_step), random_step))
             }
             ColorSource::Texture(_) => {
                 warn!("random_with_index is not supported for texture-based ColorProfiles");
@@ -257,25 +270,7 @@ impl ColorProfile {
     pub fn index(&self, index: usize) -> Option<Color> {
         match &self.source {
             ColorSource::Palette(palette) => Some(palette.colors[index]),
-            ColorSource::Gradient(gradient) => {
-                let t = index as f32 / (gradient.steps - 1) as f32;
-
-                let color = if gradient.hsv_interpolation {
-                    let start_hsl: Hsla = gradient.start.into();
-                    let end_hsl: Hsla = gradient.end.into();
-
-                    let h = (end_hsl.hue - start_hsl.hue).mul_add(t, start_hsl.hue);
-                    let s = (end_hsl.saturation - start_hsl.saturation)
-                        .mul_add(t, start_hsl.saturation);
-                    let l =
-                        (end_hsl.lightness - start_hsl.lightness).mul_add(t, start_hsl.lightness);
-
-                    Color::hsl(h, s, l)
-                } else {
-                    gradient.start.mix(&gradient.end, t)
-                };
-                Some(color)
-            }
+            ColorSource::Gradient(gradient) => Some(gradient.sample(index)),
             ColorSource::Texture(_) => {
                 warn!("index is not supported for texture-based ColorProfiles");
                 None
@@ -308,24 +303,9 @@ impl ColorProfile {
                 Some(palette.colors[palette.index])
             }
             ColorSource::Gradient(gradient) => {
-                gradient.index = (gradient.index + 1) % gradient.steps;
-                let t = gradient.index as f32 / (gradient.steps - 1) as f32;
-
-                let color = if gradient.hsv_interpolation {
-                    let start_hsl: Hsla = gradient.start.into();
-                    let end_hsl: Hsla = gradient.end.into();
-
-                    let h = (end_hsl.hue - start_hsl.hue).mul_add(t, start_hsl.hue);
-                    let s = (end_hsl.saturation - start_hsl.saturation)
-                        .mul_add(t, start_hsl.saturation);
-                    let l =
-                        (end_hsl.lightness - start_hsl.lightness).mul_add(t, start_hsl.lightness);
-
-                    Color::hsl(h, s, l)
-                } else {
-                    gradient.start.mix(&gradient.end, t)
-                };
-                Some(color)
+                let total = gradient.total_steps();
+                gradient.index = (gradient.index + 1) % total;
+                Some(gradient.sample(gradient.index))
             }
             ColorSource::Texture(_) => {
                 warn!("next is not supported for texture-based ColorProfiles");
@@ -435,7 +415,10 @@ impl ColorProfile {
     /// ]);
     /// assert_eq!(profile.colors().unwrap().len(), 2);
     ///
-    /// let gradient = ColorProfile::gradient(Color::BLACK, Color::WHITE, 10);
+    /// let gradient = ColorProfile::gradient(
+    ///     vec![Color::BLACK, Color::WHITE],
+    ///     vec![10],
+    /// );
     /// assert_eq!(gradient.colors().unwrap().len(), 10);
     /// ```
     #[allow(clippy::cast_precision_loss)]
@@ -444,26 +427,10 @@ impl ColorProfile {
         match &self.source {
             ColorSource::Palette(palette) => Some(palette.colors.clone()),
             ColorSource::Gradient(gradient) => {
-                let mut colors = Vec::new();
-                for i in 0..gradient.steps {
-                    let t = i as f32 / (gradient.steps - 1) as f32;
-
-                    let color = if gradient.hsv_interpolation {
-                        let start_hsl: Hsla = gradient.start.into();
-                        let end_hsl: Hsla = gradient.end.into();
-
-                        let h = (end_hsl.hue - start_hsl.hue).mul_add(t, start_hsl.hue);
-                        let s = (end_hsl.saturation - start_hsl.saturation)
-                            .mul_add(t, start_hsl.saturation);
-                        let l = (end_hsl.lightness - start_hsl.lightness)
-                            .mul_add(t, start_hsl.lightness);
-
-                        Color::hsl(h, s, l)
-                    } else {
-                        gradient.start.mix(&gradient.end, t)
-                    };
-
-                    colors.push(color);
+                let total = gradient.total_steps();
+                let mut colors = Vec::with_capacity(total);
+                for i in 0..total {
+                    colors.push(gradient.sample(i));
                 }
                 Some(colors)
             }
@@ -566,29 +533,84 @@ impl Default for Palette {
     }
 }
 
-/// Color gradient configuration for particles
+/// Color gradient configuration for particles.
+///
+/// A gradient is composed of one or more segments. Each segment connects two consecutive
+/// entries in [`ColorGradient::colors`] and produces [`ColorGradient::steps`]`[k]` color
+/// samples, with `t` interpolating from `0.0` to `1.0` within the segment. Boundary colors
+/// between adjacent segments may appear as samples in both segments.
 #[derive(Clone, PartialEq, Debug, Reflect, Serialize, Deserialize)]
 #[type_path = "bfs_color::particle"]
 pub struct ColorGradient {
-    /// Starting color of the gradient
-    pub start: Color,
-    /// Ending color of the gradient
-    pub end: Color,
-    /// Current index in the gradient
+    /// Color stops. Must contain at least 2 entries.
+    pub colors: Vec<Color>,
+    /// Number of color samples in each segment between consecutive colors.
+    /// Must satisfy `steps.len() == colors.len() - 1` and every entry must be > 0.
+    pub steps: Vec<usize>,
+    /// Current sample index in the flattened gradient.
     pub index: usize,
-    /// Number of steps in the gradient
-    pub steps: usize,
-    /// If true, interpolate in HSV space for rainbow effects
+    /// If true, interpolate in HSV space for rainbow effects.
     pub hsv_interpolation: bool,
+}
+
+impl ColorGradient {
+    /// Total number of color samples across all segments.
+    #[must_use]
+    pub fn total_steps(&self) -> usize {
+        self.steps.iter().sum()
+    }
+
+    /// Samples the gradient at the given flattened index.
+    ///
+    /// The index is clamped to `[0, total_steps - 1)`. Returns the first stop's color
+    /// when the gradient is degenerate (no segments).
+    #[allow(clippy::cast_precision_loss)]
+    #[must_use]
+    pub fn sample(&self, index: usize) -> Color {
+        if self.steps.is_empty() || self.colors.len() < 2 {
+            return self.colors.first().copied().unwrap_or(Color::WHITE);
+        }
+
+        let total = self.total_steps();
+        let clamped = index.min(total.saturating_sub(1));
+
+        let mut remaining = clamped;
+        let mut seg = 0;
+        while seg + 1 < self.steps.len() && remaining >= self.steps[seg] {
+            remaining -= self.steps[seg];
+            seg += 1;
+        }
+
+        let segment_steps = self.steps[seg];
+        let start = self.colors[seg];
+        let end = self.colors[seg + 1];
+        let t = if segment_steps <= 1 {
+            0.0
+        } else {
+            remaining as f32 / (segment_steps - 1) as f32
+        };
+
+        if self.hsv_interpolation {
+            let start_hsl: Hsla = start.into();
+            let end_hsl: Hsla = end.into();
+
+            let h = (end_hsl.hue - start_hsl.hue).mul_add(t, start_hsl.hue);
+            let s = (end_hsl.saturation - start_hsl.saturation).mul_add(t, start_hsl.saturation);
+            let l = (end_hsl.lightness - start_hsl.lightness).mul_add(t, start_hsl.lightness);
+
+            Color::hsl(h, s, l)
+        } else {
+            start.mix(&end, t)
+        }
+    }
 }
 
 impl Default for ColorGradient {
     fn default() -> Self {
         Self {
-            start: Color::WHITE,
-            end: Color::BLACK,
+            colors: vec![Color::WHITE, Color::BLACK],
+            steps: vec![10],
             index: 0,
-            steps: 10,
             hsv_interpolation: false,
         }
     }

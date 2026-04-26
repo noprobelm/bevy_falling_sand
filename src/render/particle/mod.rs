@@ -28,7 +28,7 @@ fn load_texture_handles(
     mut profiles: Query<(Entity, &mut ColorProfile)>,
     mut sync_writer: MessageWriter<SyncParticleTypeChildrenSignal>,
 ) {
-    for (_, mut profile) in profiles.iter_mut() {
+    for (_, mut profile) in &mut profiles {
         let ColorSource::Texture(ref mut tex) = profile.source else {
             continue;
         };
@@ -166,9 +166,11 @@ mod tests {
     #[test]
     fn gradient_produces_valid_colors() {
         let profile = ColorProfile::gradient(
-            Color::srgba(1.0, 0.0, 0.0, 1.0),
-            Color::srgba(0.0, 0.0, 1.0, 1.0),
-            10,
+            vec![
+                Color::srgba(1.0, 0.0, 0.0, 1.0),
+                Color::srgba(0.0, 0.0, 1.0, 1.0),
+            ],
+            vec![10],
         );
 
         for idx in [0, 5, 9] {
@@ -185,10 +187,12 @@ mod tests {
     fn gradient_hsv_produces_valid_colors() {
         let profile = ColorProfile {
             source: ColorSource::Gradient(ColorGradient {
-                start: Color::srgba(1.0, 0.0, 0.0, 1.0),
-                end: Color::srgba(0.0, 0.0, 1.0, 1.0),
+                colors: vec![
+                    Color::srgba(1.0, 0.0, 0.0, 1.0),
+                    Color::srgba(0.0, 0.0, 1.0, 1.0),
+                ],
+                steps: vec![10],
                 index: 0,
-                steps: 10,
                 hsv_interpolation: true,
             }),
             assignment: ColorAssignment::Sequential,
@@ -205,6 +209,33 @@ mod tests {
     }
 
     #[test]
+    fn multi_stop_gradient_total_steps_and_segments() {
+        let profile = ColorProfile::gradient(
+            vec![
+                Color::srgba(1.0, 0.0, 0.0, 1.0),
+                Color::srgba(0.0, 1.0, 0.0, 1.0),
+                Color::srgba(0.0, 0.0, 1.0, 1.0),
+            ],
+            vec![5, 3],
+        );
+
+        let all = profile.colors().unwrap();
+        assert_eq!(all.len(), 8);
+
+        let first = profile.index(0).unwrap().to_srgba();
+        assert!((first.red - 1.0).abs() < 1e-4 && first.green.abs() < 1e-4);
+
+        let last_first_seg = profile.index(4).unwrap().to_srgba();
+        assert!((last_first_seg.green - 1.0).abs() < 1e-4 && last_first_seg.red.abs() < 1e-4);
+
+        let first_second_seg = profile.index(5).unwrap().to_srgba();
+        assert!((first_second_seg.green - 1.0).abs() < 1e-4 && first_second_seg.blue.abs() < 1e-4);
+
+        let last = profile.index(7).unwrap().to_srgba();
+        assert!((last.blue - 1.0).abs() < 1e-4 && last.green.abs() < 1e-4);
+    }
+
+    #[test]
     fn sequential_gradient_produces_different_colors() {
         let mut app = setup_app();
 
@@ -212,10 +243,12 @@ mod tests {
             ParticleType::new("TestSequential"),
             ColorProfile {
                 source: ColorSource::Gradient(ColorGradient {
-                    start: Color::srgba(1.0, 0.0, 0.0, 1.0),
-                    end: Color::srgba(0.0, 0.0, 1.0, 1.0),
+                    colors: vec![
+                        Color::srgba(1.0, 0.0, 0.0, 1.0),
+                        Color::srgba(0.0, 0.0, 1.0, 1.0),
+                    ],
+                    steps: vec![10],
                     index: 0,
-                    steps: 10,
                     hsv_interpolation: false,
                 }),
                 assignment: ColorAssignment::Sequential,
@@ -371,9 +404,11 @@ mod tests {
     #[test]
     fn colors_returns_all_for_gradient() {
         let profile = ColorProfile::gradient(
-            Color::srgba(1.0, 0.0, 0.0, 1.0),
-            Color::srgba(0.0, 0.0, 1.0, 1.0),
-            5,
+            vec![
+                Color::srgba(1.0, 0.0, 0.0, 1.0),
+                Color::srgba(0.0, 0.0, 1.0, 1.0),
+            ],
+            vec![5],
         );
         let colors = profile.colors().unwrap();
         assert_eq!(colors.len(), 5);
