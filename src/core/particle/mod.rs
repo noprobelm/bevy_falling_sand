@@ -105,10 +105,10 @@ pub(super) mod components {
             let mut type_map = world.resource_mut::<ParticleTypeRegistry>();
             let old_entity = type_map.insert(name, context.entity);
 
-            if let Some(old) = old_entity {
-                if old != context.entity {
-                    world.commands().entity(old).despawn();
-                }
+            if let Some(old) = old_entity
+                && old != context.entity
+            {
+                world.commands().entity(old).despawn();
             }
         }
 
@@ -227,7 +227,6 @@ pub(super) mod components {
                 return;
             }
             let _ = map.remove(position);
-            drop(map);
 
             let chunk_index = world.resource::<ChunkIndex>();
             let chunk_coord = chunk_index.world_to_chunk_coord(position);

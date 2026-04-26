@@ -55,6 +55,7 @@ pub struct ReactionRng(pub RngComponent);
 ///         .run();
 /// }
 /// ```
+#[allow(clippy::needless_doctest_main)]
 pub struct FallingSandReactionsPlugin;
 
 impl Plugin for FallingSandReactionsPlugin {

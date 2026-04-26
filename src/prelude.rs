@@ -26,14 +26,14 @@ pub use crate::render::{
 pub use crate::movement::{
     AirResistance, ChunkIterationState, Density, DespawnDynamicParticlesSignal,
     DespawnStaticParticlesSignal, FallingSandMovementPlugin, Momentum, Movement, MovementRng,
-    MovementSystemState, NeighborGroup, ParticleMovementSet, ParticleResistor, Speed,
+    MovementSystemState, NeighborGroup, ParticleMovementSystems, ParticleResistor, Speed,
 };
 
 #[cfg(feature = "debug")]
 pub use crate::debug::{
     ActiveChunkColor, ActiveParticleCount, ChunkColor, DebugDirtyRects, DebugParticleCount,
     DebugParticleMap, DirtyRectColor, DynamicParticleCount, FallingSandDebugPlugin,
-    ParticleDebugSet, RigidBodyCount, StaticParticleCount, TotalParticleCount,
+    ParticleDebugSystems, RigidBodyCount, StaticParticleCount, TotalParticleCount,
 };
 
 #[cfg(feature = "reactions")]

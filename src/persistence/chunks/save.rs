@@ -201,7 +201,7 @@ fn on_save_all_chunks(
     );
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments, clippy::similar_names)]
 fn save_all_chunks_impl(
     config: &ParticlePersistenceConfig,
     rendering_config: &ChunkRenderingConfig,
@@ -233,13 +233,13 @@ fn save_all_chunks_impl(
         for y in min.y..=max.y {
             for x in min.x..=max.x {
                 let pos = IVec2::new(x, y);
-                if let Ok(Some(entity)) = map.get_copied(pos) {
-                    if let Ok((particle, grid_pos)) = particle_query.get(entity) {
-                        particles_to_save.push(BfsParticleData {
-                            name: particle.name.to_string(),
-                            position: grid_pos.0,
-                        });
-                    }
+                if let Ok(Some(entity)) = map.get_copied(pos)
+                    && let Ok((particle, grid_pos)) = particle_query.get(entity)
+                {
+                    particles_to_save.push(BfsParticleData {
+                        name: particle.name.to_string(),
+                        position: grid_pos.0,
+                    });
                 }
             }
         }

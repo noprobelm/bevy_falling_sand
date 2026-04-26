@@ -789,10 +789,10 @@ impl<T: Clone + Copy> SpatialMap<T> {
                 continue;
             }
 
-            if let Ok(Some(value)) = self.get_copied(check_pos) {
-                if is_hit(value) {
-                    return Some((check_pos, value));
-                }
+            if let Ok(Some(value)) = self.get_copied(check_pos)
+                && is_hit(value)
+            {
+                return Some((check_pos, value));
             }
         }
 

@@ -182,13 +182,12 @@ fn populate_registry(
     scenes: Res<Assets<ParticleScene>>,
 ) {
     for event in events.read() {
-        if let AssetEvent::LoadedWithDependencies { id } = event {
-            if scenes.get(*id).is_some() {
-                if let Some(path) = asset_server.get_path(*id) {
-                    let handle: Handle<ParticleScene> = asset_server.load(path.clone());
-                    registry.scenes.insert(path.to_string(), handle);
-                }
-            }
+        if let AssetEvent::LoadedWithDependencies { id } = event
+            && scenes.get(*id).is_some()
+            && let Some(path) = asset_server.get_path(*id)
+        {
+            let handle: Handle<ParticleScene> = asset_server.load(path.clone());
+            registry.scenes.insert(path.to_string(), handle);
         }
     }
 }

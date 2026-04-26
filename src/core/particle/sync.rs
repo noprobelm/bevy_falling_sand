@@ -211,6 +211,7 @@ pub trait ParticleSyncExt {
     ///         .run();
     /// }
     /// ```
+    #[allow(clippy::needless_doctest_main)]
     fn register_particle_propagator<K: 'static>(
         &mut self,
         propagator: impl Fn(Entity, Entity, &mut Commands) + Send + Sync + 'static,
@@ -283,13 +284,13 @@ fn msgr_sync_particle(mut params: SyncParticleParams) {
             LocateBy::Position(pos) => params.particle_map.get_copied(*pos).ok().flatten(),
             LocateBy::Name(_) => unreachable!(),
         };
-        if let Some(entity) = entity {
-            if let Ok((attached, grid_pos)) = params.particle_query.get(entity) {
-                if seen.insert(entity) {
-                    targets.push((entity, attached.0, grid_pos.0, signal.filter.clone()));
-                } else if let Some(target) = targets.iter_mut().find(|(e, _, _, _)| *e == entity) {
-                    target.3 = PropagatorFilter::All;
-                }
+        if let Some(entity) = entity
+            && let Ok((attached, grid_pos)) = params.particle_query.get(entity)
+        {
+            if seen.insert(entity) {
+                targets.push((entity, attached.0, grid_pos.0, signal.filter.clone()));
+            } else if let Some(target) = targets.iter_mut().find(|(e, _, _, _)| *e == entity) {
+                target.3 = PropagatorFilter::All;
             }
         }
     }
@@ -314,10 +315,10 @@ fn msgr_sync_particle(mut params: SyncParticleParams) {
 
     for &(_, _, position, _) in &targets {
         let chunk_coord = params.chunk_index.world_to_chunk_coord(position);
-        if let Some(chunk_entity) = params.chunk_index.get(chunk_coord) {
-            if let Ok(mut dirty_state) = params.chunk_dirty_query.get_mut(chunk_entity) {
-                dirty_state.mark_dirty(position);
-            }
+        if let Some(chunk_entity) = params.chunk_index.get(chunk_coord)
+            && let Ok(mut dirty_state) = params.chunk_dirty_query.get_mut(chunk_entity)
+        {
+            dirty_state.mark_dirty(position);
         }
     }
 }
@@ -351,10 +352,10 @@ fn on_sync_particle(
     propagators.run_filtered(&event.filter, entity, parent, &mut commands);
 
     let chunk_coord = chunk_index.world_to_chunk_coord(position);
-    if let Some(chunk_entity) = chunk_index.get(chunk_coord) {
-        if let Ok(mut dirty_state) = chunk_dirty_query.get_mut(chunk_entity) {
-            dirty_state.mark_dirty(position);
-        }
+    if let Some(chunk_entity) = chunk_index.get(chunk_coord)
+        && let Ok(mut dirty_state) = chunk_dirty_query.get_mut(chunk_entity)
+    {
+        dirty_state.mark_dirty(position);
     }
 }
 

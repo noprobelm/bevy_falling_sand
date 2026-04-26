@@ -136,10 +136,10 @@ pub(super) fn calculate_static_rigid_bodies(
     let current_dirty_chunks: HashSet<ChunkCoord> = chunk_index
         .iter()
         .filter_map(|(coord, entity)| {
-            if let Ok((_, dirty_state)) = chunk_query.get(entity) {
-                if dirty_state.current.is_some() {
-                    return Some(coord);
-                }
+            if let Ok((_, dirty_state)) = chunk_query.get(entity)
+                && dirty_state.current.is_some()
+            {
+                return Some(coord);
             }
             None
         })
@@ -185,10 +185,10 @@ pub(super) fn calculate_static_rigid_bodies(
             for ly in 0..chunk_size {
                 for lx in 0..chunk_size {
                     let pos = IVec2::new(base_x + lx as i32, base_y + ly as i32);
-                    if let Ok(Some(entity)) = map.get(pos) {
-                        if static_body_query.contains(*entity) {
-                            new_bitmap[ly * chunk_size + lx] = true;
-                        }
+                    if let Ok(Some(entity)) = map.get(pos)
+                        && static_body_query.contains(*entity)
+                    {
+                        new_bitmap[ly * chunk_size + lx] = true;
                     }
                 }
             }

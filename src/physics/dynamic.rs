@@ -236,10 +236,10 @@ pub(super) fn promote_dynamic_rigid_bodies(
         }
 
         let chunk_coord = chunk_index.world_to_chunk_coord(position);
-        if let Some(chunk_entity) = chunk_index.get(chunk_coord) {
-            if let Ok(mut dirty_state) = chunk_query.get_mut(chunk_entity) {
-                dirty_state.mark_dirty(position);
-            }
+        if let Some(chunk_entity) = chunk_index.get(chunk_coord)
+            && let Ok(mut dirty_state) = chunk_query.get_mut(chunk_entity)
+        {
+            dirty_state.mark_dirty(position);
         }
 
         let color = particle_color.map_or(Color::WHITE, |pc| pc.0);
@@ -352,15 +352,15 @@ pub(super) fn rejoin_dynamic_rigid_bodies(
             continue;
         }
 
-        if let Some(last) = proxy.last_map_position.take() {
-            if map.get_copied(last) == Ok(Some(particle_entity)) {
-                let _ = map.remove(last);
-                let chunk_coord = chunk_index.world_to_chunk_coord(last);
-                if let Some(chunk_entity) = chunk_index.get(chunk_coord) {
-                    if let Ok(mut dirty_state) = chunk_query.get_mut(chunk_entity) {
-                        dirty_state.mark_dirty(last);
-                    }
-                }
+        if let Some(last) = proxy.last_map_position.take()
+            && map.get_copied(last) == Ok(Some(particle_entity))
+        {
+            let _ = map.remove(last);
+            let chunk_coord = chunk_index.world_to_chunk_coord(last);
+            if let Some(chunk_entity) = chunk_index.get(chunk_coord)
+                && let Ok(mut dirty_state) = chunk_query.get_mut(chunk_entity)
+            {
+                dirty_state.mark_dirty(last);
             }
         }
 
@@ -379,12 +379,12 @@ pub(super) fn rejoin_dynamic_rigid_bodies(
             }
         };
 
-        let target = candidates.find(|p| is_vacant(p));
+        let target = candidates.find(&is_vacant);
 
         let target = target.or_else(|| {
             (1..=max_upward_search)
                 .map(|dy| pos + IVec2::new(0, dy))
-                .find(|p| is_vacant(p))
+                .find(is_vacant)
         });
 
         let Some(target) = target else {
@@ -398,10 +398,10 @@ pub(super) fn rejoin_dynamic_rigid_bodies(
         let _ = map.insert(target, particle_entity);
 
         let chunk_coord = chunk_index.world_to_chunk_coord(target);
-        if let Some(chunk_entity) = chunk_index.get(chunk_coord) {
-            if let Ok(mut dirty_state) = chunk_query.get_mut(chunk_entity) {
-                dirty_state.mark_dirty(target);
-            }
+        if let Some(chunk_entity) = chunk_index.get(chunk_coord)
+            && let Ok(mut dirty_state) = chunk_query.get_mut(chunk_entity)
+        {
+            dirty_state.mark_dirty(target);
         }
 
         commands.entity(rb_entity).despawn();
@@ -425,10 +425,10 @@ pub(super) fn sync_dynamic_rigid_bodies_with_particles(
                       chunk_index: &ChunkIndex,
                       chunk_query: &mut Query<&mut ChunkDirtyState>| {
         let chunk_coord = chunk_index.world_to_chunk_coord(position);
-        if let Some(chunk_entity) = chunk_index.get(chunk_coord) {
-            if let Ok(mut dirty_state) = chunk_query.get_mut(chunk_entity) {
-                dirty_state.mark_dirty(position);
-            }
+        if let Some(chunk_entity) = chunk_index.get(chunk_coord)
+            && let Ok(mut dirty_state) = chunk_query.get_mut(chunk_entity)
+        {
+            dirty_state.mark_dirty(position);
         }
     };
 

@@ -15,7 +15,7 @@ impl Plugin for SchedulePlugin {
     fn build(&self, app: &mut App) {
         app.configure_sets(
             PostUpdate,
-            ParticleMovementSet
+            ParticleMovementSystems
                 .in_set(ParticleSystems::Simulation)
                 .after(ChunkSystems::DirtyAdvance),
         );
@@ -26,4 +26,4 @@ impl Plugin for SchedulePlugin {
 /// [`ParticleSystems::Simulation`].
 /// Ordered after [`ChunkSystems::DirtyAdvance`].
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ParticleMovementSet;
+pub struct ParticleMovementSystems;

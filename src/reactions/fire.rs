@@ -173,7 +173,7 @@ impl Flammable {
     /// let burns = Flammable::new(
     ///     Duration::from_secs(5),
     ///     Duration::from_millis(100),
-    ///     0.1, None, None, 0.3, true, 1.0, false, false,
+    ///     0.1, None, 0.3, true, 1.0, false, false,
     /// );
     /// assert_eq!(burns.chance_to_ignite, 0.3);
     /// ```
@@ -426,16 +426,16 @@ fn handle_burning(
                 }
                 return;
             }
-            if burning.tick_timer.tick(time.delta()).is_finished() {
-                if let Some(burn_product) = burn_product {
-                    burn_product.produce(
-                        &mut rng,
-                        *position,
-                        &registry,
-                        &movement_query,
-                        &mut msgw_spawn_particle,
-                    );
-                }
+            if burning.tick_timer.tick(time.delta()).is_finished()
+                && let Some(burn_product) = burn_product
+            {
+                burn_product.produce(
+                    &mut rng,
+                    *position,
+                    &registry,
+                    &movement_query,
+                    &mut msgw_spawn_particle,
+                );
             }
         },
     );

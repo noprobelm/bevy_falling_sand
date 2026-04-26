@@ -262,7 +262,7 @@ pub(super) mod systems {
         debug::{
             ActiveParticleCount, ChunkColor, DebugDirtyRects, DebugGizmos, DebugParticleCount,
             DebugParticleMap, DirtyRectColor, DynamicParticleCount, RigidBodyCount,
-            StaticParticleCount, TotalParticleCount, schedule::ParticleDebugSet,
+            StaticParticleCount, TotalParticleCount, schedule::ParticleDebugSystems,
         },
     };
 
@@ -275,10 +275,10 @@ pub(super) mod systems {
                 Update,
                 (
                     color_active_chunks
-                        .in_set(ParticleDebugSet)
+                        .in_set(ParticleDebugSystems)
                         .run_if(resource_exists::<DebugParticleMap>),
                     color_dirty_rects
-                        .in_set(ParticleDebugSet)
+                        .in_set(ParticleDebugSystems)
                         .after(color_active_chunks)
                         .run_if(resource_exists::<DebugDirtyRects>),
                 ),
@@ -291,7 +291,7 @@ pub(super) mod systems {
                 app.add_systems(
                     Update,
                     (count_total_particles, count_active_particles)
-                        .in_set(ParticleDebugSet)
+                        .in_set(ParticleDebugSystems)
                         .run_if(counting_condition),
                 );
 
@@ -299,7 +299,7 @@ pub(super) mod systems {
                 app.add_systems(
                     Update,
                     (count_dynamic_particles, count_wall_particles)
-                        .in_set(ParticleDebugSet)
+                        .in_set(ParticleDebugSystems)
                         .run_if(counting_condition),
                 );
 
@@ -307,7 +307,7 @@ pub(super) mod systems {
                 app.add_systems(
                     Update,
                     count_rigid_bodies
-                        .in_set(ParticleDebugSet)
+                        .in_set(ParticleDebugSystems)
                         .run_if(counting_condition),
                 );
             }

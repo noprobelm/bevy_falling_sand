@@ -15,7 +15,7 @@ impl Plugin for SchedulePlugin {
     fn build(&self, app: &mut App) {
         app.configure_sets(
             PostUpdate,
-            ParticleDebugSet.after(ParticleSystems::Simulation),
+            ParticleDebugSystems.after(ParticleSystems::Simulation),
         );
     }
 }
@@ -23,4 +23,4 @@ impl Plugin for SchedulePlugin {
 /// Runs in `PostUpdate`, ordered after
 /// [`ParticleSystems::Simulation`].
 #[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ParticleDebugSet;
+pub struct ParticleDebugSystems;

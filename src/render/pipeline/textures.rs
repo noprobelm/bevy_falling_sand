@@ -174,7 +174,7 @@ pub struct EffectUpdateBuffer {
 #[derive(Resource)]
 pub struct WorldEffectShadowBuffer {
     /// RGBA8 pixel data mirroring the GPU effect texture array layout.
-    /// Length = width * height * 4 * layer_count.
+    /// Length = width * height * 4 * `layer_count`.
     pub data: Vec<u8>,
     /// Texture width in pixels.
     pub width: u32,
@@ -184,19 +184,12 @@ pub struct WorldEffectShadowBuffer {
     pub layer_count: u32,
 }
 
+#[derive(Clone, Copy)]
 struct RegisteredEffectLayer {
     layer: usize,
     channel: usize,
     component_id: ComponentId,
 }
-
-impl Clone for RegisteredEffectLayer {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-impl Copy for RegisteredEffectLayer {}
 
 #[derive(Resource, Default)]
 struct EffectLayerRegistry {
@@ -234,6 +227,7 @@ pub trait ChunkEffectLayer: Send + Sync + 'static {
     /// The texture array layer index this effect maps to.
     ///
     /// Each array layer provides 4 RGBA channels. Defaults to 0.
+    #[must_use]
     fn layer() -> usize {
         0
     }
@@ -622,11 +616,11 @@ fn update_world_color_uv_offset(
         t.translation.y = center_y;
     }
 
-    if let Ok(mat_handle) = material_query.get(color_entity.0) {
-        if let Some(material) = materials.get_mut(&mat_handle.0) {
-            let shift = origin - tex_origin.0;
-            material.uv_offset = Vec2::new(shift.x as f32 / width, -shift.y as f32 / height);
-        }
+    if let Ok(mat_handle) = material_query.get(color_entity.0)
+        && let Some(material) = materials.get_mut(&mat_handle.0)
+    {
+        let shift = origin - tex_origin.0;
+        material.uv_offset = Vec2::new(shift.x as f32 / width, -shift.y as f32 / height);
     }
 }
 
@@ -655,15 +649,19 @@ fn update_effect_uv_offset<M: ChunkEffectMaterial>(
         t.translation.y = center_y;
     }
 
-    if let Ok(mat_handle) = material_query.get(effect_entity.0) {
-        if let Some(material) = materials.get_mut(&mat_handle.0) {
-            let shift = origin - tex_origin.0;
-            material.set_uv_offset(Vec2::new(shift.x as f32 / width, -shift.y as f32 / height));
-        }
+    if let Ok(mat_handle) = material_query.get(effect_entity.0)
+        && let Some(material) = materials.get_mut(&mat_handle.0)
+    {
+        let shift = origin - tex_origin.0;
+        material.set_uv_offset(Vec2::new(shift.x as f32 / width, -shift.y as f32 / height));
     }
 }
 
-#[allow(clippy::too_many_arguments, clippy::needless_pass_by_value)]
+#[allow(
+    clippy::too_many_arguments,
+    clippy::needless_pass_by_value,
+    clippy::similar_names
+)]
 fn handle_origin_shift(
     loading_state: Res<ChunkLoadingState>,
     map: Res<ParticleMap>,
@@ -864,16 +862,15 @@ fn update_all_effect_layers(world: &mut World) {
 
             for &(tx, ty, entity_opt) in &dirty_entries {
                 for layer_def in &layers {
-                    let val = match entity_opt {
-                        Some(e) => world.get_entity(e).ok().map_or(0u8, |er| {
+                    let val = entity_opt.map_or(0, |e| {
+                        world.get_entity(e).ok().map_or(0u8, |er| {
                             if er.contains_id(layer_def.component_id) {
                                 255
                             } else {
                                 0
                             }
-                        }),
-                        None => 0,
-                    };
+                        })
+                    });
                     let idx = (layer_def.layer * layer_stride + ty * world_w + tx) * 4
                         + layer_def.channel;
                     staging.data[idx] = val;
