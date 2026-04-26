@@ -260,10 +260,12 @@ impl<T: Clone> SpatialMap<T> {
     #[inline(always)]
     #[must_use]
     pub unsafe fn get_unchecked(&self, position: IVec2) -> &T {
-        self.data
-            .get_unchecked(self.index(position))
-            .as_ref()
-            .unwrap_unchecked()
+        unsafe {
+            self.data
+                .get_unchecked(self.index(position))
+                .as_ref()
+                .unwrap_unchecked()
+        }
     }
 
     /// Get a mutable reference to the value at a world position without bounds checking.
@@ -287,7 +289,7 @@ impl<T: Clone> SpatialMap<T> {
     #[inline(always)]
     pub unsafe fn get_unchecked_mut(&mut self, position: IVec2) -> &mut T {
         let idx = self.index(position);
-        self.data.get_unchecked_mut(idx).as_mut().unwrap_unchecked()
+        unsafe { self.data.get_unchecked_mut(idx).as_mut().unwrap_unchecked() }
     }
 
     /// Insert a value at a world position, returning the previous value.

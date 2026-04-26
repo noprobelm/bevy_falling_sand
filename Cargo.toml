@@ -1,7 +1,7 @@
 [package]
 name = "bevy_falling_sand"
 version = "0.7.0"
-edition = "2021"
+edition = "2024"
 authors = ["Jeff Barfield <jeffreybarfield@protonmail.com>"]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/noprobelm/bevy_falling_sand"
