@@ -80,7 +80,7 @@ impl Plugin for FirePlugin {
 /// Component which indicates an entity has the capacity to burn.
 ///
 /// When a neighboring [`Fire`] source contacts this particle, it may ignite based on
-/// [`chance_to_ignite`](Flammable::chance_to_ignite). A [`ReactionRng`](super::ReactionRng) component
+/// [`chance_to_ignite`](Flammable::chance_to_ignite). A [`ReactionRng`] component
 /// is automatically inserted when this component is added.
 ///
 /// # Examples
@@ -114,7 +114,7 @@ pub struct Flammable {
     /// The tick rate for the burn effect.
     pub tick_rate: Duration,
     /// The chance the entity will be destroyed per tick while burning.
-    /// A [`ChanceLifetime`](crate::ChanceLifetime) component will be added when the particle ignites.
+    /// A [`ChanceLifetime`] component will be added when the particle ignites.
     /// Set to 0.0 to prevent particles from being destroyed by burning.
     pub chance_despawn_per_tick: f64,
     /// Indicates the burn effect might produce a new particle type.

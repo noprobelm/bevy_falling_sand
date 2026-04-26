@@ -114,7 +114,7 @@ pub(super) mod components {
 
         /// Remove this `ParticleType` from the [`ParticleTypeRegistry`], but only if
         /// it is still the registered entity for its name. This avoids clobbering a
-        /// replacement that was already inserted by [`on_add`].
+        /// replacement that was already inserted by [`on_add`](ParticleType::on_add).
         fn on_remove(mut world: DeferredWorld, context: HookContext) {
             let particle_type = world.get::<Self>(context.entity).unwrap();
             let name = particle_type.name.clone();
@@ -211,7 +211,7 @@ pub(super) mod components {
     #[type_path = "bfs_core::particle"]
     pub struct Particle {
         /// The name of the particle, which corresponds to its [`ParticleType`] and can be used as an
-        /// index in the  [`ParticleTypeRegistry`][crate::ParticleTypeRegistry] resource.
+        /// index in the  [`ParticleTypeRegistry`] resource.
         pub name: Cow<'static, str>,
     }
 
@@ -803,7 +803,7 @@ pub(super) mod resources {
             self.map.is_empty()
         }
 
-        /// Insert a new [`ParticleType`] and entity.
+        /// Insert a new [`ParticleType`](crate::ParticleType) and entity.
         #[inline(always)]
         pub(crate) fn insert(
             &mut self,
