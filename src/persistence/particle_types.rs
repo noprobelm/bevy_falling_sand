@@ -11,7 +11,7 @@ use crate::reactions::ReactionRng;
 use crate::render::ColorRng;
 use bevy::{
     prelude::*,
-    scene::{serde::SceneDeserializer, DynamicScene, DynamicSceneBuilder, SceneSpawner},
+    scene::{DynamicScene, DynamicSceneBuilder, SceneSpawner, serde::SceneDeserializer},
 };
 use serde::de::DeserializeSeed;
 use serde::{Deserialize, Serialize};

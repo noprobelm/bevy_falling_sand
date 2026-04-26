@@ -47,12 +47,12 @@ fn load_texture_handles(
         }
 
         for (type_entity, profile) in profiles.iter() {
-            if let ColorSource::Texture(ref tex) = profile.source {
-                if tex.handle.as_ref().is_some_and(|h| h.id() == *id) {
-                    sync_writer.write(SyncParticleTypeChildrenSignal::from_parent_handle(
-                        type_entity,
-                    ));
-                }
+            if let ColorSource::Texture(ref tex) = profile.source
+                && tex.handle.as_ref().is_some_and(|h| h.id() == *id)
+            {
+                sync_writer.write(SyncParticleTypeChildrenSignal::from_parent_handle(
+                    type_entity,
+                ));
             }
         }
     }
@@ -146,9 +146,9 @@ fn propagate_color(entity: Entity, parent: Entity, commands: &mut Commands) {
 mod tests {
     use super::*;
     use crate::{
+        FallingSandMinimalPlugin,
         core::{Particle, ParticleType, SpawnParticleSignal},
         render::{FallingSandRenderPlugin, ParticleColor},
-        FallingSandMinimalPlugin,
     };
     use bevy::{asset::AssetPlugin, image::ImagePlugin};
 

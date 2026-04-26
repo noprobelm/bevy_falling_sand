@@ -22,8 +22,8 @@
 
 use super::LocateBy;
 use crate::core::{
-    schedule::ParticleSystems, AttachedToParticleType, ChunkDirtyState, ChunkIndex, GridPosition,
-    Particle, ParticleMap, ParticleType, ParticleTypeRegistry,
+    AttachedToParticleType, ChunkDirtyState, ChunkIndex, GridPosition, Particle, ParticleMap,
+    ParticleType, ParticleTypeRegistry, schedule::ParticleSystems,
 };
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -418,8 +418,8 @@ fn msgr_spawn_particle(
                     );
                 } else if map.is_position_loaded(*position) {
                     let on_spawn = on_spawn.clone();
-                    if let Ok(mut entry) = map.entry(*position) {
-                        if entry.insert_if_vacant_with(|| {
+                    if let Ok(mut entry) = map.entry(*position)
+                        && entry.insert_if_vacant_with(|| {
                             let mut entity_commands = commands.spawn((
                                 msg.particle.clone(),
                                 GridPosition(*position),
@@ -429,10 +429,10 @@ fn msgr_spawn_particle(
                                 callback(&mut entity_commands);
                             }
                             entity_commands.id()
-                        }) {
-                            spawned_positions.push(*position);
-                            return;
-                        }
+                        })
+                    {
+                        spawned_positions.push(*position);
+                        return;
                     }
                 }
             }
@@ -457,10 +457,10 @@ fn msgr_spawn_particle(
 
     for position in spawned_positions {
         let chunk_coord = chunk_index.world_to_chunk_coord(position);
-        if let Some(chunk_entity) = chunk_index.get(chunk_coord) {
-            if let Ok(mut dirty_state) = chunk_query.get_mut(chunk_entity) {
-                dirty_state.mark_dirty(position);
-            }
+        if let Some(chunk_entity) = chunk_index.get(chunk_coord)
+            && let Ok(mut dirty_state) = chunk_query.get_mut(chunk_entity)
+        {
+            dirty_state.mark_dirty(position);
         }
     }
 }
@@ -498,8 +498,8 @@ fn on_spawn_particle(
                 );
             } else if map.is_position_loaded(*position) {
                 let on_spawn = on_spawn.clone();
-                if let Ok(mut entry) = map.entry(*position) {
-                    if entry.insert_if_vacant_with(|| {
+                if let Ok(mut entry) = map.entry(*position)
+                    && entry.insert_if_vacant_with(|| {
                         let mut entity_commands = commands.spawn((
                             event.particle.clone(),
                             GridPosition(*position),
@@ -509,10 +509,10 @@ fn on_spawn_particle(
                             callback(&mut entity_commands);
                         }
                         entity_commands.id()
-                    }) {
-                        spawned_positions.push(*position);
-                        return;
-                    }
+                    })
+                {
+                    spawned_positions.push(*position);
+                    return;
                 }
             }
         }
@@ -536,10 +536,10 @@ fn on_spawn_particle(
 
     for position in spawned_positions {
         let chunk_coord = chunk_index.world_to_chunk_coord(position);
-        if let Some(chunk_entity) = chunk_index.get(chunk_coord) {
-            if let Ok(mut dirty_state) = chunk_query.get_mut(chunk_entity) {
-                dirty_state.mark_dirty(position);
-            }
+        if let Some(chunk_entity) = chunk_index.get(chunk_coord)
+            && let Ok(mut dirty_state) = chunk_query.get_mut(chunk_entity)
+        {
+            dirty_state.mark_dirty(position);
         }
     }
 }
@@ -599,10 +599,10 @@ fn msgr_despawn_particle(
 
     for position in despawned_positions {
         let chunk_coord = chunk_index.world_to_chunk_coord(position);
-        if let Some(chunk_entity) = chunk_index.get(chunk_coord) {
-            if let Ok(mut dirty_state) = chunk_query.get_mut(chunk_entity) {
-                dirty_state.mark_dirty(position);
-            }
+        if let Some(chunk_entity) = chunk_index.get(chunk_coord)
+            && let Ok(mut dirty_state) = chunk_query.get_mut(chunk_entity)
+        {
+            dirty_state.mark_dirty(position);
         }
     }
 }
@@ -657,10 +657,10 @@ pub fn on_despawn_particle(
 
     for position in despawned_positions {
         let chunk_coord = chunk_index.world_to_chunk_coord(position);
-        if let Some(chunk_entity) = chunk_index.get(chunk_coord) {
-            if let Ok(mut dirty_state) = chunk_query.get_mut(chunk_entity) {
-                dirty_state.mark_dirty(position);
-            }
+        if let Some(chunk_entity) = chunk_index.get(chunk_coord)
+            && let Ok(mut dirty_state) = chunk_query.get_mut(chunk_entity)
+        {
+            dirty_state.mark_dirty(position);
         }
     }
 }
@@ -708,10 +708,10 @@ fn msgr_despawn_particle_type_children(
 
     for position in despawned_positions {
         let chunk_coord = chunk_index.world_to_chunk_coord(position);
-        if let Some(chunk_entity) = chunk_index.get(chunk_coord) {
-            if let Ok(mut dirty_state) = chunk_query.get_mut(chunk_entity) {
-                dirty_state.mark_dirty(position);
-            }
+        if let Some(chunk_entity) = chunk_index.get(chunk_coord)
+            && let Ok(mut dirty_state) = chunk_query.get_mut(chunk_entity)
+        {
+            dirty_state.mark_dirty(position);
         }
     }
 }
@@ -752,10 +752,10 @@ fn on_despawn_particle_type_children(
     }
     for position in despawned_positions {
         let chunk_coord = chunk_index.world_to_chunk_coord(position);
-        if let Some(chunk_entity) = chunk_index.get(chunk_coord) {
-            if let Ok(mut dirty_state) = chunk_query.get_mut(chunk_entity) {
-                dirty_state.mark_dirty(position);
-            }
+        if let Some(chunk_entity) = chunk_index.get(chunk_coord)
+            && let Ok(mut dirty_state) = chunk_query.get_mut(chunk_entity)
+        {
+            dirty_state.mark_dirty(position);
         }
     }
 }
@@ -781,10 +781,10 @@ fn msgr_despawn_all_particles(
             commands.entity(entity).try_despawn();
 
             let chunk_coord = chunk_index.world_to_chunk_coord(position);
-            if let Some(chunk_entity) = chunk_index.get(chunk_coord) {
-                if let Ok(mut dirty_state) = chunk_query.get_mut(chunk_entity) {
-                    dirty_state.mark_dirty(position);
-                }
+            if let Some(chunk_entity) = chunk_index.get(chunk_coord)
+                && let Ok(mut dirty_state) = chunk_query.get_mut(chunk_entity)
+            {
+                dirty_state.mark_dirty(position);
             }
         }
     });
@@ -810,10 +810,10 @@ pub fn on_despawn_all_particles(
         commands.entity(entity).try_despawn();
 
         let chunk_coord = chunk_index.world_to_chunk_coord(position);
-        if let Some(chunk_entity) = chunk_index.get(chunk_coord) {
-            if let Ok(mut dirty_state) = chunk_query.get_mut(chunk_entity) {
-                dirty_state.mark_dirty(position);
-            }
+        if let Some(chunk_entity) = chunk_index.get(chunk_coord)
+            && let Ok(mut dirty_state) = chunk_query.get_mut(chunk_entity)
+        {
+            dirty_state.mark_dirty(position);
         }
     }
 }
@@ -838,10 +838,10 @@ fn despawn_orphaned_particles(
             commands.entity(child_entity).try_despawn();
 
             let chunk_coord = chunk_index.world_to_chunk_coord(position);
-            if let Some(chunk_entity) = chunk_index.get(chunk_coord) {
-                if let Ok(mut dirty_state) = chunk_query.get_mut(chunk_entity) {
-                    dirty_state.mark_dirty(position);
-                }
+            if let Some(chunk_entity) = chunk_index.get(chunk_coord)
+                && let Ok(mut dirty_state) = chunk_query.get_mut(chunk_entity)
+            {
+                dirty_state.mark_dirty(position);
             }
         }
     }
@@ -917,10 +917,10 @@ fn register_transform_particles(
                 .remove::<(Transform, GlobalTransform, TransformTreeChanged)>();
 
             let chunk_coord = chunk_index.world_to_chunk_coord(position);
-            if let Some(chunk_entity) = chunk_index.get(chunk_coord) {
-                if let Ok(mut dirty_state) = chunk_query.get_mut(chunk_entity) {
-                    dirty_state.mark_dirty(position);
-                }
+            if let Some(chunk_entity) = chunk_index.get(chunk_coord)
+                && let Ok(mut dirty_state) = chunk_query.get_mut(chunk_entity)
+            {
+                dirty_state.mark_dirty(position);
             }
         } else {
             commands.entity(entity).insert(InvalidParticle);
@@ -934,11 +934,11 @@ mod tests {
 
     use super::*;
     use crate::{
+        FallingSandMinimalPlugin,
         core::{
             AttachedToParticleType, ChanceLifetime, ChunkLoader, GridPosition, Particle,
             ParticleMap, ParticleSyncExt, ParticleType, ParticleTypeRegistry, TimedLifetime,
         },
-        FallingSandMinimalPlugin,
     };
 
     #[derive(Component, Clone, Debug, PartialEq)]
@@ -1409,11 +1409,12 @@ mod tests {
 
         assert!(app.world().entities().contains(entity));
         assert!(app.world().entity(entity).get::<GridPosition>().is_some());
-        assert!(app
-            .world()
-            .entity(entity)
-            .get::<AttachedToParticleType>()
-            .is_some());
+        assert!(
+            app.world()
+                .entity(entity)
+                .get::<AttachedToParticleType>()
+                .is_some()
+        );
     }
 
     #[test]

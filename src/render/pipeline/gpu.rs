@@ -1,5 +1,5 @@
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use bevy::prelude::*;
 use bevy::render::render_asset::RenderAssets;
@@ -7,8 +7,7 @@ use bevy::render::render_resource::{
     BindGroupEntry, BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingResource, BindingType,
     BufferBindingType, BufferInitDescriptor, BufferUsages, CachedComputePipelineId,
     CommandEncoderDescriptor, ComputePassDescriptor, ComputePipelineDescriptor, PipelineCache,
-    ShaderStages, StorageTextureAccess, TextureFormat, TextureViewDescriptor,
-    TextureViewDimension,
+    ShaderStages, StorageTextureAccess, TextureFormat, TextureViewDescriptor, TextureViewDimension,
 };
 use bevy::render::renderer::{RenderDevice, RenderQueue};
 use bevy::render::texture::GpuImage;

@@ -80,7 +80,7 @@ impl Plugin for FirePlugin {
 /// Component which indicates an entity has the capacity to burn.
 ///
 /// When a neighboring [`Fire`] source contacts this particle, it may ignite based on
-/// [`chance_to_ignite`](Flammable::chance_to_ignite). A [`ReactionRng`](super::ReactionRng) component
+/// [`chance_to_ignite`](Flammable::chance_to_ignite). A [`ReactionRng`] component
 /// is automatically inserted when this component is added.
 ///
 /// # Examples
@@ -114,7 +114,7 @@ pub struct Flammable {
     /// The tick rate for the burn effect.
     pub tick_rate: Duration,
     /// The chance the entity will be destroyed per tick while burning.
-    /// A [`ChanceLifetime`](crate::ChanceLifetime) component will be added when the particle ignites.
+    /// A [`ChanceLifetime`] component will be added when the particle ignites.
     /// Set to 0.0 to prevent particles from being destroyed by burning.
     pub chance_despawn_per_tick: f64,
     /// Indicates the burn effect might produce a new particle type.
@@ -173,7 +173,7 @@ impl Flammable {
     /// let burns = Flammable::new(
     ///     Duration::from_secs(5),
     ///     Duration::from_millis(100),
-    ///     0.1, None, None, 0.3, true, 1.0, false, false,
+    ///     0.1, None, 0.3, true, 1.0, false, false,
     /// );
     /// assert_eq!(burns.chance_to_ignite, 0.3);
     /// ```
@@ -426,16 +426,16 @@ fn handle_burning(
                 }
                 return;
             }
-            if burning.tick_timer.tick(time.delta()).is_finished() {
-                if let Some(burn_product) = burn_product {
-                    burn_product.produce(
-                        &mut rng,
-                        *position,
-                        &registry,
-                        &movement_query,
-                        &mut msgw_spawn_particle,
-                    );
-                }
+            if burning.tick_timer.tick(time.delta()).is_finished()
+                && let Some(burn_product) = burn_product
+            {
+                burn_product.produce(
+                    &mut rng,
+                    *position,
+                    &registry,
+                    &movement_query,
+                    &mut msgw_spawn_particle,
+                );
             }
         },
     );

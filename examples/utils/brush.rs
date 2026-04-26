@@ -4,7 +4,7 @@ use bevy_falling_sand::prelude::{
 };
 
 use super::{
-    cursor::{update_cursor_position, Cursor},
+    cursor::{Cursor, update_cursor_position},
     states::AppState,
 };
 

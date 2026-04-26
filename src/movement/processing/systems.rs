@@ -237,11 +237,11 @@ pub(super) fn par_handle_movement_by_chunks(
                                             )) = (*query_ptr_copy.get())
                                                 .get_unchecked(neighbor_entity)
                                             {
-                                                if let Some(resistor) = neighbor_resistor {
-                                                    if neighbor_rng.chance(resistor.0) {
-                                                        local_dirty.push(position.0);
-                                                        continue;
-                                                    }
+                                                if let Some(resistor) = neighbor_resistor
+                                                    && neighbor_rng.chance(resistor.0)
+                                                {
+                                                    local_dirty.push(position.0);
+                                                    continue;
                                                 }
                                                 let swap_ok = (*map_ptr_copy.get())
                                                     .swap(neighbor_position.0, position.0);
@@ -267,11 +267,12 @@ pub(super) fn par_handle_movement_by_chunks(
                                                 obstructed[obstruct_idx] = true;
                                             }
                                         } else {
-                                            if let Some(r) = air_resistance.get(tier) {
-                                                if r > 0.0 && chunk_rng.chance(r) {
-                                                    local_dirty.push(position.0);
-                                                    continue;
-                                                }
+                                            if let Some(r) = air_resistance.get(tier)
+                                                && r > 0.0
+                                                && chunk_rng.chance(r)
+                                            {
+                                                local_dirty.push(position.0);
+                                                continue;
                                             }
                                             let swap_ok = (*map_ptr_copy.get())
                                                 .swap(position.0, neighbor_position);
@@ -330,10 +331,10 @@ pub(super) fn par_handle_movement_by_chunks(
 
     for pos in dirty_positions.into_inner().unwrap() {
         let coord = chunk_index.world_to_chunk_coord(pos);
-        if let Some(chunk_entity) = chunk_index.get(coord) {
-            if let Ok((_, mut dirty_state)) = chunk_query.get_mut(chunk_entity) {
-                dirty_state.mark_dirty(pos);
-            }
+        if let Some(chunk_entity) = chunk_index.get(coord)
+            && let Ok((_, mut dirty_state)) = chunk_query.get_mut(chunk_entity)
+        {
+            dirty_state.mark_dirty(pos);
         }
     }
 }
@@ -362,11 +363,11 @@ pub(super) fn serial_handle_movement_by_chunks(
     let mut chunks_data: Vec<(Option<IRect>, Vec<IVec2>)> = Vec::with_capacity(chunk_index.len());
 
     for (_coord, chunk_entity) in chunk_index.iter() {
-        if let Ok((region, dirty_state)) = chunk_query.get(chunk_entity) {
-            if dirty_state.is_dirty() {
-                let border_positions = dirty_state.border_strip_positions(region.region());
-                chunks_data.push((dirty_state.current, border_positions));
-            }
+        if let Ok((region, dirty_state)) = chunk_query.get(chunk_entity)
+            && dirty_state.is_dirty()
+        {
+            let border_positions = dirty_state.border_strip_positions(region.region());
+            chunks_data.push((dirty_state.current, border_positions));
         }
     }
 
@@ -468,11 +469,11 @@ pub(super) fn serial_handle_movement_by_chunks(
                                     neighbor_resistor,
                                 )) = particle_query.get_unchecked(neighbor_entity)
                                 {
-                                    if let Some(resistor) = neighbor_resistor {
-                                        if neighbor_rng.chance(resistor.0) {
-                                            dirty_positions.push(position.0);
-                                            continue;
-                                        }
+                                    if let Some(resistor) = neighbor_resistor
+                                        && neighbor_rng.chance(resistor.0)
+                                    {
+                                        dirty_positions.push(position.0);
+                                        continue;
                                     }
                                     if map.swap(neighbor_position.0, position.0).is_ok() {
                                         dirty_positions.push(position.0);
@@ -495,11 +496,12 @@ pub(super) fn serial_handle_movement_by_chunks(
                                     obstructed[obstruct_idx] = true;
                                 }
                             } else {
-                                if let Some(r) = air_resistance.get(tier) {
-                                    if r > 0.0 && chunk_rng.chance(r) {
-                                        dirty_positions.push(position.0);
-                                        continue;
-                                    }
+                                if let Some(r) = air_resistance.get(tier)
+                                    && r > 0.0
+                                    && chunk_rng.chance(r)
+                                {
+                                    dirty_positions.push(position.0);
+                                    continue;
                                 }
                                 if map.swap(position.0, neighbor_position).is_ok() {
                                     dirty_positions.push(position.0);
@@ -536,10 +538,10 @@ pub(super) fn serial_handle_movement_by_chunks(
 
     for pos in dirty_positions {
         let coord = chunk_index.world_to_chunk_coord(pos);
-        if let Some(chunk_entity) = chunk_index.get(coord) {
-            if let Ok((_, mut dirty_state)) = chunk_query.get_mut(chunk_entity) {
-                dirty_state.mark_dirty(pos);
-            }
+        if let Some(chunk_entity) = chunk_index.get(coord)
+            && let Ok((_, mut dirty_state)) = chunk_query.get_mut(chunk_entity)
+        {
+            dirty_state.mark_dirty(pos);
         }
     }
 }
@@ -646,11 +648,11 @@ pub(super) fn handle_movement_by_particles(
                                 neighbor_resistor,
                             )) = particle_query.get_unchecked(neighbor_entity)
                             {
-                                if let Some(resistor) = neighbor_resistor {
-                                    if neighbor_rng.chance(resistor.0) {
-                                        dirty_positions.push(position.0);
-                                        continue;
-                                    }
+                                if let Some(resistor) = neighbor_resistor
+                                    && neighbor_rng.chance(resistor.0)
+                                {
+                                    dirty_positions.push(position.0);
+                                    continue;
                                 }
                                 if map.swap(neighbor_position.0, position.0).is_ok() {
                                     {
@@ -670,11 +672,12 @@ pub(super) fn handle_movement_by_particles(
                                 obstructed[obstruct_idx] = true;
                             }
                         } else {
-                            if let Some(r) = air_resistance.get(tier) {
-                                if r > 0.0 && global_rng.chance(r) {
-                                    dirty_positions.push(position.0);
-                                    continue;
-                                }
+                            if let Some(r) = air_resistance.get(tier)
+                                && r > 0.0
+                                && global_rng.chance(r)
+                            {
+                                dirty_positions.push(position.0);
+                                continue;
                             }
                             let old_position = position.0;
                             if map.swap(position.0, neighbor_position).is_ok() {
@@ -710,10 +713,10 @@ pub(super) fn handle_movement_by_particles(
 
     for pos in dirty_positions {
         let coord = chunk_index.world_to_chunk_coord(pos);
-        if let Some(chunk_entity) = chunk_index.get(coord) {
-            if let Ok((_, mut dirty_state)) = chunk_query.get_mut(chunk_entity) {
-                dirty_state.mark_dirty(pos);
-            }
+        if let Some(chunk_entity) = chunk_index.get(coord)
+            && let Ok((_, mut dirty_state)) = chunk_query.get_mut(chunk_entity)
+        {
+            dirty_state.mark_dirty(pos);
         }
     }
 }

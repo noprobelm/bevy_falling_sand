@@ -335,14 +335,13 @@ impl NeighborGroup {
         rng: &mut MovementRng,
         preferred: Option<&Momentum>,
     ) -> NeighborGroupIter<'a> {
-        if let Some(momentum) = preferred {
-            if let Some(position) = self
+        if let Some(momentum) = preferred
+            && let Some(position) = self
                 .neighbor_group
                 .iter()
                 .position(|&candidate| momentum.0 == candidate)
-            {
-                return NeighborGroupIter::Single(iter::once(&self.neighbor_group[position]));
-            }
+        {
+            return NeighborGroupIter::Single(iter::once(&self.neighbor_group[position]));
         }
 
         let len = self.neighbor_group.len();

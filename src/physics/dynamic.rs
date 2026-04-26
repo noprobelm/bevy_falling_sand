@@ -12,12 +12,12 @@ use bevy::platform::collections::HashSet;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
+use crate::ParticleSyncExt;
 use crate::core::{
     ChunkDirtyState, ChunkIndex, GridPosition, Particle, ParticleMap, SyncParticleSignal,
 };
 use crate::movement::{AirResistance, Density, Momentum, Movement, Speed};
 use crate::render::ParticleColor;
-use crate::ParticleSyncExt;
 
 /// Collision layers for falling sand physics.
 #[derive(PhysicsLayer, Default, Copy, Clone, Debug)]
@@ -236,10 +236,10 @@ pub(super) fn promote_dynamic_rigid_bodies(
         }
 
         let chunk_coord = chunk_index.world_to_chunk_coord(position);
-        if let Some(chunk_entity) = chunk_index.get(chunk_coord) {
-            if let Ok(mut dirty_state) = chunk_query.get_mut(chunk_entity) {
-                dirty_state.mark_dirty(position);
-            }
+        if let Some(chunk_entity) = chunk_index.get(chunk_coord)
+            && let Ok(mut dirty_state) = chunk_query.get_mut(chunk_entity)
+        {
+            dirty_state.mark_dirty(position);
         }
 
         let color = particle_color.map_or(Color::WHITE, |pc| pc.0);
@@ -352,15 +352,15 @@ pub(super) fn rejoin_dynamic_rigid_bodies(
             continue;
         }
 
-        if let Some(last) = proxy.last_map_position.take() {
-            if map.get_copied(last) == Ok(Some(particle_entity)) {
-                let _ = map.remove(last);
-                let chunk_coord = chunk_index.world_to_chunk_coord(last);
-                if let Some(chunk_entity) = chunk_index.get(chunk_coord) {
-                    if let Ok(mut dirty_state) = chunk_query.get_mut(chunk_entity) {
-                        dirty_state.mark_dirty(last);
-                    }
-                }
+        if let Some(last) = proxy.last_map_position.take()
+            && map.get_copied(last) == Ok(Some(particle_entity))
+        {
+            let _ = map.remove(last);
+            let chunk_coord = chunk_index.world_to_chunk_coord(last);
+            if let Some(chunk_entity) = chunk_index.get(chunk_coord)
+                && let Ok(mut dirty_state) = chunk_query.get_mut(chunk_entity)
+            {
+                dirty_state.mark_dirty(last);
             }
         }
 
@@ -379,12 +379,12 @@ pub(super) fn rejoin_dynamic_rigid_bodies(
             }
         };
 
-        let target = candidates.find(|p| is_vacant(p));
+        let target = candidates.find(&is_vacant);
 
         let target = target.or_else(|| {
             (1..=max_upward_search)
                 .map(|dy| pos + IVec2::new(0, dy))
-                .find(|p| is_vacant(p))
+                .find(is_vacant)
         });
 
         let Some(target) = target else {
@@ -398,10 +398,10 @@ pub(super) fn rejoin_dynamic_rigid_bodies(
         let _ = map.insert(target, particle_entity);
 
         let chunk_coord = chunk_index.world_to_chunk_coord(target);
-        if let Some(chunk_entity) = chunk_index.get(chunk_coord) {
-            if let Ok(mut dirty_state) = chunk_query.get_mut(chunk_entity) {
-                dirty_state.mark_dirty(target);
-            }
+        if let Some(chunk_entity) = chunk_index.get(chunk_coord)
+            && let Ok(mut dirty_state) = chunk_query.get_mut(chunk_entity)
+        {
+            dirty_state.mark_dirty(target);
         }
 
         commands.entity(rb_entity).despawn();
@@ -425,10 +425,10 @@ pub(super) fn sync_dynamic_rigid_bodies_with_particles(
                       chunk_index: &ChunkIndex,
                       chunk_query: &mut Query<&mut ChunkDirtyState>| {
         let chunk_coord = chunk_index.world_to_chunk_coord(position);
-        if let Some(chunk_entity) = chunk_index.get(chunk_coord) {
-            if let Ok(mut dirty_state) = chunk_query.get_mut(chunk_entity) {
-                dirty_state.mark_dirty(position);
-            }
+        if let Some(chunk_entity) = chunk_index.get(chunk_coord)
+            && let Ok(mut dirty_state) = chunk_query.get_mut(chunk_entity)
+        {
+            dirty_state.mark_dirty(position);
         }
     };
 
@@ -468,9 +468,11 @@ pub(super) fn sync_dynamic_rigid_bodies_with_particles(
 
 #[cfg(test)]
 mod tests {
+    use std::f32::consts::PI;
+
     use super::*;
-    use crate::core::{AttachedToParticleType, ParticleType, SpawnParticleSignal};
     use crate::FallingSandMinimalPlugin;
+    use crate::core::{AttachedToParticleType, ParticleType, SpawnParticleSignal};
 
     fn create_test_app() -> App {
         let mut app = App::new();
@@ -612,7 +614,7 @@ mod tests {
             &mut app,
             PromoteDynamicRigidBodyParticle::new(entity)
                 .with_linear_velocity(Vec2::new(10.0, 20.0))
-                .with_angular_velocity(3.14)
+                .with_angular_velocity(PI)
                 .with_gravity_scale(2.5),
         );
         app.update();
@@ -628,7 +630,7 @@ mod tests {
             rb_ref.get::<LinearVelocity>().unwrap().0,
             Vec2::new(10.0, 20.0)
         );
-        assert_eq!(rb_ref.get::<AngularVelocity>().unwrap().0, 3.14);
+        assert_eq!(rb_ref.get::<AngularVelocity>().unwrap().0, PI);
         assert_eq!(rb_ref.get::<GravityScale>().unwrap().0, 2.5);
     }
 
@@ -859,11 +861,12 @@ mod tests {
 
         assert!(app.world().entities().contains(entity));
         assert!(app.world().entity(entity).get::<Particle>().is_some());
-        assert!(app
-            .world()
-            .entity(entity)
-            .get::<AttachedToParticleType>()
-            .is_some());
+        assert!(
+            app.world()
+                .entity(entity)
+                .get::<AttachedToParticleType>()
+                .is_some()
+        );
     }
 
     #[test]

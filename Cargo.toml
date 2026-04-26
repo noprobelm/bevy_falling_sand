@@ -9,28 +9,25 @@ readme = "README.md"
 description = "Falling Sand simulation plugin for Bevy"
 keywords = ["bevy", "falling-sand", "simulation", "particles"]
 exclude = [
-  "/assets",
-  "/examples",
-  "/docs",
-  "/.github",
-  "/.gitignore",
-  "/CHANGELOG.org",
+    "/assets",
+    "/examples",
+    "/docs",
+    "/.github",
+    "/.gitignore",
+    "/CHANGELOG.org",
 ]
 documentation = "http://docs.rs/bevy_falling_sand"
 categories = ["game-engines", "game-development"]
 
-[lib]
-doctest = false
-
 [features]
 default = [
-  "render",
-  "movement",
-  "reactions",
-  "physics",
-  "debug",
-  "persistence",
-  "scenes",
+    "render",
+    "movement",
+    "reactions",
+    "physics",
+    "debug",
+    "persistence",
+    "scenes",
 ]
 render = ["dep:bevy_shader", "dep:bevy_sprite_render"]
 movement = ["dep:smallvec"]
@@ -44,16 +41,16 @@ scenes = ["dep:image", "dep:ron"]
 
 [dependencies]
 bevy = { version = "0.18.1", default-features = false, features = [
-  "std",
-  "bevy_state",
-  "bevy_sprite",
-  "bevy_mesh",
-  "bevy_sprite_render",
-  "bevy_log",
-  "bevy_gizmos",
-  "bevy_scene",
-  "serialize",
-  "wayland",
+    "std",
+    "bevy_state",
+    "bevy_sprite",
+    "bevy_mesh",
+    "bevy_sprite_render",
+    "bevy_log",
+    "bevy_gizmos",
+    "bevy_scene",
+    "serialize",
+    "wayland",
 ] }
 bevy_turborand = "0.13.0"
 serde = { version = "1.0", features = ["derive"] }
@@ -63,7 +60,7 @@ avian2d = { version = "0.5.0", optional = true }
 earcutr = { version = "0.5.0", optional = true }
 futures-lite = { version = "2.5", optional = true }
 image = { version = "0.25", default-features = false, features = [
-  "png",
+    "png",
 ], optional = true }
 bevy_shader = { version = "0.18.1", optional = true }
 bevy_sprite_render = { version = "0.18.1", optional = true }
@@ -80,6 +77,28 @@ noise = "0.9.0"
 avian2d = "0.5.0"
 bevy_framepace = "0.21.0"
 
+[lints.rust]
+# Mark `bevy_lint` as a valid `cfg`, as it is set when the Bevy linter runs.
+unexpected_cfgs = { level = "warn", check-cfg = [
+    "cfg(bevy_lint)",
+    "cfg(docsrs)",
+] }
+
+[lints.clippy]
+# Bevy supplies arguments to systems via dependency injection, so it's natural for systems to
+# request more than 7 arguments, which would undesirably trigger this lint.
+too_many_arguments = "allow"
+# Queries may access many components, which would undesirably trigger this lint.
+type_complexity = "allow"
+# Make sure macros use their standard braces, such as `[]` for `bevy_ecs::children!`.
+nonstandard_macro_braces = "warn"
+
+# You can configure the warning levels of Bevy lints here. For a list of all lints, see:
+# <https://thebevyflock.github.io/bevy_cli/bevy_lint/lints/>
+[package.metadata.bevy_lint]
+# panicking_methods = "deny"
+# pedantic = "warn"
+
 [profile.dev-release]
 inherits = "release"
 lto = true
@@ -94,3 +113,21 @@ opt-level = 1
 # Enable max optimizations for dependencies, but not for our code:
 [profile.dev.package."*"]
 opt-level = 3
+
+[profile.release]
+# Compile the entire crate as one unit.
+# Slows compile times, marginal improvements.
+codegen-units = 1
+# Do a second optimization pass over the entire program, including dependencies.
+# Slows compile times, marginal improvements.
+lto = true
+
+# Optimize for build time in CI.
+[profile.ci]
+inherits = "dev"
+opt-level = 0
+debug = "line-tables-only"
+codegen-units = 4
+
+[profile.ci.package."*"]
+opt-level = 0

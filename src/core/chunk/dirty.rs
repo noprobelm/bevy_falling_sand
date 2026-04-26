@@ -267,60 +267,28 @@ impl ChunkDirtyState {
         let mut positions = Vec::new();
         let min = chunk_rect.min;
         let max = chunk_rect.max;
+        let full_x = (min.x, max.x);
+        let full_y = (min.y, max.y);
+        let top_y = (max.y - 1, max.y);
+        let bottom_y = (min.y, min.y + 1);
+        let right_x = (max.x - 1, max.x);
+        let left_x = (min.x, min.x + 1);
 
-        if flags & BORDER_N != 0 {
-            for y in (max.y - 1)..=max.y {
-                for x in min.x..=max.x {
-                    positions.push(IVec2::new(x, y));
-                }
-            }
-        }
-        if flags & BORDER_S != 0 {
-            for y in min.y..=(min.y + 1) {
-                for x in min.x..=max.x {
-                    positions.push(IVec2::new(x, y));
-                }
-            }
-        }
-        if flags & BORDER_E != 0 {
-            for y in min.y..=max.y {
-                for x in (max.x - 1)..=max.x {
-                    positions.push(IVec2::new(x, y));
-                }
-            }
-        }
-        if flags & BORDER_W != 0 {
-            for y in min.y..=max.y {
-                for x in min.x..=(min.x + 1) {
-                    positions.push(IVec2::new(x, y));
-                }
-            }
-        }
-        if flags & BORDER_NE != 0 {
-            for y in (max.y - 1)..=max.y {
-                for x in (max.x - 1)..=max.x {
-                    positions.push(IVec2::new(x, y));
-                }
-            }
-        }
-        if flags & BORDER_NW != 0 {
-            for y in (max.y - 1)..=max.y {
-                for x in min.x..=(min.x + 1) {
-                    positions.push(IVec2::new(x, y));
-                }
-            }
-        }
-        if flags & BORDER_SE != 0 {
-            for y in min.y..=(min.y + 1) {
-                for x in (max.x - 1)..=max.x {
-                    positions.push(IVec2::new(x, y));
-                }
-            }
-        }
-        if flags & BORDER_SW != 0 {
-            for y in min.y..=(min.y + 1) {
-                for x in min.x..=(min.x + 1) {
-                    positions.push(IVec2::new(x, y));
+        for (flag, (x0, x1), (y0, y1)) in [
+            (BORDER_N, full_x, top_y),
+            (BORDER_S, full_x, bottom_y),
+            (BORDER_E, right_x, full_y),
+            (BORDER_W, left_x, full_y),
+            (BORDER_NE, right_x, top_y),
+            (BORDER_NW, left_x, top_y),
+            (BORDER_SE, right_x, bottom_y),
+            (BORDER_SW, left_x, bottom_y),
+        ] {
+            if flags & flag != 0 {
+                for y in y0..=y1 {
+                    for x in x0..=x1 {
+                        positions.push(IVec2::new(x, y));
+                    }
                 }
             }
         }
@@ -471,10 +439,10 @@ fn advance_chunk_dirty_state(
     }
 
     for (coord, flags) in border_notifications {
-        if let Some(chunk_entity) = chunk_index.get(coord) {
-            if let Ok((_, _, mut dirty_state)) = chunk_query.get_mut(chunk_entity) {
-                dirty_state.dirty_borders |= flags;
-            }
+        if let Some(chunk_entity) = chunk_index.get(coord)
+            && let Ok((_, _, mut dirty_state)) = chunk_query.get_mut(chunk_entity)
+        {
+            dirty_state.dirty_borders |= flags;
         }
     }
 }

@@ -105,16 +105,16 @@ pub(super) mod components {
             let mut type_map = world.resource_mut::<ParticleTypeRegistry>();
             let old_entity = type_map.insert(name, context.entity);
 
-            if let Some(old) = old_entity {
-                if old != context.entity {
-                    world.commands().entity(old).despawn();
-                }
+            if let Some(old) = old_entity
+                && old != context.entity
+            {
+                world.commands().entity(old).despawn();
             }
         }
 
         /// Remove this `ParticleType` from the [`ParticleTypeRegistry`], but only if
         /// it is still the registered entity for its name. This avoids clobbering a
-        /// replacement that was already inserted by [`on_add`].
+        /// replacement that was already inserted by [`on_add`](ParticleType::on_add).
         fn on_remove(mut world: DeferredWorld, context: HookContext) {
             let particle_type = world.get::<Self>(context.entity).unwrap();
             let name = particle_type.name.clone();
@@ -211,7 +211,7 @@ pub(super) mod components {
     #[type_path = "bfs_core::particle"]
     pub struct Particle {
         /// The name of the particle, which corresponds to its [`ParticleType`] and can be used as an
-        /// index in the  [`ParticleTypeRegistry`][crate::ParticleTypeRegistry] resource.
+        /// index in the  [`ParticleTypeRegistry`] resource.
         pub name: Cow<'static, str>,
     }
 
@@ -227,7 +227,6 @@ pub(super) mod components {
                 return;
             }
             let _ = map.remove(position);
-            drop(map);
 
             let chunk_index = world.resource::<ChunkIndex>();
             let chunk_coord = chunk_index.world_to_chunk_coord(position);
@@ -804,7 +803,7 @@ pub(super) mod resources {
             self.map.is_empty()
         }
 
-        /// Insert a new [`ParticleType`] and entity.
+        /// Insert a new [`ParticleType`](crate::ParticleType) and entity.
         #[inline(always)]
         pub(crate) fn insert(
             &mut self,
@@ -1174,9 +1173,7 @@ mod tests {
             let _ = map.insert(IVec2::new(20, 20), e3);
 
             let center = IVec2::new(10, 10);
-            let results: Vec<_> = map.within_radius(center, 5.0).collect();
-
-            assert_eq!(results.len(), 2);
+            assert_eq!(map.within_radius(center, 5.0).count(), 2);
         }
     }
 

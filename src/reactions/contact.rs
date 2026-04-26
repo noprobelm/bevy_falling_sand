@@ -7,7 +7,7 @@ use crate::{
         AttachedToParticleType, ChunkDirtyState, ChunkIndex, Particle, ParticleMap,
         ParticleSystems, ParticleType, ParticleTypeRegistry, SpawnParticleSignal,
     },
-    movement::ParticleMovementSet,
+    movement::ParticleMovementSystems,
 };
 
 pub(super) struct ContactPlugin;
@@ -26,7 +26,7 @@ impl Plugin for ContactPlugin {
                     handle_contact_reactions.after(resolve_changed_contact_reactions),
                 )
                     .in_set(ParticleSystems::Simulation)
-                    .after(ParticleMovementSet),
+                    .after(ParticleMovementSystems),
             );
     }
 }

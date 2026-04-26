@@ -50,17 +50,17 @@ use avian2d::prelude::PhysicsInterpolationPlugin;
 use bevy::prelude::*;
 
 pub use dynamic::{
-    DynamicRigidBodyProxy, PromoteDynamicRigidBodyParticle,
-    StaticRigidBodyParticle, SuspendedParticle,
+    DynamicRigidBodyProxy, PromoteDynamicRigidBodyParticle, StaticRigidBodyParticle,
+    SuspendedParticle,
 };
 pub use r#static::{DirtyChunkUpdateInterval, DouglasPeuckerEpsilon};
 
 use dynamic::DynamicPlugin;
 use dynamic::{promote_dynamic_rigid_bodies, rejoin_dynamic_rigid_bodies};
-use r#static::calculate_static_rigid_bodies;
 use r#static::StaticPlugin;
+use r#static::calculate_static_rigid_bodies;
 
-use crate::movement::ParticleMovementSet;
+use crate::movement::ParticleMovementSystems;
 use crate::physics::dynamic::sync_dynamic_rigid_bodies_with_particles;
 
 /// Plugin providing avian2d rigid body integration for the falling sand simulation.
@@ -83,6 +83,7 @@ use crate::physics::dynamic::sync_dynamic_rigid_bodies_with_particles;
 ///         .run();
 /// }
 /// ```
+#[allow(clippy::needless_doctest_main)]
 pub struct FallingSandPhysicsPlugin {
     /// The value for avian2d's `PhysicsLengthUnit`.
     pub length_unit: f32,
@@ -127,7 +128,7 @@ impl Plugin for FallingSandPhysicsPlugin {
         )
         .add_systems(
             PostUpdate,
-            sync_dynamic_rigid_bodies_with_particles.after(ParticleMovementSet),
+            sync_dynamic_rigid_bodies_with_particles.after(ParticleMovementSystems),
         );
     }
 }

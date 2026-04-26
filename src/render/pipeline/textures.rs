@@ -174,7 +174,7 @@ pub struct EffectUpdateBuffer {
 #[derive(Resource)]
 pub struct WorldEffectShadowBuffer {
     /// RGBA8 pixel data mirroring the GPU effect texture array layout.
-    /// Length = width * height * 4 * layer_count.
+    /// Length = width * height * 4 * `layer_count`.
     pub data: Vec<u8>,
     /// Texture width in pixels.
     pub width: u32,
@@ -184,19 +184,12 @@ pub struct WorldEffectShadowBuffer {
     pub layer_count: u32,
 }
 
+#[derive(Clone, Copy)]
 struct RegisteredEffectLayer {
     layer: usize,
     channel: usize,
     component_id: ComponentId,
 }
-
-impl Clone for RegisteredEffectLayer {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-impl Copy for RegisteredEffectLayer {}
 
 #[derive(Resource, Default)]
 struct EffectLayerRegistry {
@@ -207,11 +200,13 @@ struct EffectLayerRegistry {
 
 #[derive(Resource, Default)]
 struct EffectSystemCache {
-    state: Option<SystemState<(
-        Res<'static, ParticleMap>,
-        Res<'static, WorldEffectShadowBuffer>,
-        Query<'static, 'static, (&'static ChunkRegion, &'static ChunkDirtyState)>,
-    )>>,
+    state: Option<
+        SystemState<(
+            Res<'static, ParticleMap>,
+            Res<'static, WorldEffectShadowBuffer>,
+            Query<'static, 'static, (&'static ChunkRegion, &'static ChunkDirtyState)>,
+        )>,
+    >,
     dirty_entries: Vec<(usize, usize, Option<Entity>)>,
 }
 
@@ -232,6 +227,7 @@ pub trait ChunkEffectLayer: Send + Sync + 'static {
     /// The texture array layer index this effect maps to.
     ///
     /// Each array layer provides 4 RGBA channels. Defaults to 0.
+    #[must_use]
     fn layer() -> usize {
         0
     }
@@ -340,10 +336,7 @@ impl ChunkEffectApp for App {
     where
         M::Data: PartialEq + Eq + std::hash::Hash + Clone,
     {
-        if !self
-            .world()
-            .contains_resource::<EffectMaterialRegistry>()
-        {
+        if !self.world().contains_resource::<EffectMaterialRegistry>() {
             self.init_resource::<EffectMaterialRegistry>();
             self.init_resource::<EffectLayerRegistry>();
             self.init_resource::<EffectSystemCache>();
@@ -384,10 +377,7 @@ impl ChunkEffectApp for App {
     }
 
     fn add_chunk_effect_layer<T: ChunkEffectLayer>(&mut self) -> &mut Self {
-        if !self
-            .world()
-            .contains_resource::<EffectMaterialRegistry>()
-        {
+        if !self.world().contains_resource::<EffectMaterialRegistry>() {
             self.add_chunk_effect_material::<DefaultChunkEffectMaterial>();
         }
 
@@ -513,10 +503,11 @@ fn setup_world_textures(
     effect_image.sampler = ImageSampler::nearest();
     effect_image.texture_descriptor.usage =
         TextureUsages::STORAGE_BINDING | TextureUsages::TEXTURE_BINDING | TextureUsages::COPY_DST;
-    effect_image.texture_view_descriptor = Some(bevy::render::render_resource::TextureViewDescriptor {
-        dimension: Some(bevy::render::render_resource::TextureViewDimension::D2Array),
-        ..default()
-    });
+    effect_image.texture_view_descriptor =
+        Some(bevy::render::render_resource::TextureViewDescriptor {
+            dimension: Some(bevy::render::render_resource::TextureViewDimension::D2Array),
+            ..default()
+        });
     let effect_handle = images.add(effect_image);
 
     let center_x = origin.x as f32 + width as f32 / 2.0;
@@ -625,11 +616,11 @@ fn update_world_color_uv_offset(
         t.translation.y = center_y;
     }
 
-    if let Ok(mat_handle) = material_query.get(color_entity.0) {
-        if let Some(material) = materials.get_mut(&mat_handle.0) {
-            let shift = origin - tex_origin.0;
-            material.uv_offset = Vec2::new(shift.x as f32 / width, -shift.y as f32 / height);
-        }
+    if let Ok(mat_handle) = material_query.get(color_entity.0)
+        && let Some(material) = materials.get_mut(&mat_handle.0)
+    {
+        let shift = origin - tex_origin.0;
+        material.uv_offset = Vec2::new(shift.x as f32 / width, -shift.y as f32 / height);
     }
 }
 
@@ -658,15 +649,19 @@ fn update_effect_uv_offset<M: ChunkEffectMaterial>(
         t.translation.y = center_y;
     }
 
-    if let Ok(mat_handle) = material_query.get(effect_entity.0) {
-        if let Some(material) = materials.get_mut(&mat_handle.0) {
-            let shift = origin - tex_origin.0;
-            material.set_uv_offset(Vec2::new(shift.x as f32 / width, -shift.y as f32 / height));
-        }
+    if let Ok(mat_handle) = material_query.get(effect_entity.0)
+        && let Some(material) = materials.get_mut(&mat_handle.0)
+    {
+        let shift = origin - tex_origin.0;
+        material.set_uv_offset(Vec2::new(shift.x as f32 / width, -shift.y as f32 / height));
     }
 }
 
-#[allow(clippy::too_many_arguments, clippy::needless_pass_by_value)]
+#[allow(
+    clippy::too_many_arguments,
+    clippy::needless_pass_by_value,
+    clippy::similar_names
+)]
 fn handle_origin_shift(
     loading_state: Res<ChunkLoadingState>,
     map: Res<ParticleMap>,
@@ -690,7 +685,9 @@ fn handle_origin_shift(
     let packed_bg =
         u32::from(r) | (u32::from(g) << 8) | (u32::from(b) << 16) | (u32::from(a) << 24);
 
-    let effect_layer_count = effect_staging.as_ref().map_or(0, |s| s.layer_count as usize);
+    let effect_layer_count = effect_staging
+        .as_ref()
+        .map_or(0, |s| s.layer_count as usize);
 
     let cs = chunk_index.chunk_size() as i32;
     for &(coord, _) in &loading_state.unloaded_this_frame {
@@ -713,9 +710,7 @@ fn handle_origin_shift(
                         staging.data[pi + 3] = 0;
                         let effect_packed_pos =
                             (tx as u32) | ((ty as u32) << 14) | ((layer_idx as u32) << 28);
-                        effect_update_buffer
-                            .updates
-                            .push([effect_packed_pos, 0]);
+                        effect_update_buffer.updates.push([effect_packed_pos, 0]);
                     }
                 }
             }
@@ -818,9 +813,7 @@ fn update_all_effect_layers(world: &mut World) {
     dirty_entries.clear();
     let mut cached_state = cache.state.take();
 
-    let state = cached_state.get_or_insert_with(|| {
-        SystemState::new(world)
-    });
+    let state = cached_state.get_or_insert_with(|| SystemState::new(world));
 
     {
         let (map, staging, dirty_chunks) = state.get(world);
@@ -869,28 +862,23 @@ fn update_all_effect_layers(world: &mut World) {
 
             for &(tx, ty, entity_opt) in &dirty_entries {
                 for layer_def in &layers {
-                    let val = match entity_opt {
-                        Some(e) => world
-                            .get_entity(e)
-                            .ok()
-                            .map_or(0u8, |er| {
-                                if er.contains_id(layer_def.component_id) {
-                                    255
-                                } else {
-                                    0
-                                }
-                            }),
-                        None => 0,
-                    };
-                    let idx =
-                        (layer_def.layer * layer_stride + ty * world_w + tx) * 4 + layer_def.channel;
+                    let val = entity_opt.map_or(0, |e| {
+                        world.get_entity(e).ok().map_or(0u8, |er| {
+                            if er.contains_id(layer_def.component_id) {
+                                255
+                            } else {
+                                0
+                            }
+                        })
+                    });
+                    let idx = (layer_def.layer * layer_stride + ty * world_w + tx) * 4
+                        + layer_def.channel;
                     staging.data[idx] = val;
                 }
 
                 for &layer_idx in &active_texture_layers {
                     let base = (layer_idx * layer_stride + ty * world_w + tx) * 4;
-                    let packed_pos =
-                        (tx as u32) | ((ty as u32) << 14) | ((layer_idx as u32) << 28);
+                    let packed_pos = (tx as u32) | ((ty as u32) << 14) | ((layer_idx as u32) << 28);
                     let packed_rgba = u32::from(staging.data[base])
                         | (u32::from(staging.data[base + 1]) << 8)
                         | (u32::from(staging.data[base + 2]) << 16)
@@ -918,7 +906,9 @@ fn invalidate_world_material<M: ChunkEffectMaterial>(
         return;
     };
 
-    let any_dirty = dirty_chunks.iter().any(crate::core::ChunkDirtyState::is_dirty);
+    let any_dirty = dirty_chunks
+        .iter()
+        .any(crate::core::ChunkDirtyState::is_dirty);
     if !any_dirty {
         return;
     }

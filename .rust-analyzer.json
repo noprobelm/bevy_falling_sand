@@ -1,0 +1,12 @@
+{
+  "check": {
+    "command": "clippy",
+    "extraArgs": [
+      "--workspace",
+      "--all-targets",
+      "--profile",
+      "ci",
+      "--all-features"
+    ]
+  }
+}

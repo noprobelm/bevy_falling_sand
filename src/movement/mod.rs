@@ -94,6 +94,7 @@ use schedule::SchedulePlugin;
 ///         .run();
 /// }
 /// ```
+#[allow(clippy::needless_doctest_main)]
 pub struct FallingSandMovementPlugin;
 
 impl Plugin for FallingSandMovementPlugin {

@@ -536,7 +536,8 @@ impl Default for Palette {
 /// Color gradient configuration for particles.
 ///
 /// A gradient is composed of one or more segments. Each segment connects two consecutive
-/// entries in [`ColorGradient::colors`] and produces [`ColorGradient::steps`]`[k]` color
+/// entries in [`ColorGradient::colors`] and produces
+/// [`ColorGradient::steps[k]`](ColorGradient::steps) color
 /// samples, with `t` interpolating from `0.0` to `1.0` within the segment. Boundary colors
 /// between adjacent segments may appear as samples in both segments.
 #[derive(Clone, PartialEq, Debug, Reflect, Serialize, Deserialize)]

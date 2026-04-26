@@ -642,8 +642,6 @@ mod tests {
         index.insert(ChunkCoord::new(0, 0), e1);
         index.insert(ChunkCoord::new(5, 5), e2);
 
-        let items: Vec<_> = index.iter().collect();
-
-        assert_eq!(items.len(), 2);
+        assert_eq!(index.iter().count(), 2);
     }
 }

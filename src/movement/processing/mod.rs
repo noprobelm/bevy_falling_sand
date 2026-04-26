@@ -6,7 +6,7 @@ use bevy::prelude::*;
 pub use state::*;
 
 use crate::core::{ChunkDirtyState, ChunkRegion};
-use crate::movement::schedule::ParticleMovementSet;
+use crate::movement::schedule::ParticleMovementSystems;
 use systems::{
     handle_movement_by_particles, par_handle_movement_by_chunks, serial_handle_movement_by_chunks,
 };
@@ -37,7 +37,7 @@ impl Plugin for ProcessingPlugin {
                     serial_handle_movement_by_chunks.run_if(in_state(ChunkIterationState::Serial)),
                     handle_movement_by_particles.run_if(in_state(MovementSystemState::Particles)),
                 )
-                    .in_set(ParticleMovementSet),
+                    .in_set(ParticleMovementSystems),
             );
     }
 }
