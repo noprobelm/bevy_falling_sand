@@ -306,7 +306,7 @@ fn msgr_sync_particle(mut params: SyncParticleParams) {
         return;
     }
 
-    for (entity, parent, _, ref filter) in &targets {
+    for (entity, parent, _, filter) in &targets {
         params
             .propagators
             .run_filtered(filter, *entity, *parent, &mut params.commands);
@@ -731,11 +731,11 @@ fn sync_particle_parent(
 mod tests {
     use super::*;
     use crate::{
+        FallingSandMinimalPlugin,
         core::{
             AttachedToParticleType, Particle, ParticleType, ParticleTypeRegistry,
             SpawnParticleSignal,
         },
-        FallingSandMinimalPlugin,
     };
 
     #[derive(Component, Clone, Debug, PartialEq)]
@@ -913,11 +913,12 @@ mod tests {
             .next()
             .unwrap();
 
-        assert!(app
-            .world()
-            .entity(particle_entity)
-            .get::<Marker>()
-            .is_some());
+        assert!(
+            app.world()
+                .entity(particle_entity)
+                .get::<Marker>()
+                .is_some()
+        );
 
         app.world_mut()
             .entity_mut(particle_entity)
