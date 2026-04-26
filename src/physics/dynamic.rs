@@ -468,6 +468,8 @@ pub(super) fn sync_dynamic_rigid_bodies_with_particles(
 
 #[cfg(test)]
 mod tests {
+    use std::f32::consts::PI;
+
     use super::*;
     use crate::FallingSandMinimalPlugin;
     use crate::core::{AttachedToParticleType, ParticleType, SpawnParticleSignal};
@@ -612,7 +614,7 @@ mod tests {
             &mut app,
             PromoteDynamicRigidBodyParticle::new(entity)
                 .with_linear_velocity(Vec2::new(10.0, 20.0))
-                .with_angular_velocity(3.14)
+                .with_angular_velocity(PI)
                 .with_gravity_scale(2.5),
         );
         app.update();
@@ -628,7 +630,7 @@ mod tests {
             rb_ref.get::<LinearVelocity>().unwrap().0,
             Vec2::new(10.0, 20.0)
         );
-        assert_eq!(rb_ref.get::<AngularVelocity>().unwrap().0, 3.14);
+        assert_eq!(rb_ref.get::<AngularVelocity>().unwrap().0, PI);
         assert_eq!(rb_ref.get::<GravityScale>().unwrap().0, 2.5);
     }
 

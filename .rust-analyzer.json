@@ -7,9 +7,6 @@
       "--profile",
       "ci",
       "--all-features"
-    ],
-    "extraEnv": {
-      "RUSTFLAGS": "-Dwarnings"
-    }
+    ]
   }
 }

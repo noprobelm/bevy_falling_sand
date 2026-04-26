@@ -3,7 +3,7 @@
 //! ## Schedule Overview
 //!
 //! **`PostUpdate`:**
-//! - [`ParticleMovementSet`] — processes particle movement by chunks or individually
+//! - [`ParticleMovementSystems`] — processes particle movement by chunks or individually
 
 use bevy::prelude::*;
 

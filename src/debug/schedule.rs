@@ -3,7 +3,7 @@
 //! ## Schedule Overview
 //!
 //! **`PostUpdate`:**
-//! - [`ParticleDebugSet`] — debug visualization and particle counting
+//! - [`ParticleDebugSystems`] — debug visualization and particle counting
 
 use bevy::prelude::*;
 

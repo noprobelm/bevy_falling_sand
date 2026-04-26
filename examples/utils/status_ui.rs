@@ -54,7 +54,7 @@ fn update_fps_text(
         .get(&FrameTimeDiagnosticsPlugin::FPS)
         .and_then(|fps| fps.smoothed())
     {
-        let fps_text_value = format!("FPS: {:.1}", fps);
+        let fps_text_value = format!("FPS: {fps:.1}");
         for mut text in fps_text.iter_mut() {
             **text = fps_text_value.clone();
         }

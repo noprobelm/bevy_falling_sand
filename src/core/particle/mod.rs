@@ -1173,9 +1173,7 @@ mod tests {
             let _ = map.insert(IVec2::new(20, 20), e3);
 
             let center = IVec2::new(10, 10);
-            let results: Vec<_> = map.within_radius(center, 5.0).collect();
-
-            assert_eq!(results.len(), 2);
+            assert_eq!(map.within_radius(center, 5.0).count(), 2);
         }
     }
 
