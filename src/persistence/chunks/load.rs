@@ -5,12 +5,11 @@ use std::io::BufReader;
 use std::path::PathBuf;
 
 use super::resources::{
-    chunk_file_path, chunk_png_path, ChunkLoadResult, ChunkPersistenceError,
-    ParticlePersistenceConfig, ParticlePersistenceState, PendingChunkData, PendingLoadTasks,
-    PendingSaveTasks,
+    ChunkLoadResult, ChunkPersistenceError, ParticlePersistenceConfig, ParticlePersistenceState,
+    PendingChunkData, PendingLoadTasks, PendingSaveTasks, chunk_file_path, chunk_png_path,
 };
-use crate::render::ForceColor;
 use crate::core::{ChunkIndex, ChunkLoadingState, Particle, ParticleTypeRegistry};
+use crate::render::ForceColor;
 pub(super) struct LoadPlugin;
 
 impl Plugin for LoadPlugin {

@@ -3,23 +3,23 @@
 pub use crate::{FallingSandMinimalPlugin, FallingSandPlugin};
 
 pub use crate::core::{
-    condition_msg_simulation_step_received, AttachedToParticleType, ChanceLifetime, ChunkCoord,
-    ChunkDirtyState, ChunkIndex, ChunkLoader, ChunkLoadingConfig, ChunkLoadingState, ChunkRegion,
-    ChunkLoadingRun, ChunkSystems, DespawnAllParticlesSignal, DespawnBatchConfig, DespawnParticleSignal,
+    AttachedToParticleType, ChanceLifetime, ChunkCoord, ChunkDirtyState, ChunkIndex, ChunkLoader,
+    ChunkLoadingConfig, ChunkLoadingRun, ChunkLoadingState, ChunkRegion, ChunkSystems,
+    DespawnAllParticlesSignal, DespawnBatchConfig, DespawnParticleSignal,
     DespawnParticleTypeChildrenSignal, GridPosition, OnSpawnCallback, Particle, ParticleMap,
     ParticleRng, ParticleSimulationRun, ParticleSyncExt, ParticleSystems, ParticleType,
     ParticleTypeRegistry, PendingDespawn, PropagatorFilter, SimulationStepSignal, SpatialEntry,
     SpatialMap, SpawnParticleSignal, SyncParticleSignal, SyncParticleTypeChildrenSignal,
-    TimedLifetime,
+    TimedLifetime, condition_msg_simulation_step_received,
 };
 
 #[cfg(feature = "render")]
 pub use crate::render::{
-    extract_chunk_image, ChunkEffectApp, ChunkEffectLayer, ChunkEffectMaterial,
-    ChunkRenderingConfig, ChunkRenderingPlugin, ColorAssignment, ColorGradient, ColorIndex,
-    ColorProfile, ColorRng, ColorSource, DefaultChunkEffectMaterial, FallingSandRenderPlugin,
-    ForceColor, Palette, ParticleColor, RenderingSystems, TextureSource, WithColor,
-    WorldColorTexture, WorldEffectTexture,
+    ChunkEffectApp, ChunkEffectLayer, ChunkEffectMaterial, ChunkRenderingConfig,
+    ChunkRenderingPlugin, ColorAssignment, ColorGradient, ColorIndex, ColorProfile, ColorRng,
+    ColorSource, DefaultChunkEffectMaterial, FallingSandRenderPlugin, ForceColor, Palette,
+    ParticleColor, RenderingSystems, TextureSource, WithColor, WorldColorTexture,
+    WorldEffectTexture, extract_chunk_image,
 };
 
 #[cfg(feature = "movement")]
@@ -45,7 +45,7 @@ pub use crate::reactions::{
 #[cfg(feature = "physics")]
 pub use crate::physics::{
     DirtyChunkUpdateInterval, DouglasPeuckerEpsilon, DynamicRigidBodyProxy,
-    PromoteDynamicRigidBodyParticle, FallingSandPhysicsPlugin, StaticRigidBodyParticle,
+    FallingSandPhysicsPlugin, PromoteDynamicRigidBodyParticle, StaticRigidBodyParticle,
     SuspendedParticle,
 };
 

@@ -1,0 +1,108 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Run example (dev)",
+            "type": "process",
+            "command": "bevy",
+            "args": [
+                "run",
+                "--example",
+                "${input:exampleName}"
+            ],
+            "options": {
+                "env": {
+                    "RUST_BACKTRACE": "full"
+                }
+            },
+            "presentation": {
+                "clear": true
+            },
+            "problemMatcher": [
+                "$rustc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "Run example (release)",
+            "type": "process",
+            "command": "bevy",
+            "args": [
+                "run",
+                "--release",
+                "--example",
+                "${input:exampleName}"
+            ],
+            "presentation": {
+                "clear": true
+            },
+            "problemMatcher": [
+                "$rustc"
+            ],
+            "group": "build"
+        },
+        {
+            "label": "Run example web (dev)",
+            "type": "process",
+            "command": "bevy",
+            "args": [
+                "run",
+                "--yes",
+                "--example",
+                "${input:exampleName}",
+                "web"
+            ],
+            "options": {
+                "env": {
+                    "RUST_BACKTRACE": "full"
+                }
+            },
+            "presentation": {
+                "clear": true
+            },
+            "problemMatcher": [
+                "$rustc"
+            ],
+            "group": "build"
+        },
+        {
+            "label": "Run example web (release)",
+            "type": "process",
+            "command": "bevy",
+            "args": [
+                "run",
+                "--yes",
+                "--release",
+                "--example",
+                "${input:exampleName}",
+                "web"
+            ],
+            "presentation": {
+                "clear": true
+            },
+            "problemMatcher": [
+                "$rustc"
+            ],
+            "group": "build"
+        }
+    ],
+    "inputs": [
+        {
+            "id": "exampleName",
+            "type": "pickString",
+            "description": "Example to run",
+            "options": [
+                "basic",
+                "fire",
+                "movement",
+                "mutation",
+                "noise",
+                "rigid_bodies"
+            ],
+            "default": "basic"
+        }
+    ]
+}

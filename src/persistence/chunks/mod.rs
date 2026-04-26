@@ -5,8 +5,8 @@ mod save;
 use bevy::prelude::*;
 
 pub use resources::{
-    chunk_file_path, chunk_png_path, ChunkPersistenceError, ParticlePersistenceConfig,
-    ParticlePersistenceState, PendingSaveTasks,
+    ChunkPersistenceError, ParticlePersistenceConfig, ParticlePersistenceState, PendingSaveTasks,
+    chunk_file_path, chunk_png_path,
 };
 pub use save::PersistChunksSignal;
 

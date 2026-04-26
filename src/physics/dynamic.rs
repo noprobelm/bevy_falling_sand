@@ -12,12 +12,12 @@ use bevy::platform::collections::HashSet;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
+use crate::ParticleSyncExt;
 use crate::core::{
     ChunkDirtyState, ChunkIndex, GridPosition, Particle, ParticleMap, SyncParticleSignal,
 };
 use crate::movement::{AirResistance, Density, Momentum, Movement, Speed};
 use crate::render::ParticleColor;
-use crate::ParticleSyncExt;
 
 /// Collision layers for falling sand physics.
 #[derive(PhysicsLayer, Default, Copy, Clone, Debug)]
@@ -469,8 +469,8 @@ pub(super) fn sync_dynamic_rigid_bodies_with_particles(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::core::{AttachedToParticleType, ParticleType, SpawnParticleSignal};
     use crate::FallingSandMinimalPlugin;
+    use crate::core::{AttachedToParticleType, ParticleType, SpawnParticleSignal};
 
     fn create_test_app() -> App {
         let mut app = App::new();
@@ -859,11 +859,12 @@ mod tests {
 
         assert!(app.world().entities().contains(entity));
         assert!(app.world().entity(entity).get::<Particle>().is_some());
-        assert!(app
-            .world()
-            .entity(entity)
-            .get::<AttachedToParticleType>()
-            .is_some());
+        assert!(
+            app.world()
+                .entity(entity)
+                .get::<AttachedToParticleType>()
+                .is_some()
+        );
     }
 
     #[test]

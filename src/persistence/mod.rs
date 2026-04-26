@@ -61,8 +61,8 @@ use bevy::prelude::*;
 use std::path::PathBuf;
 
 pub use chunks::{
-    chunk_file_path, chunk_png_path, ChunkPersistenceError, ParticlePersistenceConfig,
-    ParticlePersistenceState, PendingSaveTasks, PersistChunksSignal,
+    ChunkPersistenceError, ParticlePersistenceConfig, ParticlePersistenceState, PendingSaveTasks,
+    PersistChunksSignal, chunk_file_path, chunk_png_path,
 };
 pub use particle_types::{
     LoadParticleTypesSignal, ParticleTypesLoadedSignal, ParticleTypesPersistedSignal,

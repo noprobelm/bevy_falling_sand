@@ -5,14 +5,14 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
 use super::resources::{
-    chunk_file_path, chunk_png_path, ChunkImageData, ChunkSaveResult, ParticlePersistenceConfig,
-    PendingSaveTasks,
+    ChunkImageData, ChunkSaveResult, ParticlePersistenceConfig, PendingSaveTasks, chunk_file_path,
+    chunk_png_path,
 };
 use crate::core::{
     ChunkIndex, ChunkLoadingState, ChunkSystems, GridPosition, Particle, ParticleMap,
 };
 use crate::persistence::bfs::ParticleData as BfsParticleData;
-use crate::render::{extract_chunk_image, ChunkRenderingConfig, ParticleColor};
+use crate::render::{ChunkRenderingConfig, ParticleColor, extract_chunk_image};
 
 pub(super) struct SavePlugin;
 

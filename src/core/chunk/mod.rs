@@ -49,8 +49,8 @@ use bevy::prelude::*;
 
 pub use coord::ChunkCoord;
 pub use dirty::{
-    ChunkDirtyState, BORDER_E, BORDER_N, BORDER_NE, BORDER_NW, BORDER_S, BORDER_SE, BORDER_SW,
-    BORDER_W,
+    BORDER_E, BORDER_N, BORDER_NE, BORDER_NW, BORDER_S, BORDER_SE, BORDER_SW, BORDER_W,
+    ChunkDirtyState,
 };
 pub use index::ChunkIndex;
 pub use loading::{

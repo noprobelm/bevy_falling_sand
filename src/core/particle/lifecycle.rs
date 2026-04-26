@@ -22,8 +22,8 @@
 
 use super::LocateBy;
 use crate::core::{
-    schedule::ParticleSystems, AttachedToParticleType, ChunkDirtyState, ChunkIndex, GridPosition,
-    Particle, ParticleMap, ParticleType, ParticleTypeRegistry,
+    AttachedToParticleType, ChunkDirtyState, ChunkIndex, GridPosition, Particle, ParticleMap,
+    ParticleType, ParticleTypeRegistry, schedule::ParticleSystems,
 };
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -934,11 +934,11 @@ mod tests {
 
     use super::*;
     use crate::{
+        FallingSandMinimalPlugin,
         core::{
             AttachedToParticleType, ChanceLifetime, ChunkLoader, GridPosition, Particle,
             ParticleMap, ParticleSyncExt, ParticleType, ParticleTypeRegistry, TimedLifetime,
         },
-        FallingSandMinimalPlugin,
     };
 
     #[derive(Component, Clone, Debug, PartialEq)]
@@ -1409,11 +1409,12 @@ mod tests {
 
         assert!(app.world().entities().contains(entity));
         assert!(app.world().entity(entity).get::<GridPosition>().is_some());
-        assert!(app
-            .world()
-            .entity(entity)
-            .get::<AttachedToParticleType>()
-            .is_some());
+        assert!(
+            app.world()
+                .entity(entity)
+                .get::<AttachedToParticleType>()
+                .is_some()
+        );
     }
 
     #[test]

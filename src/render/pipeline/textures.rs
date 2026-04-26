@@ -207,11 +207,13 @@ struct EffectLayerRegistry {
 
 #[derive(Resource, Default)]
 struct EffectSystemCache {
-    state: Option<SystemState<(
-        Res<'static, ParticleMap>,
-        Res<'static, WorldEffectShadowBuffer>,
-        Query<'static, 'static, (&'static ChunkRegion, &'static ChunkDirtyState)>,
-    )>>,
+    state: Option<
+        SystemState<(
+            Res<'static, ParticleMap>,
+            Res<'static, WorldEffectShadowBuffer>,
+            Query<'static, 'static, (&'static ChunkRegion, &'static ChunkDirtyState)>,
+        )>,
+    >,
     dirty_entries: Vec<(usize, usize, Option<Entity>)>,
 }
 
@@ -340,10 +342,7 @@ impl ChunkEffectApp for App {
     where
         M::Data: PartialEq + Eq + std::hash::Hash + Clone,
     {
-        if !self
-            .world()
-            .contains_resource::<EffectMaterialRegistry>()
-        {
+        if !self.world().contains_resource::<EffectMaterialRegistry>() {
             self.init_resource::<EffectMaterialRegistry>();
             self.init_resource::<EffectLayerRegistry>();
             self.init_resource::<EffectSystemCache>();
@@ -384,10 +383,7 @@ impl ChunkEffectApp for App {
     }
 
     fn add_chunk_effect_layer<T: ChunkEffectLayer>(&mut self) -> &mut Self {
-        if !self
-            .world()
-            .contains_resource::<EffectMaterialRegistry>()
-        {
+        if !self.world().contains_resource::<EffectMaterialRegistry>() {
             self.add_chunk_effect_material::<DefaultChunkEffectMaterial>();
         }
 
@@ -513,10 +509,11 @@ fn setup_world_textures(
     effect_image.sampler = ImageSampler::nearest();
     effect_image.texture_descriptor.usage =
         TextureUsages::STORAGE_BINDING | TextureUsages::TEXTURE_BINDING | TextureUsages::COPY_DST;
-    effect_image.texture_view_descriptor = Some(bevy::render::render_resource::TextureViewDescriptor {
-        dimension: Some(bevy::render::render_resource::TextureViewDimension::D2Array),
-        ..default()
-    });
+    effect_image.texture_view_descriptor =
+        Some(bevy::render::render_resource::TextureViewDescriptor {
+            dimension: Some(bevy::render::render_resource::TextureViewDimension::D2Array),
+            ..default()
+        });
     let effect_handle = images.add(effect_image);
 
     let center_x = origin.x as f32 + width as f32 / 2.0;
@@ -690,7 +687,9 @@ fn handle_origin_shift(
     let packed_bg =
         u32::from(r) | (u32::from(g) << 8) | (u32::from(b) << 16) | (u32::from(a) << 24);
 
-    let effect_layer_count = effect_staging.as_ref().map_or(0, |s| s.layer_count as usize);
+    let effect_layer_count = effect_staging
+        .as_ref()
+        .map_or(0, |s| s.layer_count as usize);
 
     let cs = chunk_index.chunk_size() as i32;
     for &(coord, _) in &loading_state.unloaded_this_frame {
@@ -713,9 +712,7 @@ fn handle_origin_shift(
                         staging.data[pi + 3] = 0;
                         let effect_packed_pos =
                             (tx as u32) | ((ty as u32) << 14) | ((layer_idx as u32) << 28);
-                        effect_update_buffer
-                            .updates
-                            .push([effect_packed_pos, 0]);
+                        effect_update_buffer.updates.push([effect_packed_pos, 0]);
                     }
                 }
             }
@@ -818,9 +815,7 @@ fn update_all_effect_layers(world: &mut World) {
     dirty_entries.clear();
     let mut cached_state = cache.state.take();
 
-    let state = cached_state.get_or_insert_with(|| {
-        SystemState::new(world)
-    });
+    let state = cached_state.get_or_insert_with(|| SystemState::new(world));
 
     {
         let (map, staging, dirty_chunks) = state.get(world);
@@ -870,27 +865,23 @@ fn update_all_effect_layers(world: &mut World) {
             for &(tx, ty, entity_opt) in &dirty_entries {
                 for layer_def in &layers {
                     let val = match entity_opt {
-                        Some(e) => world
-                            .get_entity(e)
-                            .ok()
-                            .map_or(0u8, |er| {
-                                if er.contains_id(layer_def.component_id) {
-                                    255
-                                } else {
-                                    0
-                                }
-                            }),
+                        Some(e) => world.get_entity(e).ok().map_or(0u8, |er| {
+                            if er.contains_id(layer_def.component_id) {
+                                255
+                            } else {
+                                0
+                            }
+                        }),
                         None => 0,
                     };
-                    let idx =
-                        (layer_def.layer * layer_stride + ty * world_w + tx) * 4 + layer_def.channel;
+                    let idx = (layer_def.layer * layer_stride + ty * world_w + tx) * 4
+                        + layer_def.channel;
                     staging.data[idx] = val;
                 }
 
                 for &layer_idx in &active_texture_layers {
                     let base = (layer_idx * layer_stride + ty * world_w + tx) * 4;
-                    let packed_pos =
-                        (tx as u32) | ((ty as u32) << 14) | ((layer_idx as u32) << 28);
+                    let packed_pos = (tx as u32) | ((ty as u32) << 14) | ((layer_idx as u32) << 28);
                     let packed_rgba = u32::from(staging.data[base])
                         | (u32::from(staging.data[base + 1]) << 8)
                         | (u32::from(staging.data[base + 2]) << 16)
@@ -918,7 +909,9 @@ fn invalidate_world_material<M: ChunkEffectMaterial>(
         return;
     };
 
-    let any_dirty = dirty_chunks.iter().any(crate::core::ChunkDirtyState::is_dirty);
+    let any_dirty = dirty_chunks
+        .iter()
+        .any(crate::core::ChunkDirtyState::is_dirty);
     if !any_dirty {
         return;
     }

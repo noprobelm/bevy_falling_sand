@@ -134,9 +134,7 @@ pub fn deserialize_from_reader(reader: &mut impl Read) -> Result<Vec<ParticleDat
         .map_err(|e| format!("Failed to read magic: {e}"))?;
 
     if &magic != MAGIC {
-        return Err(format!(
-            "Invalid magic header: expected BFC, got {magic:?}"
-        ));
+        return Err(format!("Invalid magic header: expected BFC, got {magic:?}"));
     }
 
     // Read particle type count

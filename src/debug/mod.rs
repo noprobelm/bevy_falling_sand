@@ -260,9 +260,9 @@ pub(super) mod systems {
     use crate::{
         core::{ChunkDirtyState, ChunkRegion, GridPosition, Particle},
         debug::{
-            schedule::ParticleDebugSet, ActiveParticleCount, ChunkColor, DebugDirtyRects,
-            DebugGizmos, DebugParticleCount, DebugParticleMap, DirtyRectColor,
-            DynamicParticleCount, RigidBodyCount, StaticParticleCount, TotalParticleCount,
+            ActiveParticleCount, ChunkColor, DebugDirtyRects, DebugGizmos, DebugParticleCount,
+            DebugParticleMap, DirtyRectColor, DynamicParticleCount, RigidBodyCount,
+            StaticParticleCount, TotalParticleCount, schedule::ParticleDebugSet,
         },
     };
 

@@ -80,6 +80,28 @@ noise = "0.9.0"
 avian2d = "0.5.0"
 bevy_framepace = "0.21.0"
 
+[lints.rust]
+# Mark `bevy_lint` as a valid `cfg`, as it is set when the Bevy linter runs.
+unexpected_cfgs = { level = "warn", check-cfg = [
+  "cfg(bevy_lint)",
+  "cfg(docsrs)",
+] }
+
+[lints.clippy]
+# Bevy supplies arguments to systems via dependency injection, so it's natural for systems to
+# request more than 7 arguments, which would undesirably trigger this lint.
+too_many_arguments = "allow"
+# Queries may access many components, which would undesirably trigger this lint.
+type_complexity = "allow"
+# Make sure macros use their standard braces, such as `[]` for `bevy_ecs::children!`.
+nonstandard_macro_braces = "warn"
+
+# You can configure the warning levels of Bevy lints here. For a list of all lints, see:
+# <https://thebevyflock.github.io/bevy_cli/bevy_lint/lints/>
+[package.metadata.bevy_lint]
+# panicking_methods = "deny"
+# pedantic = "warn"
+
 [profile.dev-release]
 inherits = "release"
 lto = true
@@ -94,3 +116,21 @@ opt-level = 1
 # Enable max optimizations for dependencies, but not for our code:
 [profile.dev.package."*"]
 opt-level = 3
+
+[profile.release]
+# Compile the entire crate as one unit.
+# Slows compile times, marginal improvements.
+codegen-units = 1
+# Do a second optimization pass over the entire program, including dependencies.
+# Slows compile times, marginal improvements.
+lto = true
+
+# Optimize for build time in CI.
+[profile.ci]
+inherits = "dev"
+opt-level = 0
+debug = "line-tables-only"
+codegen-units = 4
+
+[profile.ci.package."*"]
+opt-level = 0

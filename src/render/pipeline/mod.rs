@@ -4,9 +4,9 @@ pub mod textures;
 use bevy::prelude::*;
 
 pub use textures::{
-    extract_chunk_image, ChunkEffectApp, ChunkEffectLayer, ChunkEffectMaterial,
-    ChunkRenderingConfig, ChunkRenderingPlugin, DefaultChunkEffectMaterial, WorldColorTexture,
-    WorldEffectTexture,
+    ChunkEffectApp, ChunkEffectLayer, ChunkEffectMaterial, ChunkRenderingConfig,
+    ChunkRenderingPlugin, DefaultChunkEffectMaterial, WorldColorTexture, WorldEffectTexture,
+    extract_chunk_image,
 };
 
 pub(super) struct RenderPipelinePlugin;

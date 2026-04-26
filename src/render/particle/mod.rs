@@ -146,9 +146,9 @@ fn propagate_color(entity: Entity, parent: Entity, commands: &mut Commands) {
 mod tests {
     use super::*;
     use crate::{
+        FallingSandMinimalPlugin,
         core::{Particle, ParticleType, SpawnParticleSignal},
         render::{FallingSandRenderPlugin, ParticleColor},
-        FallingSandMinimalPlugin,
     };
     use bevy::{asset::AssetPlugin, image::ImagePlugin};
 

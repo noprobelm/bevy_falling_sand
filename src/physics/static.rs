@@ -14,7 +14,7 @@ use bevy::tasks::{AsyncComputeTaskPool, Task};
 use futures_lite::future;
 
 use super::dynamic::{StaticRigidBodyParticle, SuspendedParticle};
-use super::geometry::{generate_mesh_from_bitmap, MeshGenerationResult};
+use super::geometry::{MeshGenerationResult, generate_mesh_from_bitmap};
 use crate::core::{ChunkCoord, ChunkDirtyState, ChunkIndex, ChunkRegion, ParticleMap};
 
 pub(super) struct StaticPlugin;

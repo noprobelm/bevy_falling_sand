@@ -3,7 +3,7 @@ mod utils;
 use std::time::Duration;
 
 use bevy::{input::common_conditions::input_just_pressed, prelude::*};
-use bevy_egui::{egui, EguiContexts, EguiPlugin, EguiPrimaryContextPass};
+use bevy_egui::{EguiContexts, EguiPlugin, EguiPrimaryContextPass, egui};
 use bevy_falling_sand::prelude::*;
 use bevy_framepace::{FramepacePlugin, FramepaceSettings, Limiter};
 use utils::{

@@ -10,7 +10,7 @@
 
 use bevy::prelude::*;
 
-use crate::simulation::{condition_msg_simulation_step_received, ParticleSimulationRun};
+use crate::simulation::{ParticleSimulationRun, condition_msg_simulation_step_received};
 
 pub(super) struct SchedulePlugin;
 
