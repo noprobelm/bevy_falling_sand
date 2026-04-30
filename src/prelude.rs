@@ -59,5 +59,6 @@ pub use crate::persistence::{
 
 #[cfg(feature = "scenes")]
 pub use crate::scenes::{
-    FallingSandScenesPlugin, ParticleScene, ParticleSceneRegistry, SpawnSceneSignal,
+    DespawnSceneSignal, FallingSandScenesPlugin, ParticleScene, ParticleSceneInstance,
+    ParticleSceneRegistry, ParticleSceneRoot, SceneLayer, SpawnSceneSignal,
 };
