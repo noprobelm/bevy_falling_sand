@@ -314,7 +314,7 @@ fn handle_spawn_scene(
         let root = signal.root.unwrap_or_else(|| commands.spawn_empty().id());
         commands.entity(root).try_insert(ParticleSceneRoot);
 
-        for (layer_index, layer) in scene.layers.iter().enumerate() {
+        for (layer_index, layer) in scene.layers.iter().rev().enumerate() {
             match layer {
                 SceneLayer::Particles { image, colors } => {
                     if !spawn_particles_layer(
