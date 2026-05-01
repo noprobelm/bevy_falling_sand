@@ -27,6 +27,7 @@ use crate::core::{
 };
 use crate::render::particle::components::ParticleColor;
 use crate::render::schedule::RenderingSystems;
+use bevy::platform::collections::HashMap;
 
 /// Plugin that enables world-texture-based particle rendering.
 ///
@@ -37,12 +38,15 @@ pub struct ChunkRenderingPlugin;
 
 impl Plugin for ChunkRenderingPlugin {
     fn build(&self, app: &mut App) {
+        app.init_asset::<bevy_shader::Shader>();
+        bevy_shader::load_shader_library!(app, "shaders/effects.wgsl");
         bevy::asset::embedded_asset!(app, "shaders/world_color.wgsl");
 
         app.add_plugins(Material2dPlugin::<WorldColorMaterial>::default())
             .init_resource::<ChunkRenderingConfig>()
             .init_resource::<ParticleUpdateBuffer>()
             .init_resource::<EffectUpdateBuffer>()
+            .init_resource::<ChunkEffectActivity>()
             .add_systems(
                 Update,
                 (
@@ -203,11 +207,94 @@ struct EffectSystemCache {
     state: Option<
         SystemState<(
             Res<'static, ParticleMap>,
+            Res<'static, ChunkIndex>,
             Res<'static, WorldEffectShadowBuffer>,
             Query<'static, 'static, (&'static ChunkRegion, &'static ChunkDirtyState)>,
         )>,
     >,
-    dirty_entries: Vec<(usize, usize, Option<Entity>)>,
+    dirty_entries: Vec<(usize, usize, Option<Entity>, ChunkCoord)>,
+}
+
+/// Per-chunk per-channel counters tracking how many texels in each chunk currently
+/// hold a non-zero value for each `(layer, channel)` slot of the effect data texture.
+///
+/// Updated incrementally by `update_all_effect_layers` as texels transition between
+/// zero and non-zero values, and cleared per chunk when chunks unload. Region culling
+/// reads this to compute each material's draw bounds.
+#[derive(Resource, Default)]
+pub struct ChunkEffectActivity {
+    per_chunk: HashMap<ChunkCoord, Vec<u32>>,
+    slots_per_chunk: usize,
+}
+
+impl ChunkEffectActivity {
+    fn ensure_slots(&mut self, slots: usize) {
+        if self.slots_per_chunk == slots {
+            return;
+        }
+        self.slots_per_chunk = slots;
+        for counts in self.per_chunk.values_mut() {
+            counts.resize(slots, 0);
+        }
+    }
+
+    fn inc(&mut self, coord: ChunkCoord, slot: usize) {
+        let slots = self.slots_per_chunk;
+        let entry = self
+            .per_chunk
+            .entry(coord)
+            .or_insert_with(|| vec![0; slots]);
+        if slot < entry.len() {
+            entry[slot] = entry[slot].saturating_add(1);
+        }
+    }
+
+    fn dec(&mut self, coord: ChunkCoord, slot: usize) {
+        let drop_entry;
+        {
+            let Some(entry) = self.per_chunk.get_mut(&coord) else {
+                return;
+            };
+            if slot < entry.len() && entry[slot] > 0 {
+                entry[slot] -= 1;
+            }
+            drop_entry = entry.iter().all(|&c| c == 0);
+        }
+        if drop_entry {
+            self.per_chunk.remove(&coord);
+        }
+    }
+
+    fn clear_chunk(&mut self, coord: ChunkCoord) {
+        self.per_chunk.remove(&coord);
+    }
+
+    fn any_active(&self, coord: ChunkCoord, slots: &[usize]) -> bool {
+        let Some(counts) = self.per_chunk.get(&coord) else {
+            return false;
+        };
+        slots.iter().any(|&s| s < counts.len() && counts[s] > 0)
+    }
+
+    fn iter(&self) -> impl Iterator<Item = (ChunkCoord, &Vec<u32>)> {
+        self.per_chunk.iter().map(|(c, v)| (*c, v))
+    }
+}
+
+/// World-space bounding rectangle of `M`'s active region, or `None` when nothing is active.
+///
+/// Bounds the chunks where any of [`ChunkEffectMaterial::affected_channels`] currently
+/// has data, padded outward by [`ChunkEffectMaterial::padding`] texels.
+#[derive(Resource)]
+pub struct ChunkEffectActiveRegion<M: ChunkEffectMaterial>(
+    pub Option<IRect>,
+    PhantomData<fn() -> M>,
+);
+
+impl<M: ChunkEffectMaterial> Default for ChunkEffectActiveRegion<M> {
+    fn default() -> Self {
+        Self(None, PhantomData)
+    }
 }
 
 /// Trait that maps a type-level marker to an RGBA channel in the effect data texture array.
@@ -239,9 +326,24 @@ pub trait ChunkEffectLayer: Send + Sync + 'static {
 
 /// Trait for effect materials that overlay chunk images with shader-based effects.
 ///
-/// Implementors provide a constructor that takes the world color texture and
-/// the effect data texture array. The `setup_world_effect_overlay` system
-/// handles spawning the overlay entity.
+/// The framework spawns one overlay quad per registered material and resizes it each
+/// frame to the bounding box of chunks where any of the material's
+/// [`affected_channels`](Self::affected_channels) currently has non-zero data, expanded
+/// by [`padding`](Self::padding) texels. The overlay is hidden entirely when no chunk
+/// has data for any of those channels.
+///
+/// Implementors must:
+/// - Bind the world color texture and the effect data texture array (via `AsBindGroup`).
+/// - Carry a `uv_offset: Vec2` uniform and implement [`set_uv_offset`](Self::set_uv_offset).
+/// - Carry a `quad_world_rect: Vec4` uniform and implement
+///   [`set_quad_world_rect`](Self::set_quad_world_rect). The shader uses this to map the
+///   local quad UV to a world texel via `bevy_falling_sand::effects::quad_uv_to_world_texel`.
+/// - Declare every `(layer, channel)` pair their shader reads via
+///   [`affected_channels`](Self::affected_channels). An empty slice means "render whenever
+///   any registered channel has data anywhere" — appropriate only for fallback materials
+///   that read all channels.
+/// - Override [`padding`](Self::padding) to the maximum texel radius any neighborhood
+///   loop in the shader reaches outside the local channel.
 pub trait ChunkEffectMaterial: Material2d + Sized {
     /// Creates the material from the world color texture and the effect data texture array.
     fn new(chunk_texture: Handle<Image>, effect_data: Handle<Image>) -> Self;
@@ -249,10 +351,24 @@ pub trait ChunkEffectMaterial: Material2d + Sized {
     /// Sets the UV offset for toroidal wrapping when the map origin shifts.
     fn set_uv_offset(&mut self, offset: Vec2);
 
-    /// Number of pixels of padding to include from neighbor chunks around the texture edges.
-    ///
-    /// With world-sized textures, padding is no longer needed since all data is in a
-    /// single texture. This method is retained for trait compatibility but always returns 0.
+    /// Stores the framework-computed quad rectangle uniform consumed by
+    /// `bevy_falling_sand::effects::quad_uv_to_world_texel` to map the local quad UV to
+    /// a texel in the world effect texture array. The value is
+    /// `Vec4(origin_x, origin_y, size_x, size_y)` in world units, with `origin` relative
+    /// to the current map origin.
+    fn set_quad_world_rect(&mut self, rect: Vec4);
+
+    /// `(layer, channel)` pairs that the fragment shader reads from the effect data
+    /// texture array. Drives the active-region bounding box. Empty = "any active channel
+    /// activates this material," used by fallback materials only.
+    #[must_use]
+    fn affected_channels() -> &'static [(usize, usize)] {
+        &[]
+    }
+
+    /// Texel radius the shader's neighborhood loops reach outside any channel-active
+    /// pixel. The active region's bounding box is expanded by this many texels so
+    /// halo / blur effects extend past the underlying particles.
     #[must_use]
     fn padding() -> u32 {
         0
@@ -282,6 +398,9 @@ pub struct DefaultChunkEffectMaterial {
     /// UV offset for toroidal wrapping, computed from the origin shift.
     #[uniform(4)]
     pub uv_offset: Vec2,
+    /// Quad rectangle uniform; consumed by `bevy_falling_sand::effects::quad_uv_to_world_texel`.
+    #[uniform(5)]
+    pub quad_world_rect: Vec4,
 }
 
 impl Material2d for DefaultChunkEffectMaterial {
@@ -300,11 +419,16 @@ impl ChunkEffectMaterial for DefaultChunkEffectMaterial {
             chunk_texture,
             effect_data,
             uv_offset: Vec2::ZERO,
+            quad_world_rect: Vec4::ZERO,
         }
     }
 
     fn set_uv_offset(&mut self, offset: Vec2) {
         self.uv_offset = offset;
+    }
+
+    fn set_quad_world_rect(&mut self, rect: Vec4) {
+        self.quad_world_rect = rect;
     }
 }
 
@@ -357,21 +481,23 @@ impl ChunkEffectApp for App {
 
         self.insert_resource(EffectOverlayZOffset::<M>(z, PhantomData));
         self.add_plugins(Material2dPlugin::<M>::default());
-
+        self.init_resource::<ChunkEffectActiveRegion<M>>();
         self.add_systems(
             Update,
-            (
-                setup_world_effect_overlay::<M>.run_if(
+            setup_world_effect_overlay::<M>
+                .run_if(
                     resource_exists::<WorldColorTexture>
                         .and(resource_exists::<WorldEffectTexture>)
                         .and(not(resource_exists::<WorldEffectEntity<M>>)),
-                ),
-                update_effect_uv_offset::<M>,
-            )
+                )
                 .after(RenderingSystems::ChunkImage),
         );
-
-        self.add_systems(Last, invalidate_world_material::<M>);
+        self.add_systems(
+            PostUpdate,
+            (compute_active_region::<M>, update_effect_overlay::<M>)
+                .chain()
+                .in_set(RenderingSystems::ChunkEffectRegion),
+        );
 
         self
     }
@@ -539,9 +665,9 @@ fn setup_world_textures(
     });
 }
 
-/// Spawns a world-sized effect overlay entity with `MeshMaterial2d<M>`.
-///
-/// Runs once per material type when both world textures exist but `WorldEffectEntity<M>` doesn't.
+/// Spawns the unit-sized effect overlay entity with `MeshMaterial2d<M>`. Each frame the
+/// overlay's transform is resized to the active region by [`update_effect_overlay`], or
+/// hidden when no chunk holds data for any of `M::affected_channels()`.
 #[allow(clippy::needless_pass_by_value)]
 fn setup_world_effect_overlay<M: ChunkEffectMaterial>(
     mut commands: Commands,
@@ -549,28 +675,112 @@ fn setup_world_effect_overlay<M: ChunkEffectMaterial>(
     mut materials: ResMut<Assets<M>>,
     color_tex: Res<WorldColorTexture>,
     effect_tex: Res<WorldEffectTexture>,
-    map: Res<ParticleMap>,
     z_offset: Res<EffectOverlayZOffset<M>>,
 ) {
-    let width = map.width() as f32;
-    let height = map.height() as f32;
-    let origin = map.origin();
-
-    let center_x = origin.x as f32 + width / 2.0;
-    let center_y = origin.y as f32 + height / 2.0;
-
-    let quad = meshes.add(Rectangle::new(width, height));
+    let quad = meshes.add(Rectangle::new(1.0, 1.0));
     let handle = materials.add(M::new(color_tex.0.clone(), effect_tex.0.clone()));
 
     let entity = commands
         .spawn((
             Mesh2d(quad),
             MeshMaterial2d(handle),
-            Transform::from_xyz(center_x, center_y, z_offset.0),
+            Transform::from_xyz(0.0, 0.0, z_offset.0),
+            Visibility::Hidden,
         ))
         .id();
 
     commands.insert_resource(WorldEffectEntity::<M>(entity, PhantomData));
+}
+
+/// Computes the world-space bounding rectangle of all chunks where any of
+/// `M::affected_channels()` currently has non-zero data, padded by `M::padding()` texels.
+/// An empty `affected_channels()` is treated as "any active chunk in
+/// [`ChunkEffectActivity`] contributes" — appropriate for fallback materials that read
+/// every channel.
+#[allow(clippy::needless_pass_by_value)]
+fn compute_active_region<M: ChunkEffectMaterial>(
+    activity: Res<ChunkEffectActivity>,
+    chunk_index: Res<ChunkIndex>,
+    mut region: ResMut<ChunkEffectActiveRegion<M>>,
+) {
+    let channels = M::affected_channels();
+    let slots: Vec<usize> = channels.iter().map(|&(l, c)| l * 4 + c).collect();
+
+    let mut bbox: Option<IRect> = None;
+    for (coord, _) in activity.iter() {
+        if !slots.is_empty() && !activity.any_active(coord, &slots) {
+            continue;
+        }
+        let chunk_rect = chunk_index.chunk_coord_to_chunk_region(coord);
+        bbox = Some(bbox.map_or(chunk_rect, |b| b.union(chunk_rect)));
+    }
+
+    region.0 = bbox.map(|mut b| {
+        let pad = M::padding() as i32;
+        if pad > 0 {
+            b.min -= IVec2::splat(pad);
+            b.max += IVec2::splat(pad);
+        }
+        b
+    });
+}
+
+/// Resizes the overlay quad to the material's active region and pushes the rectangle
+/// (relative to the current map origin) plus the UV offset into the material uniforms.
+/// Hides the entity when no channel is active anywhere.
+#[allow(clippy::needless_pass_by_value)]
+fn update_effect_overlay<M: ChunkEffectMaterial>(
+    map: Res<ParticleMap>,
+    tex_origin: Option<Res<WorldTextureOrigin>>,
+    effect_entity: Option<Res<WorldEffectEntity<M>>>,
+    region: Res<ChunkEffectActiveRegion<M>>,
+    mut materials: ResMut<Assets<M>>,
+    material_query: Query<&MeshMaterial2d<M>>,
+    mut transform_query: Query<(&mut Transform, &mut Visibility)>,
+) {
+    let Some(tex_origin) = tex_origin else { return };
+    let Some(effect_entity) = effect_entity else {
+        return;
+    };
+    let Ok((mut t, mut visibility)) = transform_query.get_mut(effect_entity.0) else {
+        return;
+    };
+
+    let Some(rect) = region.0 else {
+        if *visibility != Visibility::Hidden {
+            *visibility = Visibility::Hidden;
+        }
+        return;
+    };
+
+    let map_origin = map.origin();
+    let size_x = (rect.max.x - rect.min.x + 1) as f32;
+    let size_y = (rect.max.y - rect.min.y + 1) as f32;
+    let cx = size_x.mul_add(0.5, rect.min.x as f32);
+    let cy = size_y.mul_add(0.5, rect.min.y as f32);
+    t.translation.x = cx;
+    t.translation.y = cy;
+    t.scale.x = size_x;
+    t.scale.y = size_y;
+
+    if *visibility == Visibility::Hidden {
+        *visibility = Visibility::Inherited;
+    }
+
+    if let Ok(mat_handle) = material_query.get(effect_entity.0)
+        && let Some(material) = materials.get_mut(&mat_handle.0)
+    {
+        let width = map.width() as f32;
+        let height = map.height() as f32;
+        let shift = map_origin - tex_origin.0;
+        material.set_uv_offset(Vec2::new(shift.x as f32 / width, -shift.y as f32 / height));
+        material.set_quad_world_rect(Vec4::new(
+            (rect.min.x - map_origin.x) as f32,
+            (rect.min.y - map_origin.y) as f32,
+            size_x,
+            size_y,
+        ));
+    }
 }
 
 fn redirty_all_chunks_on_pipeline_ready(
@@ -624,39 +834,6 @@ fn update_world_color_uv_offset(
     }
 }
 
-#[allow(clippy::needless_pass_by_value)]
-fn update_effect_uv_offset<M: ChunkEffectMaterial>(
-    map: Res<ParticleMap>,
-    tex_origin: Option<Res<WorldTextureOrigin>>,
-    effect_entity: Option<Res<WorldEffectEntity<M>>>,
-    mut materials: ResMut<Assets<M>>,
-    material_query: Query<&MeshMaterial2d<M>>,
-    mut transform_query: Query<&mut Transform>,
-) {
-    let Some(tex_origin) = tex_origin else { return };
-    let Some(effect_entity) = effect_entity else {
-        return;
-    };
-
-    let origin = map.origin();
-    let width = map.width() as f32;
-    let height = map.height() as f32;
-    let center_x = origin.x as f32 + width / 2.0;
-    let center_y = origin.y as f32 + height / 2.0;
-
-    if let Ok(mut t) = transform_query.get_mut(effect_entity.0) {
-        t.translation.x = center_x;
-        t.translation.y = center_y;
-    }
-
-    if let Ok(mat_handle) = material_query.get(effect_entity.0)
-        && let Some(material) = materials.get_mut(&mat_handle.0)
-    {
-        let shift = origin - tex_origin.0;
-        material.set_uv_offset(Vec2::new(shift.x as f32 / width, -shift.y as f32 / height));
-    }
-}
-
 #[allow(
     clippy::too_many_arguments,
     clippy::needless_pass_by_value,
@@ -671,6 +848,7 @@ fn handle_origin_shift(
     mut update_buffer: ResMut<ParticleUpdateBuffer>,
     mut effect_staging: Option<ResMut<WorldEffectShadowBuffer>>,
     mut effect_update_buffer: ResMut<EffectUpdateBuffer>,
+    mut activity: ResMut<ChunkEffectActivity>,
 ) {
     if !loading_state.origin_shifted {
         return;
@@ -691,6 +869,7 @@ fn handle_origin_shift(
 
     let cs = chunk_index.chunk_size() as i32;
     for &(coord, _) in &loading_state.unloaded_this_frame {
+        activity.clear_chunk(coord);
         let min = IVec2::new(coord.x() * cs, coord.y() * cs);
         let max = min + IVec2::splat(cs - 1);
         for y in min.y..=max.y {
@@ -794,6 +973,8 @@ fn update_world_color_texture(
 ///
 /// Iterates dirty positions once, looks up each entity once, evaluates all registered
 /// effect layers, writes to the staging buffer, and packs the update buffer inline.
+/// Updates [`ChunkEffectActivity`] counters as texels transition between zero and
+/// non-zero values so region culling has fresh data.
 fn update_all_effect_layers(world: &mut World) {
     let Some(registry) = world.get_resource::<EffectLayerRegistry>() else {
         return;
@@ -803,10 +984,15 @@ fn update_all_effect_layers(world: &mut World) {
     }
     let layers = registry.layers.clone();
     let active_texture_layers = registry.active_texture_layers.clone();
+    let texture_layer_count = registry.texture_layer_count;
 
     let Some(&WorldTextureOrigin(origin)) = world.get_resource::<WorldTextureOrigin>() else {
         return;
     };
+
+    world
+        .resource_mut::<ChunkEffectActivity>()
+        .ensure_slots(texture_layer_count * 4);
 
     let mut cache = world.resource_mut::<EffectSystemCache>();
     let mut dirty_entries = std::mem::take(&mut cache.dirty_entries);
@@ -816,76 +1002,42 @@ fn update_all_effect_layers(world: &mut World) {
     let state = cached_state.get_or_insert_with(|| SystemState::new(world));
 
     {
-        let (map, staging, dirty_chunks) = state.get(world);
-
-        let world_w_i32 = staging.width as i32;
-        let world_h = staging.height as i32;
-
-        for (region, dirty_state) in dirty_chunks.iter() {
-            let Some(dirty_rect) = dirty_state.current else {
-                continue;
-            };
-            let rect = region.region();
-
-            if let Some(ref positions) = dirty_state.current_positions {
-                for &pos in positions {
-                    if !rect.contains(pos) {
-                        continue;
-                    }
-                    let (tx, ty) = world_to_texel(pos, origin, world_w_i32, world_h);
-                    let entity = map.get_copied(pos).ok().flatten();
-                    dirty_entries.push((tx, ty, entity));
-                }
-            } else {
-                let min_x = dirty_rect.min.x.max(rect.min.x);
-                let max_x = dirty_rect.max.x.min(rect.max.x);
-                let min_y = dirty_rect.min.y.max(rect.min.y);
-                let max_y = dirty_rect.max.y.min(rect.max.y);
-
-                for y in min_y..=max_y {
-                    for x in min_x..=max_x {
-                        let pos = IVec2::new(x, y);
-                        let (tx, ty) = world_to_texel(pos, origin, world_w_i32, world_h);
-                        let entity = map.get_copied(pos).ok().flatten();
-                        dirty_entries.push((tx, ty, entity));
-                    }
-                }
-            }
-        }
+        let (map, chunk_index, staging, dirty_chunks) = state.get(world);
+        collect_dirty_entries(
+            chunk_index.chunk_size() as i32,
+            staging.width as i32,
+            staging.height as i32,
+            origin,
+            &map,
+            dirty_chunks.iter(),
+            &mut dirty_entries,
+        );
     }
 
     world.resource_scope(|world, mut staging: Mut<WorldEffectShadowBuffer>| {
         world.resource_scope(|world, mut update_buffer: Mut<EffectUpdateBuffer>| {
-            update_buffer.updates.clear();
-            let world_w = staging.width as usize;
-            let layer_stride = staging.height as usize * world_w;
+            world.resource_scope(|world, mut activity: Mut<ChunkEffectActivity>| {
+                update_buffer.updates.clear();
+                let world_w = staging.width as usize;
+                let layer_stride = staging.height as usize * world_w;
 
-            for &(tx, ty, entity_opt) in &dirty_entries {
-                for layer_def in &layers {
-                    let val = entity_opt.map_or(0, |e| {
-                        world.get_entity(e).ok().map_or(0u8, |er| {
-                            if er.contains_id(layer_def.component_id) {
-                                255
-                            } else {
-                                0
-                            }
-                        })
-                    });
-                    let idx = (layer_def.layer * layer_stride + ty * world_w + tx) * 4
-                        + layer_def.channel;
-                    staging.data[idx] = val;
+                for &(tx, ty, entity_opt, chunk_coord) in &dirty_entries {
+                    apply_effect_entry(
+                        tx,
+                        ty,
+                        entity_opt,
+                        chunk_coord,
+                        &layers,
+                        &active_texture_layers,
+                        layer_stride,
+                        world_w,
+                        world,
+                        &mut staging,
+                        &mut activity,
+                        &mut update_buffer,
+                    );
                 }
-
-                for &layer_idx in &active_texture_layers {
-                    let base = (layer_idx * layer_stride + ty * world_w + tx) * 4;
-                    let packed_pos = (tx as u32) | ((ty as u32) << 14) | ((layer_idx as u32) << 28);
-                    let packed_rgba = u32::from(staging.data[base])
-                        | (u32::from(staging.data[base + 1]) << 8)
-                        | (u32::from(staging.data[base + 2]) << 16)
-                        | (u32::from(staging.data[base + 3]) << 24);
-                    update_buffer.updates.push([packed_pos, packed_rgba]);
-                }
-            }
+            });
         });
     });
 
@@ -894,33 +1046,100 @@ fn update_all_effect_layers(world: &mut World) {
     cache.state = cached_state;
 }
 
-/// Marks a world effect material as changed when any chunk is dirty,
-/// forcing a bind group rebuild.
-fn invalidate_world_material<M: ChunkEffectMaterial>(
-    mut materials: ResMut<Assets<M>>,
-    effect_entity: Option<Res<WorldEffectEntity<M>>>,
-    dirty_chunks: Query<&ChunkDirtyState>,
-    material_query: Query<&MeshMaterial2d<M>>,
+fn collect_dirty_entries<'a>(
+    chunk_size: i32,
+    world_w: i32,
+    world_h: i32,
+    origin: IVec2,
+    map: &ParticleMap,
+    dirty_chunks: impl Iterator<Item = (&'a ChunkRegion, &'a ChunkDirtyState)>,
+    out: &mut Vec<(usize, usize, Option<Entity>, ChunkCoord)>,
 ) {
-    let Some(effect_entity) = effect_entity else {
-        return;
-    };
+    for (region, dirty_state) in dirty_chunks {
+        let Some(dirty_rect) = dirty_state.current else {
+            continue;
+        };
+        let rect = region.region();
+        let chunk_coord = ChunkCoord::new(
+            rect.min.x.div_euclid(chunk_size),
+            rect.min.y.div_euclid(chunk_size),
+        );
 
-    let any_dirty = dirty_chunks
-        .iter()
-        .any(crate::core::ChunkDirtyState::is_dirty);
-    if !any_dirty {
-        return;
-    }
+        if let Some(ref positions) = dirty_state.current_positions {
+            for &pos in positions {
+                if !rect.contains(pos) {
+                    continue;
+                }
+                let (tx, ty) = world_to_texel(pos, origin, world_w, world_h);
+                let entity = map.get_copied(pos).ok().flatten();
+                out.push((tx, ty, entity, chunk_coord));
+            }
+        } else {
+            let min_x = dirty_rect.min.x.max(rect.min.x);
+            let max_x = dirty_rect.max.x.min(rect.max.x);
+            let min_y = dirty_rect.min.y.max(rect.min.y);
+            let max_y = dirty_rect.max.y.min(rect.max.y);
 
-    if let Ok(mat) = material_query.get(effect_entity.0) {
-        let _ = materials.get_mut(&mat.0);
+            for y in min_y..=max_y {
+                for x in min_x..=max_x {
+                    let pos = IVec2::new(x, y);
+                    let (tx, ty) = world_to_texel(pos, origin, world_w, world_h);
+                    let entity = map.get_copied(pos).ok().flatten();
+                    out.push((tx, ty, entity, chunk_coord));
+                }
+            }
+        }
     }
 }
 
-// ---------------------------------------------------------------------------
-// Persistence helpers
-// ---------------------------------------------------------------------------
+#[allow(clippy::too_many_arguments)]
+fn apply_effect_entry(
+    tx: usize,
+    ty: usize,
+    entity_opt: Option<Entity>,
+    chunk_coord: ChunkCoord,
+    layers: &[RegisteredEffectLayer],
+    active_texture_layers: &[usize],
+    layer_stride: usize,
+    world_w: usize,
+    world: &World,
+    staging: &mut WorldEffectShadowBuffer,
+    activity: &mut ChunkEffectActivity,
+    update_buffer: &mut EffectUpdateBuffer,
+) {
+    for layer_def in layers {
+        let val = entity_opt.map_or(0, |e| {
+            world.get_entity(e).ok().map_or(0u8, |er| {
+                if er.contains_id(layer_def.component_id) {
+                    255
+                } else {
+                    0
+                }
+            })
+        });
+        let idx = (layer_def.layer * layer_stride + ty * world_w + tx) * 4 + layer_def.channel;
+        let old = staging.data[idx];
+        if old != val {
+            let slot = layer_def.layer * 4 + layer_def.channel;
+            if old == 0 && val > 0 {
+                activity.inc(chunk_coord, slot);
+            } else if old > 0 && val == 0 {
+                activity.dec(chunk_coord, slot);
+            }
+            staging.data[idx] = val;
+        }
+    }
+
+    for &layer_idx in active_texture_layers {
+        let base = (layer_idx * layer_stride + ty * world_w + tx) * 4;
+        let packed_pos = (tx as u32) | ((ty as u32) << 14) | ((layer_idx as u32) << 28);
+        let packed_rgba = u32::from(staging.data[base])
+            | (u32::from(staging.data[base + 1]) << 8)
+            | (u32::from(staging.data[base + 2]) << 16)
+            | (u32::from(staging.data[base + 3]) << 24);
+        update_buffer.updates.push([packed_pos, packed_rgba]);
+    }
+}
 
 /// Builds a chunk-sized RGBA8 image by querying particle colors from the ECS.
 ///

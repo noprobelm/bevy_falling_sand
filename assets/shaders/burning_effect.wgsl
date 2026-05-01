@@ -1,9 +1,10 @@
 #import bevy_sprite::mesh2d_vertex_output::VertexOutput
 #import bevy_sprite::mesh2d_view_bindings::globals
+#import bevy_falling_sand::effects::has_effect_in_radius
+#import bevy_falling_sand::effects::quad_uv_to_world_texel
 
 struct BurningSettings {
     intensity: f32,
-    _padding: f32,
 }
 
 @group(2) @binding(0) var<uniform> settings: BurningSettings;
@@ -12,19 +13,21 @@ struct BurningSettings {
 @group(2) @binding(3) var effect_data_texture: texture_2d_array<f32>;
 @group(2) @binding(4) var effect_data_sampler: sampler;
 @group(2) @binding(5) var<uniform> uv_offset: vec2<f32>;
+@group(2) @binding(6) var<uniform> quad_world_rect: vec4<f32>;
 
 @fragment
 fn fragment(mesh: VertexOutput) -> @location(0) vec4<f32> {
-    let wrapped_uv = fract(mesh.uv + uv_offset);
     let tex_size = vec2<i32>(textureDimensions(chunk_texture, 0));
-    let texel = clamp(
-        vec2<i32>(floor(wrapped_uv * vec2<f32>(tex_size))),
-        vec2<i32>(0),
-        tex_size - vec2<i32>(1),
-    );
+    let texel = quad_uv_to_world_texel(mesh.uv, quad_world_rect, tex_size, uv_offset);
 
     let effects = textureLoad(effect_data_texture, texel, 0, 0);
     let has_burning = effects.a > 0.5;
+    let halo_radius = 6;
+
+    if !has_burning && !has_effect_in_radius(effect_data_texture, 0, 3, texel, tex_size, halo_radius, 2) {
+        discard;
+    }
+
     let color = textureLoad(chunk_texture, texel, 0);
 
     if has_burning && color.a > 0.01 {
@@ -46,8 +49,8 @@ fn fragment(mesh: VertexOutput) -> @location(0) vec4<f32> {
         return vec4<f32>(fire_tint * brightness, color.a);
     }
 
-    let burn_radius = 6.0;
-    let r = i32(burn_radius);
+    let burn_radius = f32(halo_radius);
+    let r = halo_radius;
     var fire_weight = 0.0;
     var fire_color_accum = vec3<f32>(0.0);
 
