@@ -32,8 +32,8 @@
 //!    [`ParticleUpdateBuffer`](pipeline::textures::ParticleUpdateBuffer). A single-pass
 //!    `update_all_effect_layers` system evaluates all registered effect layers per dirty
 //!    texel, packs into an [`EffectUpdateBuffer`](pipeline::textures::EffectUpdateBuffer),
-//!    and incrementally updates [`ChunkEffectActivity`](pipeline::textures::ChunkEffectActivity)
-//!    counters as texels transition between zero and non-zero.
+//!    and incrementally updates [`ChunkEffectActivity`] counters as texels transition
+//!    between zero and non-zero.
 //!
 //! 4. **Region culling** (`PostUpdate`, [`RenderingSystems::ChunkEffectRegion`]):
 //!    For each registered material, `compute_active_region` builds a bounding box over
