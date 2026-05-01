@@ -38,7 +38,12 @@ pub struct ChunkRenderingPlugin;
 
 impl Plugin for ChunkRenderingPlugin {
     fn build(&self, app: &mut App) {
-        app.init_asset::<bevy_shader::Shader>();
+        if !app
+            .world()
+            .contains_resource::<Assets<bevy_shader::Shader>>()
+        {
+            app.init_asset::<bevy_shader::Shader>();
+        }
         bevy_shader::load_shader_library!(app, "shaders/effects.wgsl");
         bevy::asset::embedded_asset!(app, "shaders/world_color.wgsl");
 
