@@ -7,6 +7,9 @@
 //!
 //! **`PostUpdate`:**
 //! - [`RenderingSystems::ChunkEffectLayerUpdate`] — chunk effect layer updates
+//! - [`RenderingSystems::ChunkEffectRegion`] — per-material active-region computation
+//!   and overlay sizing for region-culled materials. Runs after
+//!   [`RenderingSystems::ChunkEffectLayerUpdate`].
 
 use bevy::prelude::*;
 
@@ -19,9 +22,13 @@ impl Plugin for SchedulePlugin {
         app.configure_sets(Update, RenderingSystems::ChunkImage)
             .configure_sets(
                 PostUpdate,
-                RenderingSystems::ChunkEffectLayerUpdate
-                    .after(ParticleSystems::Simulation)
-                    .after(ChunkSystems::Cleanup),
+                (
+                    RenderingSystems::ChunkEffectLayerUpdate
+                        .after(ParticleSystems::Simulation)
+                        .after(ChunkSystems::Cleanup),
+                    RenderingSystems::ChunkEffectRegion
+                        .after(RenderingSystems::ChunkEffectLayerUpdate),
+                ),
             );
     }
 }
@@ -37,4 +44,7 @@ pub enum RenderingSystems {
     /// [`ParticleSystems::Simulation`] and
     /// [`ChunkSystems::Cleanup`].
     ChunkEffectLayerUpdate,
+    /// Runs in `PostUpdate` after [`RenderingSystems::ChunkEffectLayerUpdate`]. Hosts the
+    /// per-material `compute_active_region` and overlay sizing systems.
+    ChunkEffectRegion,
 }
