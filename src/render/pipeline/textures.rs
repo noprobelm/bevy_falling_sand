@@ -125,8 +125,10 @@ impl Material2d for WorldColorMaterial {
 }
 
 /// On-screen overlay material for [`ChunkEffectMaterial`] impls that opt in to
-/// [`ChunkEffectMaterial::precompute`]. Samples the world-anchored intermediate texture
-/// produced by the precompute pass — one `textureLoad` per fragment.
+/// [`ChunkEffectMaterial::precompute`].
+///
+/// Samples the world-anchored intermediate texture produced by the precompute pass — one
+/// `textureLoad` per fragment.
 #[derive(Asset, AsBindGroup, TypePath, Debug, Clone)]
 pub struct IntermediateEffectSampleMaterial {
     /// Handle to the per-material intermediate texture written by the precompute pass.
