@@ -48,6 +48,7 @@ impl Plugin for ChunkRenderingPlugin {
         bevy::asset::embedded_asset!(app, "shaders/world_color.wgsl");
 
         app.add_plugins(Material2dPlugin::<WorldColorMaterial>::default())
+            .add_plugins(Material2dPlugin::<IntermediateEffectSampleMaterial>::default())
             .init_resource::<ChunkRenderingConfig>()
             .init_resource::<ParticleUpdateBuffer>()
             .init_resource::<EffectUpdateBuffer>()
@@ -82,6 +83,7 @@ impl Plugin for ChunkRenderingPlugin {
             );
 
         bevy::asset::embedded_asset!(app, "shaders/default_chunk_effect.wgsl");
+        bevy::asset::embedded_asset!(app, "shaders/intermediate_sample.wgsl");
     }
 }
 
@@ -122,6 +124,35 @@ impl Material2d for WorldColorMaterial {
     }
 }
 
+/// On-screen overlay material for [`ChunkEffectMaterial`] impls that opt in to
+/// [`ChunkEffectMaterial::precompute`].
+///
+/// Samples the world-anchored intermediate texture produced by the precompute pass — one
+/// `textureLoad` per fragment.
+#[derive(Asset, AsBindGroup, TypePath, Debug, Clone)]
+pub struct IntermediateEffectSampleMaterial {
+    /// Handle to the per-material intermediate texture written by the precompute pass.
+    #[texture(0)]
+    #[sampler(1)]
+    pub intermediate: Handle<Image>,
+    /// Toroidal-wrap offset (same value as the M material's `uv_offset`).
+    #[uniform(2)]
+    pub uv_offset: Vec2,
+    /// Active-region rectangle in world units relative to the current map origin.
+    #[uniform(3)]
+    pub quad_world_rect: Vec4,
+}
+
+impl Material2d for IntermediateEffectSampleMaterial {
+    fn fragment_shader() -> ShaderRef {
+        "embedded://bevy_falling_sand/render/pipeline/shaders/intermediate_sample.wgsl".into()
+    }
+
+    fn alpha_mode(&self) -> AlphaMode2d {
+        AlphaMode2d::Blend
+    }
+}
+
 /// Resource storing the initial origin of the world texture.
 ///
 /// The texture uses toroidal addressing — texel coordinates wrap via modulo.
@@ -153,6 +184,34 @@ struct WorldEffectEntity<M: ChunkEffectMaterial>(Entity, PhantomData<fn() -> M>)
 /// Per-material z-offset for effect overlay stacking.
 #[derive(Resource)]
 struct EffectOverlayZOffset<M: ChunkEffectMaterial>(f32, PhantomData<fn() -> M>);
+
+/// Per-material precompute state. Inserted at registration with `render_layer` set and
+/// other fields as placeholders; the setup system populates the placeholders once world
+/// textures exist. Update systems gate on `WorldEffectEntity<M>` (the setup-completion
+/// marker) and trust the populated values.
+#[derive(Resource)]
+struct PrecomputeState<M: ChunkEffectMaterial> {
+    render_layer: bevy::camera::visibility::RenderLayers,
+    /// Holds the asset alive; also referenced by the precompute camera's `RenderTarget`
+    /// and by the on-screen sample material.
+    #[allow(dead_code)]
+    intermediate: Handle<Image>,
+    camera: Entity,
+    quad: Entity,
+    _phantom: PhantomData<fn() -> M>,
+}
+
+impl<M: ChunkEffectMaterial> PrecomputeState<M> {
+    fn at_registration(render_layer: bevy::camera::visibility::RenderLayers) -> Self {
+        Self {
+            render_layer,
+            intermediate: Handle::default(),
+            camera: Entity::PLACEHOLDER,
+            quad: Entity::PLACEHOLDER,
+            _phantom: PhantomData,
+        }
+    }
+}
 
 /// Buffer of particle color updates to send to the GPU compute shader.
 ///
@@ -378,12 +437,26 @@ pub trait ChunkEffectMaterial: Material2d + Sized {
     fn padding() -> u32 {
         0
     }
+
+    /// Opt in to render the material into a world-texel-resolution intermediate texture
+    /// once per frame, then sample that texture cheaply per screen pixel for the on-screen
+    /// pass. This decouples per-pixel cost from camera zoom: at any zoom level, each
+    /// on-screen fragment performs one texture sample instead of running the full effect
+    /// shader. Useful for materials with expensive neighborhood loops (glow, blur).
+    ///
+    /// Trades CPU memory (one world-sized RGBA8 image) and an extra render pass per frame
+    /// for fragment-shader cost reduction at high zoom. Set `false` for cheap shaders.
+    #[must_use]
+    fn precompute() -> bool {
+        false
+    }
 }
 
 #[derive(Resource, Default)]
 struct EffectMaterialRegistry {
     registered_type_ids: HashSet<TypeId>,
     next_z: f32,
+    next_precompute_layer: usize,
 }
 
 /// Default effect material that renders the base color where any effect channel is active.
@@ -487,22 +560,53 @@ impl ChunkEffectApp for App {
         self.insert_resource(EffectOverlayZOffset::<M>(z, PhantomData));
         self.add_plugins(Material2dPlugin::<M>::default());
         self.init_resource::<ChunkEffectActiveRegion<M>>();
-        self.add_systems(
-            Update,
-            setup_world_effect_overlay::<M>
-                .run_if(
-                    resource_exists::<WorldColorTexture>
-                        .and(resource_exists::<WorldEffectTexture>)
-                        .and(not(resource_exists::<WorldEffectEntity<M>>)),
+
+        if M::precompute() {
+            let layer_id = {
+                let mut registry = self.world_mut().resource_mut::<EffectMaterialRegistry>();
+                registry.next_precompute_layer += 1;
+                registry.next_precompute_layer
+            };
+            self.insert_resource(PrecomputeState::<M>::at_registration(
+                bevy::camera::visibility::RenderLayers::layer(layer_id),
+            ));
+            self.add_systems(
+                Update,
+                setup_world_effect_overlay_precompute::<M>
+                    .run_if(
+                        resource_exists::<WorldColorTexture>
+                            .and(resource_exists::<WorldEffectTexture>)
+                            .and(not(resource_exists::<WorldEffectEntity<M>>)),
+                    )
+                    .after(RenderingSystems::ChunkImage),
+            );
+            self.add_systems(
+                PostUpdate,
+                (
+                    compute_active_region::<M>,
+                    update_effect_overlay_precompute::<M>,
                 )
-                .after(RenderingSystems::ChunkImage),
-        );
-        self.add_systems(
-            PostUpdate,
-            (compute_active_region::<M>, update_effect_overlay::<M>)
-                .chain()
-                .in_set(RenderingSystems::ChunkEffectRegion),
-        );
+                    .chain()
+                    .in_set(RenderingSystems::ChunkEffectRegion),
+            );
+        } else {
+            self.add_systems(
+                Update,
+                setup_world_effect_overlay::<M>
+                    .run_if(
+                        resource_exists::<WorldColorTexture>
+                            .and(resource_exists::<WorldEffectTexture>)
+                            .and(not(resource_exists::<WorldEffectEntity<M>>)),
+                    )
+                    .after(RenderingSystems::ChunkImage),
+            );
+            self.add_systems(
+                PostUpdate,
+                (compute_active_region::<M>, update_effect_overlay::<M>)
+                    .chain()
+                    .in_set(RenderingSystems::ChunkEffectRegion),
+            );
+        }
 
         self
     }
@@ -670,6 +774,119 @@ fn setup_world_textures(
     });
 }
 
+/// Spawns the on-screen overlay, the per-material intermediate texture, the precompute
+/// Camera2d, and the precompute quad for [`ChunkEffectMaterial`] impls that opt in to
+/// [`ChunkEffectMaterial::precompute`]. The precompute camera + quad live on a dedicated
+/// render layer so they only see each other; the on-screen overlay carries
+/// [`IntermediateEffectSampleMaterial`] on the default render layer.
+///
+/// Each frame, [`update_effect_overlay_precompute`] resizes the precompute camera's
+/// projection and viewport to the active region, positions the precompute quad over
+/// the active region, sets `M`'s per-frame uniforms on the precompute quad's material,
+/// updates `uv_scale` on the on-screen sample material, and toggles visibility.
+#[allow(clippy::needless_pass_by_value, clippy::too_many_arguments)]
+fn setup_world_effect_overlay_precompute<M: ChunkEffectMaterial>(
+    mut commands: Commands,
+    mut images: ResMut<Assets<Image>>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<M>>,
+    mut sample_materials: ResMut<Assets<IntermediateEffectSampleMaterial>>,
+    color_tex: Res<WorldColorTexture>,
+    effect_tex: Res<WorldEffectTexture>,
+    z_offset: Res<EffectOverlayZOffset<M>>,
+    mut state: ResMut<PrecomputeState<M>>,
+    map: Res<ParticleMap>,
+) {
+    use bevy::camera::{ImageRenderTarget, RenderTarget, Viewport};
+    use bevy::core_pipeline::tonemapping::Tonemapping;
+
+    let width = map.width();
+    let height = map.height();
+
+    let intermediate_data = vec![0u8; (width * height * 4) as usize];
+    let mut intermediate_image = Image::new(
+        Extent3d {
+            width,
+            height,
+            depth_or_array_layers: 1,
+        },
+        TextureDimension::D2,
+        intermediate_data,
+        TextureFormat::Rgba8Unorm,
+        default(),
+    );
+    intermediate_image.sampler = ImageSampler::nearest();
+    intermediate_image.texture_descriptor.usage =
+        TextureUsages::RENDER_ATTACHMENT | TextureUsages::TEXTURE_BINDING | TextureUsages::COPY_DST;
+    let intermediate_handle = images.add(intermediate_image);
+
+    let quad = meshes.add(Rectangle::new(1.0, 1.0));
+    let m_material = materials.add(M::new(color_tex.0.clone(), effect_tex.0.clone()));
+    let sample_material = sample_materials.add(IntermediateEffectSampleMaterial {
+        intermediate: intermediate_handle.clone(),
+        uv_offset: Vec2::ZERO,
+        quad_world_rect: Vec4::ZERO,
+    });
+
+    let world_origin = map.origin();
+    let world_center_x = world_origin.x as f32 + width as f32 / 2.0;
+    let world_center_y = world_origin.y as f32 + height as f32 / 2.0;
+
+    let camera_entity = commands
+        .spawn((
+            Camera2d,
+            Camera {
+                order: -100,
+                clear_color: ClearColorConfig::Custom(Color::NONE),
+                viewport: Some(Viewport {
+                    physical_position: UVec2::ZERO,
+                    physical_size: UVec2::new(width, height),
+                    depth: 0.0..1.0,
+                }),
+                ..default()
+            },
+            RenderTarget::Image(ImageRenderTarget {
+                handle: intermediate_handle.clone(),
+                scale_factor: 1.0,
+            }),
+            Projection::Orthographic(OrthographicProjection {
+                scaling_mode: bevy::camera::ScalingMode::Fixed {
+                    width: width as f32,
+                    height: height as f32,
+                },
+                ..OrthographicProjection::default_2d()
+            }),
+            Transform::from_xyz(world_center_x, world_center_y, 0.0),
+            Tonemapping::None,
+            state.render_layer.clone(),
+        ))
+        .id();
+
+    let quad_entity = commands
+        .spawn((
+            Mesh2d(quad.clone()),
+            MeshMaterial2d(m_material),
+            Transform::from_xyz(0.0, 0.0, 0.0),
+            Visibility::Hidden,
+            state.render_layer.clone(),
+        ))
+        .id();
+
+    let display_entity = commands
+        .spawn((
+            Mesh2d(quad),
+            MeshMaterial2d(sample_material),
+            Transform::from_xyz(0.0, 0.0, z_offset.0),
+            Visibility::Hidden,
+        ))
+        .id();
+
+    state.intermediate = intermediate_handle;
+    state.camera = camera_entity;
+    state.quad = quad_entity;
+    commands.insert_resource(WorldEffectEntity::<M>(display_entity, PhantomData));
+}
+
 /// Spawns the unit-sized effect overlay entity with `MeshMaterial2d<M>`. Each frame the
 /// overlay's transform is resized to the active region by [`update_effect_overlay`], or
 /// hidden when no chunk holds data for any of `M::affected_channels()`.
@@ -785,6 +1002,101 @@ fn update_effect_overlay<M: ChunkEffectMaterial>(
             size_x,
             size_y,
         ));
+    }
+}
+
+/// Precompute counterpart to [`update_effect_overlay`]. Each frame, positions the
+/// precompute quad and the on-screen overlay over the active region, pushes `M`'s
+/// per-frame uniforms onto the precompute quad's material, and mirrors them onto the
+/// sample material so the display fragment can map its UV to the world-anchored
+/// intermediate via `quad_uv_to_world_texel`. Hides both quads when nothing is active.
+/// The precompute camera itself is fixed at world dimensions and never mutated.
+#[allow(clippy::needless_pass_by_value, clippy::too_many_arguments)]
+fn update_effect_overlay_precompute<M: ChunkEffectMaterial>(
+    map: Res<ParticleMap>,
+    tex_origin: Option<Res<WorldTextureOrigin>>,
+    region: Res<ChunkEffectActiveRegion<M>>,
+    state: Res<PrecomputeState<M>>,
+    display_res: Option<Res<WorldEffectEntity<M>>>,
+    mut materials: ResMut<Assets<M>>,
+    mut sample_materials: ResMut<Assets<IntermediateEffectSampleMaterial>>,
+    m_material_query: Query<&MeshMaterial2d<M>>,
+    sample_material_query: Query<&MeshMaterial2d<IntermediateEffectSampleMaterial>>,
+    mut quad_query: Query<(&mut Transform, &mut Visibility), With<Mesh2d>>,
+) {
+    let (Some(tex_origin), Some(display_res)) = (tex_origin, display_res) else {
+        return;
+    };
+
+    let world_w = map.width() as f32;
+    let world_h = map.height() as f32;
+
+    let Some(rect) = region.0 else {
+        if let Ok((_, mut visibility)) = quad_query.get_mut(state.quad)
+            && *visibility != Visibility::Hidden
+        {
+            *visibility = Visibility::Hidden;
+        }
+        if let Ok((_, mut visibility)) = quad_query.get_mut(display_res.0)
+            && *visibility != Visibility::Hidden
+        {
+            *visibility = Visibility::Hidden;
+        }
+        return;
+    };
+
+    let map_origin = map.origin();
+    let size_x = (rect.max.x - rect.min.x + 1) as f32;
+    let size_y = (rect.max.y - rect.min.y + 1) as f32;
+    let cx = size_x.mul_add(0.5, rect.min.x as f32);
+    let cy = size_y.mul_add(0.5, rect.min.y as f32);
+
+    if let Ok((mut t, mut visibility)) = quad_query.get_mut(state.quad) {
+        t.translation.x = cx;
+        t.translation.y = cy;
+        t.scale.x = size_x;
+        t.scale.y = size_y;
+        if *visibility == Visibility::Hidden {
+            *visibility = Visibility::Inherited;
+        }
+    }
+
+    let display_z = quad_query
+        .get(display_res.0)
+        .map(|(t, _)| t.translation.z)
+        .unwrap_or(0.0);
+    if let Ok((mut t, mut visibility)) = quad_query.get_mut(display_res.0) {
+        t.translation.x = cx;
+        t.translation.y = cy;
+        t.translation.z = display_z;
+        t.scale.x = size_x;
+        t.scale.y = size_y;
+        if *visibility == Visibility::Hidden {
+            *visibility = Visibility::Inherited;
+        }
+    }
+
+    let shift = map_origin - tex_origin.0;
+    let uv_offset = Vec2::new(shift.x as f32 / world_w, -shift.y as f32 / world_h);
+    let quad_world_rect = Vec4::new(
+        (rect.min.x - map_origin.x) as f32,
+        (rect.min.y - map_origin.y) as f32,
+        size_x,
+        size_y,
+    );
+
+    if let Ok(mat_handle) = m_material_query.get(state.quad)
+        && let Some(material) = materials.get_mut(&mat_handle.0)
+    {
+        material.set_uv_offset(uv_offset);
+        material.set_quad_world_rect(quad_world_rect);
+    }
+
+    if let Ok(mat_handle) = sample_material_query.get(display_res.0)
+        && let Some(sample_material) = sample_materials.get_mut(&mat_handle.0)
+    {
+        sample_material.uv_offset = uv_offset;
+        sample_material.quad_world_rect = quad_world_rect;
     }
 }
 
