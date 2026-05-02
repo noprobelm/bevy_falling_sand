@@ -1,6 +1,5 @@
 #import bevy_sprite::mesh2d_vertex_output::VertexOutput
 #import bevy_sprite::mesh2d_view_bindings::globals
-#import bevy_falling_sand::effects::has_effect_in_radius
 #import bevy_falling_sand::effects::quad_uv_to_world_texel
 
 struct GlowSettings {
@@ -29,10 +28,6 @@ fn fragment(mesh: VertexOutput) -> @location(0) vec4<f32> {
     let effects = textureLoad(effect_data_texture, texel, 0, 0);
     let has_glow = effects.b > 0.5;
     let radius_i = i32(settings.radius);
-
-    if !has_glow && !has_effect_in_radius(effect_data_texture, 0, 2, texel, tex_size, radius_i, 4) {
-        discard;
-    }
 
     let time = globals.time;
 

@@ -1,6 +1,5 @@
 #import bevy_sprite::mesh2d_vertex_output::VertexOutput
 #import bevy_sprite::mesh2d_view_bindings::globals
-#import bevy_falling_sand::effects::has_effect_in_radius
 #import bevy_falling_sand::effects::quad_uv_to_world_texel
 
 struct BurningSettings {
@@ -23,10 +22,6 @@ fn fragment(mesh: VertexOutput) -> @location(0) vec4<f32> {
     let effects = textureLoad(effect_data_texture, texel, 0, 0);
     let has_burning = effects.a > 0.5;
     let halo_radius = 6;
-
-    if !has_burning && !has_effect_in_radius(effect_data_texture, 0, 3, texel, tex_size, halo_radius, 2) {
-        discard;
-    }
 
     let color = textureLoad(chunk_texture, texel, 0);
 

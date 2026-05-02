@@ -215,12 +215,10 @@
 //!
 //! The shader receives the color texture, the effect data texture array, the UV offset,
 //! and the `quad_world_rect` uniform that maps the local quad UV to a world texel.
-//! Import the `bevy_falling_sand::effects` helper module to map UVs to texels and to
-//! cheaply scan a neighborhood for active effect channels before any expensive work.
+//! Import the `bevy_falling_sand::effects` helper module to map UVs to texels.
 //!
 //! ```wgsl
 //! #import bevy_falling_sand::effects::quad_uv_to_world_texel
-//! #import bevy_falling_sand::effects::has_effect_in_radius
 //!
 //! @group(2) @binding(0) var chunk_texture: texture_2d<f32>;
 //! @group(2) @binding(1) var chunk_sampler: sampler;
@@ -233,12 +231,6 @@
 //! fn fragment(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
 //!     let tex_size = vec2<i32>(textureDimensions(chunk_texture, 0));
 //!     let texel = quad_uv_to_world_texel(uv, quad_world_rect, tex_size, uv_offset);
-//!
-//!     // Cheap presence test before any radius loop. Discard pixels that cannot
-//!     // contribute output. `stride > 1` makes the scan sub-linear in radius.
-//!     if !has_effect_in_radius(effect_data, 0, 2, texel, tex_size, 12, 4) {
-//!         discard;
-//!     }
 //!
 //!     let color = textureLoad(chunk_texture, texel, 0);
 //!     let layer0 = textureLoad(effect_data, texel, 0, 0);
