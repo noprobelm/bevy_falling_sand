@@ -454,6 +454,80 @@ pub(super) mod components {
         }
     }
 
+    /// A chance-based mutation component that has a chance to rename a [`Particle`] to a target
+    /// type on a per-tick basis.
+    ///
+    /// When the roll succeeds, the [`Particle::name`] is updated to [`ChanceMutation::target`].
+    /// The change triggers normal particle synchronization, so the particle is re-attached to its
+    /// new [`ParticleType`] and registered components are re-propagated. If `target` does not
+    /// match a registered [`ParticleType`], the mutation is reverted by
+    /// [`sync_particle_parent`](crate::sync).
+    #[derive(Component, Clone, PartialEq, Debug, Reflect)]
+    #[reflect(Component)]
+    #[type_path = "bfs_core::particle"]
+    pub struct ChanceMutation {
+        /// The name of the [`ParticleType`] this particle should mutate into.
+        pub target: Cow<'static, str>,
+        /// The probability (0.0 to 1.0) that the particle will mutate each tick.
+        pub chance: f64,
+        /// Timer that controls how often the chance is evaluated.
+        pub tick_timer: Timer,
+    }
+
+    impl Default for ChanceMutation {
+        fn default() -> Self {
+            Self {
+                target: Cow::Borrowed(""),
+                chance: 0.0,
+                tick_timer: Timer::new(Duration::ZERO, TimerMode::Repeating),
+            }
+        }
+    }
+
+    impl ChanceMutation {
+        /// Create a new chance-based mutation targeting `target` from a static string.
+        ///
+        /// # Examples
+        ///
+        /// ```
+        /// use std::time::Duration;
+        /// use bevy_falling_sand::core::ChanceMutation;
+        ///
+        /// let mutation = ChanceMutation::new("Water", 0.05, Duration::from_millis(100));
+        /// assert_eq!(mutation.target, "Water");
+        /// assert_eq!(mutation.chance, 0.05);
+        /// ```
+        #[must_use]
+        pub fn new(target: &'static str, chance: f64, tick_rate: Duration) -> Self {
+            Self {
+                target: Cow::Borrowed(target),
+                chance,
+                tick_timer: Timer::new(tick_rate, TimerMode::Repeating),
+            }
+        }
+
+        /// Create a new chance-based mutation targeting `target` from an owned string.
+        ///
+        /// # Examples
+        ///
+        /// ```
+        /// use std::time::Duration;
+        /// use bevy_falling_sand::core::ChanceMutation;
+        ///
+        /// let target = String::from("Water");
+        /// let mutation = ChanceMutation::from_string(target, 0.05, Duration::from_millis(100));
+        /// assert_eq!(mutation.target, "Water");
+        /// ```
+        #[must_use]
+        pub fn from_string(target: String, chance: f64, tick_rate: Duration) -> Self {
+            Self {
+                target: Cow::Owned(target),
+                chance,
+                tick_timer: Timer::new(tick_rate, TimerMode::Repeating),
+            }
+        }
+    }
+
     /// Component that tracks which [`ParticleType`] entity a [`Particle`] belongs to.
     #[derive(Component, Copy, Clone)]
     pub struct AttachedToParticleType(pub Entity);
@@ -522,7 +596,8 @@ pub(super) mod systems {
     use bevy_turborand::{DelegatedRng, GlobalRng};
 
     use crate::core::{
-        ChanceLifetime, DespawnParticleSignal, Particle, ParticleSystems, TimedLifetime,
+        ChanceLifetime, ChanceMutation, DespawnParticleSignal, Particle, ParticleSystems,
+        TimedLifetime,
     };
     pub(super) struct SystemsPlugin;
 
@@ -530,7 +605,11 @@ pub(super) mod systems {
         fn build(&self, app: &mut App) {
             app.add_systems(
                 Update,
-                (handle_timed_lifetimes, handle_chance_lifetimes)
+                (
+                    handle_timed_lifetimes,
+                    handle_chance_lifetimes,
+                    handle_chance_mutations,
+                )
                     .in_set(ParticleSystems::Simulation),
             );
         }
@@ -561,6 +640,22 @@ pub(super) mod systems {
             if lifetime.tick_timer.tick(time.delta()).just_finished() && rng.chance(lifetime.chance)
             {
                 msgw_despawn.write(DespawnParticleSignal::from_entity(entity));
+            }
+        }
+    }
+
+    #[allow(clippy::needless_pass_by_value)]
+    fn handle_chance_mutations(
+        mut query: Query<(&mut Particle, &mut ChanceMutation)>,
+        mut rng: ResMut<GlobalRng>,
+        time: Res<Time>,
+    ) {
+        for (mut particle, mut mutation) in &mut query {
+            if mutation.tick_timer.tick(time.delta()).just_finished()
+                && rng.chance(mutation.chance)
+                && particle.name != mutation.target
+            {
+                particle.name.clone_from(&mutation.target);
             }
         }
     }

@@ -13,8 +13,9 @@
 //! on [`SyncParticleTypeChildrenSignal`]) to control which components are synchronized.
 use super::LocateBy;
 use crate::core::{
-    AttachedToParticleType, ChanceLifetime, ChunkDirtyState, ChunkIndex, GridPosition, Particle,
-    ParticleMap, ParticleSystems, ParticleType, ParticleTypeRegistry, TimedLifetime,
+    AttachedToParticleType, ChanceLifetime, ChanceMutation, ChunkDirtyState, ChunkIndex,
+    GridPosition, Particle, ParticleMap, ParticleSystems, ParticleType, ParticleTypeRegistry,
+    TimedLifetime,
 };
 use bevy::{ecs::system::SystemParam, platform::collections::HashSet, prelude::*};
 use serde::{Deserialize, Serialize};
@@ -41,6 +42,7 @@ impl Plugin for SyncPlugin {
             )
             .register_particle_sync_component::<TimedLifetime>()
             .register_particle_sync_component::<ChanceLifetime>()
+            .register_particle_sync_component::<ChanceMutation>()
             .add_systems(
                 PreUpdate,
                 msgr_sync_particle.in_set(ParticleSystems::Registration),
