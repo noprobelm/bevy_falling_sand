@@ -936,8 +936,9 @@ mod tests {
     use crate::{
         FallingSandMinimalPlugin,
         core::{
-            AttachedToParticleType, ChanceLifetime, ChunkLoader, GridPosition, Particle,
-            ParticleMap, ParticleSyncExt, ParticleType, ParticleTypeRegistry, TimedLifetime,
+            AttachedToParticleType, ChanceLifetime, ChanceMutation, ChunkLoader, GridPosition,
+            Particle, ParticleMap, ParticleSyncExt, ParticleType, ParticleTypeRegistry,
+            TimedLifetime,
         },
     };
 
@@ -1756,5 +1757,173 @@ mod tests {
         app.update();
 
         assert!(!app.world().entities().contains(entity));
+    }
+
+    // ---- chance_mutation ----
+
+    #[test]
+    fn chance_mutation_default() {
+        let mutation = ChanceMutation::default();
+        assert_eq!(mutation.target, "");
+        assert_eq!(mutation.chance, 0.0);
+        assert_eq!(mutation.tick_timer.duration(), Duration::ZERO);
+    }
+
+    #[test]
+    fn chance_mutation_new() {
+        let mutation = ChanceMutation::new("water", 0.5, Duration::from_millis(100));
+        assert_eq!(mutation.target, "water");
+        assert_eq!(mutation.chance, 0.5);
+        assert_eq!(mutation.tick_timer.duration(), Duration::from_millis(100));
+    }
+
+    #[test]
+    fn chance_mutation_from_string() {
+        let mutation =
+            ChanceMutation::from_string("water".to_string(), 0.5, Duration::from_millis(100));
+        assert_eq!(mutation.target, "water");
+        assert_eq!(mutation.chance, 0.5);
+    }
+
+    #[test]
+    fn chance_mutation_zero_never_mutates() {
+        let mut app = create_test_app();
+        app.world_mut().spawn(ParticleType::new("sand"));
+        app.world_mut().spawn(ParticleType::new("water"));
+        app.update();
+
+        let position = IVec2::ZERO;
+        let entity = spawn_particle_at(&mut app, "sand", position);
+
+        app.world_mut()
+            .entity_mut(entity)
+            .insert(ChanceMutation::new("water", 0.0, Duration::ZERO));
+
+        for _ in 0..100 {
+            app.update();
+        }
+
+        let particle = app.world().entity(entity).get::<Particle>().unwrap();
+        assert_eq!(particle.name, "sand");
+    }
+
+    #[test]
+    fn chance_mutation_one_always_mutates() {
+        let mut app = create_test_app();
+        let sand_pt = app.world_mut().spawn(ParticleType::new("sand")).id();
+        let water_pt = app.world_mut().spawn(ParticleType::new("water")).id();
+        app.update();
+
+        let position = IVec2::ZERO;
+        let entity = spawn_particle_at(&mut app, "sand", position);
+
+        let attached = app
+            .world()
+            .entity(entity)
+            .get::<AttachedToParticleType>()
+            .unwrap();
+        assert_eq!(attached.0, sand_pt);
+
+        app.world_mut()
+            .entity_mut(entity)
+            .insert(ChanceMutation::new("water", 1.0, Duration::ZERO));
+
+        app.update();
+        app.update();
+
+        let particle = app.world().entity(entity).get::<Particle>().unwrap();
+        assert_eq!(particle.name, "water");
+
+        let attached = app
+            .world()
+            .entity(entity)
+            .get::<AttachedToParticleType>()
+            .unwrap();
+        assert_eq!(attached.0, water_pt);
+    }
+
+    #[test]
+    fn chance_mutation_respects_tick_rate() {
+        let mut app = create_test_app();
+        app.world_mut().spawn(ParticleType::new("sand"));
+        app.world_mut().spawn(ParticleType::new("water"));
+        app.update();
+
+        let position = IVec2::ZERO;
+        let entity = spawn_particle_at(&mut app, "sand", position);
+
+        app.world_mut()
+            .entity_mut(entity)
+            .insert(ChanceMutation::new("water", 1.0, Duration::from_secs(999)));
+        app.update();
+        app.update();
+
+        let particle = app.world().entity(entity).get::<Particle>().unwrap();
+        assert_eq!(particle.name, "sand");
+
+        *app.world_mut()
+            .entity_mut(entity)
+            .get_mut::<ChanceMutation>()
+            .unwrap() = ChanceMutation::new("water", 1.0, Duration::ZERO);
+        app.update();
+        app.update();
+
+        let particle = app.world().entity(entity).get::<Particle>().unwrap();
+        assert_eq!(particle.name, "water");
+    }
+
+    #[test]
+    fn chance_mutation_unregistered_target_reverts() {
+        let mut app = create_test_app();
+        let sand_pt = app.world_mut().spawn(ParticleType::new("sand")).id();
+        app.update();
+
+        let position = IVec2::ZERO;
+        let entity = spawn_particle_at(&mut app, "sand", position);
+
+        app.world_mut()
+            .entity_mut(entity)
+            .insert(ChanceMutation::new("ghost", 1.0, Duration::ZERO));
+
+        app.update();
+        app.update();
+
+        let particle = app.world().entity(entity).get::<Particle>().unwrap();
+        assert_eq!(
+            particle.name, "sand",
+            "Mutation to an unregistered type should be reverted"
+        );
+
+        let attached = app
+            .world()
+            .entity(entity)
+            .get::<AttachedToParticleType>()
+            .unwrap();
+        assert_eq!(attached.0, sand_pt);
+    }
+
+    #[test]
+    fn chance_mutation_propagates_from_particle_type() {
+        let mut app = create_test_app();
+        app.world_mut().spawn((
+            ParticleType::new("sand"),
+            ChanceMutation::new("water", 1.0, Duration::ZERO),
+        ));
+        app.world_mut().spawn(ParticleType::new("water"));
+        app.update();
+
+        let position = IVec2::ZERO;
+        let entity = spawn_particle_at(&mut app, "sand", position);
+
+        assert!(
+            app.world().entity(entity).get::<ChanceMutation>().is_some(),
+            "ChanceMutation should be propagated from ParticleType to child Particle"
+        );
+
+        app.update();
+        app.update();
+
+        let particle = app.world().entity(entity).get::<Particle>().unwrap();
+        assert_eq!(particle.name, "water");
     }
 }

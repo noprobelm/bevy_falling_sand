@@ -129,6 +129,7 @@
 //! | [`StaticRigidBodyParticle`] | Mark particles for inclusion in rigid body mesh generation           | `physics`    |
 //! | [`TimedLifetime`]           | Despawns a particle after a specified duration                       | —            |
 //! | [`ChanceLifetime`]          | Chance to despawn an entity on a per-tick basis                      | —            |
+//! | [`ChanceMutation`]          | Chance to mutate a particle into another type on a per-tick basis    | —            |
 //!
 //! # Table of Contents
 //!
