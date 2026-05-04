@@ -126,6 +126,8 @@
 //! | [`ContactReaction`]         | Defines reaction rulesets for a particle type                        | `reactions`  |
 //! | [`Fire`]                    | Makes a particle spread fire                                         | `reactions`  |
 //! | [`Flammable`]               | Flammability properties for particles                                | `reactions`  |
+//! | [`Corrosive`]               | Corrosive properaties for particles                                  |  reactions   |
+//! | [`Corrodible`]              | Marks a particle as being subject to corrosion                       |  reactions   |
 //! | [`StaticRigidBodyParticle`] | Mark particles for inclusion in rigid body mesh generation           | `physics`    |
 //! | [`TimedLifetime`]           | Despawns a particle after a specified duration                       | —            |
 //! | [`ChanceLifetime`]          | Chance to despawn an entity on a per-tick basis                      | —            |
@@ -159,6 +161,8 @@
 //! - [Contact Reactions](ContactReaction)
 //! - [Fire emitting particles](Fire)
 //! - [Flammable particles](Flammable)
+//!   [Corrosive particles](Corrosive)
+//!   [Corrodible particles](Corrodible)
 //!
 //! ## [Avian2d integration](`crate::physics`)
 //!
