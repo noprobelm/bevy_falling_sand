@@ -5,6 +5,7 @@
 //!   interacts with Particle B to produce Particle C.
 //! - [Fire] and [Flammability](`Flammable`): Contacts within a certain radius of `Fire` will
 //!   ignite, adding "burning" behavior.
+//! - [Corrosive] and [Corrodible]: Corrosion properaties for particles
 
 mod contact;
 mod corrosion;
