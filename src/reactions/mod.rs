@@ -7,6 +7,7 @@
 //!   ignite, adding "burning" behavior.
 
 mod contact;
+mod corrosion;
 mod fire;
 
 use bevy::prelude::*;
@@ -16,9 +17,11 @@ use serde::{Deserialize, Serialize};
 use crate::impl_particle_rng;
 
 pub use contact::{Consumes, ContactReaction, ContactRule};
+pub use corrosion::{Corrodible, Corrosive};
 pub use fire::{BurnProduct, Burning, Fire, Flammable};
 
 use contact::ContactPlugin;
+use corrosion::CorrosionPlugin;
 use fire::FirePlugin;
 
 impl_particle_rng!(ReactionRng, RngComponent);
@@ -60,7 +63,10 @@ pub struct FallingSandReactionsPlugin;
 
 impl Plugin for FallingSandReactionsPlugin {
     fn build(&self, app: &mut App) {
-        app.register_type::<ReactionRng>()
-            .add_plugins((FirePlugin, ContactPlugin));
+        app.register_type::<ReactionRng>().add_plugins((
+            FirePlugin,
+            ContactPlugin,
+            CorrosionPlugin,
+        ));
     }
 }
