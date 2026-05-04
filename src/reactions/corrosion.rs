@@ -81,6 +81,7 @@ impl Corrosive {
 #[reflect(Component)]
 pub struct Corrodible;
 
+#[allow(clippy::needless_pass_by_value)]
 fn handle_corrosion(
     mut commands: Commands,
     map: Res<ParticleMap>,
