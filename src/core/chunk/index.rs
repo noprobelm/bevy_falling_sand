@@ -644,4 +644,88 @@ mod tests {
 
         assert_eq!(index.iter().count(), 2);
     }
+
+    mod coordinate_conversion {
+        use super::*;
+
+        fn small_index() -> ChunkIndex {
+            ChunkIndex::new(2, 2, 32, IVec2::ZERO)
+        }
+
+        #[test]
+        fn world_to_chunk_coord_positive() {
+            let index = small_index();
+
+            assert_eq!(
+                index.world_to_chunk_coord(IVec2::new(0, 0)),
+                ChunkCoord::new(0, 0)
+            );
+            assert_eq!(
+                index.world_to_chunk_coord(IVec2::new(31, 31)),
+                ChunkCoord::new(0, 0)
+            );
+            assert_eq!(
+                index.world_to_chunk_coord(IVec2::new(32, 32)),
+                ChunkCoord::new(1, 1)
+            );
+        }
+
+        #[test]
+        fn world_to_chunk_coord_negative() {
+            let index = small_index();
+
+            assert_eq!(
+                index.world_to_chunk_coord(IVec2::new(-1, -1)),
+                ChunkCoord::new(-1, -1)
+            );
+            assert_eq!(
+                index.world_to_chunk_coord(IVec2::new(-32, -32)),
+                ChunkCoord::new(-1, -1)
+            );
+        }
+
+        #[test]
+        fn chunk_coord_to_region() {
+            let index = small_index();
+
+            let region = index.chunk_coord_to_chunk_region(ChunkCoord::new(0, 0));
+            assert_eq!(region.min, IVec2::new(0, 0));
+            assert_eq!(region.max, IVec2::new(31, 31));
+
+            let region = index.chunk_coord_to_chunk_region(ChunkCoord::new(1, 1));
+            assert_eq!(region.min, IVec2::new(32, 32));
+            assert_eq!(region.max, IVec2::new(63, 63));
+        }
+    }
+
+    mod chunk_grouping {
+        use super::*;
+
+        fn small_index() -> ChunkIndex {
+            ChunkIndex::new(2, 2, 32, IVec2::ZERO)
+        }
+
+        #[test]
+        fn loaded_chunk_coords() {
+            let index = small_index();
+            let coords = index.loaded_chunk_coords();
+
+            assert_eq!(coords.len(), 4);
+            assert!(coords.contains(&ChunkCoord::new(0, 0)));
+            assert!(coords.contains(&ChunkCoord::new(1, 0)));
+            assert!(coords.contains(&ChunkCoord::new(0, 1)));
+            assert!(coords.contains(&ChunkCoord::new(1, 1)));
+        }
+
+        #[test]
+        fn partition_chunks_by_group() {
+            let index = small_index();
+            let groups = index.partition_chunks_by_group();
+
+            assert!(groups[0].contains(&ChunkCoord::new(0, 0)));
+            assert!(groups[1].contains(&ChunkCoord::new(1, 0)));
+            assert!(groups[2].contains(&ChunkCoord::new(0, 1)));
+            assert!(groups[3].contains(&ChunkCoord::new(1, 1)));
+        }
+    }
 }

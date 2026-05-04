@@ -26,14 +26,17 @@ use crate::core::{
     ParticleType, ParticleTypeRegistry, schedule::ParticleSystems,
 };
 use bevy::prelude::*;
+use bevy_turborand::{DelegatedRng, GlobalRng};
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 pub(super) struct LifecyclePlugin;
 
 impl Plugin for LifecyclePlugin {
     fn build(&self, app: &mut App) {
         app.configure_sets(PreUpdate, ParticleSystems::Registration)
+            .register_type::<TimedLifetime>()
+            .register_type::<ChanceLifetime>()
             .add_message::<SpawnParticleSignal>()
             .add_message::<DespawnParticleSignal>()
             .add_message::<DespawnAllParticlesSignal>()
@@ -66,7 +69,162 @@ impl Plugin for LifecyclePlugin {
                 (ApplyDeferred, despawn_invalid_particles)
                     .chain()
                     .after(ParticleSystems::Registration),
+            )
+            .add_systems(
+                Update,
+                (handle_timed_lifetimes, handle_chance_lifetimes)
+                    .in_set(ParticleSystems::Simulation),
             );
+    }
+}
+
+/// A timed lifetime component that despawns the particle after a specified duration.
+#[derive(Component, Clone, Default, Eq, PartialEq, Debug, Reflect)]
+#[reflect(Component)]
+#[type_path = "bfs_core::particle"]
+pub struct TimedLifetime(pub Timer);
+
+impl TimedLifetime {
+    /// Initialize a new lifetime with the given duration.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::time::Duration;
+    /// use bevy_falling_sand::core::TimedLifetime;
+    ///
+    /// let lifetime = TimedLifetime::new(Duration::from_secs(5));
+    /// assert_eq!(lifetime.duration(), Duration::from_secs(5));
+    /// assert!(!lifetime.finished());
+    /// ```
+    #[must_use]
+    pub fn new(duration: Duration) -> Self {
+        Self(Timer::new(duration, TimerMode::Once))
+    }
+
+    pub(crate) fn tick(&mut self, delta: Duration) {
+        self.0.tick(delta);
+    }
+
+    /// Returns the duration of the lifetime timer.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::time::Duration;
+    /// use bevy_falling_sand::core::TimedLifetime;
+    ///
+    /// let lifetime = TimedLifetime::new(Duration::from_secs(5));
+    /// assert_eq!(lifetime.duration(), Duration::from_secs(5));
+    /// ```
+    #[must_use]
+    pub fn duration(&self) -> Duration {
+        self.0.duration()
+    }
+
+    /// Returns true if the lifetime has expired.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::time::Duration;
+    /// use bevy_falling_sand::core::TimedLifetime;
+    ///
+    /// let lifetime = TimedLifetime::new(Duration::from_secs(5));
+    /// assert!(!lifetime.finished());
+    /// ```
+    #[must_use]
+    pub fn finished(&self) -> bool {
+        self.0.is_finished()
+    }
+}
+
+/// A chance-based lifetime component that has a chance to despawn the entity on a per-tick
+/// basis.
+#[derive(Component, Clone, PartialEq, Debug, Reflect)]
+#[reflect(Component)]
+#[type_path = "bfs_core::particle"]
+pub struct ChanceLifetime {
+    /// The probability (0.0 to 1.0) that the particle will despawn each tick.
+    pub chance: f64,
+    /// Timer that controls how often the chance is evaluated.
+    pub tick_timer: Timer,
+}
+
+impl Default for ChanceLifetime {
+    fn default() -> Self {
+        Self {
+            chance: 0.0,
+            tick_timer: Timer::new(Duration::ZERO, TimerMode::Repeating),
+        }
+    }
+}
+
+impl ChanceLifetime {
+    /// Create a new chance-based lifetime with the given probability, evaluated every frame.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::time::Duration;
+    /// use bevy_falling_sand::core::ChanceLifetime;
+    ///
+    /// let lifetime = ChanceLifetime::new(0.05, Duration::from_millis(100));
+    /// assert_eq!(lifetime.chance, 0.05);
+    /// ```
+    #[must_use]
+    pub fn new(chance: f64, tick_rate: Duration) -> Self {
+        Self {
+            chance,
+            tick_timer: Timer::new(tick_rate, TimerMode::Repeating),
+        }
+    }
+
+    /// Create a new chance-based lifetime with the given probability and tick rate.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::time::Duration;
+    /// use bevy_falling_sand::core::ChanceLifetime;
+    ///
+    /// let lifetime = ChanceLifetime::with_tick_rate(0.05, Duration::from_millis(100));
+    /// assert_eq!(lifetime.chance, 0.05);
+    /// ```
+    #[must_use]
+    pub fn with_tick_rate(chance: f64, tick_rate: Duration) -> Self {
+        Self {
+            chance,
+            tick_timer: Timer::new(tick_rate, TimerMode::Repeating),
+        }
+    }
+}
+
+#[allow(clippy::needless_pass_by_value)]
+fn handle_timed_lifetimes(
+    mut msgw_despawn: MessageWriter<DespawnParticleSignal>,
+    mut query: Query<(Entity, &mut TimedLifetime), With<Particle>>,
+    time: Res<Time>,
+) {
+    for (entity, mut lifetime) in &mut query {
+        lifetime.tick(time.delta());
+        if lifetime.finished() {
+            msgw_despawn.write(DespawnParticleSignal::from_entity(entity));
+        }
+    }
+}
+
+#[allow(clippy::needless_pass_by_value)]
+fn handle_chance_lifetimes(
+    mut msgw_despawn: MessageWriter<DespawnParticleSignal>,
+    mut query: Query<(Entity, &mut ChanceLifetime), With<Particle>>,
+    mut rng: ResMut<GlobalRng>,
+    time: Res<Time>,
+) {
+    for (entity, mut lifetime) in &mut query {
+        if lifetime.tick_timer.tick(time.delta()).just_finished() && rng.chance(lifetime.chance) {
+            msgw_despawn.write(DespawnParticleSignal::from_entity(entity));
+        }
     }
 }
 
@@ -936,9 +1094,8 @@ mod tests {
     use crate::{
         FallingSandMinimalPlugin,
         core::{
-            AttachedToParticleType, ChanceLifetime, ChanceMutation, ChunkLoader, GridPosition,
-            Particle, ParticleMap, ParticleSyncExt, ParticleType, ParticleTypeRegistry,
-            TimedLifetime,
+            AttachedToParticleType, ChanceLifetime, ChunkLoader, GridPosition, Particle,
+            ParticleMap, ParticleSyncExt, ParticleType, ParticleTypeRegistry, TimedLifetime,
         },
     };
 
@@ -1757,173 +1914,5 @@ mod tests {
         app.update();
 
         assert!(!app.world().entities().contains(entity));
-    }
-
-    // ---- chance_mutation ----
-
-    #[test]
-    fn chance_mutation_default() {
-        let mutation = ChanceMutation::default();
-        assert_eq!(mutation.target, "");
-        assert_eq!(mutation.chance, 0.0);
-        assert_eq!(mutation.tick_timer.duration(), Duration::ZERO);
-    }
-
-    #[test]
-    fn chance_mutation_new() {
-        let mutation = ChanceMutation::new("water", 0.5, Duration::from_millis(100));
-        assert_eq!(mutation.target, "water");
-        assert_eq!(mutation.chance, 0.5);
-        assert_eq!(mutation.tick_timer.duration(), Duration::from_millis(100));
-    }
-
-    #[test]
-    fn chance_mutation_from_string() {
-        let mutation =
-            ChanceMutation::from_string("water".to_string(), 0.5, Duration::from_millis(100));
-        assert_eq!(mutation.target, "water");
-        assert_eq!(mutation.chance, 0.5);
-    }
-
-    #[test]
-    fn chance_mutation_zero_never_mutates() {
-        let mut app = create_test_app();
-        app.world_mut().spawn(ParticleType::new("sand"));
-        app.world_mut().spawn(ParticleType::new("water"));
-        app.update();
-
-        let position = IVec2::ZERO;
-        let entity = spawn_particle_at(&mut app, "sand", position);
-
-        app.world_mut()
-            .entity_mut(entity)
-            .insert(ChanceMutation::new("water", 0.0, Duration::ZERO));
-
-        for _ in 0..100 {
-            app.update();
-        }
-
-        let particle = app.world().entity(entity).get::<Particle>().unwrap();
-        assert_eq!(particle.name, "sand");
-    }
-
-    #[test]
-    fn chance_mutation_one_always_mutates() {
-        let mut app = create_test_app();
-        let sand_pt = app.world_mut().spawn(ParticleType::new("sand")).id();
-        let water_pt = app.world_mut().spawn(ParticleType::new("water")).id();
-        app.update();
-
-        let position = IVec2::ZERO;
-        let entity = spawn_particle_at(&mut app, "sand", position);
-
-        let attached = app
-            .world()
-            .entity(entity)
-            .get::<AttachedToParticleType>()
-            .unwrap();
-        assert_eq!(attached.0, sand_pt);
-
-        app.world_mut()
-            .entity_mut(entity)
-            .insert(ChanceMutation::new("water", 1.0, Duration::ZERO));
-
-        app.update();
-        app.update();
-
-        let particle = app.world().entity(entity).get::<Particle>().unwrap();
-        assert_eq!(particle.name, "water");
-
-        let attached = app
-            .world()
-            .entity(entity)
-            .get::<AttachedToParticleType>()
-            .unwrap();
-        assert_eq!(attached.0, water_pt);
-    }
-
-    #[test]
-    fn chance_mutation_respects_tick_rate() {
-        let mut app = create_test_app();
-        app.world_mut().spawn(ParticleType::new("sand"));
-        app.world_mut().spawn(ParticleType::new("water"));
-        app.update();
-
-        let position = IVec2::ZERO;
-        let entity = spawn_particle_at(&mut app, "sand", position);
-
-        app.world_mut()
-            .entity_mut(entity)
-            .insert(ChanceMutation::new("water", 1.0, Duration::from_secs(999)));
-        app.update();
-        app.update();
-
-        let particle = app.world().entity(entity).get::<Particle>().unwrap();
-        assert_eq!(particle.name, "sand");
-
-        *app.world_mut()
-            .entity_mut(entity)
-            .get_mut::<ChanceMutation>()
-            .unwrap() = ChanceMutation::new("water", 1.0, Duration::ZERO);
-        app.update();
-        app.update();
-
-        let particle = app.world().entity(entity).get::<Particle>().unwrap();
-        assert_eq!(particle.name, "water");
-    }
-
-    #[test]
-    fn chance_mutation_unregistered_target_reverts() {
-        let mut app = create_test_app();
-        let sand_pt = app.world_mut().spawn(ParticleType::new("sand")).id();
-        app.update();
-
-        let position = IVec2::ZERO;
-        let entity = spawn_particle_at(&mut app, "sand", position);
-
-        app.world_mut()
-            .entity_mut(entity)
-            .insert(ChanceMutation::new("ghost", 1.0, Duration::ZERO));
-
-        app.update();
-        app.update();
-
-        let particle = app.world().entity(entity).get::<Particle>().unwrap();
-        assert_eq!(
-            particle.name, "sand",
-            "Mutation to an unregistered type should be reverted"
-        );
-
-        let attached = app
-            .world()
-            .entity(entity)
-            .get::<AttachedToParticleType>()
-            .unwrap();
-        assert_eq!(attached.0, sand_pt);
-    }
-
-    #[test]
-    fn chance_mutation_propagates_from_particle_type() {
-        let mut app = create_test_app();
-        app.world_mut().spawn((
-            ParticleType::new("sand"),
-            ChanceMutation::new("water", 1.0, Duration::ZERO),
-        ));
-        app.world_mut().spawn(ParticleType::new("water"));
-        app.update();
-
-        let position = IVec2::ZERO;
-        let entity = spawn_particle_at(&mut app, "sand", position);
-
-        assert!(
-            app.world().entity(entity).get::<ChanceMutation>().is_some(),
-            "ChanceMutation should be propagated from ParticleType to child Particle"
-        );
-
-        app.update();
-        app.update();
-
-        let particle = app.world().entity(entity).get::<Particle>().unwrap();
-        assert_eq!(particle.name, "water");
     }
 }
