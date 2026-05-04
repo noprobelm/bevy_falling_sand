@@ -61,7 +61,8 @@ impl Plugin for SyncPlugin {
 /// When the roll succeeds, the [`Particle::name`] is updated to [`ChanceMutation::target`].
 /// The change triggers normal particle synchronization, so the particle is re-attached to its
 /// new [`ParticleType`] and registered components are re-propagated. If `target` does not
-/// match a registered [`ParticleType`], the mutation is reverted by [`sync_particle_parent`].
+/// match a registered [`ParticleType`], the mutation is reverted by internal synchronization
+/// systems.
 #[derive(Component, Clone, PartialEq, Debug, Reflect)]
 #[reflect(Component)]
 #[type_path = "bfs_core::particle"]
@@ -345,7 +346,7 @@ impl ParticleSyncExt for App {
 /// Synchronizes [`Particle`] components with their [`ParticleType`] parent's components.
 ///
 /// Targets are collected from two sources, deduplicated by entity:
-/// 1. Drained [`SyncParticleSignal`] messages (sent externally or by [`sync_particle_parent`])
+/// 1. Drained [`SyncParticleSignal`] messages (sent externally or other internal sync related triggers)
 /// 2. `Changed<Particle>` query (catches freshly spawned particles whose deferred commands
 ///    were applied after `sync_particle_parent` already ran in the same frame)
 #[derive(SystemParam)]
