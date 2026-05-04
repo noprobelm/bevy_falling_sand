@@ -510,7 +510,6 @@ fn handle_fire(
                             radius: burns.spread_radius,
                         });
                     }
-                    break;
                 }
             }
         }
