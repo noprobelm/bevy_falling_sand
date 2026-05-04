@@ -192,4 +192,32 @@ mod tests {
         assert!(set.contains(&ChunkCoord::new(-1, -1)));
         assert!(set.contains(&ChunkCoord::new(1, -1)));
     }
+
+    mod group {
+        use super::*;
+
+        #[test]
+        fn even_even() {
+            assert_eq!(ChunkCoord::new(0, 0).group(), 0);
+            assert_eq!(ChunkCoord::new(2, 2).group(), 0);
+        }
+
+        #[test]
+        fn odd_even() {
+            assert_eq!(ChunkCoord::new(1, 0).group(), 1);
+            assert_eq!(ChunkCoord::new(3, 2).group(), 1);
+        }
+
+        #[test]
+        fn even_odd() {
+            assert_eq!(ChunkCoord::new(0, 1).group(), 2);
+            assert_eq!(ChunkCoord::new(2, 3).group(), 2);
+        }
+
+        #[test]
+        fn odd_odd() {
+            assert_eq!(ChunkCoord::new(1, 1).group(), 3);
+            assert_eq!(ChunkCoord::new(3, 3).group(), 3);
+        }
+    }
 }
