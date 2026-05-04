@@ -3,9 +3,7 @@ use std::time::Duration;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    ChunkDirtyState, ChunkIndex, GridPosition, ParticleMap, ParticleSyncExt, ParticleSystems,
-};
+use crate::{GridPosition, ParticleMap, ParticleSyncExt, ParticleSystems};
 
 pub(super) struct CorrosionPlugin;
 
