@@ -223,7 +223,7 @@ fn spawn_noise(spawn_writer: &mut MessageWriter<SpawnParticleSignal>, rng: &mut 
             spawn_writer.write(
                 SpawnParticleSignal::overwrite_existing("Dirt Wall", position).with_on_spawn(
                     move |cmd| {
-                        cmd.insert(force_color.clone());
+                        cmd.insert(force_color);
                     },
                 ),
             );
