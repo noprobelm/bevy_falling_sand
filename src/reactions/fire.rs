@@ -454,14 +454,14 @@ fn handle_fire(
     mut commands: Commands,
     map: Res<ParticleMap>,
     chunk_index: Res<ChunkIndex>,
-    chunk_query: Query<&ChunkDirtyState>,
+    mut chunk_query: Query<&mut ChunkDirtyState>,
     fire_query: Query<&Fire>,
     burns_query: Query<&Flammable, (With<Particle>, Without<Burning>)>,
     mut rng: ResMut<bevy_turborand::prelude::GlobalRng>,
 ) {
     use bevy_turborand::DelegatedRng;
     for (_coord, chunk_entity) in chunk_index.iter() {
-        let Ok(dirty_state) = chunk_query.get(chunk_entity) else {
+        let Ok(mut dirty_state) = chunk_query.get_mut(chunk_entity) else {
             continue;
         };
 
@@ -491,6 +491,7 @@ fn handle_fire(
                     };
 
                     if !rng.chance(burns.chance_to_ignite) {
+                        dirty_state.mark_dirty(pos);
                         continue;
                     }
 
