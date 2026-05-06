@@ -103,11 +103,11 @@ fn setup(mut commands: Commands) {
     ));
 
     commands.insert_resource(ParticleSpawnList::new(vec![
-        Particle::new("Dirt Wall"),
-        Particle::new("Sand"),
-        Particle::new("Water"),
+        "Dirt Wall".into(),
+        "Sand".into(),
+        "Water".into(),
     ]));
-    commands.insert_resource(SelectedBrushParticle(Particle::new("Dirt Wall")));
+    commands.insert_resource(SelectedBrushParticle("Dirt Wall".into()));
 
     let instructions_text = "Left mouse: Spawn/despawn particles\n\
         Right mouse: Cycle particle type\n\

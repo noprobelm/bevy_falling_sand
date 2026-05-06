@@ -507,7 +507,7 @@ mod tests {
 
     fn spawn_particle(app: &mut App, name: &'static str, position: IVec2) -> Entity {
         app.world_mut()
-            .write_message(SpawnParticleSignal::new(Particle::new(name), position));
+            .write_message(SpawnParticleSignal::new(name, position));
         app.update();
 
         app.world()
@@ -645,8 +645,17 @@ mod tests {
         send_promote(&mut app, entity);
         app.update();
 
-        let particle = app.world().entity(entity).get::<Particle>().unwrap();
-        assert_eq!(particle.name, "sand");
+        let attached = app
+            .world()
+            .entity(entity)
+            .get::<AttachedToParticleType>()
+            .unwrap();
+        let parent_type = app
+            .world()
+            .entity(attached.0)
+            .get::<ParticleType>()
+            .unwrap();
+        assert_eq!(parent_type.name, "sand");
     }
 
     // ---- rejoin_dynamic_rigid_bodies ----
@@ -905,14 +914,17 @@ mod tests {
         assert_eq!(count_after_rejoin, initial_count);
 
         assert!(app.world().entities().contains(dynamic_entity));
-        assert_eq!(
-            app.world()
-                .entity(dynamic_entity)
-                .get::<Particle>()
-                .unwrap()
-                .name,
-            "sand"
-        );
+        let attached = app
+            .world()
+            .entity(dynamic_entity)
+            .get::<AttachedToParticleType>()
+            .unwrap();
+        let parent_type = app
+            .world()
+            .entity(attached.0)
+            .get::<ParticleType>()
+            .unwrap();
+        assert_eq!(parent_type.name, "sand");
     }
 
     #[test]
@@ -999,7 +1011,7 @@ mod tests {
         let pos = IVec2::new(11, 10);
         let entity = spawn_particle(&mut app, "sand", pos);
 
-        let particle_before = app.world().entity(entity).get::<Particle>().cloned();
+        let particle_before = app.world().entity(entity).get::<Particle>().copied();
         let attached_before = app
             .world()
             .entity(entity)
@@ -1010,7 +1022,7 @@ mod tests {
         app.update();
 
         let entity_ref = app.world().entity(entity);
-        assert_eq!(entity_ref.get::<Particle>().cloned(), particle_before);
+        assert_eq!(entity_ref.get::<Particle>().copied(), particle_before);
         assert_eq!(
             entity_ref.get::<AttachedToParticleType>().map(|a| a.0),
             attached_before,

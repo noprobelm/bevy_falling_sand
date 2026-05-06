@@ -10,8 +10,8 @@ use super::ReactionRng;
 use crate::{
     core::{
         ChanceLifetime, ChunkDirtyState, ChunkIndex, DespawnParticleSignal, GridPosition, Particle,
-        ParticleMap, ParticleRng, ParticleSyncExt, ParticleSystems, ParticleTypeRegistry,
-        SpawnParticleSignal,
+        ParticleMap, ParticleRng, ParticleSyncExt, ParticleSystems, ParticleType,
+        ParticleTypeRegistry, SpawnParticleSignal,
     },
     movement::Movement,
 };
@@ -23,7 +23,7 @@ use crate::{
 /// already [`Burning`]) will be ignited based on the neighbor's [`Flammable::chance_to_ignite`]
 /// probability.
 ///
-/// Can be placed on a [`ParticleType`](crate::ParticleType) for permanent fire sources (e.g. lava), or added
+/// Can be placed on a [`ParticleType`] for permanent fire sources (e.g. lava), or added
 /// dynamically when a particle ignites via [`Flammable::spreads_fire`].
 ///
 /// # Examples
@@ -290,7 +290,7 @@ impl Burning {
 /// use bevy_falling_sand::core::Particle;
 /// use bevy_falling_sand::reactions::BurnProduct;
 ///
-/// let product = BurnProduct::new(Particle::new("Smoke"), 0.1);
+/// let product = BurnProduct::new("Smoke", 0.1);
 /// assert_eq!(product.produces.name, "Smoke");
 /// assert_eq!(product.chance_to_produce, 0.1);
 /// ```
@@ -298,28 +298,30 @@ impl Burning {
 #[reflect(Component)]
 #[type_path = "bfs_reactions::particle"]
 pub struct BurnProduct {
-    /// What the particle will produce when the reaction occurs.
-    pub produces: Particle,
+    /// [`ParticleType`] produced when the reaction occurs.
+    pub produces: ParticleType,
     /// The chance the reaction will occur per frame.
     pub chance_to_produce: f64,
 }
 
 impl BurnProduct {
-    /// Initialize a new `BurnProduct` with a specific particle and chance to produce it.
+    /// Initialize a new `BurnProduct` from a particle type and a per-frame chance.
+    ///
+    /// Accepts anything convertible into [`ParticleType`] — `&'static str` literals, owned
+    /// `String`s, and `ParticleType` values all work.
     ///
     /// # Examples
     ///
     /// ```
-    /// use bevy_falling_sand::core::Particle;
     /// use bevy_falling_sand::reactions::BurnProduct;
     ///
-    /// let product = BurnProduct::new(Particle::new("Ash"), 0.05);
+    /// let product = BurnProduct::new("Ash", 0.05);
     /// assert_eq!(product.chance_to_produce, 0.05);
     /// ```
     #[must_use]
-    pub const fn new(produces: Particle, chance_to_produce: f64) -> Self {
+    pub fn new(produces: impl Into<ParticleType>, chance_to_produce: f64) -> Self {
         Self {
-            produces,
+            produces: produces.into(),
             chance_to_produce,
         }
     }

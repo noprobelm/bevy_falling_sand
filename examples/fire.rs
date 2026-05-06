@@ -230,10 +230,10 @@ fn setup(
     ));
 
     commands.insert_resource(ParticleSpawnList::new(vec![
-        Particle::new("FIRE"),
-        Particle::new("Flammable Gas"),
+        "FIRE".into(),
+        "Flammable Gas".into(),
     ]));
-    commands.insert_resource(SelectedBrushParticle(Particle::new("FIRE")));
+    commands.insert_resource(SelectedBrushParticle("FIRE".into()));
 
     let instructions_text = "Left mouse: Spawn/despawn particles\n\
         Right mouse: Cycle particle type\n\
@@ -281,7 +281,7 @@ fn setup(
     });
 }
 
-fn spawn_flammable_gas_particles(mut commands: Commands) {
+fn spawn_flammable_gas_particles(mut spawn_writer: MessageWriter<SpawnParticleSignal>) {
     let center_x = (START_X + END_X) / 2;
     let center_y = (START_Y + END_Y) / 2;
 
@@ -290,13 +290,8 @@ fn spawn_flammable_gas_particles(mut commands: Commands) {
     for dx in -radius..=radius {
         for dy in -radius..=radius {
             if dx * dx + dy * dy <= radius * radius {
-                let spawn_x = center_x as f32 + dx as f32;
-                let spawn_y = center_y as f32 + dy as f32;
-
-                commands.spawn((
-                    Particle::new("Flammable Gas"),
-                    Transform::from_xyz(spawn_x, spawn_y, 0.0),
-                ));
+                let position = IVec2::new(center_x + dx, center_y + dy);
+                spawn_writer.write(SpawnParticleSignal::new("Flammable Gas", position));
             }
         }
     }
@@ -406,7 +401,7 @@ fn render_fire_settings_gui(
             if ui.checkbox(&mut smoke_enabled, "Smoke").changed() {
                 if smoke_enabled {
                     burns.reaction = Some(BurnProduct {
-                        produces: Particle::new("Smoke"),
+                        produces: "Smoke".into(),
                         chance_to_produce: 0.5,
                     });
                 } else {
@@ -432,7 +427,7 @@ fn render_fire_settings_gui(
                     .drag_stopped()
                 {
                     burns.reaction = Some(BurnProduct {
-                        produces: Particle::new("Smoke"),
+                        produces: "Smoke".into(),
                         chance_to_produce,
                     });
                     fire_updated = true;

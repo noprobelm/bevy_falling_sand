@@ -147,7 +147,7 @@ mod tests {
     use super::*;
     use crate::{
         FallingSandMinimalPlugin,
-        core::{Particle, ParticleType, SpawnParticleSignal},
+        core::{ParticleType, SpawnParticleSignal},
         render::{FallingSandRenderPlugin, ParticleColor},
     };
     use bevy::{asset::AssetPlugin, image::ImagePlugin};
@@ -258,10 +258,7 @@ mod tests {
         for i in 0..5 {
             app.world_mut()
                 .resource_mut::<Messages<SpawnParticleSignal>>()
-                .write(SpawnParticleSignal::new(
-                    Particle::new("TestSequential"),
-                    IVec2::new(i, 0),
-                ));
+                .write(SpawnParticleSignal::new("TestSequential", IVec2::new(i, 0)));
         }
 
         for _ in 0..5 {
@@ -301,10 +298,7 @@ mod tests {
 
         app.world_mut()
             .resource_mut::<Messages<SpawnParticleSignal>>()
-            .write(SpawnParticleSignal::new(
-                Particle::new("TestPalette"),
-                IVec2::new(0, 0),
-            ));
+            .write(SpawnParticleSignal::new("TestPalette", IVec2::new(0, 0)));
 
         for _ in 0..5 {
             app.update();
@@ -341,12 +335,11 @@ mod tests {
         app.world_mut()
             .resource_mut::<Messages<SpawnParticleSignal>>()
             .write(
-                SpawnParticleSignal::new(Particle::new("TestForce"), IVec2::new(0, 0))
-                    .with_on_spawn({
-                        move |cmd| {
-                            cmd.insert(ForceColor(forced));
-                        }
-                    }),
+                SpawnParticleSignal::new("TestForce", IVec2::new(0, 0)).with_on_spawn({
+                    move |cmd| {
+                        cmd.insert(ForceColor(forced));
+                    }
+                }),
             );
 
         for _ in 0..5 {

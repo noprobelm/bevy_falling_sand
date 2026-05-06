@@ -45,15 +45,15 @@ impl Plugin for ContactPlugin {
 /// ```no_run
 /// use bevy::prelude::*;
 /// use bevy_falling_sand::reactions::{ContactReaction, ContactRule, Consumes};
-/// use bevy_falling_sand::core::{Particle, ParticleType};
+/// use bevy_falling_sand::core::ParticleType;
 ///
 /// fn setup(mut commands: Commands) {
 ///     commands.spawn((
 ///         ParticleType::new("Wood"),
 ///         ContactReaction {
 ///             rules: vec![ContactRule {
-///                 target: Particle::new("Lava"),
-///                 becomes: Particle::new("Fire"),
+///                 target: ParticleType::new("Lava"),
+///                 becomes: ParticleType::new("Fire"),
 ///                 chance: 0.8,
 ///                 radius: 1.0,
 ///                 consumes: Consumes::Source,
@@ -72,15 +72,20 @@ pub struct ContactReaction {
 
 /// A single contact reaction rule.
 ///
+/// `target` and `becomes` carry [`ParticleType`] values purely as name carriers — they're
+/// looked up against [`ParticleTypeRegistry`] when the rule is resolved. Use
+/// `ParticleType::new("Lava")` for static literals or `"Lava".into()` via the
+/// `From<&'static str>` impl.
+///
 /// # Examples
 ///
 /// ```
-/// use bevy_falling_sand::core::Particle;
+/// use bevy_falling_sand::core::ParticleType;
 /// use bevy_falling_sand::reactions::{ContactRule, Consumes};
 ///
 /// let rule = ContactRule {
-///     target: Particle::new("Water"),
-///     becomes: Particle::new("Steam"),
+///     target: ParticleType::new("Water"),
+///     becomes: ParticleType::new("Steam"),
 ///     chance: 0.5,
 ///     radius: 1.0,
 ///     consumes: Consumes::Target,
@@ -90,10 +95,10 @@ pub struct ContactReaction {
 /// ```
 #[derive(Clone, PartialEq, Debug, Reflect, Serialize, Deserialize)]
 pub struct ContactRule {
-    /// The particle type to react with on contact.
-    pub target: Particle,
-    /// The particle type the reacting particle becomes.
-    pub becomes: Particle,
+    /// [`ParticleType`] this rule reacts with on contact.
+    pub target: ParticleType,
+    /// [`ParticleType`] produced by the reaction.
+    pub becomes: ParticleType,
     /// Probability per contact per frame (0.0 to 1.0).
     pub chance: f64,
     /// The radius within which to check for the target particle.
@@ -120,8 +125,8 @@ pub enum Consumes {
 impl Default for ContactRule {
     fn default() -> Self {
         Self {
-            target: Particle::default(),
-            becomes: Particle::default(),
+            target: ParticleType::default(),
+            becomes: ParticleType::default(),
             chance: 0.0,
             radius: 1.0,
             consumes: Consumes::default(),
@@ -145,7 +150,7 @@ pub(super) struct ResolvedContactReaction {
 #[derive(Clone, Debug)]
 pub(super) struct ResolvedContactRule {
     pub(crate) target_type: Entity,
-    pub(crate) becomes: Particle,
+    pub(crate) becomes: ParticleType,
     pub(crate) chance: f64,
     pub(crate) radius: f32,
     pub(crate) consumes: Consumes,

@@ -174,14 +174,34 @@ impl From<ParticleType> for Cow<'static, str> {
     }
 }
 
-/// Define an entity as a `Particle`.
+/// Marker component for entities participating in the falling sand simulation.
 ///
-/// `Particle` acts as a marker comopnent for particles which are actively being simulated.
+/// `Particle` is a zero-sized component. The "type" of a particle is identified entirely by its
+/// [`AttachedToParticleType`] reference, which points at the [`ParticleType`] entity that holds
+/// the canonical name and shared-default behavior. To read a particle's type name, query its
+/// parent:
 ///
-/// When a `Particle` changes its name, it will automatically synchronize with an associated
-/// [`ParticleType`] entity.
+/// ```no_run
+/// use bevy::prelude::*;
+/// use bevy_falling_sand::core::{AttachedToParticleType, Particle, ParticleType};
+///
+/// fn read_names(
+///     particles: Query<&AttachedToParticleType, With<Particle>>,
+///     types: Query<&ParticleType>,
+/// ) {
+///     for attached in &particles {
+///         if let Ok(particle_type) = types.get(attached.0) {
+///             println!("{}", particle_type.name);
+///         }
+///     }
+/// }
+/// ```
+///
+/// To re-type a particle (change which [`ParticleType`] it belongs to), look up the new parent
+/// in [`ParticleTypeRegistry`] and assign its entity directly to [`AttachedToParticleType`].
 #[derive(
     Component,
+    Copy,
     Clone,
     Default,
     Eq,
@@ -197,11 +217,7 @@ impl From<ParticleType> for Cow<'static, str> {
 #[component(on_remove = Particle::on_remove)]
 #[reflect(Component)]
 #[type_path = "bfs_core::particle"]
-pub struct Particle {
-    /// The name of the particle, which corresponds to its [`ParticleType`] and can be used as an
-    /// index in the  [`ParticleTypeRegistry`] resource.
-    pub name: Cow<'static, str>,
-}
+pub struct Particle;
 
 impl Particle {
     fn on_remove(mut world: DeferredWorld, context: HookContext) {
@@ -225,77 +241,6 @@ impl Particle {
         if let Some(mut dirty_state) = world.get_mut::<crate::core::ChunkDirtyState>(chunk_entity) {
             dirty_state.mark_dirty(position);
         }
-    }
-
-    /// Initialize a new `Particle` from a static string.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bevy_falling_sand::core::Particle;
-    ///
-    /// let sand = Particle::new("Sand");
-    /// assert_eq!(sand.name, "Sand");
-    /// ```
-    #[must_use]
-    pub const fn new(name: &'static str) -> Self {
-        Self {
-            name: Cow::Borrowed(name),
-        }
-    }
-
-    /// Initialize a new `Particle` from an owned string.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bevy_falling_sand::core::Particle;
-    ///
-    /// let name = String::from("Water");
-    /// let water = Particle::from_string(name);
-    /// assert_eq!(water.name, "Water");
-    /// ```
-    #[must_use]
-    pub const fn from_string(name: String) -> Self {
-        Self {
-            name: Cow::Owned(name),
-        }
-    }
-}
-
-impl From<&'static str> for Particle {
-    fn from(name: &'static str) -> Self {
-        Self::new(name)
-    }
-}
-
-impl From<String> for Particle {
-    fn from(name: String) -> Self {
-        Self::from_string(name)
-    }
-}
-
-impl From<Cow<'static, str>> for Particle {
-    fn from(name: Cow<'static, str>) -> Self {
-        Self { name }
-    }
-}
-
-impl From<Particle> for Cow<'static, str> {
-    fn from(value: Particle) -> Self {
-        value.name
-    }
-}
-
-impl From<ParticleType> for Particle {
-    fn from(value: ParticleType) -> Self {
-        Self { name: value.name }
-    }
-}
-
-impl From<Particle> for ParticleType {
-    fn from(value: Particle) -> Self {
-        Self { name: value.name }
     }
 }
 

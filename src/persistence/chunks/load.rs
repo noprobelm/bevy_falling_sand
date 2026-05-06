@@ -8,7 +8,7 @@ use super::resources::{
     ChunkLoadResult, ChunkPersistenceError, ParticlePersistenceConfig, ParticlePersistenceState,
     PendingChunkData, PendingLoadTasks, PendingSaveTasks, chunk_file_path, chunk_png_path,
 };
-use crate::core::{ChunkIndex, ChunkLoadingState, Particle, ParticleTypeRegistry};
+use crate::core::{ChunkIndex, ChunkLoadingState, ParticleTypeRegistry, SpawnParticleSignal};
 use crate::render::ForceColor;
 pub(super) struct LoadPlugin;
 
@@ -155,7 +155,7 @@ fn spawn_loaded_particles(
     chunk_index: Res<ChunkIndex>,
     registry: Res<ParticleTypeRegistry>,
     mut pending: ResMut<PendingLoadTasks>,
-    mut commands: Commands,
+    mut spawn_writer: MessageWriter<SpawnParticleSignal>,
 ) {
     let chunk_size = chunk_index.chunk_size() as i32;
 
@@ -176,14 +176,6 @@ fn spawn_loaded_particles(
         );
 
         for particle_data in &chunk_data.particles {
-            let transform = Transform::from_xyz(
-                particle_data.position.x as f32,
-                particle_data.position.y as f32,
-                0.,
-            );
-
-            let particle = Particle::from_string(particle_data.name.clone());
-
             let force_color = chunk_data.image.as_ref().and_then(|img| {
                 let px = (particle_data.position.x - chunk_min.x) as u32;
                 let py = (chunk_size - 1 - (particle_data.position.y - chunk_min.y)) as u32;
@@ -201,11 +193,18 @@ fn spawn_loaded_particles(
                 }
             });
 
-            if let Some(color) = force_color {
-                commands.spawn((particle, transform, color));
+            let signal = SpawnParticleSignal::overwrite_existing(
+                particle_data.name.clone(),
+                particle_data.position,
+            );
+            let signal = if let Some(color) = force_color {
+                signal.with_on_spawn(move |cmd| {
+                    cmd.insert(color);
+                })
             } else {
-                commands.spawn((particle, transform));
-            }
+                signal
+            };
+            spawn_writer.write(signal);
         }
 
         debug!(

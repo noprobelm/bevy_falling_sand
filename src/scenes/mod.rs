@@ -40,7 +40,7 @@ use bevy::asset::{AssetLoader, LoadContext};
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::core::{DespawnParticleSignal, Particle, SpawnParticleSignal};
+use crate::core::{DespawnParticleSignal, Particle, ParticleType, SpawnParticleSignal};
 #[cfg(feature = "render")]
 use crate::render::ForceColor;
 
@@ -393,7 +393,7 @@ fn spawn_particles_layer(
         let name = &colors[&rgba];
         write_particle_signals(
             writer,
-            Particle::from(name.to_string()),
+            name.clone().into(),
             positions,
             rgba,
             overwrite_existing,
@@ -405,7 +405,7 @@ fn spawn_particles_layer(
 
 fn write_particle_signals(
     writer: &mut MessageWriter<SpawnParticleSignal>,
-    particle: Particle,
+    particle_type: ParticleType,
     positions: Vec<IVec2>,
     rgba: [u8; 4],
     overwrite_existing: bool,
@@ -434,7 +434,7 @@ fn write_particle_signals(
 
     if overwrite_existing {
         writer.write(decorate(SpawnParticleSignal {
-            particle,
+            particle_type,
             positions,
             overwrite_existing: true,
             on_spawn: None,
@@ -442,7 +442,7 @@ fn write_particle_signals(
     } else {
         for pos in positions {
             writer.write(decorate(SpawnParticleSignal {
-                particle: particle.clone(),
+                particle_type: particle_type.clone(),
                 positions: vec![pos],
                 overwrite_existing: false,
                 on_spawn: None,

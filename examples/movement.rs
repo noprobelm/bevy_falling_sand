@@ -170,17 +170,17 @@ fn setup(
 
     // Setup particle spawn list for brush system
     let particles = vec![
-        Particle::new("Moore Neighborhood Particle (no momentum)"),
-        Particle::new("Moore Neighborhood Particle (with momentum)"),
-        Particle::new("Neumann Neighborhood Particle (no momentum)"),
-        Particle::new("Neumann Neighborhood Particle (with momentum)"),
-        Particle::new("Downward diagonal (no momentum)"),
-        Particle::new("Downward diagonal (with momentum)"),
+        "Moore Neighborhood Particle (no momentum)".into(),
+        "Moore Neighborhood Particle (with momentum)".into(),
+        "Neumann Neighborhood Particle (no momentum)".into(),
+        "Neumann Neighborhood Particle (with momentum)".into(),
+        "Downward diagonal (no momentum)".into(),
+        "Downward diagonal (with momentum)".into(),
     ];
     commands.insert_resource(ParticleSpawnList::new(particles));
-    commands.insert_resource(SelectedBrushParticle(Particle::new(
-        "Moore Neighborhood Particle (no momentum)",
-    )));
+    commands.insert_resource(SelectedBrushParticle(
+        "Moore Neighborhood Particle (no momentum)".into(),
+    ));
 
     let instructions_text = "Left mouse: Spawn/despawn particles\n\
         Right mouse: Cycle particle type\n\

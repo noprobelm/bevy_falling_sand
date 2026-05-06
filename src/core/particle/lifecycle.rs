@@ -1,24 +1,16 @@
-//! Provides mechanisms for ergonomic spawning/despawning of particle entities from the simulation
+//! Provides mechanisms for ergonomic spawning/despawning of particle entities from the simulation.
 //!
-//! Each of these are responsive to both messages and triggers
+//! Each of these are responsive to both messages and triggers:
 //! - [`SpawnParticleSignal`]: Spawn a new particle into the simulation
 //! - [`DespawnParticleSignal`]: Despawn a particle from the simulation
 //! - [`DespawnAllParticlesSignal`]: Despawn all particles from the simulation
-//! - [`DespawnParticleTypeChildrenSignal`]: Despawn all particle children of by name or parent
+//! - [`DespawnParticleTypeChildrenSignal`]: Despawn all particle children by name or parent
 //!   handle.
 //!
-//! Though it is possible to safely add and remove [`Particle`] entities from the world using
-//! [`Commands`] and inserting a [`Transform`] component, which often feels like the idiomatic
-//! approach, it is generally preferred to use the signals provided in this module.
-//!
-//! <div class="warning">
-//!
-//! Newly spawned [`Particle`] entities with a [`Transform`] will automatically have the
-//! [`Transform`] and its required components immediately removed to prevent overhead associated
-//! with rebuilding dirty trees when simulating many particles. `bfs` instead uses the
-//! [`GridPosition`] component for managing particle positions.
-//!
-//! </div>
+//! [`SpawnParticleSignal`] is the **only** supported way to introduce a particle into the
+//! simulation. Direct `commands.spawn(...)` of a [`Particle`] is not currently supported —
+//! the simulation relies on internal bookkeeping (`ParticleMap`, chunk dirty rects, parent
+//! resolution, sync propagation) that only the signal handlers wire up.
 
 use super::LocateBy;
 use crate::core::{
@@ -56,19 +48,7 @@ impl Plugin for LifecyclePlugin {
             )
             .add_systems(
                 PreUpdate,
-                (
-                    mark_positionless_particles_invalid,
-                    register_transform_particles,
-                    despawn_orphaned_particles,
-                )
-                    .chain()
-                    .before(ParticleSystems::Registration),
-            )
-            .add_systems(
-                PreUpdate,
-                (ApplyDeferred, despawn_invalid_particles)
-                    .chain()
-                    .after(ParticleSystems::Registration),
+                despawn_orphaned_particles.before(ParticleSystems::Registration),
             )
             .add_systems(
                 Update,
@@ -243,6 +223,12 @@ pub type OnSpawnCallback = Arc<dyn Fn(&mut EntityCommands) + Send + Sync>;
 /// - [`SpawnParticleSignal::try_multiple`] accepts an ordered list of desired spawn locations,
 ///   short-circuiting as soon as a vacancy is found.
 ///
+/// The signal carries a [`ParticleType`] value which is resolved to the matching parent entity via
+/// [`ParticleTypeRegistry`] at handle time. Spawned entities receive only the [`Particle`]
+/// marker plus an [`AttachedToParticleType`] reference. Therefore, when looking up a particle
+/// entity's type, the user should also query for [`ParticleType`] entities and look up the subject
+/// particle entity's [`AttachedToParticleType`].
+///
 /// # Hooking custom components during spawn
 ///
 /// Sometimes it may be desired to spawn a particle with additional behavior not managed by
@@ -263,14 +249,14 @@ pub type OnSpawnCallback = Arc<dyn Fn(&mut EntityCommands) + Send + Sync>;
 ///
 /// fn spawn_burning(mut writer: MessageWriter<SpawnParticleSignal>) {
 ///     writer.write(
-///         SpawnParticleSignal::new(Particle::new("Wood"), IVec2::new(5, 5))
+///         SpawnParticleSignal::new("Wood", IVec2::new(5, 5))
 ///             .with_on_spawn(|cmd| { cmd.insert(OnFire); }),
 ///     );
 /// }
 /// ```
 #[derive(Event, Message, Clone, Reflect, Serialize, Deserialize)]
 pub struct SpawnParticleSignal {
-    pub(crate) particle: Particle,
+    pub(crate) particle_type: ParticleType,
     pub(crate) positions: Vec<IVec2>,
     pub(crate) overwrite_existing: bool,
     #[serde(skip)]
@@ -281,7 +267,7 @@ pub struct SpawnParticleSignal {
 impl std::fmt::Debug for SpawnParticleSignal {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("SpawnParticleSignal")
-            .field("particle", &self.particle)
+            .field("particle_type", &self.particle_type)
             .field("positions", &self.positions)
             .field("overwrite_existing", &self.overwrite_existing)
             .field("on_spawn", &self.on_spawn.as_ref().map(|_| "..."))
@@ -300,15 +286,15 @@ impl SpawnParticleSignal {
     ///
     /// fn spawn(mut writer: MessageWriter<SpawnParticleSignal>) {
     ///     writer.write(SpawnParticleSignal::new(
-    ///         Particle::new("Sand"),
+    ///         "Sand",
     ///         IVec2::new(10, 20),
     ///     ));
     /// }
     /// ```
     #[must_use]
-    pub fn new(particle: Particle, position: IVec2) -> Self {
+    pub fn new(particle_type: impl Into<ParticleType>, position: IVec2) -> Self {
         Self {
-            particle,
+            particle_type: particle_type.into(),
             positions: vec![position],
             overwrite_existing: false,
             on_spawn: None,
@@ -325,15 +311,15 @@ impl SpawnParticleSignal {
     ///
     /// fn replace(mut writer: MessageWriter<SpawnParticleSignal>) {
     ///     writer.write(SpawnParticleSignal::overwrite_existing(
-    ///         Particle::new("Water"),
+    ///         "Water",
     ///         IVec2::new(10, 20),
     ///     ));
     /// }
     /// ```
     #[must_use]
-    pub fn overwrite_existing(particle: Particle, position: IVec2) -> Self {
+    pub fn overwrite_existing(particle_type: impl Into<ParticleType>, position: IVec2) -> Self {
         Self {
-            particle,
+            particle_type: particle_type.into(),
             positions: vec![position],
             overwrite_existing: true,
             on_spawn: None,
@@ -352,15 +338,15 @@ impl SpawnParticleSignal {
     /// // If position (11, 20) is vacant, short circuit and exit early.
     /// fn spawn_fallback(mut writer: MessageWriter<SpawnParticleSignal>) {
     ///     writer.write(SpawnParticleSignal::try_multiple(
-    ///         Particle::new("Sand"),
+    ///         "Sand",
     ///         vec![IVec2::new(10, 20), IVec2::new(11, 20), IVec2::new(12, 20)],
     ///     ));
     /// }
     /// ```
     #[must_use]
-    pub const fn try_multiple(particle: Particle, positions: Vec<IVec2>) -> Self {
+    pub fn try_multiple(particle_type: impl Into<ParticleType>, positions: Vec<IVec2>) -> Self {
         Self {
-            particle,
+            particle_type: particle_type.into(),
             positions,
             overwrite_existing: false,
             on_spawn: None,
@@ -387,7 +373,7 @@ impl SpawnParticleSignal {
     ///
     /// fn spawn_burning(mut writer: MessageWriter<SpawnParticleSignal>) {
     ///     writer.write(
-    ///         SpawnParticleSignal::new(Particle::new("Wood"), IVec2::new(5, 5))
+    ///         SpawnParticleSignal::new("Wood", IVec2::new(5, 5))
     ///             .with_on_spawn(|cmd| { cmd.insert(OnFire); }),
     ///     );
     /// }
@@ -561,25 +547,22 @@ fn msgr_spawn_particle(
 ) {
     use bevy::platform::collections::HashMap;
 
-    let mut pending_overwrites: HashMap<IVec2, (Particle, Entity, Option<OnSpawnCallback>)> =
+    let mut pending_overwrites: HashMap<IVec2, (Entity, Option<OnSpawnCallback>)> =
         HashMap::default();
     let mut spawned_positions: Vec<IVec2> = Vec::new();
 
     msgr_spawn_particle.read().for_each(|msg| {
-        if let Some(parent_handle) = registry.get(&msg.particle.name) {
+        if let Some(parent_handle) = registry.get(&msg.particle_type.name) {
             let on_spawn = msg.on_spawn.clone();
             for position in &msg.positions {
                 if msg.overwrite_existing {
-                    pending_overwrites.insert(
-                        *position,
-                        (msg.particle.clone(), *parent_handle, on_spawn.clone()),
-                    );
+                    pending_overwrites.insert(*position, (*parent_handle, on_spawn.clone()));
                 } else if map.is_position_loaded(*position) {
                     let on_spawn = on_spawn.clone();
                     if let Ok(mut entry) = map.entry(*position)
                         && entry.insert_if_vacant_with(|| {
                             let mut entity_commands = commands.spawn((
-                                msg.particle.clone(),
+                                Particle,
                                 GridPosition(*position),
                                 AttachedToParticleType(*parent_handle),
                             ));
@@ -597,9 +580,9 @@ fn msgr_spawn_particle(
         }
     });
 
-    for (position, (particle, parent_handle, on_spawn)) in pending_overwrites {
+    for (position, (parent_handle, on_spawn)) in pending_overwrites {
         let mut entity_commands = commands.spawn((
-            particle,
+            Particle,
             GridPosition(position),
             AttachedToParticleType(parent_handle),
         ));
@@ -641,25 +624,22 @@ fn on_spawn_particle(
 ) {
     use bevy::platform::collections::HashMap;
 
-    let mut pending_overwrites: HashMap<IVec2, (Particle, Entity, Option<OnSpawnCallback>)> =
+    let mut pending_overwrites: HashMap<IVec2, (Entity, Option<OnSpawnCallback>)> =
         HashMap::default();
     let mut spawned_positions: Vec<IVec2> = Vec::new();
 
     let event = trigger.event();
-    if let Some(parent_handle) = registry.get(&event.particle.name) {
+    if let Some(parent_handle) = registry.get(&event.particle_type.name) {
         let on_spawn = event.on_spawn.clone();
         for position in &event.positions {
             if event.overwrite_existing {
-                pending_overwrites.insert(
-                    *position,
-                    (event.particle.clone(), *parent_handle, on_spawn.clone()),
-                );
+                pending_overwrites.insert(*position, (*parent_handle, on_spawn.clone()));
             } else if map.is_position_loaded(*position) {
                 let on_spawn = on_spawn.clone();
                 if let Ok(mut entry) = map.entry(*position)
                     && entry.insert_if_vacant_with(|| {
                         let mut entity_commands = commands.spawn((
-                            event.particle.clone(),
+                            Particle,
                             GridPosition(*position),
                             AttachedToParticleType(*parent_handle),
                         ));
@@ -676,9 +656,9 @@ fn on_spawn_particle(
         }
     }
 
-    for (position, (particle, parent_handle, on_spawn)) in pending_overwrites {
+    for (position, (parent_handle, on_spawn)) in pending_overwrites {
         let mut entity_commands = commands.spawn((
-            particle,
+            Particle,
             GridPosition(position),
             AttachedToParticleType(parent_handle),
         ));
@@ -1005,87 +985,6 @@ fn despawn_orphaned_particles(
     }
 }
 
-/// Marker component for despawning invalid particles
-#[derive(Component)]
-pub struct InvalidParticle;
-
-/// Despawn particles with the [`InvalidParticle`] component.
-fn despawn_invalid_particles(mut commands: Commands, query: Query<Entity, With<InvalidParticle>>) {
-    for entity in &query {
-        commands.entity(entity).despawn();
-    }
-}
-
-/// Mark derelict particles as invalid
-fn mark_positionless_particles_invalid(
-    mut commands: Commands,
-    query: Query<Entity, (Added<Particle>, Without<Transform>, Without<GridPosition>)>,
-) {
-    for entity in &query {
-        warn!("Particle entity {entity} spawned without position. Removing from world");
-        commands.entity(entity).insert(InvalidParticle);
-    }
-}
-
-/// Registers newly added [`Particle`] entities with a [`Transform`] component with the
-/// [`ParticleMap`].
-///
-/// **Note**: [`Transform`] and its required components are removed after the particle has been
-/// registered. This is to avoid overhead associated with Bevy's transform systems, which
-/// becomes noticeable when the simulation is managing large numbers of particles.
-#[allow(clippy::needless_pass_by_value)]
-fn register_transform_particles(
-    mut commands: Commands,
-    mut map: ResMut<ParticleMap>,
-    registry: Res<ParticleTypeRegistry>,
-    chunk_index: Res<ChunkIndex>,
-    mut chunk_query: Query<&mut ChunkDirtyState>,
-    mut particle_query: Query<
-        (Entity, &Particle, &Transform),
-        (Added<Particle>, Without<GridPosition>),
-    >,
-) {
-    for (entity, particle, transform) in &mut particle_query {
-        let position = IVec2::new(
-            transform.translation.x.round() as i32,
-            transform.translation.y.round() as i32,
-        );
-
-        let Some(parent_handle) = registry.get(&particle.name).copied() else {
-            warn!(
-                "Particle '{}' not found in registry - marking invalid",
-                particle.name
-            );
-            commands.entity(entity).insert(InvalidParticle);
-            continue;
-        };
-
-        let Ok(mut entry) = map.entry(position) else {
-            commands.entity(entity).insert(InvalidParticle);
-            continue;
-        };
-
-        if entry.insert_if_vacant(entity) {
-            commands
-                .entity(entity)
-                .insert((
-                    GridPosition(position),
-                    AttachedToParticleType(parent_handle),
-                ))
-                .remove::<(Transform, GlobalTransform, TransformTreeChanged)>();
-
-            let chunk_coord = chunk_index.world_to_chunk_coord(position);
-            if let Some(chunk_entity) = chunk_index.get(chunk_coord)
-                && let Ok(mut dirty_state) = chunk_query.get_mut(chunk_entity)
-            {
-                dirty_state.mark_dirty(position);
-            }
-        } else {
-            commands.entity(entity).insert(InvalidParticle);
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use std::time::Duration;
@@ -1094,8 +993,8 @@ mod tests {
     use crate::{
         FallingSandMinimalPlugin,
         core::{
-            AttachedToParticleType, ChanceLifetime, ChunkLoader, GridPosition, Particle,
-            ParticleMap, ParticleSyncExt, ParticleType, ParticleTypeRegistry, TimedLifetime,
+            AttachedToParticleType, ChanceLifetime, GridPosition, Particle, ParticleMap,
+            ParticleType, ParticleTypeRegistry, TimedLifetime,
         },
     };
 
@@ -1107,6 +1006,20 @@ mod tests {
         app.add_plugins(MinimalPlugins);
         app.add_plugins(FallingSandMinimalPlugin::default());
         app
+    }
+
+    fn name_of(app: &App, entity: Entity) -> String {
+        let attached = app
+            .world()
+            .entity(entity)
+            .get::<AttachedToParticleType>()
+            .unwrap();
+        app.world()
+            .entity(attached.0)
+            .get::<ParticleType>()
+            .unwrap()
+            .name
+            .to_string()
     }
 
     // ---- particle_type hooks ----
@@ -1166,7 +1079,7 @@ mod tests {
 
         let position = IVec2::new(3, 4);
         app.world_mut()
-            .write_message(SpawnParticleSignal::new(Particle::new("sand"), position));
+            .write_message(SpawnParticleSignal::new("sand", position));
         app.update();
 
         let map = app.world().resource::<ParticleMap>();
@@ -1175,8 +1088,7 @@ mod tests {
             .unwrap()
             .expect("Particle should exist in map");
 
-        let particle = app.world().entity(entity).get::<Particle>().unwrap();
-        assert_eq!(particle.name, "sand");
+        assert_eq!(name_of(&app, entity), "sand");
 
         let grid_pos = app.world().entity(entity).get::<GridPosition>().unwrap();
         assert_eq!(grid_pos.0, position);
@@ -1193,7 +1105,7 @@ mod tests {
         let position = IVec2::ZERO;
 
         app.world_mut()
-            .write_message(SpawnParticleSignal::new(Particle::new("sand"), position));
+            .write_message(SpawnParticleSignal::new("sand", position));
         app.update();
 
         let first_entity = app
@@ -1204,7 +1116,7 @@ mod tests {
             .unwrap();
 
         app.world_mut()
-            .write_message(SpawnParticleSignal::new(Particle::new("water"), position));
+            .write_message(SpawnParticleSignal::new("water", position));
         app.update();
 
         let entity = app
@@ -1215,8 +1127,7 @@ mod tests {
             .unwrap();
         assert_eq!(entity, first_entity);
 
-        let particle = app.world().entity(entity).get::<Particle>().unwrap();
-        assert_eq!(particle.name, "sand");
+        assert_eq!(name_of(&app, entity), "sand");
     }
 
     #[test]
@@ -1230,7 +1141,7 @@ mod tests {
         let position = IVec2::ZERO;
 
         app.world_mut()
-            .write_message(SpawnParticleSignal::new(Particle::new("sand"), position));
+            .write_message(SpawnParticleSignal::new("sand", position));
         app.update();
 
         let old_entity = app
@@ -1241,10 +1152,7 @@ mod tests {
             .unwrap();
 
         app.world_mut()
-            .write_message(SpawnParticleSignal::overwrite_existing(
-                Particle::new("water"),
-                position,
-            ));
+            .write_message(SpawnParticleSignal::overwrite_existing("water", position));
         app.update();
 
         let new_entity = app
@@ -1257,8 +1165,7 @@ mod tests {
         assert_ne!(old_entity, new_entity);
         assert!(!app.world().entities().contains(old_entity));
 
-        let particle = app.world().entity(new_entity).get::<Particle>().unwrap();
-        assert_eq!(particle.name, "water");
+        assert_eq!(name_of(&app, new_entity), "water");
     }
 
     #[test]
@@ -1273,12 +1180,12 @@ mod tests {
         let pos_b = IVec2::new(1, 0);
 
         app.world_mut()
-            .write_message(SpawnParticleSignal::new(Particle::new("sand"), pos_a));
+            .write_message(SpawnParticleSignal::new("sand", pos_a));
         app.update();
 
         app.world_mut()
             .write_message(SpawnParticleSignal::try_multiple(
-                Particle::new("water"),
+                "water",
                 vec![pos_a, pos_b],
             ));
         app.update();
@@ -1286,16 +1193,10 @@ mod tests {
         let map = app.world().resource::<ParticleMap>();
 
         let entity_a = map.get_copied(pos_a).unwrap().unwrap();
-        assert_eq!(
-            app.world().entity(entity_a).get::<Particle>().unwrap().name,
-            "sand"
-        );
+        assert_eq!(name_of(&app, entity_a), "sand");
 
         let entity_b = map.get_copied(pos_b).unwrap().unwrap();
-        assert_eq!(
-            app.world().entity(entity_b).get::<Particle>().unwrap().name,
-            "water"
-        );
+        assert_eq!(name_of(&app, entity_b), "water");
     }
 
     #[test]
@@ -1305,11 +1206,12 @@ mod tests {
         app.world_mut().spawn(ParticleType::new("sand"));
         app.update();
 
-        app.world_mut().write_message(
-            SpawnParticleSignal::new(Particle::new("sand"), IVec2::ZERO).with_on_spawn(|cmd| {
-                cmd.insert(Marker(99));
-            }),
-        );
+        app.world_mut()
+            .write_message(
+                SpawnParticleSignal::new("sand", IVec2::ZERO).with_on_spawn(|cmd| {
+                    cmd.insert(Marker(99));
+                }),
+            );
         app.update();
 
         let particle_entity = app
@@ -1330,10 +1232,8 @@ mod tests {
         let mut app = create_test_app();
         app.update();
 
-        app.world_mut().write_message(SpawnParticleSignal::new(
-            Particle::new("ghost"),
-            IVec2::ZERO,
-        ));
+        app.world_mut()
+            .write_message(SpawnParticleSignal::new("ghost", IVec2::ZERO));
         app.update();
 
         let count = app
@@ -1355,7 +1255,7 @@ mod tests {
 
         let position = IVec2::ZERO;
         app.world_mut()
-            .write_message(SpawnParticleSignal::new(Particle::new("sand"), position));
+            .write_message(SpawnParticleSignal::new("sand", position));
         app.update();
 
         let entity = app
@@ -1383,7 +1283,7 @@ mod tests {
 
         let position = IVec2::ZERO;
         app.world_mut()
-            .write_message(SpawnParticleSignal::new(Particle::new("sand"), position));
+            .write_message(SpawnParticleSignal::new("sand", position));
         app.update();
 
         let entity = app
@@ -1413,7 +1313,7 @@ mod tests {
 
         let position = IVec2::ZERO;
         app.world_mut()
-            .write_message(SpawnParticleSignal::new(Particle::new("sand"), position));
+            .write_message(SpawnParticleSignal::new("sand", position));
         app.update();
 
         let entity = app
@@ -1442,27 +1342,23 @@ mod tests {
         app.update();
 
         for i in 0..5 {
-            app.world_mut().write_message(SpawnParticleSignal::new(
-                Particle::new("sand"),
-                IVec2::new(i, 0),
-            ));
+            app.world_mut()
+                .write_message(SpawnParticleSignal::new("sand", IVec2::new(i, 0)));
         }
-        app.world_mut().write_message(SpawnParticleSignal::new(
-            Particle::new("water"),
-            IVec2::new(10, 0),
-        ));
+        app.world_mut()
+            .write_message(SpawnParticleSignal::new("water", IVec2::new(10, 0)));
         app.update();
 
         app.world_mut()
             .write_message(DespawnParticleTypeChildrenSignal::from_name("sand"));
         app.update();
 
-        let remaining: Vec<String> = app
+        let entities: Vec<Entity> = app
             .world_mut()
-            .query::<&Particle>()
+            .query_filtered::<Entity, With<Particle>>()
             .iter(app.world())
-            .map(|p| p.name.to_string())
             .collect();
+        let remaining: Vec<String> = entities.iter().map(|&e| name_of(&app, e)).collect();
 
         assert_eq!(remaining, vec!["water"]);
     }
@@ -1476,15 +1372,11 @@ mod tests {
         app.update();
 
         for i in 0..3 {
-            app.world_mut().write_message(SpawnParticleSignal::new(
-                Particle::new("sand"),
-                IVec2::new(i, 0),
-            ));
+            app.world_mut()
+                .write_message(SpawnParticleSignal::new("sand", IVec2::new(i, 0)));
         }
-        app.world_mut().write_message(SpawnParticleSignal::new(
-            Particle::new("water"),
-            IVec2::new(10, 0),
-        ));
+        app.world_mut()
+            .write_message(SpawnParticleSignal::new("water", IVec2::new(10, 0)));
         app.update();
 
         app.world_mut()
@@ -1493,12 +1385,12 @@ mod tests {
             ));
         app.update();
 
-        let remaining: Vec<String> = app
+        let entities: Vec<Entity> = app
             .world_mut()
-            .query::<&Particle>()
+            .query_filtered::<Entity, With<Particle>>()
             .iter(app.world())
-            .map(|p| p.name.to_string())
             .collect();
+        let remaining: Vec<String> = entities.iter().map(|&e| name_of(&app, e)).collect();
 
         assert_eq!(remaining, vec!["water"]);
     }
@@ -1515,15 +1407,11 @@ mod tests {
 
         let mut entities = vec![];
         for i in 0..5 {
-            app.world_mut().write_message(SpawnParticleSignal::new(
-                Particle::new("sand"),
-                IVec2::new(i, 0),
-            ));
+            app.world_mut()
+                .write_message(SpawnParticleSignal::new("sand", IVec2::new(i, 0)));
         }
-        app.world_mut().write_message(SpawnParticleSignal::new(
-            Particle::new("water"),
-            IVec2::new(10, 0),
-        ));
+        app.world_mut()
+            .write_message(SpawnParticleSignal::new("water", IVec2::new(10, 0)));
         app.update();
 
         entities.extend(
@@ -1543,125 +1431,6 @@ mod tests {
         }
     }
 
-    // ---- register_transform_particles ----
-
-    fn load_chunk_at_origin(app: &mut App) {
-        app.world_mut().spawn((ChunkLoader, Transform::default()));
-        app.update();
-    }
-
-    #[test]
-    fn register_transform_particle_with_position() {
-        let mut app = create_test_app();
-        load_chunk_at_origin(&mut app);
-
-        app.world_mut().spawn(ParticleType::new("sand"));
-        app.update();
-
-        let entity = app
-            .world_mut()
-            .commands()
-            .spawn((Particle::new("sand"), Transform::from_xyz(0., 0., 0.)))
-            .id();
-        app.update();
-
-        assert!(app.world().entities().contains(entity));
-        assert!(app.world().entity(entity).get::<GridPosition>().is_some());
-        assert!(
-            app.world()
-                .entity(entity)
-                .get::<AttachedToParticleType>()
-                .is_some()
-        );
-    }
-
-    #[test]
-    fn register_transform_particle_rounds_position() {
-        let mut app = create_test_app();
-        load_chunk_at_origin(&mut app);
-
-        app.world_mut().spawn(ParticleType::new("sand"));
-        app.update();
-
-        let entity = app
-            .world_mut()
-            .commands()
-            .spawn((Particle::new("sand"), Transform::from_xyz(0.7, -0.3, 0.)))
-            .id();
-        app.update();
-
-        let grid_position = app
-            .world()
-            .entity(entity)
-            .get::<GridPosition>()
-            .expect("GridPosition should be assigned");
-        assert_eq!(grid_position.0, IVec2::new(1, 0));
-
-        assert!(
-            app.world().entity(entity).get::<Transform>().is_none(),
-            "Transform should be removed after registration"
-        );
-    }
-
-    #[test]
-    fn register_transform_particle_without_position_is_despawned() {
-        let mut app = create_test_app();
-        load_chunk_at_origin(&mut app);
-
-        app.world_mut().spawn(ParticleType::new("sand"));
-        app.update();
-
-        let entity = app.world_mut().spawn(Particle::new("sand")).id();
-        app.update();
-
-        assert!(
-            !app.world().entities().contains(entity),
-            "Positionless particle should be despawned"
-        );
-    }
-
-    #[test]
-    fn register_transform_particle_propagates_components() {
-        let mut app = create_test_app();
-        app.register_particle_sync_component::<Marker>();
-        load_chunk_at_origin(&mut app);
-
-        app.world_mut()
-            .spawn((ParticleType::new("sand"), Marker(42)));
-        app.update();
-
-        let entity = app
-            .world_mut()
-            .commands()
-            .spawn((Particle::new("sand"), Transform::from_xyz(0., 0., 0.)))
-            .id();
-        app.update();
-
-        assert_eq!(
-            app.world().entity(entity).get::<Marker>(),
-            Some(&Marker(42)),
-            "Registered component should propagate from ParticleType"
-        );
-    }
-
-    #[test]
-    fn register_transform_particle_unregistered_type_is_despawned() {
-        let mut app = create_test_app();
-        load_chunk_at_origin(&mut app);
-
-        let entity = app
-            .world_mut()
-            .commands()
-            .spawn((Particle::new("ghost"), Transform::from_xyz(0., 0., 0.)))
-            .id();
-        app.update();
-
-        assert!(
-            !app.world().entities().contains(entity),
-            "Particle with unregistered type should be despawned"
-        );
-    }
-
     // ---- despawn_orphaned_particles ----
 
     #[test]
@@ -1673,10 +1442,8 @@ mod tests {
 
         let mut particle_entities = vec![];
         for i in 0..5 {
-            app.world_mut().write_message(SpawnParticleSignal::new(
-                Particle::new("sand"),
-                IVec2::new(i, 0),
-            ));
+            app.world_mut()
+                .write_message(SpawnParticleSignal::new("sand", IVec2::new(i, 0)));
         }
         app.update();
 
@@ -1715,15 +1482,11 @@ mod tests {
         app.update();
 
         for i in 0..3 {
-            app.world_mut().write_message(SpawnParticleSignal::new(
-                Particle::new("sand"),
-                IVec2::new(i, 0),
-            ));
+            app.world_mut()
+                .write_message(SpawnParticleSignal::new("sand", IVec2::new(i, 0)));
         }
-        app.world_mut().write_message(SpawnParticleSignal::new(
-            Particle::new("water"),
-            IVec2::new(10, 0),
-        ));
+        app.world_mut()
+            .write_message(SpawnParticleSignal::new("water", IVec2::new(10, 0)));
         app.update();
 
         let water_entity = app
@@ -1737,14 +1500,7 @@ mod tests {
         app.update();
 
         assert!(app.world().entities().contains(water_entity));
-        assert_eq!(
-            app.world()
-                .entity(water_entity)
-                .get::<Particle>()
-                .unwrap()
-                .name,
-            "water"
-        );
+        assert_eq!(name_of(&app, water_entity), "water");
 
         let map = app.world().resource::<ParticleMap>();
         for i in 0..3 {
@@ -1756,7 +1512,7 @@ mod tests {
 
     fn spawn_particle_at(app: &mut App, name: &'static str, position: IVec2) -> Entity {
         app.world_mut()
-            .write_message(SpawnParticleSignal::new(Particle::new(name), position));
+            .write_message(SpawnParticleSignal::new(name, position));
         app.update();
 
         app.world()
