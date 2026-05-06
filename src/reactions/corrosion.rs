@@ -3,7 +3,9 @@ use std::time::Duration;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::{GridPosition, ParticleMap, ParticleSyncExt, ParticleSystems};
+use crate::{
+    ChunkDirtyState, ChunkIndex, GridPosition, ParticleMap, ParticleSyncExt, ParticleSystems,
+};
 
 pub(super) struct CorrosionPlugin;
 
@@ -83,12 +85,58 @@ pub struct Corrodible;
 fn handle_corrosion(
     mut commands: Commands,
     map: Res<ParticleMap>,
+    chunk_index: Res<ChunkIndex>,
+    mut chunk_query: Query<&mut ChunkDirtyState>,
     time: Res<Time>,
     mut corrosive: Query<(&mut Corrosive, &GridPosition)>,
     corrodible: Query<&Corrodible>,
     mut rng: ResMut<bevy_turborand::prelude::GlobalRng>,
 ) {
     use bevy_turborand::DelegatedRng;
+
+    for (_coord, chunk_entity) in chunk_index.iter() {
+        let Ok(mut dirty_state) = chunk_query.get_mut(chunk_entity) else {
+            continue;
+        };
+
+        let Some(dirty_rect) = dirty_state.current else {
+            continue;
+        };
+
+        for y in dirty_rect.min.y..=dirty_rect.max.y {
+            for x in dirty_rect.min.x..=dirty_rect.max.x {
+                let pos = IVec2::new(x, y);
+
+                let Ok(Some(entity)) = map.get_copied(pos) else {
+                    continue;
+                };
+
+                let Ok((corrosive, _)) = corrosive.get_mut(entity) else {
+                    continue;
+                };
+
+                for (neighbor_pos, neighbor_entity) in map.within_radius(pos, 1.0) {
+                    if neighbor_pos == pos {
+                        continue;
+                    }
+
+                    let Ok(_) = corrodible.get(neighbor_entity) else {
+                        continue;
+                    };
+
+                    if !rng.chance(corrosive.chance) {
+                        dirty_state.mark_dirty(pos);
+                        continue;
+                    }
+
+                    if corrodible.get(neighbor_entity).is_ok() {
+                        commands.entity(neighbor_entity).despawn();
+                    }
+                }
+            }
+        }
+    }
+
     corrosive.iter_mut().for_each(|(mut corrosive, pos)| {
         if let Ok(e) = map.get_copied(pos.0)
             && e.is_some()

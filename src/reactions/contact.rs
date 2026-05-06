@@ -238,14 +238,14 @@ fn resolve_changed_contact_reactions(
 fn handle_contact_reactions(
     map: Res<ParticleMap>,
     chunk_index: Res<ChunkIndex>,
-    chunk_query: Query<&ChunkDirtyState>,
+    mut chunk_query: Query<&mut ChunkDirtyState>,
     particle_query: Query<&AttachedToParticleType, With<Particle>>,
     rules_query: Query<&ResolvedContactReaction, With<ParticleType>>,
     mut rng: ResMut<GlobalRng>,
     mut msgw_spawn: MessageWriter<SpawnParticleSignal>,
 ) {
     for (_coord, chunk_entity) in chunk_index.iter() {
-        let Ok(dirty_state) = chunk_query.get(chunk_entity) else {
+        let Ok(mut dirty_state) = chunk_query.get_mut(chunk_entity) else {
             continue;
         };
 
@@ -291,23 +291,26 @@ fn handle_contact_reactions(
                         if dist_sq > rule.radius * rule.radius {
                             continue;
                         }
-                        if neighbor_attached.0 == rule.target_type && rng.chance(rule.chance) {
-                            match rule.consumes {
-                                Consumes::Source => {
-                                    msgw_spawn.write(SpawnParticleSignal::overwrite_existing(
-                                        rule.becomes.clone(),
-                                        pos,
-                                    ));
+                        if neighbor_attached.0 == rule.target_type {
+                            if rng.chance(rule.chance) {
+                                match rule.consumes {
+                                    Consumes::Source => {
+                                        msgw_spawn.write(SpawnParticleSignal::overwrite_existing(
+                                            rule.becomes.clone(),
+                                            pos,
+                                        ));
+                                    }
+                                    Consumes::Target => {
+                                        msgw_spawn.write(SpawnParticleSignal::overwrite_existing(
+                                            rule.becomes.clone(),
+                                            neighbor_pos,
+                                        ));
+                                    }
                                 }
-                                Consumes::Target => {
-                                    msgw_spawn.write(SpawnParticleSignal::overwrite_existing(
-                                        rule.becomes.clone(),
-                                        neighbor_pos,
-                                    ));
-                                }
+                                reacted = true;
+                                break;
                             }
-                            reacted = true;
-                            break;
+                            dirty_state.mark_dirty(pos);
                         }
                     }
                 }
