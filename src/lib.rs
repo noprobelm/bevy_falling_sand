@@ -92,7 +92,7 @@
 //!     for x in 0..10 {
 //!         for y in 0..10 {
 //!             writer.write(SpawnParticleSignal::new(
-//!                 Particle::new("Sand"),
+//!                 "Sand",
 //!                 IVec2::new(x, y),
 //!             ));
 //!         }
@@ -106,8 +106,10 @@
 //! [`ParticleType`] is inserted on an entity, it becomes a point of synchronization for all
 //! [`Particle`] entities of the same identifier.
 //!
-//! The [`ParticleType::name`] and [`Particle::name`] fields are used to associate particles with
-//! their parents.
+//! Particles are introduced into the simulation by writing a [`SpawnParticleSignal`] — direct
+//! `commands.spawn(...)` of a [`Particle`] is not supported. Each spawned particle receives an
+//! [`AttachedToParticleType`] reference pointing at its parent [`ParticleType`] entity, which is
+//! the canonical source for the particle's type identity.
 //!
 //! `bfs` provides several components that add behaviors particle types. Inserting any of the
 //! components from the table below on a [`ParticleType`] entity will influence its child

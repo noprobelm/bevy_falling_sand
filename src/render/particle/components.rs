@@ -452,7 +452,7 @@ impl ColorProfile {
 /// fn spawn_cyan_particle(mut writer: MessageWriter<SpawnParticleSignal>) {
 ///     let forced = Color::srgba(0.0, 1.0, 1.0, 1.0);
 ///     writer.write(
-///         SpawnParticleSignal::new(Particle::new("Sand"), IVec2::new(5, 5))
+///         SpawnParticleSignal::new("Sand", IVec2::new(5, 5))
 ///             .with_on_spawn(move |cmd| {
 ///                 cmd.insert(ForceColor(forced));
 ///             }),

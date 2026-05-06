@@ -9,7 +9,8 @@ use super::resources::{
     chunk_png_path,
 };
 use crate::core::{
-    ChunkIndex, ChunkLoadingState, ChunkSystems, GridPosition, Particle, ParticleMap,
+    AttachedToParticleType, ChunkIndex, ChunkLoadingState, ChunkSystems, GridPosition, Particle,
+    ParticleMap, ParticleType,
 };
 use crate::persistence::bfs::ParticleData as BfsParticleData;
 use crate::render::{ChunkRenderingConfig, ParticleColor, extract_chunk_image};
@@ -53,7 +54,8 @@ fn persist_unloaded_chunks(
     loading_state: Res<ChunkLoadingState>,
     chunk_index: Res<ChunkIndex>,
     mut pending_tasks: ResMut<PendingSaveTasks>,
-    particle_query: Query<(Entity, &Particle, &GridPosition)>,
+    particle_query: Query<(Entity, &AttachedToParticleType, &GridPosition), With<Particle>>,
+    type_query: Query<&ParticleType>,
     color_query: Query<&ParticleColor, With<Particle>>,
 ) {
     if loading_state.unloaded_this_frame.is_empty() {
@@ -86,17 +88,20 @@ fn persist_unloaded_chunks(
         particles_by_chunk.entry(coord).or_default();
     }
 
-    for (entity, particle, grid_pos) in particle_query.iter() {
+    for (entity, attached, grid_pos) in particle_query.iter() {
         let coord = crate::core::ChunkCoord::new(
             grid_pos.0.x.div_euclid(chunk_size),
             grid_pos.0.y.div_euclid(chunk_size),
         );
         if unloaded_coords.contains(&coord) {
+            let Ok(particle_type) = type_query.get(attached.0) else {
+                continue;
+            };
             particles_by_chunk
                 .entry(coord)
                 .or_default()
                 .push(BfsParticleData {
-                    name: particle.name.to_string(),
+                    name: particle_type.name.to_string(),
                     position: grid_pos.0,
                 });
             if let Ok(pc) = color_query.get(entity) {
@@ -162,7 +167,8 @@ fn msgr_save_all_chunks(
     map: Res<ParticleMap>,
     chunk_index: Res<ChunkIndex>,
     pending_tasks: ResMut<PendingSaveTasks>,
-    particle_query: Query<(&Particle, &GridPosition)>,
+    particle_query: Query<(&AttachedToParticleType, &GridPosition), With<Particle>>,
+    type_query: Query<&ParticleType>,
     color_query: Query<&ParticleColor, With<Particle>>,
 ) {
     if reader.read().next().is_none() {
@@ -175,6 +181,7 @@ fn msgr_save_all_chunks(
         &chunk_index,
         pending_tasks,
         &particle_query,
+        &type_query,
         &color_query,
     );
 }
@@ -187,7 +194,8 @@ fn on_save_all_chunks(
     map: Res<ParticleMap>,
     chunk_index: Res<ChunkIndex>,
     pending_tasks: ResMut<PendingSaveTasks>,
-    particle_query: Query<(&Particle, &GridPosition)>,
+    particle_query: Query<(&AttachedToParticleType, &GridPosition), With<Particle>>,
+    type_query: Query<&ParticleType>,
     color_query: Query<&ParticleColor, With<Particle>>,
 ) {
     save_all_chunks_impl(
@@ -197,6 +205,7 @@ fn on_save_all_chunks(
         &chunk_index,
         pending_tasks,
         &particle_query,
+        &type_query,
         &color_query,
     );
 }
@@ -208,7 +217,8 @@ fn save_all_chunks_impl(
     map: &ParticleMap,
     chunk_index: &ChunkIndex,
     mut pending_tasks: ResMut<PendingSaveTasks>,
-    particle_query: &Query<(&Particle, &GridPosition)>,
+    particle_query: &Query<(&AttachedToParticleType, &GridPosition), With<Particle>>,
+    type_query: &Query<&ParticleType>,
     color_query: &Query<&ParticleColor, With<Particle>>,
 ) {
     debug!(
@@ -234,10 +244,11 @@ fn save_all_chunks_impl(
             for x in min.x..=max.x {
                 let pos = IVec2::new(x, y);
                 if let Ok(Some(entity)) = map.get_copied(pos)
-                    && let Ok((particle, grid_pos)) = particle_query.get(entity)
+                    && let Ok((attached, grid_pos)) = particle_query.get(entity)
+                    && let Ok(particle_type) = type_query.get(attached.0)
                 {
                     particles_to_save.push(BfsParticleData {
-                        name: particle.name.to_string(),
+                        name: particle_type.name.to_string(),
                         position: grid_pos.0,
                     });
                 }

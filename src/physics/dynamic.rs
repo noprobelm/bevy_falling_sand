@@ -507,7 +507,7 @@ mod tests {
 
     fn spawn_particle(app: &mut App, name: &'static str, position: IVec2) -> Entity {
         app.world_mut()
-            .write_message(SpawnParticleSignal::new(Particle::new(name), position));
+            .write_message(SpawnParticleSignal::new(name, position));
         app.update();
 
         app.world()
@@ -645,8 +645,17 @@ mod tests {
         send_promote(&mut app, entity);
         app.update();
 
-        let particle = app.world().entity(entity).get::<Particle>().unwrap();
-        assert_eq!(particle.name, "sand");
+        let attached = app
+            .world()
+            .entity(entity)
+            .get::<AttachedToParticleType>()
+            .unwrap();
+        let parent_type = app
+            .world()
+            .entity(attached.0)
+            .get::<ParticleType>()
+            .unwrap();
+        assert_eq!(parent_type.name, "sand");
     }
 
     // ---- rejoin_dynamic_rigid_bodies ----
@@ -905,14 +914,17 @@ mod tests {
         assert_eq!(count_after_rejoin, initial_count);
 
         assert!(app.world().entities().contains(dynamic_entity));
-        assert_eq!(
-            app.world()
-                .entity(dynamic_entity)
-                .get::<Particle>()
-                .unwrap()
-                .name,
-            "sand"
-        );
+        let attached = app
+            .world()
+            .entity(dynamic_entity)
+            .get::<AttachedToParticleType>()
+            .unwrap();
+        let parent_type = app
+            .world()
+            .entity(attached.0)
+            .get::<ParticleType>()
+            .unwrap();
+        assert_eq!(parent_type.name, "sand");
     }
 
     #[test]

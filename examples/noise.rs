@@ -60,7 +60,11 @@ fn main() {
 #[derive(Default, Resource)]
 struct SpawnParticles;
 
-fn setup(mut commands: Commands, mut rng: ResMut<GlobalRng>) {
+fn setup(
+    mut commands: Commands,
+    mut rng: ResMut<GlobalRng>,
+    mut spawn_writer: MessageWriter<SpawnParticleSignal>,
+) {
     commands.remove_resource::<DebugParticleMap>();
     commands.remove_resource::<DebugDirtyRects>();
     commands.spawn((
@@ -105,11 +109,11 @@ fn setup(mut commands: Commands, mut rng: ResMut<GlobalRng>) {
     ));
 
     commands.insert_resource(ParticleSpawnList::new(vec![
-        Particle::new("Dirt Wall"),
-        Particle::new("Sand"),
-        Particle::new("Water"),
+        "Dirt Wall".into(),
+        "Sand".into(),
+        "Water".into(),
     ]));
-    commands.insert_resource(SelectedBrushParticle(Particle::new("Dirt Wall")));
+    commands.insert_resource(SelectedBrushParticle("Dirt Wall".into()));
 
     let instructions_text = "Left mouse: Spawn/despawn particles\n\
         Right mouse: Cycle particle type\n\
@@ -155,19 +159,19 @@ fn setup(mut commands: Commands, mut rng: ResMut<GlobalRng>) {
         ));
     });
 
-    spawn_noise(&mut commands, &mut rng);
+    spawn_noise(&mut spawn_writer, &mut rng);
 }
 
 fn reset_noise(
-    mut commands: Commands,
     mut rng: ResMut<GlobalRng>,
     mut despawn_writer: MessageWriter<DespawnAllParticlesSignal>,
+    mut spawn_writer: MessageWriter<SpawnParticleSignal>,
 ) {
     despawn_writer.write(DespawnAllParticlesSignal);
-    spawn_noise(&mut commands, &mut rng);
+    spawn_noise(&mut spawn_writer, &mut rng);
 }
 
-fn spawn_noise(commands: &mut Commands, rng: &mut GlobalRng) {
+fn spawn_noise(spawn_writer: &mut MessageWriter<SpawnParticleSignal>, rng: &mut GlobalRng) {
     let seed = rng.u32(0..u32::MAX);
 
     let basic_multi = Fbm::<PerlinSurflet>::new(seed);
@@ -211,19 +215,18 @@ fn spawn_noise(commands: &mut Commands, rng: &mut GlobalRng) {
             if val < -0.5 {
                 continue;
             }
-            commands.spawn((
-                Transform::from_xyz(
-                    (x as i32 - grid_width as i32 / 2) as f32,
-                    (y as i32 - grid_height as i32 / 2) as f32,
-                    0.,
+            let position = IVec2::new(
+                x as i32 - grid_width as i32 / 2,
+                y as i32 - grid_height as i32 / 2,
+            );
+            let force_color = ForceColor(Color::Srgba(color));
+            spawn_writer.write(
+                SpawnParticleSignal::overwrite_existing("Dirt Wall", position).with_on_spawn(
+                    move |cmd| {
+                        cmd.insert(force_color.clone());
+                    },
                 ),
-                Sprite {
-                    color: Color::Srgba(color),
-                    ..Default::default()
-                },
-                Particle::new("Dirt Wall"),
-                ForceColor(Color::Srgba(color)),
-            ));
+            );
         }
     }
 }

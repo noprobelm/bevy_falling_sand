@@ -1,6 +1,7 @@
 use bevy::{input::mouse::MouseWheel, prelude::*};
 use bevy_falling_sand::prelude::{
-    DespawnParticleSignal, Particle, ParticleMap, ParticleSystems, SpawnParticleSignal,
+    AttachedToParticleType, DespawnParticleSignal, Particle, ParticleMap, ParticleSystems,
+    ParticleType, SpawnParticleSignal,
 };
 
 use super::{
@@ -10,23 +11,23 @@ use super::{
 
 #[derive(Clone, Debug, Resource)]
 pub struct ParticleSpawnList {
-    particles: Vec<Particle>,
+    particles: Vec<ParticleType>,
     index: usize,
 }
 
 impl ParticleSpawnList {
-    pub fn new(particles: Vec<Particle>) -> Self {
+    pub fn new(particles: Vec<ParticleType>) -> Self {
         Self {
             particles,
             index: 0,
         }
     }
 
-    pub fn current(&self) -> Option<&Particle> {
+    pub fn current(&self) -> Option<&ParticleType> {
         self.particles.get(self.index)
     }
 
-    pub fn cycle_next(&mut self) -> Option<&Particle> {
+    pub fn cycle_next(&mut self) -> Option<&ParticleType> {
         if self.particles.is_empty() {
             return None;
         }
@@ -179,7 +180,7 @@ impl BrushType {
 }
 
 #[derive(Resource)]
-pub struct SelectedBrushParticle(pub Particle);
+pub struct SelectedBrushParticle(pub ParticleType);
 
 fn setup_brush(mut commands: Commands) {
     commands.spawn((
@@ -320,13 +321,16 @@ fn cycle_brush_type(
 fn sample_hovered(
     cursor: Res<Cursor>,
     chunk_map: Res<ParticleMap>,
-    particle_query: Query<&Particle>,
+    particle_query: Query<&AttachedToParticleType, With<Particle>>,
+    type_query: Query<&ParticleType>,
     mut selected_brush_particle: ResMut<SelectedBrushParticle>,
     mut brush_state: ResMut<NextState<BrushState>>,
 ) {
-    if let Ok(Some(entity)) = chunk_map.get_copied(cursor.current.as_ivec2()) {
-        let particle = particle_query.get(entity).unwrap();
-        selected_brush_particle.0 = particle.clone();
+    if let Ok(Some(entity)) = chunk_map.get_copied(cursor.current.as_ivec2())
+        && let Ok(attached) = particle_query.get(entity)
+        && let Ok(particle_type) = type_query.get(attached.0)
+    {
+        selected_brush_particle.0 = particle_type.clone();
         brush_state.set(BrushState::Spawn);
     }
 }
