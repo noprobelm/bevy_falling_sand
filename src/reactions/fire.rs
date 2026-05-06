@@ -23,7 +23,7 @@ use crate::{
 /// already [`Burning`]) will be ignited based on the neighbor's [`Flammable::chance_to_ignite`]
 /// probability.
 ///
-/// Can be placed on a [`ParticleType`](crate::ParticleType) for permanent fire sources (e.g. lava), or added
+/// Can be placed on a [`ParticleType`] for permanent fire sources (e.g. lava), or added
 /// dynamically when a particle ignites via [`Flammable::spreads_fire`].
 ///
 /// # Examples
