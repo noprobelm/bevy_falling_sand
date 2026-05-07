@@ -49,7 +49,7 @@ impl ChunkIndex {
     /// assert_eq!(index.chunk_size(), 32);
     /// ```
     #[must_use]
-    pub fn new(width: u32, height: u32, chunk_size: u32, origin: IVec2) -> Self {
+    pub(crate) fn new(width: u32, height: u32, chunk_size: u32, origin: IVec2) -> Self {
         assert!(width.is_power_of_two(), "Width must be a power of 2");
         assert!(height.is_power_of_two(), "Height must be a power of 2");
         assert!(
@@ -147,7 +147,7 @@ impl ChunkIndex {
     /// assert_eq!(index.insert(ChunkCoord::new(0, 0), entity), None);
     /// assert_eq!(index.get(ChunkCoord::new(0, 0)), Some(entity));
     /// ```
-    pub fn insert(&mut self, coord: ChunkCoord, entity: Entity) -> Option<Entity> {
+    pub(crate) fn insert(&mut self, coord: ChunkCoord, entity: Entity) -> Option<Entity> {
         if self.is_coord_loaded(coord) {
             let idx = self.index(coord);
             self.data[idx].replace(entity)
@@ -173,7 +173,7 @@ impl ChunkIndex {
     /// assert_eq!(index.remove(ChunkCoord::new(0, 0)), Some(entity));
     /// assert_eq!(index.get(ChunkCoord::new(0, 0)), None);
     /// ```
-    pub fn remove(&mut self, coord: ChunkCoord) -> Option<Entity> {
+    pub(crate) fn remove(&mut self, coord: ChunkCoord) -> Option<Entity> {
         if self.is_coord_loaded(coord) {
             let idx = self.index(coord);
             self.data[idx].take()
