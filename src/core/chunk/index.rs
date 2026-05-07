@@ -36,18 +36,6 @@ impl ChunkIndex {
     ///
     /// # Panics
     /// Panics if width, height, or `chunk_size` is not a power of 2.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bevy::prelude::*;
-    /// use bevy_falling_sand::core::ChunkIndex;
-    ///
-    /// let index = ChunkIndex::new(16, 16, 32, IVec2::ZERO);
-    /// assert_eq!(index.width(), 16);
-    /// assert_eq!(index.height(), 16);
-    /// assert_eq!(index.chunk_size(), 32);
-    /// ```
     #[must_use]
     pub(crate) fn new(width: u32, height: u32, chunk_size: u32, origin: IVec2) -> Self {
         assert!(width.is_power_of_two(), "Width must be a power of 2");
@@ -101,18 +89,6 @@ impl ChunkIndex {
     }
 
     /// Check if a chunk coordinate is within the indexed region.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bevy::prelude::*;
-    /// use bevy_falling_sand::core::{ChunkIndex, ChunkCoord};
-    ///
-    /// let index = ChunkIndex::new(16, 16, 32, IVec2::ZERO);
-    /// assert!(index.is_coord_loaded(ChunkCoord::new(0, 0)));
-    /// assert!(index.is_coord_loaded(ChunkCoord::new(15, 15)));
-    /// assert!(!index.is_coord_loaded(ChunkCoord::new(16, 0)));
-    /// ```
     #[inline(always)]
     #[must_use]
     #[allow(clippy::cast_possible_wrap)]
@@ -134,19 +110,6 @@ impl ChunkIndex {
     /// Insert a chunk entity at a coordinate.
     ///
     /// Returns the previous entity at that coordinate, if any.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bevy::prelude::*;
-    /// use bevy_falling_sand::core::{ChunkIndex, ChunkCoord};
-    ///
-    /// let mut index = ChunkIndex::new(16, 16, 32, IVec2::ZERO);
-    /// let entity = Entity::from_bits(42);
-    ///
-    /// assert_eq!(index.insert(ChunkCoord::new(0, 0), entity), None);
-    /// assert_eq!(index.get(ChunkCoord::new(0, 0)), Some(entity));
-    /// ```
     pub(crate) fn insert(&mut self, coord: ChunkCoord, entity: Entity) -> Option<Entity> {
         if self.is_coord_loaded(coord) {
             let idx = self.index(coord);
@@ -159,20 +122,6 @@ impl ChunkIndex {
     /// Remove a chunk entity at a coordinate.
     ///
     /// Returns the removed entity, if any.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bevy::prelude::*;
-    /// use bevy_falling_sand::core::{ChunkIndex, ChunkCoord};
-    ///
-    /// let mut index = ChunkIndex::new(16, 16, 32, IVec2::ZERO);
-    /// let entity = Entity::from_bits(42);
-    ///
-    /// index.insert(ChunkCoord::new(0, 0), entity);
-    /// assert_eq!(index.remove(ChunkCoord::new(0, 0)), Some(entity));
-    /// assert_eq!(index.get(ChunkCoord::new(0, 0)), None);
-    /// ```
     pub(crate) fn remove(&mut self, coord: ChunkCoord) -> Option<Entity> {
         if self.is_coord_loaded(coord) {
             let idx = self.index(coord);
@@ -183,20 +132,6 @@ impl ChunkIndex {
     }
 
     /// Get the chunk entity at a coordinate.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bevy::prelude::*;
-    /// use bevy_falling_sand::core::{ChunkIndex, ChunkCoord};
-    ///
-    /// let mut index = ChunkIndex::new(16, 16, 32, IVec2::ZERO);
-    /// let entity = Entity::from_bits(42);
-    /// index.insert(ChunkCoord::new(0, 0), entity);
-    ///
-    /// assert_eq!(index.get(ChunkCoord::new(0, 0)), Some(entity));
-    /// assert_eq!(index.get(ChunkCoord::new(1, 1)), None);
-    /// ```
     #[must_use]
     pub fn get(&self, coord: ChunkCoord) -> Option<Entity> {
         if self.is_coord_loaded(coord) {
@@ -207,77 +142,24 @@ impl ChunkIndex {
     }
 
     /// Check if a chunk exists at a coordinate.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bevy::prelude::*;
-    /// use bevy_falling_sand::core::{ChunkIndex, ChunkCoord};
-    ///
-    /// let mut index = ChunkIndex::new(16, 16, 32, IVec2::ZERO);
-    /// index.insert(ChunkCoord::new(0, 0), Entity::from_bits(1));
-    ///
-    /// assert!(index.contains(ChunkCoord::new(0, 0)));
-    /// assert!(!index.contains(ChunkCoord::new(1, 1)));
-    /// ```
     #[must_use]
     pub fn contains(&self, coord: ChunkCoord) -> bool {
         self.get(coord).is_some()
     }
 
     /// Get the number of chunks currently indexed.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bevy::prelude::*;
-    /// use bevy_falling_sand::core::{ChunkIndex, ChunkCoord};
-    ///
-    /// let mut index = ChunkIndex::new(16, 16, 32, IVec2::ZERO);
-    /// assert_eq!(index.len(), 0);
-    ///
-    /// index.insert(ChunkCoord::new(0, 0), Entity::from_bits(1));
-    /// assert_eq!(index.len(), 1);
-    /// ```
     #[must_use]
     pub fn len(&self) -> usize {
         self.data.iter().filter(|e| e.is_some()).count()
     }
 
     /// Check if the index is empty.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bevy::prelude::*;
-    /// use bevy_falling_sand::core::{ChunkIndex, ChunkCoord};
-    ///
-    /// let mut index = ChunkIndex::new(16, 16, 32, IVec2::ZERO);
-    /// assert!(index.is_empty());
-    ///
-    /// index.insert(ChunkCoord::new(0, 0), Entity::from_bits(1));
-    /// assert!(!index.is_empty());
-    /// ```
     #[must_use]
     pub fn is_empty(&self) -> bool {
         self.data.iter().all(std::option::Option::is_none)
     }
 
     /// Iterate over all chunk coordinates and entities in the loaded region.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bevy::prelude::*;
-    /// use bevy_falling_sand::core::{ChunkIndex, ChunkCoord};
-    ///
-    /// let mut index = ChunkIndex::new(16, 16, 32, IVec2::ZERO);
-    /// index.insert(ChunkCoord::new(0, 0), Entity::from_bits(1));
-    /// index.insert(ChunkCoord::new(5, 5), Entity::from_bits(2));
-    ///
-    /// let chunks: Vec<_> = index.iter().collect();
-    /// assert_eq!(chunks.len(), 2);
-    /// ```
     #[allow(clippy::cast_possible_wrap)]
     pub fn iter(&self) -> impl Iterator<Item = (ChunkCoord, Entity)> + '_ {
         let origin = self.origin;
@@ -299,38 +181,11 @@ impl ChunkIndex {
     }
 
     /// Get all chunk coordinates that have entities.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bevy::prelude::*;
-    /// use bevy_falling_sand::core::{ChunkIndex, ChunkCoord};
-    ///
-    /// let mut index = ChunkIndex::new(16, 16, 32, IVec2::ZERO);
-    /// index.insert(ChunkCoord::new(0, 0), Entity::from_bits(1));
-    /// index.insert(ChunkCoord::new(3, 3), Entity::from_bits(2));
-    ///
-    /// let coords: Vec<_> = index.coords().collect();
-    /// assert_eq!(coords.len(), 2);
-    /// ```
     pub fn coords(&self) -> impl Iterator<Item = ChunkCoord> + '_ {
         self.iter().map(|(coord, _)| coord)
     }
 
     /// Get all chunk entities.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bevy::prelude::*;
-    /// use bevy_falling_sand::core::{ChunkIndex, ChunkCoord};
-    ///
-    /// let mut index = ChunkIndex::new(16, 16, 32, IVec2::ZERO);
-    /// index.insert(ChunkCoord::new(0, 0), Entity::from_bits(1));
-    ///
-    /// let entities: Vec<_> = index.entities().collect();
-    /// assert_eq!(entities.len(), 1);
-    /// ```
     pub fn entities(&self) -> impl Iterator<Item = Entity> + '_ {
         self.data.iter().filter_map(|e| *e)
     }
@@ -339,17 +194,6 @@ impl ChunkIndex {
     ///
     /// This does not copy data - it just changes how indices map to coordinates.
     /// Caller is responsible for handling chunks that are no longer valid.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bevy::prelude::*;
-    /// use bevy_falling_sand::core::ChunkIndex;
-    ///
-    /// let mut index = ChunkIndex::new(16, 16, 32, IVec2::ZERO);
-    /// index.shift_origin(IVec2::new(4, 4));
-    /// assert_eq!(index.origin(), IVec2::new(4, 4));
-    /// ```
     pub const fn shift_origin(&mut self, new_origin: IVec2) {
         self.origin = new_origin;
     }
@@ -358,20 +202,6 @@ impl ChunkIndex {
     ///
     /// Clears array indices corresponding to the given coordinate range.
     /// Does not check if coordinates are currently loaded.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bevy::prelude::*;
-    /// use bevy_falling_sand::core::{ChunkIndex, ChunkCoord};
-    ///
-    /// let mut index = ChunkIndex::new(16, 16, 32, IVec2::ZERO);
-    /// index.insert(ChunkCoord::new(0, 0), Entity::from_bits(1));
-    /// index.insert(ChunkCoord::new(1, 1), Entity::from_bits(2));
-    ///
-    /// index.clear_region(ChunkCoord::new(0, 0), ChunkCoord::new(1, 1));
-    /// assert!(index.is_empty());
-    /// ```
     pub fn clear_region(&mut self, min: ChunkCoord, max: ChunkCoord) {
         for y in min.y()..=max.y() {
             for x in min.x()..=max.x() {
@@ -383,36 +213,11 @@ impl ChunkIndex {
     }
 
     /// Clear all data in the index.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bevy::prelude::*;
-    /// use bevy_falling_sand::core::{ChunkIndex, ChunkCoord};
-    ///
-    /// let mut index = ChunkIndex::new(16, 16, 32, IVec2::ZERO);
-    /// index.insert(ChunkCoord::new(0, 0), Entity::from_bits(1));
-    /// index.clear();
-    /// assert!(index.is_empty());
-    /// ```
     pub fn clear(&mut self) {
         self.data.fill(None);
     }
 
     /// Convert a world position to a chunk coordinate.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bevy::prelude::*;
-    /// use bevy_falling_sand::core::{ChunkIndex, ChunkCoord};
-    ///
-    /// let index = ChunkIndex::new(16, 16, 32, IVec2::ZERO);
-    ///
-    /// assert_eq!(index.world_to_chunk_coord(IVec2::new(0, 0)), ChunkCoord::new(0, 0));
-    /// assert_eq!(index.world_to_chunk_coord(IVec2::new(31, 31)), ChunkCoord::new(0, 0));
-    /// assert_eq!(index.world_to_chunk_coord(IVec2::new(32, 0)), ChunkCoord::new(1, 0));
-    /// ```
     #[inline(always)]
     #[must_use]
     pub const fn world_to_chunk_coord(&self, position: IVec2) -> ChunkCoord {
@@ -423,19 +228,6 @@ impl ChunkIndex {
     }
 
     /// Convert a chunk coordinate to its world region (bounding rect).
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bevy::prelude::*;
-    /// use bevy_falling_sand::core::{ChunkIndex, ChunkCoord};
-    ///
-    /// let index = ChunkIndex::new(16, 16, 32, IVec2::ZERO);
-    /// let region = index.chunk_coord_to_chunk_region(ChunkCoord::new(1, 0));
-    ///
-    /// assert_eq!(region.min, IVec2::new(32, 0));
-    /// assert_eq!(region.max, IVec2::new(63, 31));
-    /// ```
     #[must_use]
     #[allow(clippy::cast_possible_wrap)]
     pub fn chunk_coord_to_chunk_region(&self, coord: ChunkCoord) -> IRect {
@@ -447,17 +239,6 @@ impl ChunkIndex {
     }
 
     /// Get all chunk coordinates within the loaded region.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bevy::prelude::*;
-    /// use bevy_falling_sand::core::ChunkIndex;
-    ///
-    /// let index = ChunkIndex::new(4, 4, 32, IVec2::ZERO);
-    /// let coords = index.loaded_chunk_coords();
-    /// assert_eq!(coords.len(), 16);
-    /// ```
     #[must_use]
     #[allow(clippy::cast_possible_wrap)]
     pub fn loaded_chunk_coords(&self) -> Vec<ChunkCoord> {
@@ -471,18 +252,6 @@ impl ChunkIndex {
     }
 
     /// Get chunk coordinates for a specific group (0-3) within the loaded region.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bevy::prelude::*;
-    /// use bevy_falling_sand::core::ChunkIndex;
-    ///
-    /// let index = ChunkIndex::new(4, 4, 32, IVec2::ZERO);
-    /// let group0 = index.chunk_coords_for_group(0);
-    /// assert_eq!(group0.len(), 4);
-    /// assert!(group0.iter().all(|c| c.group() == 0));
-    /// ```
     #[must_use]
     pub fn chunk_coords_for_group(&self, group: u8) -> Vec<ChunkCoord> {
         self.loaded_chunk_coords()
@@ -492,20 +261,6 @@ impl ChunkIndex {
     }
 
     /// Partition all loaded chunks into 4 groups for checkerboard parallel processing.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bevy::prelude::*;
-    /// use bevy_falling_sand::core::ChunkIndex;
-    ///
-    /// let index = ChunkIndex::new(4, 4, 32, IVec2::ZERO);
-    /// let groups = index.partition_chunks_by_group();
-    ///
-    /// assert_eq!(groups.len(), 4);
-    /// let total: usize = groups.iter().map(|g| g.len()).sum();
-    /// assert_eq!(total, 16);
-    /// ```
     #[must_use]
     pub fn partition_chunks_by_group(&self) -> [Vec<ChunkCoord>; 4] {
         let mut groups: [Vec<ChunkCoord>; 4] = Default::default();
@@ -643,6 +398,61 @@ mod tests {
         index.insert(ChunkCoord::new(5, 5), e2);
 
         assert_eq!(index.iter().count(), 2);
+    }
+
+    #[test]
+    fn coords_yields_only_occupied() {
+        let mut index = create_index();
+        index.insert(ChunkCoord::new(0, 0), Entity::from_bits(1));
+        index.insert(ChunkCoord::new(3, 3), Entity::from_bits(2));
+
+        let coords: Vec<_> = index.coords().collect();
+        assert_eq!(coords.len(), 2);
+        assert!(coords.contains(&ChunkCoord::new(0, 0)));
+        assert!(coords.contains(&ChunkCoord::new(3, 3)));
+    }
+
+    #[test]
+    fn entities_yields_only_occupied() {
+        let mut index = create_index();
+        index.insert(ChunkCoord::new(0, 0), Entity::from_bits(1));
+        index.insert(ChunkCoord::new(3, 3), Entity::from_bits(2));
+
+        assert_eq!(index.entities().count(), 2);
+    }
+
+    #[test]
+    fn clear_empties_the_index() {
+        let mut index = create_index();
+        index.insert(ChunkCoord::new(0, 0), Entity::from_bits(1));
+        index.insert(ChunkCoord::new(5, 5), Entity::from_bits(2));
+
+        index.clear();
+
+        assert!(index.is_empty());
+    }
+
+    #[test]
+    fn clear_region_clears_only_specified_range() {
+        let mut index = create_index();
+        index.insert(ChunkCoord::new(0, 0), Entity::from_bits(1));
+        index.insert(ChunkCoord::new(1, 1), Entity::from_bits(2));
+        index.insert(ChunkCoord::new(5, 5), Entity::from_bits(3));
+
+        index.clear_region(ChunkCoord::new(0, 0), ChunkCoord::new(1, 1));
+
+        assert!(!index.contains(ChunkCoord::new(0, 0)));
+        assert!(!index.contains(ChunkCoord::new(1, 1)));
+        assert!(index.contains(ChunkCoord::new(5, 5)));
+    }
+
+    #[test]
+    fn chunk_coords_for_group_filters_correctly() {
+        let index = ChunkIndex::new(4, 4, 32, IVec2::ZERO);
+        let group0 = index.chunk_coords_for_group(0);
+
+        assert_eq!(group0.len(), 4);
+        assert!(group0.iter().all(|c| c.group() == 0));
     }
 
     mod coordinate_conversion {
