@@ -63,7 +63,7 @@ fn sand_emitter(mut writer: MessageWriter<SpawnParticleSignal>) {
     for x in 0..10 {
         for y in 0..10 {
             writer.write(SpawnParticleSignal::new(
-                Particle::new("Sand"),
+                "Sand",
                 IVec2::new(x, y),
             ));
         }
@@ -96,9 +96,12 @@ same name will derive their behaviors.
 | `ContactReaction`        | Reaction rulesets between particle types                       | `reactions` |
 | `Fire`                   | Makes a particle spread fire                                   | `reactions` |
 | `Flammable`              | Flammability properties                                        | `reactions` |
+| `Corrosive`              | Corrosive properaties for particles                            |  reactions   |
+| `Corrodible`             | Marks a particle as being subject to corrosion                 |  reactions   |
 | `StaticRigidBodyParticle`| Marks particles for rigid body mesh generation                 | `physics`   |
 | `TimedLifetime`          | Despawns a particle after a duration                           | —           |
 | `ChanceLifetime`         | Chance to despawn on a per-tick basis                          | —           |
+| `ChanceMutation`         | Chance to mutate a particle into another type on a per-tick basis    | —            |
 
 For full documentation, see [docs.rs/bevy_falling_sand](https://docs.rs/bevy_falling_sand).
 
