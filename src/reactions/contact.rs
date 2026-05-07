@@ -4,8 +4,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     core::{
-        AttachedToParticleType, ChunkDirtyState, ChunkIndex, Particle, ParticleMap,
-        ParticleSystems, ParticleType, ParticleTypeRegistry, SpawnParticleSignal,
+        AttachedToParticleType, Particle, ParticleChunksMut, ParticleSystems, ParticleType,
+        ParticleTypeRegistry, SpawnParticleSignal,
     },
     movement::ParticleMovementSystems,
 };
@@ -241,85 +241,65 @@ fn resolve_changed_contact_reactions(
 /// Processes contact reactions for particles within dirty rects each simulation tick.
 #[allow(clippy::needless_pass_by_value)]
 fn handle_contact_reactions(
-    map: Res<ParticleMap>,
-    chunk_index: Res<ChunkIndex>,
-    mut chunk_query: Query<&mut ChunkDirtyState>,
+    mut particle_chunks: ParticleChunksMut,
     particle_query: Query<&AttachedToParticleType, With<Particle>>,
     rules_query: Query<&ResolvedContactReaction, With<ParticleType>>,
     mut rng: ResMut<GlobalRng>,
     mut msgw_spawn: MessageWriter<SpawnParticleSignal>,
 ) {
-    for (_coord, chunk_entity) in chunk_index.iter() {
-        let Ok(mut dirty_state) = chunk_query.get_mut(chunk_entity) else {
-            continue;
+    particle_chunks.for_each_dirty_particle(|map, dirty_state, pos, entity| {
+        let Ok(attached) = particle_query.get(entity) else {
+            return;
         };
 
-        let Some(dirty_rect) = dirty_state.current else {
-            continue;
+        let Ok(resolved) = rules_query.get(attached.0) else {
+            return;
         };
 
-        for y in dirty_rect.min.y..=dirty_rect.max.y {
-            for x in dirty_rect.min.x..=dirty_rect.max.x {
-                let pos = IVec2::new(x, y);
+        let max_radius = resolved
+            .rules
+            .iter()
+            .map(|r| r.radius)
+            .fold(0.0_f32, f32::max);
 
-                let Ok(Some(entity)) = map.get_copied(pos) else {
+        let mut reacted = false;
+        for (neighbor_pos, neighbor_entity) in map.within_radius(pos, max_radius) {
+            if reacted || neighbor_pos == pos {
+                continue;
+            }
+
+            let Ok(neighbor_attached) = particle_query.get(neighbor_entity) else {
+                continue;
+            };
+
+            let dist_sq = (neighbor_pos - pos).as_vec2().length_squared();
+
+            for rule in &resolved.rules {
+                if dist_sq > rule.radius * rule.radius {
                     continue;
-                };
-
-                let Ok(attached) = particle_query.get(entity) else {
-                    continue;
-                };
-
-                let Ok(resolved) = rules_query.get(attached.0) else {
-                    continue;
-                };
-
-                let max_radius = resolved
-                    .rules
-                    .iter()
-                    .map(|r| r.radius)
-                    .fold(0.0_f32, f32::max);
-
-                let mut reacted = false;
-                for (neighbor_pos, neighbor_entity) in map.within_radius(pos, max_radius) {
-                    if reacted || neighbor_pos == pos {
-                        continue;
-                    }
-
-                    let Ok(neighbor_attached) = particle_query.get(neighbor_entity) else {
-                        continue;
-                    };
-
-                    let dist_sq = (neighbor_pos - pos).as_vec2().length_squared();
-
-                    for rule in &resolved.rules {
-                        if dist_sq > rule.radius * rule.radius {
-                            continue;
-                        }
-                        if neighbor_attached.0 == rule.target_type {
-                            if rng.chance(rule.chance) {
-                                match rule.consumes {
-                                    Consumes::Source => {
-                                        msgw_spawn.write(SpawnParticleSignal::overwrite_existing(
-                                            rule.becomes.clone(),
-                                            pos,
-                                        ));
-                                    }
-                                    Consumes::Target => {
-                                        msgw_spawn.write(SpawnParticleSignal::overwrite_existing(
-                                            rule.becomes.clone(),
-                                            neighbor_pos,
-                                        ));
-                                    }
-                                }
-                                reacted = true;
-                                break;
+                }
+                if neighbor_attached.0 == rule.target_type {
+                    if rng.chance(rule.chance) {
+                        match rule.consumes {
+                            Consumes::Source => {
+                                msgw_spawn.write(SpawnParticleSignal::overwrite_existing(
+                                    rule.becomes.clone(),
+                                    pos,
+                                ));
                             }
-                            dirty_state.mark_dirty(pos);
+                            Consumes::Target => {
+                                msgw_spawn.write(SpawnParticleSignal::overwrite_existing(
+                                    rule.becomes.clone(),
+                                    neighbor_pos,
+                                ));
+                            }
                         }
+                        reacted = true;
+                        break;
                     }
+                    dirty_state.mark_dirty(pos);
                 }
             }
         }
-    }
+    });
 }

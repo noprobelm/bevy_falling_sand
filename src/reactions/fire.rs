@@ -9,9 +9,9 @@ use serde::{Deserialize, Serialize};
 use super::ReactionRng;
 use crate::{
     core::{
-        ChanceLifetime, ChunkDirtyState, ChunkIndex, DespawnParticleSignal, GridPosition, Particle,
-        ParticleMap, ParticleRng, ParticleSyncExt, ParticleSystems, ParticleType,
-        ParticleTypeRegistry, SpawnParticleSignal,
+        ChanceLifetime, DespawnParticleSignal, GridPosition, Particle, ParticleChunksMut,
+        ParticleRng, ParticleSyncExt, ParticleSystems, ParticleType, ParticleTypeRegistry,
+        SpawnParticleSignal,
     },
     movement::Movement,
 };
@@ -454,67 +454,47 @@ fn handle_burning(
 #[allow(clippy::type_complexity, clippy::needless_pass_by_value)]
 fn handle_fire(
     mut commands: Commands,
-    map: Res<ParticleMap>,
-    chunk_index: Res<ChunkIndex>,
-    mut chunk_query: Query<&mut ChunkDirtyState>,
+    mut particle_chunks: ParticleChunksMut,
     fire_query: Query<&Fire>,
     burns_query: Query<&Flammable, (With<Particle>, Without<Burning>)>,
     mut rng: ResMut<bevy_turborand::prelude::GlobalRng>,
 ) {
     use bevy_turborand::DelegatedRng;
-    for (_coord, chunk_entity) in chunk_index.iter() {
-        let Ok(mut dirty_state) = chunk_query.get_mut(chunk_entity) else {
-            continue;
+    particle_chunks.for_each_dirty_particle(|map, dirty_state, pos, entity| {
+        let Ok(fire) = fire_query.get(entity) else {
+            return;
         };
 
-        let Some(dirty_rect) = dirty_state.current else {
-            continue;
-        };
+        for (neighbor_pos, neighbor_entity) in map.within_radius(pos, fire.radius) {
+            if neighbor_pos == pos {
+                continue;
+            }
 
-        for y in dirty_rect.min.y..=dirty_rect.max.y {
-            for x in dirty_rect.min.x..=dirty_rect.max.x {
-                let pos = IVec2::new(x, y);
+            let Ok(burns) = burns_query.get(neighbor_entity) else {
+                continue;
+            };
 
-                let Ok(Some(entity)) = map.get_copied(pos) else {
-                    continue;
-                };
+            if !rng.chance(burns.chance_to_ignite) {
+                dirty_state.mark_dirty(pos);
+                continue;
+            }
 
-                let Ok(fire) = fire_query.get(entity) else {
-                    continue;
-                };
-
-                for (neighbor_pos, neighbor_entity) in map.within_radius(pos, fire.radius) {
-                    if neighbor_pos == pos {
-                        continue;
-                    }
-
-                    let Ok(burns) = burns_query.get(neighbor_entity) else {
-                        continue;
-                    };
-
-                    if !rng.chance(burns.chance_to_ignite) {
-                        dirty_state.mark_dirty(pos);
-                        continue;
-                    }
-
-                    let mut entity_commands = commands.entity(neighbor_entity);
-                    entity_commands.insert(burns.to_burning());
-                    if burns.chance_despawn_per_tick > 0.0 {
-                        entity_commands.insert(ChanceLifetime::with_tick_rate(
-                            burns.chance_despawn_per_tick,
-                            burns.tick_rate,
-                        ));
-                    }
-                    if let Some(reaction) = &burns.reaction {
-                        entity_commands.insert(reaction.clone());
-                    }
-                    if burns.spreads_fire {
-                        entity_commands.insert(Fire {
-                            radius: burns.spread_radius,
-                        });
-                    }
-                }
+            let mut entity_commands = commands.entity(neighbor_entity);
+            entity_commands.insert(burns.to_burning());
+            if burns.chance_despawn_per_tick > 0.0 {
+                entity_commands.insert(ChanceLifetime::with_tick_rate(
+                    burns.chance_despawn_per_tick,
+                    burns.tick_rate,
+                ));
+            }
+            if let Some(reaction) = &burns.reaction {
+                entity_commands.insert(reaction.clone());
+            }
+            if burns.spreads_fire {
+                entity_commands.insert(Fire {
+                    radius: burns.spread_radius,
+                });
             }
         }
-    }
+    });
 }
