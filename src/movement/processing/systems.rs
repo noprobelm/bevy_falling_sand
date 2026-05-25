@@ -233,7 +233,7 @@ pub(super) fn par_handle_movement_by_chunks(
                                                     filter_ref,
                                                 )
                                                 .iter()
-                                                .any(|entity| !colliders_ref.contains(entity))
+                                                .any(|entity| colliders_ref.contains(entity))
                                             {
                                                 obstructed[obstruct_idx] = true;
                                                 continue;
