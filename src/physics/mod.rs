@@ -49,16 +49,13 @@ pub mod r#static;
 use avian2d::prelude::PhysicsInterpolationPlugin;
 use bevy::prelude::*;
 
-pub use dynamic::{
-    DynamicRigidBodyProxy, PromoteDynamicRigidBodyParticle, StaticRigidBodyParticle,
-    SuspendedParticle,
-};
+pub use dynamic::{DynamicRigidBodyProxy, PromoteDynamicRigidBodyParticle, SuspendedParticle};
 pub use r#static::{DirtyChunkUpdateInterval, DouglasPeuckerEpsilon};
 
 use dynamic::DynamicPlugin;
 use dynamic::{promote_dynamic_rigid_bodies, rejoin_dynamic_rigid_bodies};
-use r#static::StaticPlugin;
-use r#static::calculate_static_rigid_bodies;
+pub use r#static::StaticRigidBodyParticle;
+use r#static::{StaticPlugin, calculate_static_rigid_bodies};
 
 use crate::movement::ParticleMovementSystems;
 use crate::physics::dynamic::sync_dynamic_rigid_bodies_with_particles;
