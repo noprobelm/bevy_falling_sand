@@ -44,13 +44,14 @@
 
 pub mod dynamic;
 mod geometry;
+pub mod rigid_bodies;
 pub mod r#static;
 
 use avian2d::prelude::PhysicsInterpolationPlugin;
 use bevy::prelude::*;
 
 pub use dynamic::{DynamicRigidBodyProxy, PromoteDynamicRigidBodyParticle, SuspendedParticle};
-pub use r#static::{DirtyChunkUpdateInterval, DouglasPeuckerEpsilon};
+pub use r#static::{DouglasPeuckerEpsilon, StaticMeshUpdateInterval};
 
 use dynamic::DynamicPlugin;
 use dynamic::{promote_dynamic_rigid_bodies, rejoin_dynamic_rigid_bodies};
