@@ -28,7 +28,7 @@ impl Plugin for StaticPlugin {
             .init_resource::<StaticRigidBodyParticleColliders>()
             .init_resource::<PreviousFrameDirtyChunks>()
             .init_resource::<DouglasPeuckerEpsilon>()
-            .init_resource::<DirtyChunkUpdateInterval>()
+            .init_resource::<StaticMeshUpdateInterval>()
             .init_resource::<ChunkLastProcessedTime>()
             .init_resource::<PendingMeshTasks>()
             .init_resource::<ChunkOccupancy>();
@@ -84,7 +84,7 @@ impl Default for DouglasPeuckerEpsilon {
     }
 }
 
-/// Configures how often dirty chunks recalculate their collision meshes (in seconds).
+/// Configures how often static meshes are recalculated per-chunk.
 ///
 /// Chunks that just stopped being dirty are always processed immediately.
 /// Currently dirty chunks are throttled to this interval to improve performance.
@@ -100,9 +100,9 @@ impl Default for DouglasPeuckerEpsilon {
 /// }
 /// ```
 #[derive(Resource, Debug)]
-pub struct DirtyChunkUpdateInterval(pub f32);
+pub struct StaticMeshUpdateInterval(pub f32);
 
-impl Default for DirtyChunkUpdateInterval {
+impl Default for StaticMeshUpdateInterval {
     fn default() -> Self {
         Self(0.1)
     }
@@ -150,7 +150,7 @@ pub(super) fn calculate_static_rigid_bodies(
     mut colliders: ResMut<StaticRigidBodyParticleColliders>,
     mut occupancy: ResMut<ChunkOccupancy>,
     douglas_peucker_epsilon: Res<DouglasPeuckerEpsilon>,
-    dirty_chunk_interval: Res<DirtyChunkUpdateInterval>,
+    dirty_chunk_interval: Res<StaticMeshUpdateInterval>,
     time: Res<Time>,
     map: Res<ParticleMap>,
     chunk_index: Res<ChunkIndex>,
