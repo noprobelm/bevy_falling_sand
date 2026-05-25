@@ -51,6 +51,7 @@ use avian2d::prelude::PhysicsInterpolationPlugin;
 use bevy::prelude::*;
 
 pub use dynamic::{DynamicRigidBodyProxy, PromoteDynamicRigidBodyParticle, SuspendedParticle};
+pub use rigid_bodies::*;
 pub use r#static::{DouglasPeuckerEpsilon, StaticMeshUpdateInterval};
 
 use dynamic::DynamicPlugin;

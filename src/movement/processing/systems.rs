@@ -1,6 +1,8 @@
 use crate::movement::{
     AirResistance, Density, Momentum, Movement, MovementRng, ParticleResistor, Speed,
 };
+#[cfg(feature = "physics")]
+use crate::prelude::ParticleCollider;
 use std::mem;
 use std::sync::Mutex;
 
@@ -8,6 +10,8 @@ use super::MovementState;
 use crate::core::{
     ChunkCoord, ChunkDirtyState, ChunkIndex, ChunkRegion, GridPosition, ParticleMap, ParticleRng,
 };
+#[cfg(feature = "physics")]
+use avian2d::prelude::{SpatialQuery, SpatialQueryFilter};
 use bevy::platform::collections::HashSet;
 use bevy::prelude::*;
 use bevy::tasks::ComputeTaskPool;
@@ -78,8 +82,14 @@ pub(super) fn par_handle_movement_by_chunks(
     mut global_rng: ResMut<GlobalRng>,
     chunk_index: Res<ChunkIndex>,
     mut chunk_query: Query<(&ChunkRegion, &mut ChunkDirtyState)>,
+    #[cfg(feature = "physics")] spatial_query: SpatialQuery,
+    #[cfg(feature = "physics")] particle_colliders: Query<Entity, With<ParticleCollider>>,
 ) {
     movement_state.visited_entities.clear();
+    #[cfg(feature = "physics")]
+    let filter = SpatialQueryFilter::default();
+    #[cfg(feature = "physics")]
+    let colliders: HashSet<Entity> = particle_colliders.iter().collect();
 
     let dirty_positions = Mutex::new(Vec::<IVec2>::new());
 
@@ -111,6 +121,12 @@ pub(super) fn par_handle_movement_by_chunks(
             let query_ptr_send = SendPtr::new(query_ptr);
             let density_ptr_send = SendPtr::new(density_query_ptr);
             let visited_ptr = SendPtr::new((&raw const visited_entities_by_chunk).cast_mut());
+            #[cfg(feature = "physics")]
+            let spatial_query_ref = &spatial_query;
+            #[cfg(feature = "physics")]
+            let filter_ref = &filter;
+            #[cfg(feature = "physics")]
+            let colliders_ref = &colliders;
 
             let chunks_to_process: Vec<(ChunkCoord, Option<IRect>, Vec<IVec2>)> = chunk_coords
                 .iter()
@@ -208,6 +224,20 @@ pub(super) fn par_handle_movement_by_chunks(
                                         if neighbor_entity.is_err() {
                                             obstructed[obstruct_idx] = true;
                                             continue;
+                                        }
+                                        #[cfg(feature = "physics")]
+                                        {
+                                            if spatial_query_ref
+                                                .point_intersections(
+                                                    neighbor_position.as_vec2() + Vec2::splat(0.5),
+                                                    filter_ref,
+                                                )
+                                                .iter()
+                                                .any(|entity| !colliders_ref.contains(entity))
+                                            {
+                                                obstructed[obstruct_idx] = true;
+                                                continue;
+                                            }
                                         }
 
                                         if let Ok(Some(neighbor_entity)) = neighbor_entity {
