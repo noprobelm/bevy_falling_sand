@@ -86,6 +86,7 @@ pub(super) fn par_handle_movement_by_chunks(
     #[cfg(feature = "physics")] particle_colliders: Query<Entity, With<ParticleCollider>>,
 ) {
     movement_state.visited_entities.clear();
+
     #[cfg(feature = "physics")]
     let filter = SpatialQueryFilter::default();
     #[cfg(feature = "physics")]
@@ -383,8 +384,15 @@ pub(super) fn serial_handle_movement_by_chunks(
     mut global_rng: ResMut<GlobalRng>,
     chunk_index: Res<ChunkIndex>,
     mut chunk_query: Query<(&ChunkRegion, &mut ChunkDirtyState)>,
+    #[cfg(feature = "physics")] spatial_query: SpatialQuery,
+    #[cfg(feature = "physics")] particle_colliders: Query<Entity, With<ParticleCollider>>,
 ) {
     movement_state.visited_entities.clear();
+
+    #[cfg(feature = "physics")]
+    let filter = SpatialQueryFilter::default();
+    #[cfg(feature = "physics")]
+    let colliders: HashSet<Entity> = particle_colliders.iter().collect();
 
     let mut dirty_positions = Vec::<IVec2>::new();
 
@@ -472,6 +480,21 @@ pub(super) fn serial_handle_movement_by_chunks(
                             if neighbor_result.is_err() {
                                 obstructed[obstruct_idx] = true;
                                 continue;
+                            }
+
+                            #[cfg(feature = "physics")]
+                            {
+                                if spatial_query
+                                    .point_intersections(
+                                        neighbor_position.as_vec2() + Vec2::splat(0.5),
+                                        &filter,
+                                    )
+                                    .iter()
+                                    .any(|entity| colliders.contains(entity))
+                                {
+                                    obstructed[obstruct_idx] = true;
+                                    continue;
+                                }
                             }
 
                             if let Ok(Some(neighbor_entity)) = neighbor_result {
@@ -586,8 +609,15 @@ pub(super) fn handle_movement_by_particles(
     mut global_rng: ResMut<GlobalRng>,
     chunk_index: Res<ChunkIndex>,
     mut chunk_query: Query<(&ChunkRegion, &mut ChunkDirtyState)>,
+    #[cfg(feature = "physics")] spatial_query: SpatialQuery,
+    #[cfg(feature = "physics")] particle_colliders: Query<Entity, With<ParticleCollider>>,
 ) {
     movement_state.visited_positions.clear();
+
+    #[cfg(feature = "physics")]
+    let filter = SpatialQueryFilter::default();
+    #[cfg(feature = "physics")]
+    let colliders: HashSet<Entity> = particle_colliders.iter().collect();
 
     let mut dirty_positions = Vec::<IVec2>::new();
 
@@ -651,6 +681,20 @@ pub(super) fn handle_movement_by_particles(
                         if neighbor_result.is_err() {
                             obstructed[obstruct_idx] = true;
                             continue;
+                        }
+                        #[cfg(feature = "physics")]
+                        {
+                            if spatial_query
+                                .point_intersections(
+                                    neighbor_position.as_vec2() + Vec2::splat(0.5),
+                                    &filter,
+                                )
+                                .iter()
+                                .any(|entity| colliders.contains(entity))
+                            {
+                                obstructed[obstruct_idx] = true;
+                                continue;
+                            }
                         }
 
                         if let Ok(Some(neighbor_entity)) = neighbor_result {
