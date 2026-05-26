@@ -10,7 +10,7 @@ pub(super) struct RigidBodiesPlugin;
 impl Plugin for RigidBodiesPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
-            PostUpdate,
+            FixedUpdate,
             expand_dirty_rects_for_active_bodies.before(ParticleMovementSystems),
         );
     }
