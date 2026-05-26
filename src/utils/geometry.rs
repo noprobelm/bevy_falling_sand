@@ -1,4 +1,4 @@
-//! Geometry utilities that can be helpful for grouping blobs of connected IVec2 positions.
+//! Geometry utilities that can be helpful for grouping blobs of connected `IVec2` positions.
 use std::collections::VecDeque;
 
 use bevy::{platform::collections::HashSet, prelude::*};
