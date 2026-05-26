@@ -269,6 +269,8 @@ pub mod render;
 #[cfg_attr(docsrs, doc(cfg(feature = "scenes")))]
 pub mod scenes;
 
+pub mod utils;
+
 #[cfg(feature = "physics")]
 const DEFAULT_LENGTH_UNIT: f32 = 8.0;
 #[cfg(feature = "physics")]
