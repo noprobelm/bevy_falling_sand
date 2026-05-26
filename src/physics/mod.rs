@@ -116,7 +116,7 @@ impl Plugin for FallingSandPhysicsPlugin {
                 .set(PhysicsInterpolationPlugin::interpolate_all()),
         )
         .insert_resource(avian2d::prelude::Gravity(self.rigid_body_gravity))
-        .add_plugins((DynamicPlugin, StaticPlugin))
+        .add_plugins((DynamicPlugin, StaticPlugin, RigidBodiesPlugin))
         .add_systems(
             Update,
             (
