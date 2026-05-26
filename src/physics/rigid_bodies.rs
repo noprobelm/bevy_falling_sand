@@ -1,15 +1,18 @@
 //! Provides rigid body integration with particle movement systems
 
-use avian2d::prelude::{ColliderAabb, RigidBody};
+use avian2d::prelude::{ColliderAabb, RigidBody, Sleeping};
 use bevy::prelude::*;
 
-use crate::{ChunkCoord, ChunkDirtyState, ChunkIndex, ChunkRegion};
+use crate::{ChunkCoord, ChunkDirtyState, ChunkIndex, ChunkRegion, ParticleMovementSystems};
 
 pub(super) struct RigidBodiesPlugin;
 
 impl Plugin for RigidBodiesPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(PostUpdate, expand_dirty_rects_for_active_bodies);
+        app.add_systems(
+            PostUpdate,
+            expand_dirty_rects_for_active_bodies.before(ParticleMovementSystems),
+        );
     }
 }
 
@@ -20,7 +23,7 @@ pub struct ParticleCollider;
 
 #[allow(clippy::needless_pass_by_value)]
 pub(super) fn expand_dirty_rects_for_active_bodies(
-    bodies: Query<&ColliderAabb, With<RigidBody>>,
+    bodies: Query<&ColliderAabb, (With<RigidBody>, With<ParticleCollider>, Without<Sleeping>)>,
     chunk_index: Res<ChunkIndex>,
     mut chunk_query: Query<(&ChunkRegion, &mut ChunkDirtyState)>,
 ) {
@@ -58,6 +61,7 @@ pub(super) fn expand_dirty_rects_for_active_bodies(
                         .map_or(dirty_rect, |current| current.union(dirty_rect)),
                 );
                 dirty_state.current_positions = None;
+                dirty_state.mark_dirty_rect(dirty_rect);
             }
         }
     });
