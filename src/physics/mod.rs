@@ -18,7 +18,7 @@
 //!
 //! 1. **Identify dirty chunks** — chunks whose dirty state just cleared ("settled") are
 //!    processed immediately. Chunks still actively dirty are throttled by
-//!    [`DirtyChunkUpdateInterval`] to avoid excessive recalculation.
+//!    [`StaticMeshUpdateInterval`] to avoid excessive recalculation.
 //!
 //! 2. **Build occupancy bitmap** — for each chunk to process, scan every position and
 //!    record which cells contain a `StaticRigidBodyParticle` entity. Compare against
