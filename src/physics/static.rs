@@ -13,24 +13,52 @@ use bevy::prelude::*;
 use bevy::tasks::{AsyncComputeTaskPool, Task};
 use futures_lite::future;
 
-use super::dynamic::{StaticRigidBodyParticle, SuspendedParticle};
+use super::dynamic::SuspendedParticle;
 use super::geometry::{MeshGenerationResult, generate_mesh_from_bitmap};
+use crate::ParticleSyncExt;
 use crate::core::{ChunkCoord, ChunkDirtyState, ChunkIndex, ChunkRegion, ParticleMap};
 
 pub(super) struct StaticPlugin;
 
 impl Plugin for StaticPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<StaticRigidBodyParticleMeshData>()
+        app.register_type::<StaticRigidBodyParticle>()
+            .register_particle_sync_component::<StaticRigidBodyParticle>()
+            .init_resource::<StaticRigidBodyParticleMeshData>()
             .init_resource::<StaticRigidBodyParticleColliders>()
             .init_resource::<PreviousFrameDirtyChunks>()
             .init_resource::<DouglasPeuckerEpsilon>()
-            .init_resource::<DirtyChunkUpdateInterval>()
+            .init_resource::<StaticMeshUpdateInterval>()
             .init_resource::<ChunkLastProcessedTime>()
             .init_resource::<PendingMeshTasks>()
             .init_resource::<ChunkOccupancy>();
     }
 }
+
+/// Marker component for particles that contribute to static rigid body collision.
+///
+/// Add this to a [`ParticleType`](crate::ParticleType) entity so that all
+/// particles of that type are included when generating per-chunk collision meshes.
+/// Typically used for solid particles like walls, rocks, and settled sand.
+///
+/// # Examples
+///
+/// ```no_run
+/// use bevy::prelude::*;
+/// use bevy_falling_sand::core::ParticleType;
+/// use bevy_falling_sand::physics::StaticRigidBodyParticle;
+///
+/// fn setup(mut commands: Commands) {
+///     commands.spawn((
+///         ParticleType::new("Stone"),
+///         StaticRigidBodyParticle,
+///     ));
+/// }
+/// ```
+#[derive(Component, Copy, Clone, Default, Debug, Reflect)]
+#[reflect(Component)]
+#[type_path = "bfs_physics"]
+pub struct StaticRigidBodyParticle;
 
 /// Configures the epsilon tolerance for the Douglas-Peucker polygon simplification algorithm.
 ///
@@ -56,7 +84,7 @@ impl Default for DouglasPeuckerEpsilon {
     }
 }
 
-/// Configures how often dirty chunks recalculate their collision meshes (in seconds).
+/// Configures how often static meshes are recalculated per-chunk.
 ///
 /// Chunks that just stopped being dirty are always processed immediately.
 /// Currently dirty chunks are throttled to this interval to improve performance.
@@ -72,9 +100,9 @@ impl Default for DouglasPeuckerEpsilon {
 /// }
 /// ```
 #[derive(Resource, Debug)]
-pub struct DirtyChunkUpdateInterval(pub f32);
+pub struct StaticMeshUpdateInterval(pub f32);
 
-impl Default for DirtyChunkUpdateInterval {
+impl Default for StaticMeshUpdateInterval {
     fn default() -> Self {
         Self(0.1)
     }
@@ -122,7 +150,7 @@ pub(super) fn calculate_static_rigid_bodies(
     mut colliders: ResMut<StaticRigidBodyParticleColliders>,
     mut occupancy: ResMut<ChunkOccupancy>,
     douglas_peucker_epsilon: Res<DouglasPeuckerEpsilon>,
-    dirty_chunk_interval: Res<DirtyChunkUpdateInterval>,
+    dirty_chunk_interval: Res<StaticMeshUpdateInterval>,
     time: Res<Time>,
     map: Res<ParticleMap>,
     chunk_index: Res<ChunkIndex>,

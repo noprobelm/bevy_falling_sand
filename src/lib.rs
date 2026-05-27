@@ -174,7 +174,7 @@
 //!   marked particles
 //! - [Tagging particles as static rigid bodies](`StaticRigidBodyParticle`)
 //! - [Promoting particles to dynamic rigid bodies](`crate::physics::PromoteDynamicRigidBodyParticle`)
-//! - [Configuring collision mesh calculation intervals](DirtyChunkUpdateInterval)
+//! - [Configuring collision mesh calculation intervals](StaticMeshUpdateInterval)
 //! - [Configuring polygon simplification tolerances](`DouglasPeuckerEpsilon`)
 //!
 //! ## [World persistence](crate::persistence)

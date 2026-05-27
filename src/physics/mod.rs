@@ -18,7 +18,7 @@
 //!
 //! 1. **Identify dirty chunks** — chunks whose dirty state just cleared ("settled") are
 //!    processed immediately. Chunks still actively dirty are throttled by
-//!    [`DirtyChunkUpdateInterval`] to avoid excessive recalculation.
+//!    [`StaticMeshUpdateInterval`] to avoid excessive recalculation.
 //!
 //! 2. **Build occupancy bitmap** — for each chunk to process, scan every position and
 //!    record which cells contain a `StaticRigidBodyParticle` entity. Compare against
@@ -44,21 +44,20 @@
 
 pub mod dynamic;
 mod geometry;
+pub mod rigid_bodies;
 pub mod r#static;
 
 use avian2d::prelude::PhysicsInterpolationPlugin;
 use bevy::prelude::*;
 
-pub use dynamic::{
-    DynamicRigidBodyProxy, PromoteDynamicRigidBodyParticle, StaticRigidBodyParticle,
-    SuspendedParticle,
-};
-pub use r#static::{DirtyChunkUpdateInterval, DouglasPeuckerEpsilon};
+pub use dynamic::{DynamicRigidBodyProxy, PromoteDynamicRigidBodyParticle, SuspendedParticle};
+pub use rigid_bodies::*;
+pub use r#static::{DouglasPeuckerEpsilon, StaticMeshUpdateInterval};
 
 use dynamic::DynamicPlugin;
 use dynamic::{promote_dynamic_rigid_bodies, rejoin_dynamic_rigid_bodies};
-use r#static::StaticPlugin;
-use r#static::calculate_static_rigid_bodies;
+pub use r#static::StaticRigidBodyParticle;
+use r#static::{StaticPlugin, calculate_static_rigid_bodies};
 
 use crate::movement::ParticleMovementSystems;
 use crate::physics::dynamic::sync_dynamic_rigid_bodies_with_particles;
@@ -117,7 +116,7 @@ impl Plugin for FallingSandPhysicsPlugin {
                 .set(PhysicsInterpolationPlugin::interpolate_all()),
         )
         .insert_resource(avian2d::prelude::Gravity(self.rigid_body_gravity))
-        .add_plugins((DynamicPlugin, StaticPlugin))
+        .add_plugins((DynamicPlugin, StaticPlugin, RigidBodiesPlugin))
         .add_systems(
             Update,
             (
