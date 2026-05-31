@@ -9,10 +9,10 @@ pub(super) struct RigidBodiesPlugin;
 
 impl Plugin for RigidBodiesPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            FixedUpdate,
-            expand_dirty_rects_for_active_bodies.before(ParticleMovementSystems),
-        );
+        // app.add_systems(
+        //     FixedUpdate,
+        //     expand_dirty_rects_for_active_bodies.before(ParticleMovementSystems),
+        // );
     }
 }
 
