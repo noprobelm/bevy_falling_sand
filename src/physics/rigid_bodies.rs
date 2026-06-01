@@ -69,6 +69,63 @@ impl ParticleCollider {
     pub const fn with_default_resting(self) -> Self {
         self.with_resting(ParticleColliderRestingSettings::enabled())
     }
+
+    /// Returns the number of grid cells in this collider.
+    #[inline]
+    #[must_use]
+    pub fn cell_count(&self) -> usize {
+        self.cells.cells.len()
+    }
+
+    /// Returns whether this collider contains no grid cells.
+    #[inline]
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.cells.cells.is_empty()
+    }
+
+    /// Returns an iterator over the grid cells in this collider.
+    #[inline]
+    pub fn cells(&self) -> impl Iterator<Item = IVec2> + '_ {
+        self.cells.cells.iter().copied()
+    }
+
+    /// Returns whether this collider contains `cell`.
+    #[inline]
+    #[must_use]
+    pub fn contains_cell(&self, cell: IVec2) -> bool {
+        self.cells.cells.contains(&cell)
+    }
+
+    /// Removes grid cells from this collider and returns how many were present.
+    pub fn remove_cells<I>(&mut self, cells: I) -> usize
+    where
+        I: IntoIterator<Item = IVec2>,
+    {
+        cells
+            .into_iter()
+            .filter(|cell| self.cells.cells.remove(cell))
+            .count()
+    }
+
+    /// Converts a world-space point into the cached source grid cell for this collider.
+    #[inline]
+    #[must_use]
+    pub fn cell_at_world_point(&self, world_point: Vec2, transform: &GlobalTransform) -> IVec2 {
+        let local_point = transform
+            .affine()
+            .inverse()
+            .transform_point3(world_point.extend(0.0))
+            .truncate();
+        self.cells.cell_at_local_point(local_point)
+    }
+
+    /// Translation from collider-local coordinates into the source grid coordinate space.
+    #[inline]
+    #[must_use]
+    pub const fn grid_from_local_translation(&self) -> Vec2 {
+        self.cells.grid_from_local_translation
+    }
 }
 
 /// Per-collider settings for freezing a settled dynamic rigid body.
@@ -134,9 +191,13 @@ impl ParticleColliderCells {
 
     #[inline]
     fn contains_local_point(&self, local_point: Vec2) -> bool {
+        self.cells.contains(&self.cell_at_local_point(local_point))
+    }
+
+    #[inline]
+    fn cell_at_local_point(&self, local_point: Vec2) -> IVec2 {
         let grid_point = local_point + self.grid_from_local_translation;
-        let cell = grid_point.floor().as_ivec2();
-        self.cells.contains(&cell)
+        grid_point.floor().as_ivec2()
     }
 }
 
