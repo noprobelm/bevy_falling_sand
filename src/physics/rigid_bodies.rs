@@ -23,6 +23,40 @@ impl Plugin for RigidBodiesPlugin {
 #[derive(Component)]
 pub struct ParticleCollider;
 
+/// Source particle cells for a [`ParticleCollider`].
+///
+/// When present, rigid body occupancy can be rebuilt from this cell map instead of issuing
+/// per-grid-cell point queries into the physics world.
+#[derive(Component, Clone)]
+pub struct ParticleColliderCells {
+    cells: HashSet<IVec2>,
+    grid_from_local_translation: Vec2,
+}
+
+impl ParticleColliderCells {
+    /// Creates source cell metadata for a [`ParticleCollider`].
+    ///
+    /// `grid_from_local_translation` converts collider-local coordinates back to the original
+    /// particle grid coordinate space.
+    #[must_use]
+    pub fn new<I>(cells: I, grid_from_local_translation: Vec2) -> Self
+    where
+        I: IntoIterator<Item = IVec2>,
+    {
+        Self {
+            cells: cells.into_iter().collect(),
+            grid_from_local_translation,
+        }
+    }
+
+    #[inline]
+    fn contains_local_point(&self, local_point: Vec2) -> bool {
+        let grid_point = local_point + self.grid_from_local_translation;
+        let cell = grid_point.floor().as_ivec2();
+        self.cells.contains(&cell)
+    }
+}
+
 /// Grid cells currently occupied by rigid bodies marked with [`ParticleCollider`].
 #[derive(Resource, Default)]
 pub struct RigidBodyParticleOccupancy {
@@ -110,8 +144,15 @@ fn update_rigid_body_particle_occupancy(
     spatial_query: SpatialQuery,
     chunk_index: Res<ChunkIndex>,
     chunk_query: Query<&ChunkDirtyState>,
-    bodies: Query<&ColliderAabb, With<ParticleCollider>>,
-    particle_colliders: Query<Entity, With<ParticleCollider>>,
+    bodies: Query<
+        (
+            Entity,
+            &ColliderAabb,
+            Option<&ParticleColliderCells>,
+            Option<&GlobalTransform>,
+        ),
+        With<ParticleCollider>,
+    >,
 ) {
     occupancy.set_chunk_layout(chunk_index.chunk_size() as usize);
 
@@ -142,14 +183,24 @@ fn update_rigid_body_particle_occupancy(
         occupancy.clear_chunk(coord);
     }
 
-    let filter = SpatialQueryFilter::default();
-    let colliders: HashSet<Entity> = particle_colliders.iter().collect();
+    let mut fallback_colliders = HashSet::<Entity>::default();
+    let mut has_cached_colliders = false;
 
-    if colliders.is_empty() {
+    for (entity, _, collider_cells, transform) in &bodies {
+        if collider_cells.is_some() && transform.is_some() {
+            has_cached_colliders = true;
+        } else {
+            fallback_colliders.insert(entity);
+        }
+    }
+
+    if !has_cached_colliders && fallback_colliders.is_empty() {
         return;
     }
 
-    for aabb in &bodies {
+    let filter = SpatialQueryFilter::default();
+
+    for (entity, aabb, collider_cells, transform) in &bodies {
         if !aabb.min.is_finite() || !aabb.max.is_finite() {
             continue;
         }
@@ -175,14 +226,49 @@ fn update_rigid_body_particle_occupancy(
                     continue;
                 };
 
-                scan_occupied_cells(
-                    &mut occupancy,
-                    coord,
-                    scan_rect,
-                    &spatial_query,
-                    &filter,
-                    &colliders,
-                );
+                if let (Some(collider_cells), Some(transform)) = (collider_cells, transform) {
+                    scan_cached_collider_cells(
+                        &mut occupancy,
+                        coord,
+                        scan_rect,
+                        collider_cells,
+                        transform,
+                    );
+                } else if fallback_colliders.contains(&entity) {
+                    scan_occupied_cells(
+                        &mut occupancy,
+                        coord,
+                        scan_rect,
+                        &spatial_query,
+                        &filter,
+                        &fallback_colliders,
+                    );
+                }
+            }
+        }
+    }
+}
+
+fn scan_cached_collider_cells(
+    occupancy: &mut RigidBodyParticleOccupancy,
+    coord: ChunkCoord,
+    scan_rect: IRect,
+    collider_cells: &ParticleColliderCells,
+    transform: &GlobalTransform,
+) {
+    let inverse_transform = transform.affine().inverse();
+
+    for y in scan_rect.min.y..=scan_rect.max.y {
+        for x in scan_rect.min.x..=scan_rect.max.x {
+            let position = IVec2::new(x, y);
+            if occupancy.contains_in_chunk(coord, position) {
+                continue;
+            }
+
+            let world_center = Vec3::new(x as f32 + 0.5, y as f32 + 0.5, 0.0);
+            let local_center = inverse_transform.transform_point3(world_center).truncate();
+            if collider_cells.contains_local_point(local_center) {
+                occupancy.insert(coord, position);
             }
         }
     }
