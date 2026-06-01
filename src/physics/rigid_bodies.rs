@@ -1,12 +1,13 @@
 //! Provides rigid body integration with particle movement systems
 
 use avian2d::prelude::{
-    AngularVelocity, ColliderAabb, LinearVelocity, RigidBody, SpatialQuery, SpatialQueryFilter,
+    AngularVelocity, ColliderAabb, LinearVelocity, RigidBody, Sleeping, SpatialQuery,
+    SpatialQueryFilter,
 };
 use bevy::platform::collections::{HashMap, HashSet};
 use bevy::prelude::*;
 
-use crate::{ChunkCoord, ChunkDirtyState, ChunkIndex, ParticleMovementSystems};
+use crate::{ChunkCoord, ChunkDirtyState, ChunkIndex, ChunkRegion, ParticleMovementSystems};
 
 const DEFAULT_REST_LINEAR_THRESHOLD: f32 = 1.5;
 const DEFAULT_REST_ANGULAR_THRESHOLD: f32 = 1.5;
@@ -22,6 +23,7 @@ impl Plugin for RigidBodiesPlugin {
                 PostUpdate,
                 (
                     rest_particle_colliders,
+                    expand_dirty_rects_for_active_bodies,
                     update_rigid_body_particle_occupancy,
                 )
                     .chain()
@@ -216,6 +218,52 @@ impl RigidBodyParticleOccupancy {
             position.x - (coord.x() << self.chunk_shift),
             position.y - (coord.y() << self.chunk_shift),
         )
+    }
+}
+
+#[allow(clippy::needless_pass_by_value)]
+fn expand_dirty_rects_for_active_bodies(
+    bodies: Query<(&ColliderAabb, &RigidBody), (With<ParticleCollider>, Without<Sleeping>)>,
+    chunk_index: Res<ChunkIndex>,
+    mut chunk_query: Query<(&ChunkRegion, &mut ChunkDirtyState)>,
+) {
+    for (aabb, body) in &bodies {
+        if !body.is_dynamic() || !aabb.min.is_finite() || !aabb.max.is_finite() {
+            continue;
+        }
+
+        let body_rect = IRect::new(
+            aabb.min.x.floor() as i32,
+            aabb.min.y.floor() as i32,
+            aabb.max.x.ceil() as i32,
+            aabb.max.y.ceil() as i32,
+        );
+
+        let min_coord = chunk_index.world_to_chunk_coord(body_rect.min);
+        let max_coord = chunk_index.world_to_chunk_coord(body_rect.max);
+
+        for chunk_y in min_coord.y()..=max_coord.y() {
+            for chunk_x in min_coord.x()..=max_coord.x() {
+                let coord = ChunkCoord::new(chunk_x, chunk_y);
+                let Some(chunk_entity) = chunk_index.get(coord) else {
+                    continue;
+                };
+                let Ok((region, mut dirty_state)) = chunk_query.get_mut(chunk_entity) else {
+                    continue;
+                };
+                let Some(dirty_rect) = intersect_rects(body_rect, region.region()) else {
+                    continue;
+                };
+
+                dirty_state.current = Some(
+                    dirty_state
+                        .current
+                        .map_or(dirty_rect, |current| current.union(dirty_rect)),
+                );
+                dirty_state.current_positions = None;
+                dirty_state.mark_dirty_rect(dirty_rect);
+            }
+        }
     }
 }
 
