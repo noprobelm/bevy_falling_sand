@@ -23,6 +23,7 @@ pub(super) struct StaticPlugin;
 impl Plugin for StaticPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<StaticRigidBodyParticle>()
+            .register_type::<StaticRigidBodyParticleCollider>()
             .register_particle_sync_component::<StaticRigidBodyParticle>()
             .init_resource::<StaticRigidBodyParticleMeshData>()
             .init_resource::<StaticRigidBodyParticleColliders>()
@@ -59,6 +60,16 @@ impl Plugin for StaticPlugin {
 #[reflect(Component)]
 #[type_path = "bfs_physics"]
 pub struct StaticRigidBodyParticle;
+
+/// Marker component for static rigid body colliders generated from
+/// [`StaticRigidBodyParticle`] particles.
+///
+/// These entities are owned by the static particle mesh generation pipeline and should not be
+/// treated as user-authored rigid bodies.
+#[derive(Component, Copy, Clone, Default, Debug, Reflect)]
+#[reflect(Component)]
+#[type_path = "bfs_physics"]
+pub struct StaticRigidBodyParticleCollider;
 
 /// Configures the epsilon tolerance for the Douglas-Peucker polygon simplification algorithm.
 ///
@@ -279,7 +290,9 @@ pub(super) fn calculate_static_rigid_bodies(
                     if let Some(&existing) = colliders.0.get(&result.chunk_coord) {
                         commands.entity(existing).insert(collider);
                     } else {
-                        let entity = commands.spawn((RigidBody::Static, collider)).id();
+                        let entity = commands
+                            .spawn((RigidBody::Static, collider, StaticRigidBodyParticleCollider))
+                            .id();
                         colliders.0.insert(result.chunk_coord, entity);
                     }
                 }

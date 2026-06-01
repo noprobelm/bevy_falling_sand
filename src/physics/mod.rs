@@ -56,8 +56,8 @@ pub use r#static::{DouglasPeuckerEpsilon, StaticMeshUpdateInterval};
 
 use dynamic::DynamicPlugin;
 use dynamic::{promote_dynamic_rigid_bodies, rejoin_dynamic_rigid_bodies};
-pub use r#static::StaticRigidBodyParticle;
 use r#static::{StaticPlugin, calculate_static_rigid_bodies};
+pub use r#static::{StaticRigidBodyParticle, StaticRigidBodyParticleCollider};
 
 use crate::movement::ParticleMovementSystems;
 use crate::physics::dynamic::sync_dynamic_rigid_bodies_with_particles;
