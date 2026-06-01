@@ -1,19 +1,31 @@
 //! Provides rigid body integration with particle movement systems
 
-use avian2d::prelude::{ColliderAabb, SpatialQuery, SpatialQueryFilter};
+use avian2d::prelude::{
+    AngularVelocity, ColliderAabb, LinearVelocity, RigidBody, SpatialQuery, SpatialQueryFilter,
+};
 use bevy::platform::collections::{HashMap, HashSet};
 use bevy::prelude::*;
 
 use crate::{ChunkCoord, ChunkDirtyState, ChunkIndex, ParticleMovementSystems};
 
+const DEFAULT_REST_LINEAR_THRESHOLD: f32 = 1.5;
+const DEFAULT_REST_ANGULAR_THRESHOLD: f32 = 1.5;
+const DEFAULT_REST_TIME: f32 = 0.50;
+
 pub(super) struct RigidBodiesPlugin;
 
 impl Plugin for RigidBodiesPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<RigidBodyParticleOccupancy>()
+        app.init_resource::<ParticleColliderRestTimers>()
+            .init_resource::<RigidBodyParticleOccupancy>()
             .add_systems(
                 PostUpdate,
-                update_rigid_body_particle_occupancy.before(ParticleMovementSystems),
+                (
+                    rest_particle_colliders,
+                    update_rigid_body_particle_occupancy,
+                )
+                    .chain()
+                    .before(ParticleMovementSystems),
             );
     }
 }
@@ -21,25 +33,94 @@ impl Plugin for RigidBodiesPlugin {
 /// Marker component which can be added to rigid body colliders in order to include their boundaries
 /// for evaluation in particle movement systems.
 #[derive(Component)]
-pub struct ParticleCollider;
+pub struct ParticleCollider {
+    cells: ParticleColliderCells,
+    /// Settings controlling whether this collider can freeze itself after resting.
+    pub resting: ParticleColliderRestingSettings,
+}
+
+impl ParticleCollider {
+    /// Creates a particle collider marker from grid cells
+    ///
+    /// Use this when the collider is generated from particle-grid cells. The returned bundle lets
+    /// rigid body occupancy rebuilds use fast local cell lookups instead of physics point queries.
+    #[must_use]
+    pub fn from_grid_cells<I>(cells: I, grid_from_local_translation: Vec2) -> Self
+    where
+        I: IntoIterator<Item = IVec2>,
+    {
+        Self {
+            cells: ParticleColliderCells::new(cells, grid_from_local_translation),
+            resting: ParticleColliderRestingSettings::disabled(),
+        }
+    }
+
+    /// Enables automatic conversion from dynamic to static when this collider remains still.
+    #[must_use]
+    pub const fn with_resting(mut self, resting: ParticleColliderRestingSettings) -> Self {
+        self.resting = resting;
+        self
+    }
+
+    /// Enables automatic resting with default thresholds.
+    #[must_use]
+    pub const fn with_default_resting(self) -> Self {
+        self.with_resting(ParticleColliderRestingSettings::enabled())
+    }
+}
+
+/// Per-collider settings for freezing a settled dynamic rigid body.
+#[derive(Clone, Copy, Debug)]
+pub struct ParticleColliderRestingSettings {
+    /// Whether this collider is allowed to convert its rigid body to static after settling.
+    pub enabled: bool,
+    /// Maximum linear velocity for the rest timer to advance.
+    pub linear_velocity_threshold: f32,
+    /// Maximum angular velocity for the rest timer to advance.
+    pub angular_velocity_threshold: f32,
+    /// Time the body must stay below thresholds before it is made static.
+    pub rest_time: f32,
+}
+
+impl ParticleColliderRestingSettings {
+    /// Creates disabled resting settings.
+    #[must_use]
+    pub const fn disabled() -> Self {
+        Self {
+            enabled: false,
+            linear_velocity_threshold: DEFAULT_REST_LINEAR_THRESHOLD,
+            angular_velocity_threshold: DEFAULT_REST_ANGULAR_THRESHOLD,
+            rest_time: DEFAULT_REST_TIME,
+        }
+    }
+
+    /// Creates enabled resting settings with default thresholds.
+    #[must_use]
+    pub const fn enabled() -> Self {
+        Self {
+            enabled: true,
+            linear_velocity_threshold: DEFAULT_REST_LINEAR_THRESHOLD,
+            angular_velocity_threshold: DEFAULT_REST_ANGULAR_THRESHOLD,
+            rest_time: DEFAULT_REST_TIME,
+        }
+    }
+}
 
 /// Source particle cells for a [`ParticleCollider`].
 ///
 /// When present, rigid body occupancy can be rebuilt from this cell map instead of issuing
 /// per-grid-cell point queries into the physics world.
-#[derive(Component, Clone)]
-pub struct ParticleColliderCells {
+#[derive(Clone)]
+struct ParticleColliderCells {
     cells: HashSet<IVec2>,
     grid_from_local_translation: Vec2,
 }
 
+#[derive(Resource, Default)]
+struct ParticleColliderRestTimers(HashMap<Entity, f32>);
+
 impl ParticleColliderCells {
-    /// Creates source cell metadata for a [`ParticleCollider`].
-    ///
-    /// `grid_from_local_translation` converts collider-local coordinates back to the original
-    /// particle grid coordinate space.
-    #[must_use]
-    pub fn new<I>(cells: I, grid_from_local_translation: Vec2) -> Self
+    fn new<I>(cells: I, grid_from_local_translation: Vec2) -> Self
     where
         I: IntoIterator<Item = IVec2>,
     {
@@ -139,6 +220,66 @@ impl RigidBodyParticleOccupancy {
 }
 
 #[allow(clippy::needless_pass_by_value)]
+fn rest_particle_colliders(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut rest_timers: ResMut<ParticleColliderRestTimers>,
+    bodies: Query<
+        (
+            Entity,
+            &RigidBody,
+            &LinearVelocity,
+            &AngularVelocity,
+            &ParticleCollider,
+        ),
+        With<ParticleCollider>,
+    >,
+) {
+    let mut active_bodies = HashSet::<Entity>::default();
+    let mut resting_bodies = Vec::<Entity>::new();
+    let delta_secs = time.delta_secs();
+
+    for (entity, body, linear_velocity, angular_velocity, collider) in &bodies {
+        if !body.is_dynamic() {
+            continue;
+        }
+
+        active_bodies.insert(entity);
+
+        if !collider.resting.enabled {
+            rest_timers.0.remove(&entity);
+            continue;
+        }
+
+        if linear_velocity.length() > collider.resting.linear_velocity_threshold
+            || angular_velocity.abs() > collider.resting.angular_velocity_threshold
+        {
+            rest_timers.0.remove(&entity);
+            continue;
+        }
+
+        let timer = rest_timers.0.entry(entity).or_default();
+        *timer += delta_secs;
+        if *timer >= collider.resting.rest_time {
+            resting_bodies.push(entity);
+        }
+    }
+
+    rest_timers
+        .0
+        .retain(|entity, _| active_bodies.contains(entity));
+
+    for entity in resting_bodies {
+        commands.entity(entity).insert((
+            RigidBody::Static,
+            LinearVelocity::ZERO,
+            AngularVelocity(0.0),
+        ));
+        rest_timers.0.remove(&entity);
+    }
+}
+
+#[allow(clippy::needless_pass_by_value)]
 fn update_rigid_body_particle_occupancy(
     mut occupancy: ResMut<RigidBodyParticleOccupancy>,
     spatial_query: SpatialQuery,
@@ -148,7 +289,7 @@ fn update_rigid_body_particle_occupancy(
         (
             Entity,
             &ColliderAabb,
-            Option<&ParticleColliderCells>,
+            Option<&ParticleCollider>,
             Option<&GlobalTransform>,
         ),
         With<ParticleCollider>,
@@ -226,12 +367,12 @@ fn update_rigid_body_particle_occupancy(
                     continue;
                 };
 
-                if let (Some(collider_cells), Some(transform)) = (collider_cells, transform) {
+                if let (Some(collider), Some(transform)) = (collider_cells, transform) {
                     scan_cached_collider_cells(
                         &mut occupancy,
                         coord,
                         scan_rect,
-                        collider_cells,
+                        &collider.cells,
                         transform,
                     );
                 } else if fallback_colliders.contains(&entity) {
