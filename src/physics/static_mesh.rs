@@ -1,10 +1,9 @@
 //! Static rigid body collision mesh generation for falling sand particles.
 //!
 //! Particles marked with [`StaticRigidBodyParticle`] contribute to per-chunk collision meshes.
-//! The pipeline identifies dirty chunks, builds occupancy bitmaps, generates meshes
-//! asynchronously (flood-fill, perimeter extraction, Douglas-Peucker simplification,
-//! ear-cut triangulation), and attaches the resulting trimesh colliders to static rigid body
-//! entities.
+//! The pipeline identifies dirty chunks, builds occupancy bitmaps, sends those bitmaps through
+//! [`utils::geometry`](crate::utils::geometry) asynchronously, and attaches the resulting trimesh
+//! colliders to static rigid body entities.
 
 use avian2d::math::Vector;
 use avian2d::prelude::*;
@@ -13,24 +12,63 @@ use bevy::prelude::*;
 use bevy::tasks::{AsyncComputeTaskPool, Task};
 use futures_lite::future;
 
-use super::dynamic::{StaticRigidBodyParticle, SuspendedParticle};
-use super::geometry::{MeshGenerationResult, generate_mesh_from_bitmap};
+use super::dynamic::SuspendedParticle;
+use crate::ParticleSyncExt;
 use crate::core::{ChunkCoord, ChunkDirtyState, ChunkIndex, ChunkRegion, ParticleMap};
+use crate::utils::mesh_components_from_bitmap;
 
 pub(super) struct StaticPlugin;
 
 impl Plugin for StaticPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<StaticRigidBodyParticleMeshData>()
+        app.register_type::<StaticRigidBodyParticle>()
+            .register_type::<StaticRigidBodyParticleCollider>()
+            .register_particle_sync_component::<StaticRigidBodyParticle>()
+            .init_resource::<StaticRigidBodyParticleMeshData>()
             .init_resource::<StaticRigidBodyParticleColliders>()
             .init_resource::<PreviousFrameDirtyChunks>()
             .init_resource::<DouglasPeuckerEpsilon>()
-            .init_resource::<DirtyChunkUpdateInterval>()
+            .init_resource::<StaticMeshUpdateInterval>()
             .init_resource::<ChunkLastProcessedTime>()
             .init_resource::<PendingMeshTasks>()
             .init_resource::<ChunkOccupancy>();
     }
 }
+
+/// Marker component for particles that contribute to static rigid body collision.
+///
+/// Add this to a [`ParticleType`](crate::ParticleType) entity so that all
+/// particles of that type are included when generating per-chunk collision meshes.
+/// Typically used for solid particles like walls, rocks, and settled sand.
+///
+/// # Examples
+///
+/// ```no_run
+/// use bevy::prelude::*;
+/// use bevy_falling_sand::core::ParticleType;
+/// use bevy_falling_sand::physics::StaticRigidBodyParticle;
+///
+/// fn setup(mut commands: Commands) {
+///     commands.spawn((
+///         ParticleType::new("Stone"),
+///         StaticRigidBodyParticle,
+///     ));
+/// }
+/// ```
+#[derive(Component, Copy, Clone, Default, Debug, Reflect)]
+#[reflect(Component)]
+#[type_path = "bfs_physics"]
+pub struct StaticRigidBodyParticle;
+
+/// Marker component for static rigid body colliders generated from
+/// [`StaticRigidBodyParticle`] particles.
+///
+/// These entities are owned by the static particle mesh generation pipeline and should not be
+/// treated as user-authored rigid bodies.
+#[derive(Component, Copy, Clone, Default, Debug, Reflect)]
+#[reflect(Component)]
+#[type_path = "bfs_physics"]
+pub struct StaticRigidBodyParticleCollider;
 
 /// Configures the epsilon tolerance for the Douglas-Peucker polygon simplification algorithm.
 ///
@@ -56,7 +94,7 @@ impl Default for DouglasPeuckerEpsilon {
     }
 }
 
-/// Configures how often dirty chunks recalculate their collision meshes (in seconds).
+/// Configures how often static meshes are recalculated per-chunk.
 ///
 /// Chunks that just stopped being dirty are always processed immediately.
 /// Currently dirty chunks are throttled to this interval to improve performance.
@@ -65,16 +103,16 @@ impl Default for DouglasPeuckerEpsilon {
 ///
 /// ```no_run
 /// use bevy::prelude::*;
-/// use bevy_falling_sand::physics::DirtyChunkUpdateInterval;
+/// use bevy_falling_sand::physics::StaticMeshUpdateInterval;
 ///
 /// fn setup(mut commands: Commands) {
-///     commands.insert_resource(DirtyChunkUpdateInterval(0.2));
+///     commands.insert_resource(StaticMeshUpdateInterval(0.2));
 /// }
 /// ```
 #[derive(Resource, Debug)]
-pub struct DirtyChunkUpdateInterval(pub f32);
+pub struct StaticMeshUpdateInterval(pub f32);
 
-impl Default for DirtyChunkUpdateInterval {
+impl Default for StaticMeshUpdateInterval {
     fn default() -> Self {
         Self(0.1)
     }
@@ -122,7 +160,7 @@ pub(super) fn calculate_static_rigid_bodies(
     mut colliders: ResMut<StaticRigidBodyParticleColliders>,
     mut occupancy: ResMut<ChunkOccupancy>,
     douglas_peucker_epsilon: Res<DouglasPeuckerEpsilon>,
-    dirty_chunk_interval: Res<DirtyChunkUpdateInterval>,
+    dirty_chunk_interval: Res<StaticMeshUpdateInterval>,
     time: Res<Time>,
     map: Res<ParticleMap>,
     chunk_index: Res<ChunkIndex>,
@@ -251,7 +289,9 @@ pub(super) fn calculate_static_rigid_bodies(
                     if let Some(&existing) = colliders.0.get(&result.chunk_coord) {
                         commands.entity(existing).insert(collider);
                     } else {
-                        let entity = commands.spawn((RigidBody::Static, collider)).id();
+                        let entity = commands
+                            .spawn((RigidBody::Static, collider, StaticRigidBodyParticleCollider))
+                            .id();
                         colliders.0.insert(result.chunk_coord, entity);
                     }
                 }
@@ -290,5 +330,38 @@ pub(super) fn calculate_static_rigid_bodies(
                 }
             }
         }
+    }
+}
+
+pub(super) struct MeshGenerationResult {
+    pub(super) chunk_coord: ChunkCoord,
+    pub(super) vertices: Vec<Vec<Vector>>,
+    pub(super) indices: Vec<Vec<[u32; 3]>>,
+}
+
+#[allow(clippy::unused_async)]
+pub(super) async fn generate_mesh_from_bitmap(
+    chunk_coord: ChunkCoord,
+    bitmap: Vec<bool>,
+    origin: IVec2,
+    chunk_size: usize,
+    epsilon: f32,
+) -> MeshGenerationResult {
+    let meshes = mesh_components_from_bitmap(&bitmap, origin, chunk_size, epsilon);
+    let vertices = meshes
+        .iter()
+        .map(|mesh| {
+            mesh.vertices
+                .iter()
+                .map(|vertex| Vector::new(vertex.x, vertex.y))
+                .collect()
+        })
+        .collect();
+    let indices = meshes.into_iter().map(|mesh| mesh.indices).collect();
+
+    MeshGenerationResult {
+        chunk_coord,
+        vertices,
+        indices,
     }
 }

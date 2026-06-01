@@ -1,6 +1,8 @@
 use crate::movement::{
     AirResistance, Density, Momentum, Movement, MovementRng, ParticleResistor, Speed,
 };
+#[cfg(feature = "physics")]
+use crate::prelude::RigidBodyParticleOccupancy;
 use std::mem;
 use std::sync::Mutex;
 
@@ -78,6 +80,7 @@ pub(super) fn par_handle_movement_by_chunks(
     mut global_rng: ResMut<GlobalRng>,
     chunk_index: Res<ChunkIndex>,
     mut chunk_query: Query<(&ChunkRegion, &mut ChunkDirtyState)>,
+    #[cfg(feature = "physics")] rigid_body_occupancy: Res<RigidBodyParticleOccupancy>,
 ) {
     movement_state.visited_entities.clear();
 
@@ -111,6 +114,8 @@ pub(super) fn par_handle_movement_by_chunks(
             let query_ptr_send = SendPtr::new(query_ptr);
             let density_ptr_send = SendPtr::new(density_query_ptr);
             let visited_ptr = SendPtr::new((&raw const visited_entities_by_chunk).cast_mut());
+            #[cfg(feature = "physics")]
+            let rigid_body_occupancy_ref = &rigid_body_occupancy;
 
             let chunks_to_process: Vec<(ChunkCoord, Option<IRect>, Vec<IVec2>)> = chunk_coords
                 .iter()
@@ -208,6 +213,14 @@ pub(super) fn par_handle_movement_by_chunks(
                                         if neighbor_entity.is_err() {
                                             obstructed[obstruct_idx] = true;
                                             continue;
+                                        }
+                                        #[cfg(feature = "physics")]
+                                        {
+                                            if rigid_body_occupancy_ref.contains(neighbor_position)
+                                            {
+                                                obstructed[obstruct_idx] = true;
+                                                continue;
+                                            }
                                         }
 
                                         if let Ok(Some(neighbor_entity)) = neighbor_entity {
@@ -353,6 +366,7 @@ pub(super) fn serial_handle_movement_by_chunks(
     mut global_rng: ResMut<GlobalRng>,
     chunk_index: Res<ChunkIndex>,
     mut chunk_query: Query<(&ChunkRegion, &mut ChunkDirtyState)>,
+    #[cfg(feature = "physics")] rigid_body_occupancy: Res<RigidBodyParticleOccupancy>,
 ) {
     movement_state.visited_entities.clear();
 
@@ -442,6 +456,14 @@ pub(super) fn serial_handle_movement_by_chunks(
                             if neighbor_result.is_err() {
                                 obstructed[obstruct_idx] = true;
                                 continue;
+                            }
+
+                            #[cfg(feature = "physics")]
+                            {
+                                if rigid_body_occupancy.contains(neighbor_position) {
+                                    obstructed[obstruct_idx] = true;
+                                    continue;
+                                }
                             }
 
                             if let Ok(Some(neighbor_entity)) = neighbor_result {
@@ -556,6 +578,7 @@ pub(super) fn handle_movement_by_particles(
     mut global_rng: ResMut<GlobalRng>,
     chunk_index: Res<ChunkIndex>,
     mut chunk_query: Query<(&ChunkRegion, &mut ChunkDirtyState)>,
+    #[cfg(feature = "physics")] rigid_body_occupancy: Res<RigidBodyParticleOccupancy>,
 ) {
     movement_state.visited_positions.clear();
 
@@ -621,6 +644,13 @@ pub(super) fn handle_movement_by_particles(
                         if neighbor_result.is_err() {
                             obstructed[obstruct_idx] = true;
                             continue;
+                        }
+                        #[cfg(feature = "physics")]
+                        {
+                            if rigid_body_occupancy.contains(neighbor_position) {
+                                obstructed[obstruct_idx] = true;
+                                continue;
+                            }
                         }
 
                         if let Ok(Some(neighbor_entity)) = neighbor_result {

@@ -12,11 +12,11 @@ use bevy::platform::collections::HashSet;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::ParticleSyncExt;
 use crate::core::{
     ChunkDirtyState, ChunkIndex, GridPosition, Particle, ParticleMap, SyncParticleSignal,
 };
 use crate::movement::{AirResistance, Density, Momentum, Movement, Speed};
+use crate::physics::static_mesh::StaticRigidBodyParticle;
 use crate::render::ParticleColor;
 
 /// Collision layers for falling sand physics.
@@ -33,37 +33,10 @@ pub(super) struct DynamicPlugin;
 
 impl Plugin for DynamicPlugin {
     fn build(&self, app: &mut App) {
-        app.register_type::<StaticRigidBodyParticle>()
-            .register_type::<PromoteDynamicRigidBodyParticle>()
-            .register_particle_sync_component::<StaticRigidBodyParticle>()
+        app.register_type::<PromoteDynamicRigidBodyParticle>()
             .add_message::<PromoteDynamicRigidBodyParticle>();
     }
 }
-
-/// Marker component for particles that contribute to static rigid body collision.
-///
-/// Add this to a [`ParticleType`](crate::ParticleType) entity so that all
-/// particles of that type are included when generating per-chunk collision meshes.
-/// Typically used for solid particles like walls, rocks, and settled sand.
-///
-/// # Examples
-///
-/// ```no_run
-/// use bevy::prelude::*;
-/// use bevy_falling_sand::core::ParticleType;
-/// use bevy_falling_sand::physics::StaticRigidBodyParticle;
-///
-/// fn setup(mut commands: Commands) {
-///     commands.spawn((
-///         ParticleType::new("Stone"),
-///         StaticRigidBodyParticle,
-///     ));
-/// }
-/// ```
-#[derive(Component, Copy, Clone, Default, Debug, Reflect)]
-#[reflect(Component)]
-#[type_path = "bfs_physics"]
-pub struct StaticRigidBodyParticle;
 
 /// Signal to promote a [`Particle`] entity into a dynamic rigid body.
 ///
