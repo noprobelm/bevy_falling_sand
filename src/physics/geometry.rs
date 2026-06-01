@@ -63,7 +63,7 @@ impl Grid {
     }
 }
 
-pub(super) fn process_bitmap(
+pub(crate) fn process_bitmap(
     bitmap: &[bool],
     origin: IVec2,
     chunk_size: usize,

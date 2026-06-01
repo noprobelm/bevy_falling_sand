@@ -43,7 +43,7 @@
 //!    respond to the new collision geometry.
 
 pub mod dynamic;
-mod geometry;
+pub(crate) mod geometry;
 pub mod rigid_bodies;
 pub mod r#static;
 
