@@ -1,4 +1,16 @@
-//! Provides rigid body integration with particle movement systems
+//! Makes Avian rigid body colliders visible to particle movement.
+//!
+//! A rigid body marked with [`ParticleCollider`] contributes occupied cells to
+//! [`RigidBodyParticleOccupancy`]. Movement systems read that occupancy map before moving
+//! particles, so falling sand routes around marked Avian colliders just as it routes around other
+//! particles.
+//!
+//! This module also owns the maintenance systems for those colliders:
+//!
+//! - active dynamic bodies expand dirty rectangles so nearby chunks keep simulating,
+//! - occupied grid cells are rebuilt for dirty chunks before particle movement,
+//! - dynamic colliders with [`ParticleColliderRestingOptions`] can become static or be put to
+//!   sleep once their velocities remain below configured thresholds.
 
 use avian2d::prelude::{
     AngularVelocity, ColliderAabb, LinearVelocity, RigidBody, Sleeping, SpatialQuery,
@@ -32,8 +44,12 @@ impl Plugin for RigidBodiesPlugin {
     }
 }
 
-/// Marker component which can be added to rigid body colliders in order to include their boundaries
-/// for evaluation in particle movement systems.
+/// Marker component for rigid body colliders that should block particle movement.
+///
+/// Add this to an Avian rigid body collider when particles should treat the collider's occupied
+/// cells as unavailable. Use [`Self::from_grid_cells`] when the collider was generated from known
+/// particle-grid cells; this lets occupancy rebuilds use cached local cells instead of physics
+/// point queries.
 #[derive(Component)]
 pub struct ParticleCollider {
     cells: ParticleColliderCells,

@@ -1,10 +1,9 @@
 //! Static rigid body collision mesh generation for falling sand particles.
 //!
 //! Particles marked with [`StaticRigidBodyParticle`] contribute to per-chunk collision meshes.
-//! The pipeline identifies dirty chunks, builds occupancy bitmaps, generates meshes
-//! asynchronously (flood-fill, perimeter extraction, Douglas-Peucker simplification,
-//! ear-cut triangulation), and attaches the resulting trimesh colliders to static rigid body
-//! entities.
+//! The pipeline identifies dirty chunks, builds occupancy bitmaps, sends those bitmaps through
+//! [`utils::geometry`](crate::utils::geometry) asynchronously, and attaches the resulting trimesh
+//! colliders to static rigid body entities.
 
 use avian2d::math::Vector;
 use avian2d::prelude::*;
@@ -14,9 +13,9 @@ use bevy::tasks::{AsyncComputeTaskPool, Task};
 use futures_lite::future;
 
 use super::dynamic::SuspendedParticle;
-use super::geometry::{MeshGenerationResult, generate_mesh_from_bitmap};
 use crate::ParticleSyncExt;
 use crate::core::{ChunkCoord, ChunkDirtyState, ChunkIndex, ChunkRegion, ParticleMap};
+use crate::utils::mesh_components_from_bitmap;
 
 pub(super) struct StaticPlugin;
 
@@ -104,10 +103,10 @@ impl Default for DouglasPeuckerEpsilon {
 ///
 /// ```no_run
 /// use bevy::prelude::*;
-/// use bevy_falling_sand::physics::DirtyChunkUpdateInterval;
+/// use bevy_falling_sand::physics::StaticMeshUpdateInterval;
 ///
 /// fn setup(mut commands: Commands) {
-///     commands.insert_resource(DirtyChunkUpdateInterval(0.2));
+///     commands.insert_resource(StaticMeshUpdateInterval(0.2));
 /// }
 /// ```
 #[derive(Resource, Debug)]
@@ -331,5 +330,38 @@ pub(super) fn calculate_static_rigid_bodies(
                 }
             }
         }
+    }
+}
+
+pub(super) struct MeshGenerationResult {
+    pub(super) chunk_coord: ChunkCoord,
+    pub(super) vertices: Vec<Vec<Vector>>,
+    pub(super) indices: Vec<Vec<[u32; 3]>>,
+}
+
+#[allow(clippy::unused_async)]
+pub(super) async fn generate_mesh_from_bitmap(
+    chunk_coord: ChunkCoord,
+    bitmap: Vec<bool>,
+    origin: IVec2,
+    chunk_size: usize,
+    epsilon: f32,
+) -> MeshGenerationResult {
+    let meshes = mesh_components_from_bitmap(&bitmap, origin, chunk_size, epsilon);
+    let vertices = meshes
+        .iter()
+        .map(|mesh| {
+            mesh.vertices
+                .iter()
+                .map(|vertex| Vector::new(vertex.x, vertex.y))
+                .collect()
+        })
+        .collect();
+    let indices = meshes.into_iter().map(|mesh| mesh.indices).collect();
+
+    MeshGenerationResult {
+        chunk_coord,
+        vertices,
+        indices,
     }
 }

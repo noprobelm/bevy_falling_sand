@@ -16,7 +16,7 @@ use crate::core::{
     ChunkDirtyState, ChunkIndex, GridPosition, Particle, ParticleMap, SyncParticleSignal,
 };
 use crate::movement::{AirResistance, Density, Momentum, Movement, Speed};
-use crate::physics::r#static::StaticRigidBodyParticle;
+use crate::physics::static_mesh::StaticRigidBodyParticle;
 use crate::render::ParticleColor;
 
 /// Collision layers for falling sand physics.
