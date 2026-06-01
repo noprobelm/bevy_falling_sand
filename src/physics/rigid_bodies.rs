@@ -38,7 +38,7 @@ impl Plugin for RigidBodiesPlugin {
 pub struct ParticleCollider {
     cells: ParticleColliderCells,
     /// Settings controlling whether this collider can freeze itself after resting.
-    pub resting: ParticleColliderRestingSettings,
+    pub resting: ParticleColliderRestingOptions,
 }
 
 impl ParticleCollider {
@@ -53,13 +53,13 @@ impl ParticleCollider {
     {
         Self {
             cells: ParticleColliderCells::new(cells, grid_from_local_translation),
-            resting: ParticleColliderRestingSettings::disabled(),
+            resting: ParticleColliderRestingOptions::new().disabled(),
         }
     }
 
     /// Enables automatic conversion from dynamic to static when this collider remains still.
     #[must_use]
-    pub const fn with_resting(mut self, resting: ParticleColliderRestingSettings) -> Self {
+    pub const fn with_resting(mut self, resting: ParticleColliderRestingOptions) -> Self {
         self.resting = resting;
         self
     }
@@ -67,7 +67,7 @@ impl ParticleCollider {
     /// Enables automatic resting with default thresholds.
     #[must_use]
     pub const fn with_default_resting(self) -> Self {
-        self.with_resting(ParticleColliderRestingSettings::enabled())
+        self.with_resting(ParticleColliderRestingOptions::new().enabled())
     }
 
     /// Returns the number of grid cells in this collider.
@@ -128,40 +128,69 @@ impl ParticleCollider {
     }
 }
 
+/// Controls whether a body coming to rest should be converted to a static rigid body, or be forced
+/// to sleep using avian's [`Sleeping`] component.
+#[derive(Copy, Clone, Debug)]
+pub enum RestConversionType {
+    /// The body should be converted to static
+    Static,
+    /// The body should be put to sleep
+    Sleep,
+}
+
 /// Per-collider settings for freezing a settled dynamic rigid body.
 #[derive(Clone, Copy, Debug)]
-pub struct ParticleColliderRestingSettings {
-    /// Whether this collider is allowed to convert its rigid body to static after settling.
+pub struct ParticleColliderRestingOptions {
+    /// Whether this collider is allowed to rest under the specified heuristics
     pub enabled: bool,
     /// Maximum linear velocity for the rest timer to advance.
     pub linear_velocity_threshold: f32,
     /// Maximum angular velocity for the rest timer to advance.
     pub angular_velocity_threshold: f32,
-    /// Time the body must stay below thresholds before it is made static.
+    /// Time the body must stay below thresholds before it is forced to rest.
     pub rest_time: f32,
+    /// Logic for putting a rigid body to rest
+    pub rest_type: RestConversionType,
 }
 
-impl ParticleColliderRestingSettings {
-    /// Creates disabled resting settings.
+impl ParticleColliderRestingOptions {
+    /// Creates resting settings with default thresholds.
     #[must_use]
-    pub const fn disabled() -> Self {
+    pub const fn new() -> Self {
         Self {
             enabled: false,
             linear_velocity_threshold: DEFAULT_REST_LINEAR_THRESHOLD,
             angular_velocity_threshold: DEFAULT_REST_ANGULAR_THRESHOLD,
             rest_time: DEFAULT_REST_TIME,
+            rest_type: RestConversionType::Static,
         }
     }
 
-    /// Creates enabled resting settings with default thresholds.
+    /// Disables resting while preserving the configured thresholds and conversion type.
     #[must_use]
-    pub const fn enabled() -> Self {
-        Self {
-            enabled: true,
-            linear_velocity_threshold: DEFAULT_REST_LINEAR_THRESHOLD,
-            angular_velocity_threshold: DEFAULT_REST_ANGULAR_THRESHOLD,
-            rest_time: DEFAULT_REST_TIME,
-        }
+    pub const fn disabled(mut self) -> Self {
+        self.enabled = false;
+        self
+    }
+
+    /// Enables resting while preserving the configured thresholds and conversion type.
+    #[must_use]
+    pub const fn enabled(mut self) -> Self {
+        self.enabled = true;
+        self
+    }
+
+    /// Sets the conversion applied when this collider has rested long enough.
+    #[must_use]
+    pub const fn with_rest_type(mut self, rest_type: RestConversionType) -> Self {
+        self.rest_type = rest_type;
+        self
+    }
+}
+
+impl Default for ParticleColliderRestingOptions {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -333,19 +362,16 @@ fn rest_particle_colliders(
     mut commands: Commands,
     time: Res<Time>,
     mut rest_timers: ResMut<ParticleColliderRestTimers>,
-    bodies: Query<
-        (
-            Entity,
-            &RigidBody,
-            &LinearVelocity,
-            &AngularVelocity,
-            &ParticleCollider,
-        ),
-        With<ParticleCollider>,
-    >,
+    bodies: Query<(
+        Entity,
+        &RigidBody,
+        &LinearVelocity,
+        &AngularVelocity,
+        &ParticleCollider,
+    )>,
 ) {
     let mut active_bodies = HashSet::<Entity>::default();
-    let mut resting_bodies = Vec::<Entity>::new();
+    let mut resting_bodies = Vec::<(Entity, RestConversionType)>::new();
     let delta_secs = time.delta_secs();
 
     for (entity, body, linear_velocity, angular_velocity, collider) in &bodies {
@@ -370,7 +396,7 @@ fn rest_particle_colliders(
         let timer = rest_timers.0.entry(entity).or_default();
         *timer += delta_secs;
         if *timer >= collider.resting.rest_time {
-            resting_bodies.push(entity);
+            resting_bodies.push((entity, collider.resting.rest_type));
         }
     }
 
@@ -378,12 +404,20 @@ fn rest_particle_colliders(
         .0
         .retain(|entity, _| active_bodies.contains(entity));
 
-    for entity in resting_bodies {
-        commands.entity(entity).insert((
-            RigidBody::Static,
-            LinearVelocity::ZERO,
-            AngularVelocity(0.0),
-        ));
+    for (entity, rest_type) in resting_bodies {
+        let mut entity_commands = commands.entity(entity);
+        match rest_type {
+            RestConversionType::Static => {
+                entity_commands.insert((
+                    RigidBody::Static,
+                    LinearVelocity::ZERO,
+                    AngularVelocity(0.0),
+                ));
+            }
+            RestConversionType::Sleep => {
+                entity_commands.insert((Sleeping, LinearVelocity::ZERO, AngularVelocity(0.0)));
+            }
+        }
         rest_timers.0.remove(&entity);
     }
 }
