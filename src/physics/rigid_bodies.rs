@@ -603,13 +603,14 @@ fn set_bit(words: &mut [u64], idx: usize) {
 
 #[inline]
 fn intersect_rects(a: IRect, b: IRect) -> Option<IRect> {
-    let min_x = a.min.x.max(b.min.x);
-    let min_y = a.min.y.max(b.min.y);
-    let max_x = a.max.x.min(b.max.x);
-    let max_y = a.max.y.min(b.max.y);
+    let intersection = a.intersect(b);
 
-    if min_x <= max_x && min_y <= max_y {
-        Some(IRect::new(min_x, min_y, max_x, max_y))
+    if a.contains(intersection.min)
+        && a.contains(intersection.max)
+        && b.contains(intersection.min)
+        && b.contains(intersection.max)
+    {
+        Some(intersection)
     } else {
         None
     }
