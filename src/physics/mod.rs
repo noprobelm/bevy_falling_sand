@@ -50,7 +50,7 @@ pub mod dynamic;
 pub mod particle_colliders;
 pub mod static_mesh;
 
-use avian2d::prelude::PhysicsInterpolationPlugin;
+use avian2d::prelude::{PhysicsInterpolationPlugin, PhysicsSchedulePlugin};
 use bevy::prelude::*;
 
 pub use dynamic::{DynamicRigidBodyProxy, PromoteDynamicRigidBodyParticle, SuspendedParticle};
@@ -114,24 +114,43 @@ impl FallingSandPhysicsPlugin {
 
 impl Plugin for FallingSandPhysicsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(
-            avian2d::PhysicsPlugins::default()
-                .with_length_unit(self.length_unit)
-                .set(PhysicsInterpolationPlugin::interpolate_all()),
-        )
-        .insert_resource(avian2d::prelude::Gravity(self.rigid_body_gravity))
-        .add_plugins((DynamicPlugin, StaticPlugin, RigidBodiesPlugin))
-        .add_systems(
-            Update,
-            (
-                promote_dynamic_rigid_bodies,
-                rejoin_dynamic_rigid_bodies.after(promote_dynamic_rigid_bodies),
-                calculate_static_rigid_bodies.after(promote_dynamic_rigid_bodies),
-            ),
-        )
-        .add_systems(
-            PostUpdate,
-            sync_dynamic_rigid_bodies_with_particles.after(ParticleMovementSystems),
-        );
+        if !app.is_plugin_added::<PhysicsSchedulePlugin>() {
+            app.add_plugins(
+                avian2d::PhysicsPlugins::default()
+                    .with_length_unit(self.length_unit)
+                    .set(PhysicsInterpolationPlugin::interpolate_all()),
+            );
+        }
+
+        app.insert_resource(avian2d::prelude::Gravity(self.rigid_body_gravity))
+            .add_plugins((DynamicPlugin, StaticPlugin, RigidBodiesPlugin))
+            .add_systems(
+                Update,
+                (
+                    promote_dynamic_rigid_bodies,
+                    rejoin_dynamic_rigid_bodies.after(promote_dynamic_rigid_bodies),
+                    calculate_static_rigid_bodies.after(promote_dynamic_rigid_bodies),
+                ),
+            )
+            .add_systems(
+                PostUpdate,
+                sync_dynamic_rigid_bodies_with_particles.after(ParticleMovementSystems),
+            );
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn does_not_add_avian_physics_plugins_twice() {
+        let mut app = App::new();
+        app.add_plugins((MinimalPlugins, crate::FallingSandMinimalPlugin::default()));
+        app.add_plugins(avian2d::PhysicsPlugins::default());
+
+        app.add_plugins(FallingSandPhysicsPlugin::default());
+
+        assert!(app.is_plugin_added::<PhysicsSchedulePlugin>());
     }
 }
