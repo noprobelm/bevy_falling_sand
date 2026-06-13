@@ -137,7 +137,7 @@
 //!
 //! # Table of Contents
 //!
-//! ## [Particle lifecycles](crate::lifecycle)
+//! ## [Particle lifecycles](crate::core::particle::lifecycle)
 //!
 //! - [Spawning particles](`SpawnParticleSignal`)
 //! - [Despawning particles](`DespawnParticleSignal`)
@@ -209,7 +209,7 @@
 //! - [Batched despawn configuration](`DespawnBatchConfig`)
 //!
 //!
-//! ## [Particle synchronization](crate::sync)
+//! ## [Particle synchronization](crate::core::particle::sync)
 //!
 //! - [Triggering individual particle resync](SyncParticleSignal)
 //! - [Triggering particle type resync](SyncParticleTypeChildrenSignal)
@@ -256,7 +256,6 @@ use bevy_turborand::prelude::*;
 use prelude::*;
 
 pub mod core;
-pub use core::*;
 
 #[cfg(feature = "debug")]
 #[cfg_attr(docsrs, doc(cfg(feature = "debug")))]

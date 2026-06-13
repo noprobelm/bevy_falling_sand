@@ -232,7 +232,7 @@ pub type OnSpawnCallback = Arc<dyn Fn(&mut EntityCommands) + Send + Sync>;
 /// # Hooking custom components during spawn
 ///
 /// Sometimes it may be desired to spawn a particle with additional behavior not managed by
-/// [particle synchronization](crate::sync) routines.
+/// [particle synchronization](crate::core::particle::sync) routines.
 ///
 /// The [`SpawnParticleSignal::with_on_spawn`] accepts a closure, providing the caller with
 /// [`EntityCommands`] access for the particle entity being spawned.
