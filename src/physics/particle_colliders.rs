@@ -18,6 +18,7 @@ use avian2d::prelude::{
 };
 use bevy::platform::collections::{HashMap, HashSet};
 use bevy::prelude::*;
+use serde::{Deserialize, Serialize};
 
 use crate::{ChunkCoord, ChunkDirtyState, ChunkIndex, ChunkRegion, ParticleMovementSystems};
 
@@ -47,9 +48,9 @@ impl Plugin for RigidBodiesPlugin {
 /// Marker component for rigid body colliders that should block particle movement.
 ///
 /// Add this to an Avian rigid body collider when particles should treat the collider's occupied
-/// cells as unavailable. Use [`Self::from_grid_cells`] when the collider was generated from known
-/// particle-grid cells; this lets occupancy rebuilds use cached local cells instead of physics
-/// point queries.
+/// cells as unavailable. Use [`Self::from_grid_cells`] or [`Self::builder`] when the collider was
+/// generated from known particle-grid cells; this lets occupancy rebuilds use cached local cells
+/// instead of physics point queries.
 #[derive(Component)]
 pub struct ParticleCollider {
     cells: ParticleColliderCells,
@@ -58,19 +59,44 @@ pub struct ParticleCollider {
 }
 
 impl ParticleCollider {
+    /// Creates a builder for a particle collider marker from grid cells.
+    ///
+    /// Use this when the collider is generated from particle-grid cells and needs additional
+    /// options before insertion.
+    #[must_use]
+    pub fn builder<I>(cells: I, grid_from_local_translation: Vec2) -> ParticleColliderBuilder
+    where
+        I: IntoIterator<Item = IVec2>,
+    {
+        ParticleColliderBuilder::new(cells, grid_from_local_translation)
+    }
+
     /// Creates a particle collider marker from grid cells
     ///
-    /// Use this when the collider is generated from particle-grid cells. The returned bundle lets
-    /// rigid body occupancy rebuilds use fast local cell lookups instead of physics point queries.
+    /// Use this when the collider is generated from particle-grid cells. The returned component
+    /// lets rigid body occupancy rebuilds use local cell lookups instead of physics point
+    /// queries.
     #[must_use]
     pub fn from_grid_cells<I>(cells: I, grid_from_local_translation: Vec2) -> Self
     where
         I: IntoIterator<Item = IVec2>,
     {
-        Self {
-            cells: ParticleColliderCells::new(cells, grid_from_local_translation),
-            resting: ParticleColliderRestingOptions::new().disabled(),
-        }
+        Self::builder(cells, grid_from_local_translation).build()
+    }
+
+    /// Creates a particle collider marker from grid cells and options.
+    #[must_use]
+    pub fn from_grid_cells_with_options<I>(
+        cells: I,
+        grid_from_local_translation: Vec2,
+        options: impl Into<ParticleColliderOptions>,
+    ) -> Self
+    where
+        I: IntoIterator<Item = IVec2>,
+    {
+        Self::builder(cells, grid_from_local_translation)
+            .with_options(options)
+            .build()
     }
 
     /// Enables automatic conversion from dynamic to static when this collider remains still.
@@ -84,6 +110,13 @@ impl ParticleCollider {
     #[must_use]
     pub const fn with_default_resting(self) -> Self {
         self.with_resting(ParticleColliderRestingOptions::new().enabled())
+    }
+
+    /// Applies all construction options to this collider.
+    #[must_use]
+    pub const fn with_options(mut self, options: ParticleColliderOptions) -> Self {
+        self.resting = options.resting;
+        self
     }
 
     /// Returns the number of grid cells in this collider.
@@ -144,9 +177,117 @@ impl ParticleCollider {
     }
 }
 
+/// Builder for [`ParticleCollider`].
+///
+/// This is useful when call sites need to construct a collider and configure behavior in one
+/// expression, or when reusable [`ParticleColliderOptions`] are shared across rebuild/spawn logic.
+pub struct ParticleColliderBuilder {
+    cells: ParticleColliderCells,
+    options: ParticleColliderOptions,
+}
+
+impl ParticleColliderBuilder {
+    /// Creates a builder for a particle collider marker from grid cells.
+    #[must_use]
+    pub fn new<I>(cells: I, grid_from_local_translation: Vec2) -> Self
+    where
+        I: IntoIterator<Item = IVec2>,
+    {
+        Self {
+            cells: ParticleColliderCells::new(cells, grid_from_local_translation),
+            options: ParticleColliderOptions::default(),
+        }
+    }
+
+    /// Replaces all construction options.
+    #[must_use]
+    pub fn with_options(mut self, options: impl Into<ParticleColliderOptions>) -> Self {
+        self.options = options.into();
+        self
+    }
+
+    /// Sets the resting options.
+    #[must_use]
+    pub const fn with_resting(mut self, resting: ParticleColliderRestingOptions) -> Self {
+        self.options = self.options.with_resting(resting);
+        self
+    }
+
+    /// Enables automatic resting with default thresholds.
+    #[must_use]
+    pub const fn with_default_resting(self) -> Self {
+        self.with_resting(ParticleColliderRestingOptions::new().enabled())
+    }
+
+    /// Disables automatic resting.
+    #[must_use]
+    pub const fn without_resting(self) -> Self {
+        self.with_resting(ParticleColliderRestingOptions::new().disabled())
+    }
+
+    /// Builds the particle collider component.
+    #[must_use]
+    pub fn build(self) -> ParticleCollider {
+        ParticleCollider {
+            cells: self.cells,
+            resting: self.options.resting,
+        }
+    }
+}
+
+/// Construction options for [`ParticleCollider`].
+///
+/// Store this when multiple colliders should be spawned or rebuilt with the same behavior.
+#[derive(Clone, Copy, Debug, Reflect, Serialize, Deserialize)]
+pub struct ParticleColliderOptions {
+    /// Settings controlling whether this collider can freeze itself after resting.
+    pub resting: ParticleColliderRestingOptions,
+}
+
+impl ParticleColliderOptions {
+    /// Creates options using the default collider behavior.
+    #[must_use]
+    pub const fn new() -> Self {
+        Self {
+            resting: ParticleColliderRestingOptions::new().disabled(),
+        }
+    }
+
+    /// Sets the resting options.
+    #[must_use]
+    pub const fn with_resting(mut self, resting: ParticleColliderRestingOptions) -> Self {
+        self.resting = resting;
+        self
+    }
+
+    /// Enables automatic resting with default thresholds.
+    #[must_use]
+    pub const fn with_default_resting(self) -> Self {
+        self.with_resting(ParticleColliderRestingOptions::new().enabled())
+    }
+
+    /// Disables automatic resting.
+    #[must_use]
+    pub const fn without_resting(self) -> Self {
+        self.with_resting(ParticleColliderRestingOptions::new().disabled())
+    }
+}
+
+impl Default for ParticleColliderOptions {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl From<ParticleColliderRestingOptions> for ParticleColliderOptions {
+    fn from(resting: ParticleColliderRestingOptions) -> Self {
+        Self::new().with_resting(resting)
+    }
+}
+
 /// Controls whether a body coming to rest should be converted to a static rigid body, or be forced
 /// to sleep using avian's [`Sleeping`] component.
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Reflect, Serialize, Deserialize)]
 pub enum RestConversionType {
     /// The body should be converted to static
     Static,
@@ -155,7 +296,7 @@ pub enum RestConversionType {
 }
 
 /// Per-collider settings for freezing a settled dynamic rigid body.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Reflect, Serialize, Deserialize)]
 pub struct ParticleColliderRestingOptions {
     /// Whether this collider is allowed to rest under the specified heuristics
     pub enabled: bool,
@@ -201,6 +342,47 @@ impl ParticleColliderRestingOptions {
     pub const fn with_rest_type(mut self, rest_type: RestConversionType) -> Self {
         self.rest_type = rest_type;
         self
+    }
+
+    /// Sets the maximum linear velocity for the rest timer to advance.
+    #[must_use]
+    pub const fn with_linear_velocity_threshold(mut self, threshold: f32) -> Self {
+        self.linear_velocity_threshold = threshold;
+        self
+    }
+
+    /// Sets the maximum angular velocity for the rest timer to advance.
+    #[must_use]
+    pub const fn with_angular_velocity_threshold(mut self, threshold: f32) -> Self {
+        self.angular_velocity_threshold = threshold;
+        self
+    }
+
+    /// Sets both velocity thresholds for the rest timer.
+    #[must_use]
+    pub const fn with_velocity_thresholds(mut self, linear: f32, angular: f32) -> Self {
+        self.linear_velocity_threshold = linear;
+        self.angular_velocity_threshold = angular;
+        self
+    }
+
+    /// Sets how long the body must stay below thresholds before it is forced to rest.
+    #[must_use]
+    pub const fn with_rest_time(mut self, rest_time: f32) -> Self {
+        self.rest_time = rest_time;
+        self
+    }
+
+    /// Converts the rigid body to static when it has rested long enough.
+    #[must_use]
+    pub const fn convert_to_static(self) -> Self {
+        self.with_rest_type(RestConversionType::Static)
+    }
+
+    /// Inserts Avian's [`Sleeping`] component when the rigid body has rested long enough.
+    #[must_use]
+    pub const fn sleep_when_resting(self) -> Self {
+        self.with_rest_type(RestConversionType::Sleep)
     }
 }
 
@@ -629,5 +811,60 @@ fn intersect_rects(a: IRect, b: IRect) -> Option<IRect> {
         Some(intersection)
     } else {
         None
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn sample_cells() -> [IVec2; 2] {
+        [IVec2::new(1, 2), IVec2::new(3, 4)]
+    }
+
+    #[test]
+    fn from_grid_cells_uses_default_disabled_resting() {
+        let collider = ParticleCollider::from_grid_cells(sample_cells(), Vec2::new(5.0, 6.0));
+
+        assert_eq!(collider.cell_count(), 2);
+        assert!(collider.contains_cell(IVec2::new(1, 2)));
+        assert!(!collider.resting.enabled);
+        assert_eq!(collider.grid_from_local_translation(), Vec2::new(5.0, 6.0));
+    }
+
+    #[test]
+    fn from_grid_cells_with_options_applies_reusable_options() {
+        let options = ParticleColliderOptions::new().with_resting(
+            ParticleColliderRestingOptions::new()
+                .enabled()
+                .with_velocity_thresholds(0.25, 0.5)
+                .with_rest_time(1.25)
+                .sleep_when_resting(),
+        );
+
+        let collider =
+            ParticleCollider::from_grid_cells_with_options(sample_cells(), Vec2::ZERO, options);
+
+        assert!(collider.resting.enabled);
+        assert_eq!(collider.resting.linear_velocity_threshold, 0.25);
+        assert_eq!(collider.resting.angular_velocity_threshold, 0.5);
+        assert_eq!(collider.resting.rest_time, 1.25);
+        assert!(matches!(
+            collider.resting.rest_type,
+            RestConversionType::Sleep
+        ));
+    }
+
+    #[test]
+    fn builder_configures_resting_directly() {
+        let collider = ParticleCollider::builder(sample_cells(), Vec2::ZERO)
+            .with_default_resting()
+            .build();
+
+        assert!(collider.resting.enabled);
+        assert!(matches!(
+            collider.resting.rest_type,
+            RestConversionType::Static
+        ));
     }
 }

@@ -45,9 +45,10 @@ pub use crate::reactions::{
 #[cfg(feature = "physics")]
 pub use crate::physics::{
     DouglasPeuckerEpsilon, DynamicRigidBodyProxy, FallingSandPhysicsPlugin, ParticleCollider,
-    ParticleColliderRestingOptions, PromoteDynamicRigidBodyParticle, RestConversionType,
-    RigidBodyParticleOccupancy, StaticMeshUpdateInterval, StaticRigidBodyParticle,
-    StaticRigidBodyParticleCollider, SuspendedParticle,
+    ParticleColliderBuilder, ParticleColliderOptions, ParticleColliderRestingOptions,
+    PromoteDynamicRigidBodyParticle, RestConversionType, RigidBodyParticleOccupancy,
+    StaticMeshUpdateInterval, StaticRigidBodyParticle, StaticRigidBodyParticleCollider,
+    SuspendedParticle,
 };
 
 #[cfg(feature = "persistence")]
