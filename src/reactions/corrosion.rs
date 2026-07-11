@@ -3,7 +3,12 @@ use std::time::Duration;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::{GridPosition, ParticleSyncExt, ParticleSystems, core::ParticleChunksMut};
+use bevy_rand::prelude::{GlobalRng, WyRand};
+
+use crate::{
+    GridPosition, ParticleSyncExt, ParticleSystems,
+    core::{ParticleChunksMut, ParticleRngExt},
+};
 
 pub(super) struct CorrosionPlugin;
 
@@ -86,10 +91,8 @@ fn handle_corrosion(
     time: Res<Time>,
     mut corrosive: Query<(&mut Corrosive, &GridPosition)>,
     corrodible: Query<&Corrodible>,
-    mut rng: ResMut<bevy_turborand::prelude::GlobalRng>,
+    mut rng: Single<&mut WyRand, With<GlobalRng>>,
 ) {
-    use bevy_turborand::DelegatedRng;
-
     particle_chunks.for_each_dirty_particle(|map, dirty_state, pos, entity| {
         let Ok((corrosive, _)) = corrosive.get_mut(entity) else {
             return;

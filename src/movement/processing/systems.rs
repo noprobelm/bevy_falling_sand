@@ -9,11 +9,13 @@ use std::sync::Mutex;
 use super::MovementState;
 use crate::core::{
     ChunkCoord, ChunkDirtyState, ChunkIndex, ChunkRegion, GridPosition, ParticleMap, ParticleRng,
+    ParticleRngExt,
 };
 use bevy::platform::collections::HashSet;
 use bevy::prelude::*;
 use bevy::tasks::ComputeTaskPool;
-use bevy_turborand::prelude::*;
+use bevy_rand::prelude::{GlobalRng, WyRand};
+use rand_core::SeedableRng;
 
 type ObstructedDirections = [bool; 9];
 
@@ -77,7 +79,7 @@ pub(super) fn par_handle_movement_by_chunks(
     mut density_query: Query<&Density>,
     mut map: ResMut<ParticleMap>,
     mut movement_state: ResMut<MovementState>,
-    mut global_rng: ResMut<GlobalRng>,
+    mut global_rng: Single<&mut WyRand, With<GlobalRng>>,
     chunk_index: Res<ChunkIndex>,
     mut chunk_query: Query<(&ChunkRegion, &mut ChunkDirtyState)>,
     #[cfg(feature = "physics")] rigid_body_occupancy: Res<RigidBodyParticleOccupancy>,
@@ -139,7 +141,7 @@ pub(super) fn par_handle_movement_by_chunks(
                     let prev_groups_ref = &all_group_visited;
 
                     scope.spawn(async move {
-                        let mut chunk_rng = Rng::with_seed(seed);
+                        let mut chunk_rng = WyRand::seed_from_u64(seed);
 
                         let rect_capacity = dirty_rect.map_or(0, |r| {
                             ((r.max.x - r.min.x + 1) * (r.max.y - r.min.y + 1)) as usize
@@ -363,7 +365,7 @@ pub(super) fn serial_handle_movement_by_chunks(
     density_query: Query<&Density>,
     mut map: ResMut<ParticleMap>,
     mut movement_state: ResMut<MovementState>,
-    mut global_rng: ResMut<GlobalRng>,
+    mut global_rng: Single<&mut WyRand, With<GlobalRng>>,
     chunk_index: Res<ChunkIndex>,
     mut chunk_query: Query<(&ChunkRegion, &mut ChunkDirtyState)>,
     #[cfg(feature = "physics")] rigid_body_occupancy: Res<RigidBodyParticleOccupancy>,
@@ -388,7 +390,7 @@ pub(super) fn serial_handle_movement_by_chunks(
     global_rng.shuffle(&mut chunks_data);
 
     unsafe {
-        let mut chunk_rng = Rng::with_seed(seed);
+        let mut chunk_rng = WyRand::seed_from_u64(seed);
 
         for (dirty_rect, border_positions) in chunks_data {
             let rect_capacity = dirty_rect.map_or(0, |r| {
@@ -575,7 +577,7 @@ pub(super) fn handle_movement_by_particles(
     density_query: Query<&Density>,
     mut map: ResMut<ParticleMap>,
     mut movement_state: ResMut<MovementState>,
-    mut global_rng: ResMut<GlobalRng>,
+    mut global_rng: Single<&mut WyRand, With<GlobalRng>>,
     chunk_index: Res<ChunkIndex>,
     mut chunk_query: Query<(&ChunkRegion, &mut ChunkDirtyState)>,
     #[cfg(feature = "physics")] rigid_body_occupancy: Res<RigidBodyParticleOccupancy>,

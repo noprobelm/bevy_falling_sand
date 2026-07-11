@@ -1,9 +1,9 @@
 mod utils;
 
 use bevy::{input::common_conditions::input_just_pressed, prelude::*};
+use bevy_rand::prelude::{GlobalRng, WyRand};
 use bevy_falling_sand::prelude::*;
 use bevy_framepace::{FramepacePlugin, FramepaceSettings, Limiter};
-use bevy_turborand::prelude::*;
 use utils::status_ui::{FpsText, MovementSourceText, StatusUIPlugin};
 
 fn main() {
@@ -193,7 +193,7 @@ fn setup(mut commands: Commands) {
 fn spawn_particles(
     mut spawn_writer: MessageWriter<SpawnParticleSignal>,
     time: Res<Time>,
-    mut rng: ResMut<GlobalRng>,
+    mut rng: Single<&mut WyRand, With<GlobalRng>>,
 ) {
     if time.elapsed_secs() < 0.5 {
         let x_range = ((END_X - START_X) as f32 * 0.5) as i32;

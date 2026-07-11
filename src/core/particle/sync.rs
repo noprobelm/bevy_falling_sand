@@ -15,10 +15,11 @@
 use super::LocateBy;
 use crate::core::{
     AttachedToParticleType, ChanceLifetime, ChunkDirtyState, ChunkIndex, GridPosition, Particle,
-    ParticleMap, ParticleSystems, ParticleType, ParticleTypeRegistry, TimedLifetime,
+    ParticleMap, ParticleRngExt, ParticleSystems, ParticleType, ParticleTypeRegistry,
+    TimedLifetime,
 };
 use bevy::{ecs::system::SystemParam, platform::collections::HashSet, prelude::*};
-use bevy_turborand::{DelegatedRng, GlobalRng};
+use bevy_rand::prelude::{GlobalRng, WyRand};
 use serde::{Deserialize, Serialize};
 use std::{any::TypeId, time::Duration};
 
@@ -114,7 +115,7 @@ impl ChanceMutation {
 fn handle_chance_mutations(
     mut query: Query<(&mut AttachedToParticleType, &mut ChanceMutation), With<Particle>>,
     registry: Res<ParticleTypeRegistry>,
-    mut rng: ResMut<GlobalRng>,
+    mut rng: Single<&mut WyRand, With<GlobalRng>>,
     time: Res<Time>,
 ) {
     for (mut attached, mut mutation) in &mut query {

@@ -11,9 +11,9 @@ use bevy::{
     ecs::{lifecycle::HookContext, world::DeferredWorld},
     prelude::*,
 };
-use bevy_turborand::DelegatedRng;
+use rand_core::Rng;
 use serde::{Deserialize, Serialize};
-use std::{borrow::Cow, ops::RangeBounds};
+use std::{borrow::Cow, ops::Bound, ops::RangeBounds};
 
 pub use lifecycle::*;
 pub use particle_map::*;
@@ -277,40 +277,134 @@ pub struct AttachedToParticleType(pub Entity);
 ///
 /// ```
 /// use bevy::prelude::*;
-/// use bevy_turborand::prelude::*;
+/// use bevy_rand::prelude::WyRand;
 /// use bevy_falling_sand::impl_particle_rng;
 ///
 /// #[derive(Component)]
-/// struct MyRng(RngComponent);
+/// struct MyRng(WyRand);
 ///
-/// impl_particle_rng!(MyRng, RngComponent);
+/// impl_particle_rng!(MyRng, WyRand);
 /// ```
 pub trait ParticleRng: Component {
     /// The type of the internal RNG
-    type InnerRng: DelegatedRng;
+    type InnerRng: Rng;
 
     /// Get mutable access to the inner RNG.
     fn inner_mut(&mut self) -> &mut Self::InnerRng;
 
     /// Shuffle the given slice.
     fn shuffle<T>(&mut self, slice: &mut [T]) {
-        self.inner_mut().shuffle(slice);
+        shuffle(self.inner_mut(), slice);
     }
 
     /// Return true with the given probability.
     fn chance(&mut self, rate: f64) -> bool {
-        self.inner_mut().chance(rate)
+        chance(self.inner_mut(), rate)
     }
 
     /// Sample a random element from a list.
     fn sample<'a, T>(&mut self, list: &'a [T]) -> Option<&'a T> {
-        self.inner_mut().sample(list)
+        (!list.is_empty()).then(|| &list[random_index(self.inner_mut(), 0..list.len())])
     }
 
     /// Return a random index within the given bounds.
     fn index(&mut self, bound: impl RangeBounds<usize>) -> usize {
-        self.inner_mut().index(bound)
+        random_index(self.inner_mut(), bound)
     }
+}
+
+/// Shared RNG helpers for particle systems.
+pub trait ParticleRngExt: Rng {
+    /// Shuffle the given slice.
+    fn shuffle<T>(&mut self, slice: &mut [T]) {
+        shuffle(self, slice);
+    }
+
+    /// Return true with the given probability.
+    fn chance(&mut self, rate: f64) -> bool {
+        chance(self, rate)
+    }
+
+    /// Return a random `u32` within the given bounds.
+    fn u32(&mut self, bound: impl RangeBounds<u32>) -> u32 {
+        random_u32(self, bound)
+    }
+
+    /// Return a random `u64` within the given bounds.
+    fn u64(&mut self, bound: impl RangeBounds<u64>) -> u64 {
+        random_u64(self, bound)
+    }
+
+    /// Return a random index within the given bounds.
+    fn index(&mut self, bound: impl RangeBounds<usize>) -> usize {
+        random_index(self, bound)
+    }
+}
+
+impl<T: Rng + ?Sized> ParticleRngExt for T {}
+
+fn chance(rng: &mut (impl Rng + ?Sized), rate: f64) -> bool {
+    if rate <= 0.0 {
+        return false;
+    }
+    if rate >= 1.0 {
+        return true;
+    }
+    let sample = (rng.next_u64() as f64) / ((u64::MAX as f64) + 1.0);
+    sample < rate
+}
+
+fn shuffle<T>(rng: &mut (impl Rng + ?Sized), slice: &mut [T]) {
+    for i in (1..slice.len()).rev() {
+        let j = random_below(rng, (i + 1) as u64) as usize;
+        slice.swap(i, j);
+    }
+}
+
+fn random_index(rng: &mut (impl Rng + ?Sized), bound: impl RangeBounds<usize>) -> usize {
+    let (start, end) = range_bounds_to_start_end(bound, usize::MAX);
+    assert!(start < end, "empty random index range");
+    start + random_below(rng, (end - start) as u64) as usize
+}
+
+fn random_u32(rng: &mut (impl Rng + ?Sized), bound: impl RangeBounds<u32>) -> u32 {
+    let (start, end) = range_bounds_to_start_end(bound, u32::MAX);
+    assert!(start < end, "empty random u32 range");
+    start + random_below(rng, u64::from(end - start)) as u32
+}
+
+fn random_u64(rng: &mut (impl Rng + ?Sized), bound: impl RangeBounds<u64>) -> u64 {
+    let (start, end) = range_bounds_to_start_end(bound, u64::MAX);
+    assert!(start < end, "empty random u64 range");
+    start + random_below(rng, end - start)
+}
+
+fn random_below(rng: &mut (impl Rng + ?Sized), upper: u64) -> u64 {
+    assert!(upper > 0, "empty random range");
+    let zone = u64::MAX - (u64::MAX % upper);
+    loop {
+        let value = rng.next_u64();
+        if value < zone {
+            return value % upper;
+        }
+    }
+}
+
+fn range_bounds_to_start_end<T>(bound: impl RangeBounds<T>, max_exclusive: T) -> (T, T)
+where
+    T: Copy + From<u8> + PartialOrd + std::ops::Add<Output = T>,
+{
+    let start = match bound.start_bound() {
+        Bound::Included(value) => *value,
+        Bound::Excluded(value) => *value + T::from(1),
+        Bound::Unbounded => T::from(0),
+    };
+    let end = match bound.end_bound() {
+        Bound::Included(value) => *value + T::from(1),
+        Bound::Excluded(value) => *value,
+        Bound::Unbounded => max_exclusive,
+    };
+    (start, end)
 }
 
 /// Convenience macro for implementing [`ParticleRng`] on a component.

@@ -2,7 +2,7 @@ use bevy::{
     ecs::{lifecycle::HookContext, world::DeferredWorld},
     prelude::*,
 };
-use bevy_turborand::RngComponent;
+use bevy_rand::prelude::WyRand;
 use serde::{Deserialize, Serialize};
 use smallvec::SmallVec;
 use std::iter;
@@ -33,7 +33,7 @@ impl Plugin for ComponentsPlugin {
     }
 }
 
-impl_particle_rng!(MovementRng, RngComponent);
+impl_particle_rng!(MovementRng, WyRand);
 
 /// Provides RNG for particle movement systems.
 ///
@@ -51,7 +51,7 @@ impl_particle_rng!(MovementRng, RngComponent);
 /// ```
 #[derive(Component, Clone, Default, PartialEq, Debug, Reflect, Serialize, Deserialize)]
 #[reflect(Component)]
-pub struct MovementRng(pub RngComponent);
+pub struct MovementRng(pub WyRand);
 
 /// The density of a particle, used for displacement comparisons.
 ///

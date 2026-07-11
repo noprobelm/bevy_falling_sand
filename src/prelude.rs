@@ -7,10 +7,10 @@ pub use crate::core::{
     ChunkIndex, ChunkLoader, ChunkLoadingConfig, ChunkLoadingRun, ChunkLoadingState, ChunkRegion,
     ChunkSystems, DespawnAllParticlesSignal, DespawnBatchConfig, DespawnParticleSignal,
     DespawnParticleTypeChildrenSignal, GridPosition, OnSpawnCallback, Particle, ParticleMap,
-    ParticleRng, ParticleSimulationRun, ParticleSyncExt, ParticleSystems, ParticleType,
-    ParticleTypeRegistry, PendingDespawn, PropagatorFilter, SimulationStepSignal, SpatialEntry,
-    SpatialMap, SpawnParticleSignal, SyncParticleSignal, SyncParticleTypeChildrenSignal,
-    TimedLifetime, condition_msg_simulation_step_received,
+    ParticleRng, ParticleRngExt, ParticleSimulationRun, ParticleSyncExt, ParticleSystems,
+    ParticleType, ParticleTypeRegistry, PendingDespawn, PropagatorFilter, SimulationStepSignal,
+    SpatialEntry, SpatialMap, SpawnParticleSignal, SyncParticleSignal,
+    SyncParticleTypeChildrenSignal, TimedLifetime, condition_msg_simulation_step_received,
 };
 
 #[cfg(feature = "render")]

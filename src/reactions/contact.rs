@@ -1,11 +1,11 @@
 use bevy::prelude::*;
-use bevy_turborand::prelude::*;
+use bevy_rand::prelude::{GlobalRng, WyRand};
 use serde::{Deserialize, Serialize};
 
 use crate::{
     core::{
-        AttachedToParticleType, Particle, ParticleChunksMut, ParticleSystems, ParticleType,
-        ParticleTypeRegistry, SpawnParticleSignal,
+        AttachedToParticleType, Particle, ParticleChunksMut, ParticleRngExt, ParticleSystems,
+        ParticleType, ParticleTypeRegistry, SpawnParticleSignal,
     },
     movement::ParticleMovementSystems,
 };
@@ -244,7 +244,7 @@ fn handle_contact_reactions(
     mut particle_chunks: ParticleChunksMut,
     particle_query: Query<&AttachedToParticleType, With<Particle>>,
     rules_query: Query<&ResolvedContactReaction, With<ParticleType>>,
-    mut rng: ResMut<GlobalRng>,
+    mut rng: Single<&mut WyRand, With<GlobalRng>>,
     mut msgw_spawn: MessageWriter<SpawnParticleSignal>,
 ) {
     particle_chunks.for_each_dirty_particle(|map, dirty_state, pos, entity| {

@@ -2,10 +2,11 @@ use bevy::{
     ecs::{lifecycle::HookContext, world::DeferredWorld},
     prelude::*,
 };
-use bevy_turborand::{DelegatedRng, RngComponent};
+use bevy_rand::prelude::WyRand;
+use rand_core::Rng;
 use serde::{Deserialize, Serialize};
 
-use crate::impl_particle_rng;
+use crate::{core::ParticleRngExt, impl_particle_rng};
 
 pub(super) struct ComponentsPlugin;
 
@@ -18,12 +19,12 @@ impl Plugin for ComponentsPlugin {
     }
 }
 
-impl_particle_rng!(ColorRng, RngComponent);
+impl_particle_rng!(ColorRng, WyRand);
 
 /// Provides rng for coloring particles.
 #[derive(Component, Clone, PartialEq, Debug, Default, Reflect)]
 #[reflect(Component)]
-pub struct ColorRng(pub RngComponent);
+pub struct ColorRng(pub WyRand);
 
 /// Particle colors are assigned either randomly or sequentially from their parent
 /// [`ParticleType`](crate::core::ParticleType)'s `ColorProfile`.
@@ -220,19 +221,19 @@ impl ColorProfile {
     /// ```
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::prelude::ColorProfile;
-    /// use bevy_turborand::prelude::*;
+    /// use bevy_rand::prelude::WyRand;
     ///
     /// let profile = ColorProfile::palette(vec![
     ///     Color::WHITE,
     ///     Color::BLACK,
     /// ]);
-    /// let mut rng = RngComponent::default();
+    /// let mut rng = WyRand::default();
     /// let (color, index) = profile.random_with_index(&mut rng).unwrap();
     /// assert!(index < 2);
     /// ```
     #[allow(clippy::cast_precision_loss)]
     #[must_use]
-    pub fn random_with_index<R: DelegatedRng>(&self, rng: &mut R) -> Option<(Color, usize)> {
+    pub fn random_with_index<R: Rng>(&self, rng: &mut R) -> Option<(Color, usize)> {
         match &self.source {
             ColorSource::Palette(palette) => {
                 let color_index = rng.index(0..palette.colors.len());

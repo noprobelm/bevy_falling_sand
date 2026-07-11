@@ -15,10 +15,10 @@
 use super::LocateBy;
 use crate::core::{
     AttachedToParticleType, ChunkDirtyState, ChunkIndex, GridPosition, Particle, ParticleMap,
-    ParticleType, ParticleTypeRegistry, schedule::ParticleSystems,
+    ParticleRngExt, ParticleType, ParticleTypeRegistry, schedule::ParticleSystems,
 };
 use bevy::prelude::*;
-use bevy_turborand::{DelegatedRng, GlobalRng};
+use bevy_rand::prelude::{GlobalRng, WyRand};
 use serde::{Deserialize, Serialize};
 use std::{sync::Arc, time::Duration};
 
@@ -198,7 +198,7 @@ fn handle_timed_lifetimes(
 fn handle_chance_lifetimes(
     mut msgw_despawn: MessageWriter<DespawnParticleSignal>,
     mut query: Query<(Entity, &mut ChanceLifetime), With<Particle>>,
-    mut rng: ResMut<GlobalRng>,
+    mut rng: Single<&mut WyRand, With<GlobalRng>>,
     time: Res<Time>,
 ) {
     for (entity, mut lifetime) in &mut query {

@@ -12,7 +12,7 @@ mod corrosion;
 mod fire;
 
 use bevy::prelude::*;
-use bevy_turborand::RngComponent;
+use bevy_rand::prelude::WyRand;
 use serde::{Deserialize, Serialize};
 
 use crate::impl_particle_rng;
@@ -25,7 +25,7 @@ use contact::ContactPlugin;
 use corrosion::CorrosionPlugin;
 use fire::FirePlugin;
 
-impl_particle_rng!(ReactionRng, RngComponent);
+impl_particle_rng!(ReactionRng, WyRand);
 
 /// Provides RNG for particle reaction systems.
 ///
@@ -43,7 +43,7 @@ impl_particle_rng!(ReactionRng, RngComponent);
 /// ```
 #[derive(Component, Clone, Default, PartialEq, Debug, Reflect, Serialize, Deserialize)]
 #[reflect(Component)]
-pub struct ReactionRng(pub RngComponent);
+pub struct ReactionRng(pub WyRand);
 
 /// Plugin providing particle reaction systems (fire, contact reactions).
 ///

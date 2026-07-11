@@ -1,9 +1,9 @@
 mod utils;
 
 use bevy::{input::common_conditions::input_just_pressed, prelude::*};
+use bevy_rand::prelude::{GlobalRng, WyRand};
 use bevy_falling_sand::prelude::*;
 use bevy_framepace::{FramepacePlugin, FramepaceSettings, Limiter};
-use bevy_turborand::{DelegatedRng, GlobalRng};
 use noise::{Fbm, NoiseFn, PerlinSurflet};
 use utils::{
     brush::{ParticleSpawnList, SelectedBrushParticle},
@@ -62,7 +62,7 @@ struct SpawnParticles;
 
 fn setup(
     mut commands: Commands,
-    mut rng: ResMut<GlobalRng>,
+    mut rng: Single<&mut WyRand, With<GlobalRng>>,
     mut spawn_writer: MessageWriter<SpawnParticleSignal>,
 ) {
     commands.remove_resource::<DebugParticleMap>();
@@ -163,7 +163,7 @@ fn setup(
 }
 
 fn reset_noise(
-    mut rng: ResMut<GlobalRng>,
+    mut rng: Single<&mut WyRand, With<GlobalRng>>,
     mut despawn_writer: MessageWriter<DespawnAllParticlesSignal>,
     mut spawn_writer: MessageWriter<SpawnParticleSignal>,
 ) {
@@ -171,7 +171,7 @@ fn reset_noise(
     spawn_noise(&mut spawn_writer, &mut rng);
 }
 
-fn spawn_noise(spawn_writer: &mut MessageWriter<SpawnParticleSignal>, rng: &mut GlobalRng) {
+fn spawn_noise(spawn_writer: &mut MessageWriter<SpawnParticleSignal>, rng: &mut WyRand) {
     let seed = rng.u32(0..u32::MAX);
 
     let basic_multi = Fbm::<PerlinSurflet>::new(seed);

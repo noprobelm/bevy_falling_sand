@@ -4,7 +4,7 @@
 pub mod components;
 
 use bevy::prelude::*;
-use bevy_turborand::prelude::*;
+use bevy_rand::prelude::{GlobalRng, WyRand};
 
 pub use components::*;
 
@@ -131,8 +131,10 @@ fn propagate_color(entity: Entity, parent: Entity, commands: &mut Commands) {
             }
             ColorAssignment::Random => {
                 let profile = world.get::<ColorProfile>(parent).unwrap().clone();
-                let mut rng = world.resource_mut::<GlobalRng>();
-                if let Some((color, idx)) = profile.random_with_index(rng.as_mut()) {
+                let mut rng_query = world.query_filtered::<&mut WyRand, With<GlobalRng>>();
+                if let Ok(mut rng) = rng_query.single_mut(world)
+                    && let Some((color, idx)) = profile.random_with_index(&mut rng)
+                {
                     world
                         .entity_mut(entity)
                         .insert((ParticleColor(color), ColorIndex(idx)));

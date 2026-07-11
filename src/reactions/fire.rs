@@ -10,8 +10,8 @@ use super::ReactionRng;
 use crate::{
     core::{
         ChanceLifetime, DespawnParticleSignal, GridPosition, Particle, ParticleChunksMut,
-        ParticleRng, ParticleSyncExt, ParticleSystems, ParticleType, ParticleTypeRegistry,
-        SpawnParticleSignal,
+        ParticleRng, ParticleRngExt, ParticleSyncExt, ParticleSystems, ParticleType,
+        ParticleTypeRegistry, SpawnParticleSignal,
     },
     movement::Movement,
 };
@@ -457,9 +457,8 @@ fn handle_fire(
     mut particle_chunks: ParticleChunksMut,
     fire_query: Query<&Fire>,
     burns_query: Query<&Flammable, (With<Particle>, Without<Burning>)>,
-    mut rng: ResMut<bevy_turborand::prelude::GlobalRng>,
+    mut rng: Single<&mut bevy_rand::prelude::WyRand, With<bevy_rand::prelude::GlobalRng>>,
 ) {
-    use bevy_turborand::DelegatedRng;
     particle_chunks.for_each_dirty_particle(|map, dirty_state, pos, entity| {
         let Ok(fire) = fire_query.get(entity) else {
             return;

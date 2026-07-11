@@ -250,7 +250,7 @@ pub mod prelude;
 #[cfg(feature = "physics")]
 use bevy::prelude::Vec2;
 use bevy::prelude::{App, Plugin};
-use bevy_turborand::prelude::*;
+use bevy_rand::prelude::{EntropyPlugin, WyRand};
 // Reduce doc link verbosity
 #[allow(unused_imports)]
 use prelude::*;
@@ -381,7 +381,7 @@ impl FallingSandPlugin {
 impl Plugin for FallingSandPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
-            RngPlugin::default(),
+            EntropyPlugin::<WyRand>::default(),
             core::FallingSandCorePlugin {
                 width: self.width_chunks * self.chunk_size,
                 height: self.height_chunks * self.chunk_size,
@@ -467,7 +467,7 @@ impl FallingSandMinimalPlugin {
 impl Plugin for FallingSandMinimalPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
-            RngPlugin::default(),
+            EntropyPlugin::<WyRand>::default(),
             core::FallingSandCorePlugin {
                 width: self.width_chunks * self.chunk_size,
                 height: self.height_chunks * self.chunk_size,
