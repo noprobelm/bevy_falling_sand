@@ -1,9 +1,9 @@
 mod utils;
 
 use bevy::{input::common_conditions::input_just_pressed, prelude::*};
-use bevy_rand::prelude::{GlobalRng, WyRand};
 use bevy_falling_sand::prelude::*;
 use bevy_framepace::{FramepacePlugin, FramepaceSettings, Limiter};
+use bevy_rand::prelude::{GlobalRng, WyRand};
 use noise::{Fbm, NoiseFn, PerlinSurflet};
 use utils::{
     brush::{ParticleSpawnList, SelectedBrushParticle},
