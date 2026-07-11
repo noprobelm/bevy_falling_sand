@@ -40,7 +40,7 @@ persistence = ["bfs", "bfc", "dep:futures-lite", "dep:image", "dep:ron"]
 scenes = ["dep:image", "dep:ron"]
 
 [dependencies]
-bevy = { version = "0.18.1", default-features = false, features = [
+bevy = { version = "0.19.0", default-features = false, features = [
     "std",
     "bevy_state",
     "bevy_sprite",
@@ -52,30 +52,30 @@ bevy = { version = "0.18.1", default-features = false, features = [
     "serialize",
     "wayland",
 ] }
-bevy_rand = { version = "0.14.0", features = ["wyrand"] }
+bevy_rand = { version = "0.15.0", features = ["wyrand"] }
 rand_core = "0.10"
 serde = { version = "1.0", features = ["derive"] }
 smallvec = { version = "1.13.2", features = ["serde"], optional = true }
 ron = { version = "0.8", optional = true }
-avian2d = { version = "0.5.0", optional = true }
+avian2d = { version = "0.7.0", optional = true }
 earcutr = { version = "0.5.0", optional = true }
 futures-lite = { version = "2.5", optional = true }
 image = { version = "0.25", default-features = false, features = [
     "png",
 ], optional = true }
-bevy_shader = { version = "0.18.1", optional = true }
-bevy_sprite_render = { version = "0.18.1", optional = true }
+bevy_shader = { version = "0.19.0", optional = true }
+bevy_sprite_render = { version = "0.19.0", optional = true }
 
 [dev-dependencies]
-bevy_egui = "0.39.1"
+bevy_egui = "0.41.0"
 serde = { version = "1.0", features = ["derive"] }
 ron = "0.8"
 clap = { version = "4.5", features = ["derive"] }
 shlex = "1.3"
 trie-rs = "0.2"
-bevy = { version = "0.18.1" }
+bevy = { version = "0.19.0" }
 noise = "0.9.0"
-avian2d = "0.5.0"
+avian2d = "0.7.0"
 bevy_framepace = "0.21.0"
 
 [lints.rust]
