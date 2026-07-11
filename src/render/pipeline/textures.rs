@@ -58,7 +58,7 @@ impl Plugin for ChunkRenderingPlugin {
                 (
                     setup_world_textures.run_if(
                         resource_exists::<ParticleMap>
-                            .and(not(resource_exists::<WorldColorTexture>)),
+                            .and_eager(not(resource_exists::<WorldColorTexture>)),
                     ),
                     ApplyDeferred,
                 )
@@ -575,8 +575,8 @@ impl ChunkEffectApp for App {
                 setup_world_effect_overlay_precompute::<M>
                     .run_if(
                         resource_exists::<WorldColorTexture>
-                            .and(resource_exists::<WorldEffectTexture>)
-                            .and(not(resource_exists::<WorldEffectEntity<M>>)),
+                            .and_eager(resource_exists::<WorldEffectTexture>)
+                            .and_eager(not(resource_exists::<WorldEffectEntity<M>>)),
                     )
                     .after(RenderingSystems::ChunkImage),
             );
@@ -595,8 +595,8 @@ impl ChunkEffectApp for App {
                 setup_world_effect_overlay::<M>
                     .run_if(
                         resource_exists::<WorldColorTexture>
-                            .and(resource_exists::<WorldEffectTexture>)
-                            .and(not(resource_exists::<WorldEffectEntity<M>>)),
+                            .and_eager(resource_exists::<WorldEffectTexture>)
+                            .and_eager(not(resource_exists::<WorldEffectEntity<M>>)),
                     )
                     .after(RenderingSystems::ChunkImage),
             );
