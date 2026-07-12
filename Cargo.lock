@@ -987,7 +987,7 @@ dependencies = [
 [[package]]
 name = "bevy_framepace"
 version = "0.21.0"
-source = "git+https://github.com/noprobelm/bevy_framepace?branch=chore%2Fupdate-bevy-dependency-to-0-19-0#a9b8eb256dd3bbe746fda06fad77790bb3143ba7"
+source = "git+https://github.com/noprobelm/bevy_framepace?branch=main#a9b8eb256dd3bbe746fda06fad77790bb3143ba7"
 dependencies = [
  "bevy_app",
  "bevy_diagnostic",
