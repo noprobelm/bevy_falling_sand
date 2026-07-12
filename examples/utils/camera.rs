@@ -26,6 +26,7 @@ pub fn setup_camera(mut commands: Commands) {
             scale: initial_scale,
             ..OrthographicProjection::default_2d()
         }),
+        IsDefaultUiCamera,
         MainCamera,
         ChunkLoader,
         ZoomTarget {

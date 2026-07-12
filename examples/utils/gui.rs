@@ -18,13 +18,13 @@ pub fn update_app_state(
     match app_state.get() {
         AppState::Ui => {
             let ctx = contexts.ctx_mut()?;
-            if !ctx.is_pointer_over_area() {
+            if !ctx.is_pointer_over_egui() {
                 next_app_state.set(AppState::Canvas);
             }
         }
         AppState::Canvas => {
             let ctx = contexts.ctx_mut()?;
-            if ctx.is_pointer_over_area() {
+            if ctx.is_pointer_over_egui() {
                 next_app_state.set(AppState::Ui);
             }
         }

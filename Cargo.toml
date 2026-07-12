@@ -49,6 +49,7 @@ bevy = { version = "0.19.0", default-features = false, features = [
     "bevy_log",
     "bevy_gizmos",
     "bevy_scene",
+    "bevy_world_serialization",
     "serialize",
     "wayland",
 ] }
@@ -76,7 +77,6 @@ trie-rs = "0.2"
 bevy = { version = "0.19.0" }
 noise = "0.9.0"
 avian2d = "0.7.0"
-bevy_framepace = "0.21.0"
 
 [lints.rust]
 # Mark `bevy_lint` as a valid `cfg`, as it is set when the Bevy linter runs.

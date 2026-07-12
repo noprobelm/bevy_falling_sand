@@ -6,7 +6,6 @@ use bevy::{
     window::{CursorOptions, PrimaryWindow},
 };
 use bevy_falling_sand::prelude::*;
-use bevy_framepace::{FramepacePlugin, FramepaceSettings, Limiter};
 use utils::{
     brush::{ParticleSpawnList, SelectedBrushParticle},
     states::AppState,
@@ -17,7 +16,6 @@ fn main() {
     App::new()
         .add_plugins((
             DefaultPlugins,
-            FramepacePlugin,
             FallingSandPlugin::default().with_map_size(16),
             FallingSandDebugPlugin,
             utils::states::StatesPlugin,
@@ -29,7 +27,7 @@ fn main() {
         .init_resource::<MaxVelocitySelection>()
         .add_systems(
             Startup,
-            (setup, utils::camera::setup_camera, setup_framepace),
+            (setup, utils::camera::setup_camera),
         )
         .add_systems(
             PreUpdate,
@@ -230,8 +228,4 @@ fn bump_velocity(
         (**velocity_selection_text)
             .clone_from(&format!("Maximum velocity: {}", velocity_selection.0));
     }
-}
-
-fn setup_framepace(mut settings: ResMut<FramepaceSettings>) {
-    settings.limiter = Limiter::from_framerate(60.0);
 }

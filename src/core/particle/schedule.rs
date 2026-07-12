@@ -21,7 +21,7 @@ impl Plugin for SchedulePlugin {
                 PostUpdate,
                 ParticleSystems::Simulation.run_if(
                     resource_exists::<ParticleSimulationRun>
-                        .or(condition_msg_simulation_step_received),
+                        .or_else(condition_msg_simulation_step_received),
                 ),
             );
     }
