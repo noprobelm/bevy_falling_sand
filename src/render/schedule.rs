@@ -12,6 +12,7 @@
 //!   [`RenderingSystems::ChunkEffectLayerUpdate`].
 
 use bevy::prelude::*;
+use bevy::transform::TransformSystems;
 
 use crate::core::{ChunkSystems, ParticleSystems};
 
@@ -27,7 +28,8 @@ impl Plugin for SchedulePlugin {
                         .after(ParticleSystems::Simulation)
                         .after(ChunkSystems::Cleanup),
                     RenderingSystems::ChunkEffectRegion
-                        .after(RenderingSystems::ChunkEffectLayerUpdate),
+                        .after(RenderingSystems::ChunkEffectLayerUpdate)
+                        .before(TransformSystems::Propagate),
                 ),
             );
     }
