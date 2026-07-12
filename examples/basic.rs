@@ -2,6 +2,7 @@ mod utils;
 
 use bevy::{input::common_conditions::input_just_pressed, prelude::*};
 use bevy_falling_sand::prelude::*;
+use bevy_framepace::{FramepacePlugin, FramepaceSettings, Limiter};
 use utils::{
     brush::{ParticleSpawnList, SelectedBrushParticle},
     states::AppState,
@@ -15,6 +16,7 @@ fn main() {
     App::new()
         .add_plugins((
             DefaultPlugins,
+            FramepacePlugin,
             FallingSandMinimalPlugin::default(),
             FallingSandMovementPlugin,
             FallingSandRenderPlugin,
@@ -29,7 +31,7 @@ fn main() {
         .init_resource::<SpawnParticles>()
         .add_systems(
             Startup,
-            (setup, utils::camera::setup_camera),
+            (setup, utils::camera::setup_camera, setup_framepace),
         )
         .add_systems(
             PreUpdate,
@@ -150,4 +152,8 @@ fn setup(mut commands: Commands) {
             style.clone(),
         ));
     });
+}
+
+fn setup_framepace(mut settings: ResMut<FramepaceSettings>) {
+    settings.limiter = Limiter::from_framerate(60.0);
 }

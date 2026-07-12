@@ -3,6 +3,7 @@ mod utils;
 use avian2d::prelude::*;
 use bevy::{input::common_conditions::input_just_pressed, prelude::*};
 use bevy_falling_sand::prelude::*;
+use bevy_framepace::{FramepacePlugin, FramepaceSettings, Limiter};
 use utils::{
     brush::{BrushInput, BrushKeybindings, ParticleSpawnList, SelectedBrushParticle},
     cursor::Cursor,
@@ -18,6 +19,7 @@ fn main() {
     App::new()
         .add_plugins((
             DefaultPlugins,
+            FramepacePlugin,
             FallingSandPlugin::default()
                 .with_length_unit(8.0)
                 .with_gravity(Vec2::NEG_Y * 50.0),
@@ -31,7 +33,7 @@ fn main() {
         .register_particle_sync_component::<Liquid>()
         .add_systems(
             Startup,
-            (setup, utils::camera::setup_camera),
+            (setup, utils::camera::setup_camera, setup_framepace),
         )
         .add_systems(
             PreUpdate,
@@ -214,4 +216,8 @@ fn float_rigid_bodies(
             }
         },
     );
+}
+
+fn setup_framepace(mut settings: ResMut<FramepaceSettings>) {
+    settings.limiter = Limiter::from_framerate(60.0);
 }

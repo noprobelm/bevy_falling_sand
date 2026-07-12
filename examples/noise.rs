@@ -2,6 +2,7 @@ mod utils;
 
 use bevy::{input::common_conditions::input_just_pressed, prelude::*};
 use bevy_falling_sand::prelude::*;
+use bevy_framepace::{FramepacePlugin, FramepaceSettings, Limiter};
 use bevy_rand::prelude::{GlobalRng, WyRand};
 use noise::{Fbm, NoiseFn, PerlinSurflet};
 use utils::{
@@ -17,6 +18,7 @@ fn main() {
     App::new()
         .add_plugins((
             DefaultPlugins,
+            FramepacePlugin,
             FallingSandMinimalPlugin::default().with_map_size(8),
             FallingSandMovementPlugin,
             FallingSandRenderPlugin,
@@ -31,7 +33,7 @@ fn main() {
         .init_resource::<SpawnParticles>()
         .add_systems(
             Startup,
-            (setup, utils::camera::setup_camera),
+            (setup, utils::camera::setup_camera, setup_framepace),
         )
         .add_systems(
             PreUpdate,
@@ -227,4 +229,8 @@ fn spawn_noise(spawn_writer: &mut MessageWriter<SpawnParticleSignal>, rng: &mut 
             );
         }
     }
+}
+
+fn setup_framepace(mut settings: ResMut<FramepaceSettings>) {
+    settings.limiter = Limiter::from_framerate(60.0);
 }

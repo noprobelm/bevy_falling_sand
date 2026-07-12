@@ -2,6 +2,7 @@ mod utils;
 
 use bevy::{input::common_conditions::input_just_pressed, prelude::*};
 use bevy_falling_sand::prelude::*;
+use bevy_framepace::{FramepacePlugin, FramepaceSettings, Limiter};
 use bevy_rand::prelude::{GlobalRng, WyRand};
 use utils::status_ui::{FpsText, MovementSourceText, StatusUIPlugin};
 
@@ -9,6 +10,7 @@ fn main() {
     App::new()
         .add_plugins((
             DefaultPlugins,
+            FramepacePlugin,
             FallingSandMinimalPlugin::default(),
             FallingSandMovementPlugin,
             FallingSandRenderPlugin,
@@ -20,7 +22,7 @@ fn main() {
         .init_state::<ParticleTypeTwoMutationState>()
         .add_systems(
             Startup,
-            (setup, utils::camera::setup_camera),
+            (setup, utils::camera::setup_camera, setup_framepace),
         )
         .add_systems(
             PreUpdate,
@@ -279,4 +281,8 @@ fn update_movement_source_text(
     for mut text in movement_source_text.iter_mut() {
         **text = source_text.clone();
     }
+}
+
+fn setup_framepace(mut settings: ResMut<FramepaceSettings>) {
+    settings.limiter = Limiter::from_framerate(60.0);
 }
