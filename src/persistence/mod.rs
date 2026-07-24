@@ -104,9 +104,13 @@ impl Plugin for FallingSandPersistencePlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(ParticlePersistenceConfig {
             save_path: self.save_directory.clone(),
-        })
-        .add_plugins((
-            WorldSerializationPlugin,
+        });
+
+        if !app.is_plugin_added::<WorldSerializationPlugin>() {
+            app.add_plugins(WorldSerializationPlugin);
+        }
+
+        app.add_plugins((
             chunks::ChunkPersistencePlugin,
             particle_types::ParticleTypePersistencePlugin,
         ));
