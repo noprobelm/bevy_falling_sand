@@ -467,7 +467,7 @@ impl AirResistance {
 ///
 /// fn setup(mut commands: Commands) {
 ///     commands.spawn((
-///         ParticleType::new("Sand"),
+///         ParticleType::new(),
 ///         ColorProfile::palette(vec![
 ///             Color::Srgba(Srgba::hex("#FFEB8A").unwrap()),
 ///             Color::Srgba(Srgba::hex("#F2E06B").unwrap()),
@@ -487,7 +487,7 @@ impl AirResistance {
 ///         AirResistance::new([0.0, 0.9]),
 ///     ));
 ///     commands.spawn((
-///         ParticleType::new("Water"),
+///         ParticleType::new(),
 ///         ColorProfile::palette(vec![
 ///             Color::Srgba(Srgba::hex("#0B80AB80").unwrap()),
 ///         ]),

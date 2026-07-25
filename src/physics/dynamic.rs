@@ -445,7 +445,7 @@ mod tests {
 
     use super::*;
     use crate::FallingSandMinimalPlugin;
-    use crate::core::{AttachedToParticleType, ParticleType, SpawnParticleSignal};
+    use crate::core::{AttachedToParticleType, ParticleType, ParticleTypeId, SpawnParticleSignal};
 
     fn create_test_app() -> App {
         let mut app = App::new();
@@ -478,9 +478,13 @@ mod tests {
         app
     }
 
-    fn spawn_particle(app: &mut App, name: &'static str, position: IVec2) -> Entity {
+    fn sand() -> ParticleTypeId {
+        ParticleTypeId::from_raw(0)
+    }
+
+    fn spawn_particle(app: &mut App, particle_type: ParticleTypeId, position: IVec2) -> Entity {
         app.world_mut()
-            .write_message(SpawnParticleSignal::new(name, position));
+            .write_message(SpawnParticleSignal::new(particle_type, position));
         app.update();
 
         app.world()
@@ -504,11 +508,11 @@ mod tests {
     #[test]
     fn promote_removes_particle_from_map() {
         let mut app = create_test_app();
-        app.world_mut().spawn(ParticleType::new("sand"));
+        app.world_mut().spawn(ParticleType::from_id(sand()));
         app.update();
 
         let pos = IVec2::new(5, 5);
-        let entity = spawn_particle(&mut app, "sand", pos);
+        let entity = spawn_particle(&mut app, sand(), pos);
 
         send_promote(&mut app, entity);
         app.update();
@@ -524,10 +528,10 @@ mod tests {
     #[test]
     fn promote_removes_grid_position() {
         let mut app = create_test_app();
-        app.world_mut().spawn(ParticleType::new("sand"));
+        app.world_mut().spawn(ParticleType::from_id(sand()));
         app.update();
 
-        let entity = spawn_particle(&mut app, "sand", IVec2::new(5, 5));
+        let entity = spawn_particle(&mut app, sand(), IVec2::new(5, 5));
 
         send_promote(&mut app, entity);
         app.update();
@@ -541,11 +545,11 @@ mod tests {
     #[test]
     fn promote_spawns_separate_rigid_body() {
         let mut app = create_test_app();
-        app.world_mut().spawn(ParticleType::new("sand"));
+        app.world_mut().spawn(ParticleType::from_id(sand()));
         app.update();
 
         let pos = IVec2::new(5, 5);
-        let entity = spawn_particle(&mut app, "sand", pos);
+        let entity = spawn_particle(&mut app, sand(), pos);
 
         send_promote(&mut app, entity);
         app.update();
@@ -578,10 +582,10 @@ mod tests {
     #[test]
     fn promote_applies_velocity_and_gravity() {
         let mut app = create_test_app();
-        app.world_mut().spawn(ParticleType::new("sand"));
+        app.world_mut().spawn(ParticleType::from_id(sand()));
         app.update();
 
-        let entity = spawn_particle(&mut app, "sand", IVec2::new(5, 5));
+        let entity = spawn_particle(&mut app, sand(), IVec2::new(5, 5));
 
         send_promote_with(
             &mut app,
@@ -610,10 +614,10 @@ mod tests {
     #[test]
     fn promote_preserves_particle_component() {
         let mut app = create_test_app();
-        app.world_mut().spawn(ParticleType::new("sand"));
+        app.world_mut().spawn(ParticleType::from_id(sand()));
         app.update();
 
-        let entity = spawn_particle(&mut app, "sand", IVec2::new(5, 5));
+        let entity = spawn_particle(&mut app, sand(), IVec2::new(5, 5));
 
         send_promote(&mut app, entity);
         app.update();
@@ -628,7 +632,7 @@ mod tests {
             .entity(attached.0)
             .get::<ParticleType>()
             .unwrap();
-        assert_eq!(parent_type.name, "sand");
+        assert_eq!(parent_type.id(), sand());
     }
 
     // ---- rejoin_dynamic_rigid_bodies ----
@@ -636,14 +640,14 @@ mod tests {
     #[test]
     fn rejoin_when_neighbor_exists() {
         let mut app = create_test_app();
-        app.world_mut().spawn(ParticleType::new("sand"));
+        app.world_mut().spawn(ParticleType::from_id(sand()));
         app.update();
 
         let neighbor_pos = IVec2::new(5, 5);
-        let _neighbor = spawn_particle(&mut app, "sand", neighbor_pos);
+        let _neighbor = spawn_particle(&mut app, sand(), neighbor_pos);
 
         let dynamic_pos = IVec2::new(6, 5);
-        let dynamic_entity = spawn_particle(&mut app, "sand", dynamic_pos);
+        let dynamic_entity = spawn_particle(&mut app, sand(), dynamic_pos);
 
         send_promote(&mut app, dynamic_entity);
         app.update();
@@ -662,14 +666,14 @@ mod tests {
     #[test]
     fn rejoin_despawns_rigid_body_proxy() {
         let mut app = create_test_app();
-        app.world_mut().spawn(ParticleType::new("sand"));
+        app.world_mut().spawn(ParticleType::from_id(sand()));
         app.update();
 
         let neighbor_pos = IVec2::new(5, 5);
-        let _neighbor = spawn_particle(&mut app, "sand", neighbor_pos);
+        let _neighbor = spawn_particle(&mut app, sand(), neighbor_pos);
 
         let dynamic_pos = IVec2::new(6, 5);
-        let dynamic_entity = spawn_particle(&mut app, "sand", dynamic_pos);
+        let dynamic_entity = spawn_particle(&mut app, sand(), dynamic_pos);
 
         send_promote(&mut app, dynamic_entity);
         app.update();
@@ -688,11 +692,11 @@ mod tests {
     #[test]
     fn no_rejoin_without_neighbor() {
         let mut app = create_test_app();
-        app.world_mut().spawn(ParticleType::new("sand"));
+        app.world_mut().spawn(ParticleType::from_id(sand()));
         app.update();
 
         let pos = IVec2::new(20, 20);
-        let entity = spawn_particle(&mut app, "sand", pos);
+        let entity = spawn_particle(&mut app, sand(), pos);
 
         send_promote(&mut app, entity);
         app.update();
@@ -714,14 +718,14 @@ mod tests {
     #[test]
     fn rejoin_restores_particle_to_map() {
         let mut app = create_test_app();
-        app.world_mut().spawn(ParticleType::new("sand"));
+        app.world_mut().spawn(ParticleType::from_id(sand()));
         app.update();
 
         let neighbor_pos = IVec2::new(10, 10);
-        let _neighbor = spawn_particle(&mut app, "sand", neighbor_pos);
+        let _neighbor = spawn_particle(&mut app, sand(), neighbor_pos);
 
         let dynamic_pos = IVec2::new(11, 10);
-        let dynamic_entity = spawn_particle(&mut app, "sand", dynamic_pos);
+        let dynamic_entity = spawn_particle(&mut app, sand(), dynamic_pos);
 
         send_promote(&mut app, dynamic_entity);
         app.update();
@@ -744,14 +748,14 @@ mod tests {
     #[test]
     fn rejoin_prefers_own_position_when_vacant() {
         let mut app = create_test_app();
-        app.world_mut().spawn(ParticleType::new("sand"));
+        app.world_mut().spawn(ParticleType::from_id(sand()));
         app.update();
 
         let neighbor_pos = IVec2::new(10, 10);
-        let _neighbor = spawn_particle(&mut app, "sand", neighbor_pos);
+        let _neighbor = spawn_particle(&mut app, sand(), neighbor_pos);
 
         let dynamic_pos = IVec2::new(11, 10);
-        let dynamic_entity = spawn_particle(&mut app, "sand", dynamic_pos);
+        let dynamic_entity = spawn_particle(&mut app, sand(), dynamic_pos);
 
         send_promote(&mut app, dynamic_entity);
         app.update();
@@ -772,16 +776,16 @@ mod tests {
     #[test]
     fn rejoin_finds_alternate_position_when_own_is_occupied() {
         let mut app = create_test_app();
-        app.world_mut().spawn(ParticleType::new("sand"));
+        app.world_mut().spawn(ParticleType::from_id(sand()));
         app.update();
 
         let dynamic_pos = IVec2::new(10, 10);
-        let dynamic_entity = spawn_particle(&mut app, "sand", dynamic_pos);
+        let dynamic_entity = spawn_particle(&mut app, sand(), dynamic_pos);
 
         send_promote(&mut app, dynamic_entity);
         app.update();
 
-        let blocker = spawn_particle(&mut app, "sand", dynamic_pos);
+        let blocker = spawn_particle(&mut app, sand(), dynamic_pos);
         app.update();
 
         let entity_ref = app.world().entity(dynamic_entity);
@@ -806,12 +810,12 @@ mod tests {
     #[test]
     fn rejoin_at_map_edge() {
         let mut app = create_small_test_app();
-        app.world_mut().spawn(ParticleType::new("sand"));
+        app.world_mut().spawn(ParticleType::from_id(sand()));
         app.update();
 
         let origin = app.world().resource::<ParticleMap>().origin();
         let edge_pos = origin;
-        let entity = spawn_particle(&mut app, "sand", edge_pos);
+        let entity = spawn_particle(&mut app, sand(), edge_pos);
 
         send_promote(&mut app, entity);
         app.update();
@@ -832,11 +836,11 @@ mod tests {
     #[test]
     fn no_particle_loss_single() {
         let mut app = create_test_app();
-        app.world_mut().spawn(ParticleType::new("sand"));
+        app.world_mut().spawn(ParticleType::from_id(sand()));
         app.update();
 
         let pos = IVec2::new(5, 5);
-        let entity = spawn_particle(&mut app, "sand", pos);
+        let entity = spawn_particle(&mut app, sand(), pos);
 
         send_promote(&mut app, entity);
         app.update();
@@ -854,14 +858,14 @@ mod tests {
     #[test]
     fn no_particle_loss_through_full_cycle() {
         let mut app = create_test_app();
-        app.world_mut().spawn(ParticleType::new("sand"));
+        app.world_mut().spawn(ParticleType::from_id(sand()));
         app.update();
 
         let anchor = IVec2::new(10, 10);
-        let _anchor_entity = spawn_particle(&mut app, "sand", anchor);
+        let _anchor_entity = spawn_particle(&mut app, sand(), anchor);
 
         let dynamic_pos = IVec2::new(11, 10);
-        let dynamic_entity = spawn_particle(&mut app, "sand", dynamic_pos);
+        let dynamic_entity = spawn_particle(&mut app, sand(), dynamic_pos);
 
         let initial_count = app
             .world_mut()
@@ -897,22 +901,22 @@ mod tests {
             .entity(attached.0)
             .get::<ParticleType>()
             .unwrap();
-        assert_eq!(parent_type.name, "sand");
+        assert_eq!(parent_type.id(), sand());
     }
 
     #[test]
     fn no_particle_loss_multiple_dynamic_bodies() {
         let mut app = create_test_app();
-        app.world_mut().spawn(ParticleType::new("sand"));
+        app.world_mut().spawn(ParticleType::from_id(sand()));
         app.update();
 
         let anchor = IVec2::new(10, 10);
-        let _anchor = spawn_particle(&mut app, "sand", anchor);
+        let _anchor = spawn_particle(&mut app, sand(), anchor);
 
         let positions = [IVec2::new(11, 10), IVec2::new(9, 10), IVec2::new(10, 11)];
         let mut dynamic_entities = Vec::new();
         for &pos in &positions {
-            dynamic_entities.push(spawn_particle(&mut app, "sand", pos));
+            dynamic_entities.push(spawn_particle(&mut app, sand(), pos));
         }
 
         let total_before = app
@@ -943,16 +947,16 @@ mod tests {
     #[test]
     fn two_dynamic_bodies_do_not_rejoin_at_same_position() {
         let mut app = create_test_app();
-        app.world_mut().spawn(ParticleType::new("sand"));
+        app.world_mut().spawn(ParticleType::from_id(sand()));
         app.update();
 
         let anchor = IVec2::new(10, 10);
-        let _anchor = spawn_particle(&mut app, "sand", anchor);
+        let _anchor = spawn_particle(&mut app, sand(), anchor);
 
         let pos_a = IVec2::new(11, 10);
         let pos_b = IVec2::new(11, 11);
-        let entity_a = spawn_particle(&mut app, "sand", pos_a);
-        let entity_b = spawn_particle(&mut app, "sand", pos_b);
+        let entity_a = spawn_particle(&mut app, sand(), pos_a);
+        let entity_b = spawn_particle(&mut app, sand(), pos_b);
 
         send_promote(&mut app, entity_a);
         send_promote(&mut app, entity_b);
@@ -975,14 +979,14 @@ mod tests {
     #[test]
     fn rejoin_restores_original_state() {
         let mut app = create_test_app();
-        app.world_mut().spawn(ParticleType::new("sand"));
+        app.world_mut().spawn(ParticleType::from_id(sand()));
         app.update();
 
         let anchor = IVec2::new(10, 10);
-        let _anchor = spawn_particle(&mut app, "sand", anchor);
+        let _anchor = spawn_particle(&mut app, sand(), anchor);
 
         let pos = IVec2::new(11, 10);
-        let entity = spawn_particle(&mut app, "sand", pos);
+        let entity = spawn_particle(&mut app, sand(), pos);
 
         let particle_before = app.world().entity(entity).get::<Particle>().copied();
         let attached_before = app
@@ -1007,11 +1011,11 @@ mod tests {
     #[test]
     fn all_dynamic_bodies_return_to_original_state_near_neighbors() {
         let mut app = create_test_app();
-        app.world_mut().spawn(ParticleType::new("sand"));
+        app.world_mut().spawn(ParticleType::from_id(sand()));
         app.update();
 
         let anchor = IVec2::new(15, 15);
-        let _anchor = spawn_particle(&mut app, "sand", anchor);
+        let _anchor = spawn_particle(&mut app, sand(), anchor);
 
         let dynamic_positions = [
             IVec2::new(16, 15),
@@ -1022,7 +1026,7 @@ mod tests {
 
         let mut entities = Vec::new();
         for &pos in &dynamic_positions {
-            entities.push(spawn_particle(&mut app, "sand", pos));
+            entities.push(spawn_particle(&mut app, sand(), pos));
         }
 
         for &entity in &entities {

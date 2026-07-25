@@ -90,7 +90,7 @@ fn update_selected_particle_text(
     selected_particle: Res<SelectedBrushParticle>,
     mut selected_particle_text: Query<&mut Text, With<SelectedParticleText>>,
 ) {
-    let particle_text = format!("Selected Particle: {}", selected_particle.0.name);
+    let particle_text = format!("Selected Particle ID: {}", selected_particle.0.get());
 
     for mut text in selected_particle_text.iter_mut() {
         **text = particle_text.clone();

@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     core::{
         AttachedToParticleType, Particle, ParticleChunksMut, ParticleRngExt, ParticleSystems,
-        ParticleType, ParticleTypeRegistry, SpawnParticleSignal,
+        ParticleType, ParticleTypeId, ParticleTypeRegistry, SpawnParticleSignal,
     },
     movement::ParticleMovementSystems,
 };
@@ -45,15 +45,17 @@ impl Plugin for ContactPlugin {
 /// ```no_run
 /// use bevy::prelude::*;
 /// use bevy_falling_sand::reactions::{ContactReaction, ContactRule, Consumes};
-/// use bevy_falling_sand::core::ParticleType;
+/// use bevy_falling_sand::core::{ParticleType, ParticleTypeId};
 ///
 /// fn setup(mut commands: Commands) {
+///     let lava = ParticleTypeId::new();
+///     let fire = ParticleTypeId::new();
 ///     commands.spawn((
-///         ParticleType::new("Wood"),
+///         ParticleType::new(),
 ///         ContactReaction {
 ///             rules: vec![ContactRule {
-///                 target: ParticleType::new("Lava"),
-///                 becomes: ParticleType::new("Fire"),
+///                 target: lava,
+///                 becomes: fire,
 ///                 chance: 0.8,
 ///                 radius: 1.0,
 ///                 consumes: Consumes::Source,
@@ -72,20 +74,18 @@ pub struct ContactReaction {
 
 /// A single contact reaction rule.
 ///
-/// `target` and `becomes` carry [`ParticleType`] values purely as name carriers — they're
-/// looked up against [`ParticleTypeRegistry`] when the rule is resolved. Use
-/// `ParticleType::new("Lava")` for static literals or `"Lava".into()` via the
-/// `From<&'static str>` impl.
+/// `target` and `becomes` are [`ParticleTypeId`] values looked up against
+/// [`ParticleTypeRegistry`] when the rule is resolved.
 ///
 /// # Examples
 ///
 /// ```
-/// use bevy_falling_sand::core::ParticleType;
+/// use bevy_falling_sand::core::ParticleTypeId;
 /// use bevy_falling_sand::reactions::{ContactRule, Consumes};
 ///
 /// let rule = ContactRule {
-///     target: ParticleType::new("Water"),
-///     becomes: ParticleType::new("Steam"),
+///     target: ParticleTypeId::from_raw(1),
+///     becomes: ParticleTypeId::from_raw(2),
 ///     chance: 0.5,
 ///     radius: 1.0,
 ///     consumes: Consumes::Target,
@@ -95,10 +95,10 @@ pub struct ContactReaction {
 /// ```
 #[derive(Clone, PartialEq, Debug, Reflect, Serialize, Deserialize)]
 pub struct ContactRule {
-    /// [`ParticleType`] this rule reacts with on contact.
-    pub target: ParticleType,
-    /// [`ParticleType`] produced by the reaction.
-    pub becomes: ParticleType,
+    /// [`ParticleTypeId`] this rule reacts with on contact.
+    pub target: ParticleTypeId,
+    /// [`ParticleTypeId`] produced by the reaction.
+    pub becomes: ParticleTypeId,
     /// Probability per contact per frame (0.0 to 1.0).
     pub chance: f64,
     /// The radius within which to check for the target particle.
@@ -125,8 +125,8 @@ pub enum Consumes {
 impl Default for ContactRule {
     fn default() -> Self {
         Self {
-            target: ParticleType::default(),
-            becomes: ParticleType::default(),
+            target: ParticleTypeId::default(),
+            becomes: ParticleTypeId::default(),
             chance: 0.0,
             radius: 1.0,
             consumes: Consumes::default(),
@@ -150,13 +150,13 @@ pub(super) struct ResolvedContactReaction {
 #[derive(Clone, Debug)]
 pub(super) struct ResolvedContactRule {
     pub(crate) target_type: Entity,
-    pub(crate) becomes: ParticleType,
+    pub(crate) becomes: ParticleTypeId,
     pub(crate) chance: f64,
     pub(crate) radius: f32,
     pub(crate) consumes: Consumes,
 }
 
-/// Resolves `ContactReaction` names into `ResolvedContactReaction` entity references
+/// Resolves `ContactReaction` type IDs into `ResolvedContactReaction` entity references
 /// when a `ContactReaction` is added to a `ParticleType` entity.
 #[allow(clippy::needless_pass_by_value)]
 fn on_contact_reaction_added(
@@ -201,8 +201,8 @@ fn try_resolve(
     let mut resolved_rules = Vec::with_capacity(contact.rules.len());
 
     for rule in &contact.rules {
-        let target_type = *registry.get(&rule.target.name)?;
-        let _ = registry.get(&rule.becomes.name)?;
+        let target_type = *registry.get(rule.target)?;
+        let _ = registry.get(rule.becomes)?;
         resolved_rules.push(ResolvedContactRule {
             target_type,
             becomes: rule.becomes.clone(),

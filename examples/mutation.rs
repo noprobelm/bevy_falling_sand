@@ -59,6 +59,25 @@ const END_X: i32 = 200;
 const START_Y: i32 = -200;
 const END_Y: i32 = 200;
 
+#[derive(Copy, Clone, Resource)]
+struct MutationParticleIds {
+    dirt_wall: ParticleTypeId,
+    water: ParticleTypeId,
+    sand: ParticleTypeId,
+    smoke: ParticleTypeId,
+}
+
+impl Default for MutationParticleIds {
+    fn default() -> Self {
+        Self {
+            dirt_wall: ParticleTypeId::new(),
+            water: ParticleTypeId::new(),
+            sand: ParticleTypeId::new(),
+            smoke: ParticleTypeId::new(),
+        }
+    }
+}
+
 #[derive(Component)]
 struct ParticleTypeOneText;
 
@@ -112,10 +131,12 @@ impl std::fmt::Display for ParticleTypeTwoMutationState {
 }
 
 fn setup(mut commands: Commands) {
+    let ids = MutationParticleIds::default();
+    commands.insert_resource(ids);
     commands.remove_resource::<DebugParticleMap>();
     commands.remove_resource::<DebugDirtyRects>();
     commands.spawn((
-        ParticleType::new("Dirt Wall"),
+        ParticleType::from_id(ids.dirt_wall),
         ColorProfile::palette(vec![
             Color::Srgba(Srgba::hex("#916B4C").unwrap()),
             Color::Srgba(Srgba::hex("#73573D").unwrap()),
@@ -123,7 +144,7 @@ fn setup(mut commands: Commands) {
     ));
 
     commands.spawn((
-        ParticleType::new("Water"),
+        ParticleType::from_id(ids.water),
         Density(750),
         Speed::new(0, 3),
         ColorProfile::palette(vec![Color::Srgba(Srgba::hex("#0B80AB80").unwrap())]),
@@ -140,7 +161,7 @@ fn setup(mut commands: Commands) {
         ParticleResistor(0.75),
     ));
     commands.spawn((
-        ParticleType::new("Sand"),
+        ParticleType::from_id(ids.sand),
         Density(1250),
         Speed::new(5, 10),
         ColorProfile::palette(vec![
@@ -154,7 +175,7 @@ fn setup(mut commands: Commands) {
         Momentum::default(),
     ));
     commands.spawn((
-        ParticleType::new("Smoke"),
+        ParticleType::from_id(ids.smoke),
         Density(275),
         Speed::new(0, 1),
         ColorProfile::palette(vec![
@@ -194,6 +215,7 @@ fn spawn_particles(
     mut spawn_writer: MessageWriter<SpawnParticleSignal>,
     time: Res<Time>,
     mut rng: Single<&mut WyRand, With<GlobalRng>>,
+    ids: Res<MutationParticleIds>,
 ) {
     if time.elapsed_secs() < 0.5 {
         let x_range = ((END_X - START_X) as f32 * 0.5) as i32;
@@ -203,13 +225,13 @@ fn spawn_particles(
             for y in START_Y + 50..START_Y + 50 + y_range {
                 let position = IVec2::new(x, -y);
                 if rng.chance(0.5) {
-                    spawn_writer.write(SpawnParticleSignal::new("Water", position).with_on_spawn(
-                        |cmd| {
+                    spawn_writer.write(
+                        SpawnParticleSignal::new(ids.water, position).with_on_spawn(|cmd| {
                             cmd.insert(MutationParticleOne);
-                        },
-                    ));
+                        }),
+                    );
                 } else if rng.chance(0.5) {
-                    spawn_writer.write(SpawnParticleSignal::new("Sand", position).with_on_spawn(
+                    spawn_writer.write(SpawnParticleSignal::new(ids.sand, position).with_on_spawn(
                         |cmd| {
                             cmd.insert(MutationParticleTwo);
                         },
@@ -223,6 +245,7 @@ fn spawn_particles(
 fn mutate_particle_type_one(
     mut mutate_particle_query: Query<&mut AttachedToParticleType, With<MutationParticleOne>>,
     registry: Res<ParticleTypeRegistry>,
+    ids: Res<MutationParticleIds>,
     state: Res<State<ParticleTypeOneMutationState>>,
     mut next_state: ResMut<NextState<ParticleTypeOneMutationState>>,
     mut particle_type_text_query: Query<&mut Text, With<ParticleTypeOneText>>,
@@ -233,14 +256,19 @@ fn mutate_particle_type_one(
         ParticleTypeOneMutationState::Sand => ParticleTypeOneMutationState::Water,
         ParticleTypeOneMutationState::Water => ParticleTypeOneMutationState::Smoke,
     };
-    let new_name = format!("{new_state}");
-    if let Some(&new_parent) = registry.get(&new_name) {
+    let new_id = match new_state {
+        ParticleTypeOneMutationState::Smoke => ids.smoke,
+        ParticleTypeOneMutationState::DirtWall => ids.dirt_wall,
+        ParticleTypeOneMutationState::Sand => ids.sand,
+        ParticleTypeOneMutationState::Water => ids.water,
+    };
+    if let Some(&new_parent) = registry.get(new_id) {
         mutate_particle_query.iter_mut().for_each(|mut attached| {
             attached.0 = new_parent;
         });
     }
     next_state.set(new_state.clone());
-    let new_text = format!("Particle Type: {new_name}");
+    let new_text = format!("Particle Type: {new_state}");
     for mut particle_type_text in particle_type_text_query.iter_mut() {
         (**particle_type_text).clone_from(&new_text);
     }
@@ -249,6 +277,7 @@ fn mutate_particle_type_one(
 fn mutate_particle_type_two(
     mut mutate_particle_query: Query<&mut AttachedToParticleType, With<MutationParticleTwo>>,
     registry: Res<ParticleTypeRegistry>,
+    ids: Res<MutationParticleIds>,
     state: Res<State<ParticleTypeTwoMutationState>>,
     mut next_state: ResMut<NextState<ParticleTypeTwoMutationState>>,
     mut particle_type_text_query: Query<&mut Text, With<ParticleTypeTwoText>>,
@@ -259,14 +288,19 @@ fn mutate_particle_type_two(
         ParticleTypeTwoMutationState::Sand => ParticleTypeTwoMutationState::Water,
         ParticleTypeTwoMutationState::Water => ParticleTypeTwoMutationState::Smoke,
     };
-    let new_name = format!("{new_state}");
-    if let Some(&new_parent) = registry.get(&new_name) {
+    let new_id = match new_state {
+        ParticleTypeTwoMutationState::Smoke => ids.smoke,
+        ParticleTypeTwoMutationState::DirtWall => ids.dirt_wall,
+        ParticleTypeTwoMutationState::Sand => ids.sand,
+        ParticleTypeTwoMutationState::Water => ids.water,
+    };
+    if let Some(&new_parent) = registry.get(new_id) {
         mutate_particle_query.iter_mut().for_each(|mut attached| {
             attached.0 = new_parent;
         });
     }
     next_state.set(new_state.clone());
-    let new_text = format!("Particle Type: {new_name}");
+    let new_text = format!("Particle Type: {new_state}");
     for mut particle_type_text in particle_type_text_query.iter_mut() {
         (**particle_type_text).clone_from(&new_text);
     }

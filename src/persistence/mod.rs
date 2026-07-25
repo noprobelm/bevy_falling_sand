@@ -15,7 +15,7 @@
 //!
 //! - **On chunk load** (`PostUpdate`): if save files exist for the chunk, an async
 //!   task reads and deserializes them. Loaded particles wait in a queue until all
-//!   referenced [`ParticleType`](crate::ParticleType) names are registered,
+//!   referenced [`ParticleTypeId`](crate::ParticleTypeId)s are registered,
 //!   then spawn with restored colors from the PNG.
 //!
 //! - **On demand**: [`PersistChunksSignal`] saves every currently loaded chunk immediately,

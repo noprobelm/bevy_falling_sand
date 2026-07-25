@@ -86,8 +86,16 @@ fn setup(
     let density = Density(100);
     let speed = Speed::new(0, 1);
 
+    let dirt_wall = ParticleType::new();
+    let moore_no_momentum = ParticleType::new();
+    let moore_momentum = ParticleType::new();
+    let neumann_no_momentum = ParticleType::new();
+    let neumann_momentum = ParticleType::new();
+    let diagonal_no_momentum = ParticleType::new();
+    let diagonal_momentum = ParticleType::new();
+
     commands.spawn((
-        ParticleType::new("Dirt Wall"),
+        dirt_wall,
         ColorProfile::palette(vec![
             Color::Srgba(Srgba::hex("#916B4C").unwrap()),
             Color::Srgba(Srgba::hex("#73573D").unwrap()),
@@ -95,7 +103,7 @@ fn setup(
     ));
 
     commands.spawn((
-        ParticleType::new("Moore Neighborhood Particle (no momentum)"),
+        moore_no_momentum.clone(),
         Movement::from(vec![vec![
             IVec2::new(-1, -1),
             IVec2::new(0, -1),
@@ -111,7 +119,7 @@ fn setup(
         color_profile.clone(),
     ));
     commands.spawn((
-        ParticleType::new("Moore Neighborhood Particle (with momentum)"),
+        moore_momentum.clone(),
         Movement::from(vec![vec![
             IVec2::new(-1, -1),
             IVec2::new(0, -1),
@@ -128,7 +136,7 @@ fn setup(
         Momentum::default(),
     ));
     commands.spawn((
-        ParticleType::new("Neumann Neighborhood Particle (no momentum)"),
+        neumann_no_momentum.clone(),
         Movement::from(vec![vec![
             IVec2::new(0, -1),
             IVec2::new(-1, 0),
@@ -140,7 +148,7 @@ fn setup(
         color_profile.clone(),
     ));
     commands.spawn((
-        ParticleType::new("Neumann Neighborhood Particle (with momentum)"),
+        neumann_momentum.clone(),
         Movement::from(vec![vec![
             IVec2::new(0, -1),
             IVec2::new(-1, 0),
@@ -153,14 +161,14 @@ fn setup(
         Momentum::default(),
     ));
     commands.spawn((
-        ParticleType::new("Downward diagonal (no momentum)"),
+        diagonal_no_momentum.clone(),
         Movement::from(vec![vec![IVec2::new(-1, -1), IVec2::new(1, -1)]]),
         density,
         speed,
         color_profile.clone(),
     ));
     commands.spawn((
-        ParticleType::new("Downward diagonal (with momentum)"),
+        diagonal_momentum.clone(),
         Movement::from(vec![vec![IVec2::new(-1, -1), IVec2::new(1, -1)]]),
         density,
         speed,
@@ -170,17 +178,15 @@ fn setup(
 
     // Setup particle spawn list for brush system
     let particles = vec![
-        "Moore Neighborhood Particle (no momentum)".into(),
-        "Moore Neighborhood Particle (with momentum)".into(),
-        "Neumann Neighborhood Particle (no momentum)".into(),
-        "Neumann Neighborhood Particle (with momentum)".into(),
-        "Downward diagonal (no momentum)".into(),
-        "Downward diagonal (with momentum)".into(),
+        moore_no_momentum.id(),
+        moore_momentum.id(),
+        neumann_no_momentum.id(),
+        neumann_momentum.id(),
+        diagonal_no_momentum.id(),
+        diagonal_momentum.id(),
     ];
     commands.insert_resource(ParticleSpawnList::new(particles));
-    commands.insert_resource(SelectedBrushParticle(
-        "Moore Neighborhood Particle (no momentum)".into(),
-    ));
+    commands.insert_resource(SelectedBrushParticle(moore_no_momentum.id()));
 
     let instructions_text = "Left mouse: Spawn/despawn particles\n\
         Right mouse: Cycle particle type\n\

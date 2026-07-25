@@ -10,7 +10,7 @@ use super::ReactionRng;
 use crate::{
     core::{
         ChanceLifetime, DespawnParticleSignal, GridPosition, Particle, ParticleChunksMut,
-        ParticleRng, ParticleRngExt, ParticleSyncExt, ParticleSystems, ParticleType,
+        ParticleRng, ParticleRngExt, ParticleSyncExt, ParticleSystems, ParticleTypeId,
         ParticleTypeRegistry, SpawnParticleSignal,
     },
     movement::Movement,
@@ -34,7 +34,7 @@ use crate::{
 /// use bevy_falling_sand::reactions::Fire;
 ///
 /// fn setup(mut commands: Commands) {
-///     commands.spawn((ParticleType::new("Lava"), Fire::default()));
+///     commands.spawn((ParticleType::new(), Fire::default()));
 /// }
 /// ```
 #[derive(Component, Copy, Clone, PartialEq, Debug, Reflect, Serialize, Deserialize)]
@@ -93,7 +93,7 @@ impl Plugin for FirePlugin {
 ///
 /// fn setup(mut commands: Commands) {
 ///     commands.spawn((
-///         ParticleType::new("Wood"),
+///         ParticleType::new(),
 ///         Flammable {
 ///             duration: Duration::from_secs(5),
 ///             tick_rate: Duration::from_millis(100),
@@ -291,7 +291,7 @@ impl Burning {
 /// use bevy_falling_sand::reactions::BurnProduct;
 ///
 /// let product = BurnProduct::new("Smoke", 0.1);
-/// assert_eq!(product.produces.name, "Smoke");
+/// assert_eq!(product.produces, smoke);
 /// assert_eq!(product.chance_to_produce, 0.1);
 /// ```
 #[derive(Component, Clone, Default, PartialEq, Debug, Reflect, Serialize, Deserialize)]
@@ -299,7 +299,7 @@ impl Burning {
 #[type_path = "bfs_reactions::particle"]
 pub struct BurnProduct {
     /// [`ParticleType`] produced when the reaction occurs.
-    pub produces: ParticleType,
+    pub produces: ParticleTypeId,
     /// The chance the reaction will occur per frame.
     pub chance_to_produce: f64,
 }
@@ -319,9 +319,9 @@ impl BurnProduct {
     /// assert_eq!(product.chance_to_produce, 0.05);
     /// ```
     #[must_use]
-    pub fn new(produces: impl Into<ParticleType>, chance_to_produce: f64) -> Self {
+    pub const fn new(produces: ParticleTypeId, chance_to_produce: f64) -> Self {
         Self {
-            produces: produces.into(),
+            produces,
             chance_to_produce,
         }
     }
@@ -339,7 +339,7 @@ impl BurnProduct {
             return;
         }
 
-        let Some(entity) = registry.get(&self.produces.name) else {
+        let Some(entity) = registry.get(self.produces) else {
             return;
         };
 

@@ -42,8 +42,11 @@ fn main() {
 
 // Spawn a simple particle type with colors and movement behavior resembling sand.
 fn setup(mut commands: Commands) {
+    let sand = ParticleTypeId::new();
+    commands.insert_resource(SandParticle(sand));
+
     commands.spawn((
-        ParticleType::new("Sand"),
+        ParticleType::from_id(sand),
         ColorProfile::palette(vec![
             Color::Srgba(Srgba::hex("#FFEB8A").unwrap()),
             Color::Srgba(Srgba::hex("#F2E06B").unwrap()),
@@ -59,11 +62,20 @@ fn setup(mut commands: Commands) {
 }
 
 // Continuously emit sand between (0, 0) and (10, 10)
-fn sand_emitter(mut writer: MessageWriter<SpawnParticleSignal>) {
+#[derive(Resource)]
+struct SandParticle(ParticleTypeId);
+
+impl SandParticle {
+    fn id(&self) -> ParticleTypeId {
+        self.0
+    }
+}
+
+fn sand_emitter(mut writer: MessageWriter<SpawnParticleSignal>, sand: Res<SandParticle>) {
     for x in 0..10 {
         for y in 0..10 {
             writer.write(SpawnParticleSignal::new(
-                "Sand",
+                sand.id(),
                 IVec2::new(x, y),
             ));
         }
@@ -71,17 +83,19 @@ fn sand_emitter(mut writer: MessageWriter<SpawnParticleSignal>) {
 }
 ```
 
-Entities with the `ParticleType` component act as the template for all entities with the
-`Particle` component of the same name. Components added to a `ParticleType` (such as `ColorProfile`,
-`Movement`, `Density`, and `Speed`) define the behavior of its child particles.
+Entities with the `ParticleType` component act as templates for spawned `Particle` entities.
+Each `ParticleType` owns a `ParticleTypeId`; store that ID in your own resources or components
+when you need to spawn, mutate, despawn, or otherwise refer to that particle type later.
+Components added to a `ParticleType` (such as `ColorProfile`, `Movement`, `Density`, and `Speed`)
+define the behavior of its child particles.
 
 To spawn individual particles at runtime, send a `SpawnParticleSignal` via Bevy's
 `MessageWriter`. Despawn them with `DespawnParticleSignal`.
 
 ## Particle behavior components
 
-Insert any of these components on a [`ParticleType`] entity and [`Particle`] entities sharing the
-same name will derive their behaviors.
+Insert any of these components on a [`ParticleType`] entity and [`Particle`] entities attached to
+that particle type will derive their behaviors.
 
 | Component                | Description                                                    | Feature     |
 | ------------------------ | -------------------------------------------------------------- | ----------- |

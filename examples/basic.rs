@@ -61,8 +61,11 @@ struct SpawnParticles;
 fn setup(mut commands: Commands) {
     commands.remove_resource::<DebugParticleMap>();
     commands.remove_resource::<DebugDirtyRects>();
+    let dirt_wall = ParticleType::new();
+    let water = ParticleType::new();
+    let sand = ParticleType::new();
     commands.spawn((
-        ParticleType::new("Dirt Wall"),
+        dirt_wall.clone(),
         ColorProfile::palette(vec![
             Color::Srgba(Srgba::hex("#916B4C").unwrap()),
             Color::Srgba(Srgba::hex("#73573D").unwrap()),
@@ -70,7 +73,7 @@ fn setup(mut commands: Commands) {
     ));
 
     commands.spawn((
-        ParticleType::new("Water"),
+        water.clone(),
         Density(750),
         Speed::new(0, 3),
         ColorProfile::palette(vec![Color::Srgba(Srgba::hex("#0B80AB80").unwrap())]),
@@ -88,7 +91,7 @@ fn setup(mut commands: Commands) {
         Momentum::default(),
     ));
     commands.spawn((
-        ParticleType::new("Sand"),
+        sand.clone(),
         Density(1250),
         Speed::new(5, 10),
         ColorProfile::palette(vec![
@@ -103,11 +106,11 @@ fn setup(mut commands: Commands) {
     ));
 
     commands.insert_resource(ParticleSpawnList::new(vec![
-        "Dirt Wall".into(),
-        "Sand".into(),
-        "Water".into(),
+        dirt_wall.id(),
+        sand.id(),
+        water.id(),
     ]));
-    commands.insert_resource(SelectedBrushParticle("Dirt Wall".into()));
+    commands.insert_resource(SelectedBrushParticle(dirt_wall.id()));
 
     let instructions_text = "Left mouse: Spawn/despawn particles\n\
         Right mouse: Cycle particle type\n\

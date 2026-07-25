@@ -46,7 +46,7 @@ pub struct ColorRng(pub WyRand);
 ///
 /// fn setup(mut commands: Commands) {
 ///     commands.spawn((
-///         ParticleType::new("Dirt"),
+///         ParticleType::new(),
 ///         ColorProfile::palette(vec![
 ///             Color::Srgba(Srgba::hex("#916B4C").unwrap()),
 ///             Color::Srgba(Srgba::hex("#73573D").unwrap()),
@@ -66,7 +66,7 @@ pub struct ColorRng(pub WyRand);
 ///
 /// fn setup(mut commands: Commands) {
 ///     commands.spawn((
-///         ParticleType::new("Colorful"),
+///         ParticleType::new(),
 ///         ColorProfile::gradient(
 ///             vec![
 ///                 Color::hsla(0.0, 1.0, 0.5, 1.0),
@@ -89,7 +89,7 @@ pub struct ColorRng(pub WyRand);
 ///
 /// fn setup(mut commands: Commands) {
 ///     commands.spawn((
-///         ParticleType::new("Wood"),
+///         ParticleType::new(),
 ///         ColorProfile::texture("textures/wood.png"),
 ///     ));
 /// }
@@ -125,7 +125,7 @@ impl ColorProfile {
     ///
     /// fn setup(mut commands: Commands) {
     ///     commands.spawn((
-    ///         ParticleType::new("Dirt"),
+    ///         ParticleType::new(),
     ///         ColorProfile::palette(vec![
     ///             Color::Srgba(Srgba::hex("#916B4C").unwrap()),
     ///             Color::Srgba(Srgba::hex("#73573D").unwrap()),
@@ -155,7 +155,7 @@ impl ColorProfile {
     ///
     /// fn setup(mut commands: Commands) {
     ///     commands.spawn((
-    ///         ParticleType::new("Colorful"),
+    ///         ParticleType::new(),
     ///         ColorProfile::gradient(
     ///             vec![
     ///                 Color::hsla(0.0, 1.0, 0.5, 1.0),
@@ -451,9 +451,10 @@ impl ColorProfile {
 /// use bevy_falling_sand::prelude::*;
 ///
 /// fn spawn_cyan_particle(mut writer: MessageWriter<SpawnParticleSignal>) {
+///     let sand = ParticleTypeId::from_raw(1);
 ///     let forced = Color::srgba(0.0, 1.0, 1.0, 1.0);
 ///     writer.write(
-///         SpawnParticleSignal::new("Sand", IVec2::new(5, 5))
+///         SpawnParticleSignal::new(sand, IVec2::new(5, 5))
 ///             .with_on_spawn(move |cmd| {
 ///                 cmd.insert(ForceColor(forced));
 ///             }),

@@ -101,7 +101,7 @@ fn persist_unloaded_chunks(
                 .entry(coord)
                 .or_default()
                 .push(BfsParticleData {
-                    name: particle_type.name.to_string(),
+                    particle_type: particle_type.id(),
                     position: grid_pos.0,
                 });
             if let Ok(pc) = color_query.get(entity) {
@@ -248,7 +248,7 @@ fn save_all_chunks_impl(
                     && let Ok(particle_type) = type_query.get(attached.0)
                 {
                     particles_to_save.push(BfsParticleData {
-                        name: particle_type.name.to_string(),
+                        particle_type: particle_type.id(),
                         position: grid_pos.0,
                     });
                 }

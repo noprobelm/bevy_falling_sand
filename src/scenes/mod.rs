@@ -32,7 +32,6 @@
 //! subsequent entry composites on top. [`SceneLayer::Background`] sprites are
 //! always placed at `z < 0` so particles (at `z >= 0`) render in front of every
 //! background regardless of list order.
-use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 
 use bevy::asset::io::Reader;
@@ -40,7 +39,7 @@ use bevy::asset::{AssetLoader, LoadContext};
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::core::{DespawnParticleSignal, Particle, ParticleType, SpawnParticleSignal};
+use crate::core::{DespawnParticleSignal, Particle, ParticleTypeId, SpawnParticleSignal};
 #[cfg(feature = "render")]
 use crate::render::ForceColor;
 
@@ -85,8 +84,8 @@ pub enum SceneLayer {
     Particles {
         /// Handle to the layer's image asset.
         image: Handle<Image>,
-        /// Maps RGBA byte values in this layer to a particle type name.
-        colors: HashMap<[u8; 4], Cow<'static, str>>,
+        /// Maps RGBA byte values in this layer to a particle type ID.
+        colors: HashMap<[u8; 4], ParticleTypeId>,
     },
     /// Pixels render as a stock [`Sprite`]. No particles spawned.
     ///
@@ -214,7 +213,7 @@ enum SceneLayerManifest {
 #[derive(Deserialize, Serialize)]
 struct ParticlesLayerManifest {
     image: String,
-    colors: HashMap<(u8, u8, u8, u8), String>,
+    colors: HashMap<(u8, u8, u8, u8), usize>,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -256,7 +255,7 @@ impl AssetLoader for ParticleSceneLoader {
                     let handle = load_context.load(resolve(&image));
                     let colors = colors
                         .into_iter()
-                        .map(|(rgba, name)| (rgba.into(), Cow::Owned(name)))
+                        .map(|(rgba, id)| (rgba.into(), ParticleTypeId::from_raw(id)))
                         .collect();
                     SceneLayer::Particles {
                         image: handle,
@@ -355,7 +354,7 @@ fn spawn_particles_layer(
     writer: &mut MessageWriter<SpawnParticleSignal>,
     images: &Assets<Image>,
     handle: &Handle<Image>,
-    colors: &HashMap<[u8; 4], Cow<'static, str>>,
+    colors: &HashMap<[u8; 4], ParticleTypeId>,
     center: IVec2,
     overwrite_existing: bool,
     root: Entity,
@@ -390,10 +389,10 @@ fn spawn_particles_layer(
     }
 
     for (rgba, positions) in positions_by_color {
-        let name = &colors[&rgba];
+        let particle_type = colors[&rgba];
         write_particle_signals(
             writer,
-            name.clone().into(),
+            particle_type,
             positions,
             rgba,
             overwrite_existing,
@@ -405,7 +404,7 @@ fn spawn_particles_layer(
 
 fn write_particle_signals(
     writer: &mut MessageWriter<SpawnParticleSignal>,
-    particle_type: ParticleType,
+    particle_type: ParticleTypeId,
     positions: Vec<IVec2>,
     rgba: [u8; 4],
     overwrite_existing: bool,
@@ -442,7 +441,7 @@ fn write_particle_signals(
     } else {
         for pos in positions {
             writer.write(decorate(SpawnParticleSignal {
-                particle_type: particle_type.clone(),
+                particle_type,
                 positions: vec![pos],
                 overwrite_existing: false,
                 on_spawn: None,
@@ -525,8 +524,8 @@ mod tests {
     Particles((
       image: "scene.terrain.png",
       colors: {
-        (255, 0, 0, 255): "Sand",
-        (0, 128, 0, 255): "Grass Wall",
+        (255, 0, 0, 255): 1,
+        (0, 128, 0, 255): 2,
       },
     )),
   ],
@@ -542,14 +541,8 @@ mod tests {
         match &manifest.layers[1] {
             SceneLayerManifest::Particles(ParticlesLayerManifest { image, colors }) => {
                 assert_eq!(image, "scene.terrain.png");
-                assert_eq!(
-                    colors.get(&(255, 0, 0, 255)).map(String::as_str),
-                    Some("Sand"),
-                );
-                assert_eq!(
-                    colors.get(&(0, 128, 0, 255)).map(String::as_str),
-                    Some("Grass Wall"),
-                );
+                assert_eq!(colors.get(&(255, 0, 0, 255)).copied(), Some(1),);
+                assert_eq!(colors.get(&(0, 128, 0, 255)).copied(), Some(2),);
             }
             SceneLayerManifest::Background(_) => panic!("expected Particles second"),
         }
