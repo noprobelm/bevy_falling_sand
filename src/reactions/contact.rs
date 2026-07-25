@@ -205,7 +205,7 @@ fn try_resolve(
         let _ = registry.get(rule.becomes)?;
         resolved_rules.push(ResolvedContactRule {
             target_type,
-            becomes: rule.becomes.clone(),
+            becomes: rule.becomes,
             chance: rule.chance,
             radius: rule.radius,
             consumes: rule.consumes,
@@ -283,13 +283,13 @@ fn handle_contact_reactions(
                         match rule.consumes {
                             Consumes::Source => {
                                 msgw_spawn.write(SpawnParticleSignal::overwrite_existing(
-                                    rule.becomes.clone(),
+                                    rule.becomes,
                                     pos,
                                 ));
                             }
                             Consumes::Target => {
                                 msgw_spawn.write(SpawnParticleSignal::overwrite_existing(
-                                    rule.becomes.clone(),
+                                    rule.becomes,
                                     neighbor_pos,
                                 ));
                             }

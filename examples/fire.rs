@@ -227,7 +227,7 @@ fn setup(
 
     commands.spawn((
         ParticleType::from_id(ids.flammable_gas),
-        default_flammable_gas.0.clone(),
+        default_flammable_gas.0,
         default_flammable_gas.1,
         default_flammable_gas.2.clone(),
         default_flammable_gas.3.clone(),
@@ -238,7 +238,7 @@ fn setup(
 
     commands.spawn((
         ParticleType::from_id(ids.fire),
-        default_fire.0.clone(),
+        default_fire.0,
         default_fire.1,
         default_fire.2.clone(),
         default_fire.3.clone(),
@@ -458,7 +458,7 @@ fn render_fire_settings_gui(
             if ui.button("🔄 Reset Fire to Default").clicked() {
                 commands.spawn((
                     ParticleType::from_id(ids.fire),
-                    default_fire.0.clone(),
+                    default_fire.0,
                     default_fire.1,
                     default_fire.2.clone(),
                     default_fire.3.clone(),
@@ -553,7 +553,7 @@ fn render_fire_settings_gui(
             if ui.button("🔄 Reset Flammable Gas to Default").clicked() {
                 commands.spawn((
                     ParticleType::from_id(ids.flammable_gas),
-                    default_flammable_gas.0.clone(),
+                    default_flammable_gas.0,
                     default_flammable_gas.1,
                     default_flammable_gas.2.clone(),
                     default_flammable_gas.3.clone(),

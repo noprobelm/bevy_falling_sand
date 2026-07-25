@@ -354,10 +354,7 @@ impl BurnProduct {
             .collect();
 
         if !positions.is_empty() {
-            msgw_spawn_particle.write(SpawnParticleSignal::try_multiple(
-                self.produces.clone(),
-                positions,
-            ));
+            msgw_spawn_particle.write(SpawnParticleSignal::try_multiple(self.produces, positions));
         }
     }
 

@@ -307,7 +307,7 @@ fn cycle_selected_particle(
     mut selected_particle: ResMut<SelectedBrushParticle>,
 ) {
     if let Some(next_particle) = particle_spawn_list.cycle_next() {
-        selected_particle.0 = next_particle.clone();
+        selected_particle.0 = *next_particle;
     }
 }
 
