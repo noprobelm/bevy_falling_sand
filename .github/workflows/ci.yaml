@@ -103,7 +103,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Rust toolchain (plus bevy_lint)
-        uses: TheBevyFlock/bevy_cli/bevy_lint@6d8cb94b
+        uses: TheBevyFlock/bevy_cli/bevy_lint@6d8cb94bb8ec0535f63884e50830547f226118a0
         with:
           cache: true
           save-cache-if: ${{ github.ref == 'refs/heads/main' }}
