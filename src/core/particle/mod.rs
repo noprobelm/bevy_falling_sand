@@ -60,7 +60,7 @@ static NEXT_PARTICLE_TYPE_ID: AtomicUsize = AtomicUsize::new(0);
 
 /// Unique identifier for a [`ParticleType`].
 ///
-/// `ParticleTypeId` is the value to store in bevy resources, or anywhere else a particle type's
+/// `ParticleTypeId` can be stored in bevy resources or anywhere else a particle type's
 /// unique identiifer might be useful. It is the stable handle through which a corresponding
 /// [`ParticleType`] entity can be accessed via the [`ParticleTypeRegistry`] resource.
 ///
