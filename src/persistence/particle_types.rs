@@ -97,13 +97,15 @@ fn msgr_save_particle_types(world: &mut World) {
 
         let dynamic_world = builder.extract_entities(entities.into_iter()).build();
 
-        match dynamic_world.serialize(&registry) {
+        let serialized = match dynamic_world.serialize(&registry) {
             Ok(s) => s,
             Err(e) => {
                 error!("Failed to serialize particle definitions: {}", e);
                 return;
             }
-        }
+        };
+        drop(registry);
+        serialized
     };
 
     let mut saved_paths = Vec::new();

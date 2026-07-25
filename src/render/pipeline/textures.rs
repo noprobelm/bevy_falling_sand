@@ -1063,8 +1063,7 @@ fn update_effect_overlay_precompute<M: ChunkEffectMaterial>(
 
     let display_z = quad_query
         .get(display_res.0)
-        .map(|(t, _)| t.translation.z)
-        .unwrap_or(0.0);
+        .map_or(0.0, |(t, _)| t.translation.z);
     if let Ok((mut t, mut visibility)) = quad_query.get_mut(display_res.0) {
         t.translation.x = cx;
         t.translation.y = cy;
