@@ -58,7 +58,7 @@ impl Plugin for ChunkRenderingPlugin {
                 (
                     setup_world_textures.run_if(
                         resource_exists::<ParticleMap>
-                            .and(not(resource_exists::<WorldColorTexture>)),
+                            .and_eager(not(resource_exists::<WorldColorTexture>)),
                     ),
                     ApplyDeferred,
                 )
@@ -575,8 +575,8 @@ impl ChunkEffectApp for App {
                 setup_world_effect_overlay_precompute::<M>
                     .run_if(
                         resource_exists::<WorldColorTexture>
-                            .and(resource_exists::<WorldEffectTexture>)
-                            .and(not(resource_exists::<WorldEffectEntity<M>>)),
+                            .and_eager(resource_exists::<WorldEffectTexture>)
+                            .and_eager(not(resource_exists::<WorldEffectEntity<M>>)),
                     )
                     .after(RenderingSystems::ChunkImage),
             );
@@ -595,8 +595,8 @@ impl ChunkEffectApp for App {
                 setup_world_effect_overlay::<M>
                     .run_if(
                         resource_exists::<WorldColorTexture>
-                            .and(resource_exists::<WorldEffectTexture>)
-                            .and(not(resource_exists::<WorldEffectEntity<M>>)),
+                            .and_eager(resource_exists::<WorldEffectTexture>)
+                            .and_eager(not(resource_exists::<WorldEffectEntity<M>>)),
                     )
                     .after(RenderingSystems::ChunkImage),
             );
@@ -990,7 +990,7 @@ fn update_effect_overlay<M: ChunkEffectMaterial>(
     }
 
     if let Ok(mat_handle) = material_query.get(effect_entity.0)
-        && let Some(material) = materials.get_mut(&mat_handle.0)
+        && let Some(mut material) = materials.get_mut(&mat_handle.0)
     {
         let width = map.width() as f32;
         let height = map.height() as f32;
@@ -1063,8 +1063,7 @@ fn update_effect_overlay_precompute<M: ChunkEffectMaterial>(
 
     let display_z = quad_query
         .get(display_res.0)
-        .map(|(t, _)| t.translation.z)
-        .unwrap_or(0.0);
+        .map_or(0.0, |(t, _)| t.translation.z);
     if let Ok((mut t, mut visibility)) = quad_query.get_mut(display_res.0) {
         t.translation.x = cx;
         t.translation.y = cy;
@@ -1086,14 +1085,14 @@ fn update_effect_overlay_precompute<M: ChunkEffectMaterial>(
     );
 
     if let Ok(mat_handle) = m_material_query.get(state.quad)
-        && let Some(material) = materials.get_mut(&mat_handle.0)
+        && let Some(mut material) = materials.get_mut(&mat_handle.0)
     {
         material.set_uv_offset(uv_offset);
         material.set_quad_world_rect(quad_world_rect);
     }
 
     if let Ok(mat_handle) = sample_material_query.get(display_res.0)
-        && let Some(sample_material) = sample_materials.get_mut(&mat_handle.0)
+        && let Some(mut sample_material) = sample_materials.get_mut(&mat_handle.0)
     {
         sample_material.uv_offset = uv_offset;
         sample_material.quad_world_rect = quad_world_rect;
@@ -1144,7 +1143,7 @@ fn update_world_color_uv_offset(
     }
 
     if let Ok(mat_handle) = material_query.get(color_entity.0)
-        && let Some(material) = materials.get_mut(&mat_handle.0)
+        && let Some(mut material) = materials.get_mut(&mat_handle.0)
     {
         let shift = origin - tex_origin.0;
         material.uv_offset = Vec2::new(shift.x as f32 / width, -shift.y as f32 / height);
@@ -1319,16 +1318,19 @@ fn update_all_effect_layers(world: &mut World) {
     let state = cached_state.get_or_insert_with(|| SystemState::new(world));
 
     {
-        let (map, chunk_index, staging, dirty_chunks) = state.get(world);
-        collect_dirty_entries(
-            chunk_index.chunk_size() as i32,
-            staging.width as i32,
-            staging.height as i32,
-            origin,
-            &map,
-            dirty_chunks.iter(),
-            &mut dirty_entries,
-        );
+        if let Ok((map, chunk_index, staging, dirty_chunks)) = state.get(world) {
+            collect_dirty_entries(
+                chunk_index.chunk_size() as i32,
+                staging.width as i32,
+                staging.height as i32,
+                origin,
+                &map,
+                dirty_chunks.iter(),
+                &mut dirty_entries,
+            );
+        } else {
+            panic!("Could not find world resource while updating particle effect layers");
+        }
     }
 
     world.resource_scope(|world, mut staging: Mut<WorldEffectShadowBuffer>| {

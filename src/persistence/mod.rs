@@ -24,7 +24,7 @@
 //! ## Particle type persistence
 //!
 //! Save/load [`ParticleType`](crate::ParticleType) entity definitions using
-//! Bevy's `DynamicScene` and RON serialization:
+//! Bevy's dynamic world serialization and RON serialization:
 //!
 //! - [`PersistParticleTypesSignal`] / [`LoadParticleTypesSignal`]
 //! - [`ParticleTypesPersistedSignal`] / [`ParticleTypesLoadedSignal`] — confirmation signals
@@ -58,6 +58,7 @@ mod io_reader;
 pub(crate) mod particle_types;
 
 use bevy::prelude::*;
+use bevy::world_serialization::WorldSerializationPlugin;
 use std::path::PathBuf;
 
 pub use chunks::{
@@ -103,8 +104,13 @@ impl Plugin for FallingSandPersistencePlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(ParticlePersistenceConfig {
             save_path: self.save_directory.clone(),
-        })
-        .add_plugins((
+        });
+
+        if !app.is_plugin_added::<WorldSerializationPlugin>() {
+            app.add_plugins(WorldSerializationPlugin);
+        }
+
+        app.add_plugins((
             chunks::ChunkPersistencePlugin,
             particle_types::ParticleTypePersistencePlugin,
         ));

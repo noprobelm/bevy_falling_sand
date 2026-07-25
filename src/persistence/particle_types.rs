@@ -10,8 +10,11 @@ use crate::reactions::ReactionRng;
 #[cfg(feature = "render")]
 use crate::render::ColorRng;
 use bevy::{
+    asset::LoadFromPath,
     prelude::*,
-    scene::{DynamicScene, DynamicSceneBuilder, SceneSpawner, serde::SceneDeserializer},
+    world_serialization::{
+        DynamicWorld, DynamicWorldBuilder, WorldInstanceSpawner, serde::WorldDeserializer,
+    },
 };
 use serde::de::DeserializeSeed;
 use serde::{Deserialize, Serialize};
@@ -70,35 +73,39 @@ fn msgr_save_particle_types(world: &mut World) {
         return;
     }
 
-    let mut builder = DynamicSceneBuilder::from_world(world);
+    let serialized = {
+        let type_registry = world.resource::<AppTypeRegistry>();
+        let registry = type_registry.read();
+        let mut builder = DynamicWorldBuilder::from_world(world, &registry);
 
-    // Deny runtime-only components that shouldn't be persisted.
-    // These are re-initialized automatically when particle types are loaded.
-    #[cfg(feature = "render")]
-    {
-        builder = builder.deny_component::<ColorRng>();
-    }
-    #[cfg(feature = "movement")]
-    {
-        builder = builder
-            .deny_component::<Momentum>()
-            .deny_component::<MovementRng>();
-    }
-    #[cfg(feature = "reactions")]
-    {
-        builder = builder.deny_component::<ReactionRng>();
-    }
-
-    let scene = builder.extract_entities(entities.into_iter()).build();
-
-    let type_registry = world.resource::<AppTypeRegistry>();
-    let value = scene.serialize(&type_registry.read());
-    let serialized = match value {
-        Ok(s) => s,
-        Err(e) => {
-            error!("Failed to serialize particle definitions: {}", e);
-            return;
+        // Deny runtime-only components that shouldn't be persisted.
+        // These are re-initialized automatically when particle types are loaded.
+        #[cfg(feature = "render")]
+        {
+            builder = builder.deny_component::<ColorRng>();
         }
+        #[cfg(feature = "movement")]
+        {
+            builder = builder
+                .deny_component::<Momentum>()
+                .deny_component::<MovementRng>();
+        }
+        #[cfg(feature = "reactions")]
+        {
+            builder = builder.deny_component::<ReactionRng>();
+        }
+
+        let dynamic_world = builder.extract_entities(entities.into_iter()).build();
+
+        let serialized = match dynamic_world.serialize(&registry) {
+            Ok(s) => s,
+            Err(e) => {
+                error!("Failed to serialize particle definitions: {}", e);
+                return;
+            }
+        };
+        drop(registry);
+        serialized
     };
 
     let mut saved_paths = Vec::new();
@@ -129,12 +136,14 @@ fn msgr_save_particle_types(world: &mut World) {
 fn deserialize_scene(
     contents: &str,
     type_registry: &AppTypeRegistry,
-) -> Result<DynamicScene, Box<dyn std::error::Error>> {
+    load_from_path: &mut dyn LoadFromPath,
+) -> Result<DynamicWorld, Box<dyn std::error::Error>> {
     let mut deserializer = ron::de::Deserializer::from_str(contents)?;
-    let scene_deserializer = SceneDeserializer {
+    let world_deserializer = WorldDeserializer {
         type_registry: &type_registry.read(),
+        load_from_path,
     };
-    Ok(scene_deserializer.deserialize(&mut deserializer)?)
+    Ok(world_deserializer.deserialize(&mut deserializer)?)
 }
 
 /// System to load particle types from RON scene file.
@@ -143,8 +152,9 @@ fn msgr_load_particle_types(
     mut msgr_load_particle_types: MessageReader<LoadParticleTypesSignal>,
     mut msgw_particle_types_loaded: MessageWriter<ParticleTypesLoadedSignal>,
     app_type_registry: Res<AppTypeRegistry>,
-    mut scene_spawner: ResMut<SceneSpawner>,
-    mut scenes: ResMut<Assets<DynamicScene>>,
+    asset_server: Res<AssetServer>,
+    mut world_instance_spawner: ResMut<WorldInstanceSpawner>,
+    mut dynamic_worlds: ResMut<Assets<DynamicWorld>>,
 ) {
     for signal in msgr_load_particle_types.read() {
         let path = &signal.0;
@@ -154,10 +164,11 @@ fn msgr_load_particle_types(
             continue;
         }
 
-        let scene = match std::fs::read_to_string(path)
+        let dynamic_world = match std::fs::read_to_string(path)
             .map_err(std::convert::Into::into)
-            .and_then(|contents| deserialize_scene(&contents, &app_type_registry))
-        {
+            .and_then(|contents| {
+                deserialize_scene(&contents, &app_type_registry, &mut asset_server.as_ref())
+            }) {
             Ok(scene) => scene,
             Err(e) => {
                 error!("Failed to load particle types from {:?}: {}", path, e);
@@ -165,8 +176,8 @@ fn msgr_load_particle_types(
             }
         };
 
-        let scene_handle = scenes.add(scene);
-        scene_spawner.spawn_dynamic(scene_handle);
+        let dynamic_world_handle = dynamic_worlds.add(dynamic_world);
+        world_instance_spawner.spawn_dynamic(dynamic_world_handle);
 
         info!("Successfully loaded particle types from {:?}", path);
         msgw_particle_types_loaded.write(ParticleTypesLoadedSignal(path.clone()));

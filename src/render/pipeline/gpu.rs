@@ -137,7 +137,7 @@ impl Plugin for GpuChunkRenderingPlugin {
                 shader: color_shader,
                 shader_defs: vec![],
                 entry_point: Some("main".into()),
-                push_constant_ranges: vec![],
+                immediate_size: 0,
                 zero_initialize_workgroup_memory: true,
             });
 
@@ -147,7 +147,7 @@ impl Plugin for GpuChunkRenderingPlugin {
                 shader: effect_shader,
                 shader_defs: vec![],
                 entry_point: Some("main".into()),
-                push_constant_ranges: vec![],
+                immediate_size: 0,
                 zero_initialize_workgroup_memory: true,
             });
 

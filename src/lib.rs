@@ -380,14 +380,15 @@ impl FallingSandPlugin {
 
 impl Plugin for FallingSandPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((
-            EntropyPlugin::<WyRand>::default(),
-            core::FallingSandCorePlugin {
-                width: self.width_chunks * self.chunk_size,
-                height: self.height_chunks * self.chunk_size,
-                chunk_size: self.chunk_size,
-            },
-        ));
+        if !app.is_plugin_added::<EntropyPlugin<WyRand>>() {
+            app.add_plugins(EntropyPlugin::<WyRand>::default());
+        }
+
+        app.add_plugins(core::FallingSandCorePlugin {
+            width: self.width_chunks * self.chunk_size,
+            height: self.height_chunks * self.chunk_size,
+            chunk_size: self.chunk_size,
+        });
 
         #[cfg(feature = "movement")]
         app.add_plugins(movement::FallingSandMovementPlugin);
@@ -466,13 +467,14 @@ impl FallingSandMinimalPlugin {
 
 impl Plugin for FallingSandMinimalPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((
-            EntropyPlugin::<WyRand>::default(),
-            core::FallingSandCorePlugin {
-                width: self.width_chunks * self.chunk_size,
-                height: self.height_chunks * self.chunk_size,
-                chunk_size: self.chunk_size,
-            },
-        ));
+        if !app.is_plugin_added::<EntropyPlugin<WyRand>>() {
+            app.add_plugins(EntropyPlugin::<WyRand>::default());
+        }
+
+        app.add_plugins(core::FallingSandCorePlugin {
+            width: self.width_chunks * self.chunk_size,
+            height: self.height_chunks * self.chunk_size,
+            chunk_size: self.chunk_size,
+        });
     }
 }
