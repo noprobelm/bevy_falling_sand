@@ -23,7 +23,7 @@ use crate::{
 /// already [`Burning`]) will be ignited based on the neighbor's [`Flammable::chance_to_ignite`]
 /// probability.
 ///
-/// Can be placed on a [`ParticleType`] for permanent fire sources (e.g. lava), or added
+/// Can be placed on a [`crate::core::ParticleType`] for permanent fire sources (e.g. lava), or added
 /// dynamically when a particle ignites via [`Flammable::spreads_fire`].
 ///
 /// # Examples
@@ -287,10 +287,11 @@ impl Burning {
 /// # Examples
 ///
 /// ```
-/// use bevy_falling_sand::core::Particle;
+/// use bevy_falling_sand::core::ParticleTypeId;
 /// use bevy_falling_sand::reactions::BurnProduct;
 ///
-/// let product = BurnProduct::new("Smoke", 0.1);
+/// let smoke = ParticleTypeId::new();
+/// let product = BurnProduct::new(smoke, 0.1);
 /// assert_eq!(product.produces, smoke);
 /// assert_eq!(product.chance_to_produce, 0.1);
 /// ```
@@ -298,24 +299,23 @@ impl Burning {
 #[reflect(Component)]
 #[type_path = "bfs_reactions::particle"]
 pub struct BurnProduct {
-    /// [`ParticleType`] produced when the reaction occurs.
+    /// [`ParticleTypeId`] produced when the reaction occurs.
     pub produces: ParticleTypeId,
     /// The chance the reaction will occur per frame.
     pub chance_to_produce: f64,
 }
 
 impl BurnProduct {
-    /// Initialize a new `BurnProduct` from a particle type and a per-frame chance.
-    ///
-    /// Accepts anything convertible into [`ParticleType`] — `&'static str` literals, owned
-    /// `String`s, and `ParticleType` values all work.
+    /// Initialize a new `BurnProduct` from a particle type ID and a per-frame chance.
     ///
     /// # Examples
     ///
     /// ```
+    /// use bevy_falling_sand::core::ParticleTypeId;
     /// use bevy_falling_sand::reactions::BurnProduct;
     ///
-    /// let product = BurnProduct::new("Ash", 0.05);
+    /// let ash = ParticleTypeId::new();
+    /// let product = BurnProduct::new(ash, 0.05);
     /// assert_eq!(product.chance_to_produce, 0.05);
     /// ```
     #[must_use]
