@@ -56,8 +56,6 @@ pub(crate) enum LocateBy {
     Entity(Entity),
 }
 
-static NEXT_PARTICLE_TYPE_ID: AtomicUsize = AtomicUsize::new(0);
-
 /// Unique identifier for a [`ParticleType`].
 ///
 /// `ParticleTypeId` can be stored in bevy resources or anywhere else a particle type's
@@ -73,6 +71,7 @@ static NEXT_PARTICLE_TYPE_ID: AtomicUsize = AtomicUsize::new(0);
 #[serde(transparent)]
 #[reflect(Serialize, Deserialize)]
 pub struct ParticleTypeId(usize);
+static NEXT_PARTICLE_TYPE_ID: AtomicUsize = AtomicUsize::new(0);
 
 impl ParticleTypeId {
     /// Allocate a new unique particle type identifier.
