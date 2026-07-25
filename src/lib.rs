@@ -24,11 +24,12 @@
 //!
 //! | `bevy_falling_sand`   | `bevy`    |
 //! |-----------------------|-----------|
+//! | 0.8.x                 | 0.19.x    |
 //! | 0.7.x                 | 0.18.x    |
 //!
 //! # Feature Flags
 //!
-//! This crate aims to modularized. Opt out of any simulation features you don't want/like
+//! This crate aims to be modular. Opt out of any simulation features you don't want
 //! in favor of your own implementations.
 //!
 //! All features are enabled by default.
@@ -71,11 +72,11 @@
 //!
 //! // Spawn a simple particle type with colors and movement behavior resembling sand.
 //! fn setup(mut commands: Commands) {
-//!     let sand = ParticleTypeId::new();
-//!     commands.insert_resource(SandParticle(sand));
+//!     let sand = ParticleType::new();
+//!     commands.insert_resource(SandParticle(sand.id()));
 //!
 //!     commands.spawn((
-//!         ParticleType::from_id(sand),
+//!         sand,
 //!         ColorProfile::palette(vec![
 //!             Color::Srgba(Srgba::hex("#FFEB8A").unwrap()),
 //!             Color::Srgba(Srgba::hex("#F2E06B").unwrap()),
@@ -121,35 +122,47 @@
 //! Each [`ParticleType`] owns a [`ParticleTypeId`]. Store that ID in your own resources or
 //! components when you need to spawn, mutate, despawn, or otherwise refer to that particle type
 //! later. Names and labels should live in your application code, not in the core particle identity.
+//! `ParticleTypeId` is `Copy`, serializable, and independent of the Bevy
+//! [`Entity`](bevy::prelude::Entity) that currently owns the corresponding [`ParticleType`]
+//! template.
+//!
+//! Use [`ParticleType::new`] for normal runtime allocation, then copy its ID with
+//! [`ParticleType::id`] before moving the component into the world. Use [`ParticleType::from_id`]
+//! when spawning or restoring a template entity for an ID you already own, such as when loading
+//! persisted type definitions or building a stable catalog. [`ParticleTypeId::new`] is available
+//! when you need to allocate an ID before constructing the template component.
+//! [`ParticleTypeId::from_raw`] is intended for persisted data and externally stable catalogs where
+//! the numeric value is part of the asset or file-format contract; it also reserves that value from
+//! future automatic allocation.
 //!
 //! Particles are introduced into the simulation by writing a [`SpawnParticleSignal`] — direct
 //! `commands.spawn(...)` of a [`Particle`] is not supported. Each spawned particle receives an
 //! [`AttachedToParticleType`] reference pointing at its parent [`ParticleType`] entity, which is
 //! the canonical source for the particle's type behavior.
 //!
-//! `bfs` provides several components that add behaviors particle types. Inserting any of the
+//! `bfs` provides several components that add behavior to particle types. Inserting any of the
 //! components from the table below on a [`ParticleType`] entity will influence its child
 //! [`Particle`] entity's behavior.
 //!
 //! | Particle Behavior Component | Description                                                          | Feature      |
 //! | --------------------------- | -------------------------------------------------------------------- | ------------ |
 //! | [`ColorProfile`]            | Color profile for particles from a predefined palette or gradient    | `render`     |
-//! | [`ForceColor`]              | Overrides [`ColorProfile`] assignemnts with another color.           | `render`     |
+//! | [`ForceColor`]              | Overrides [`ColorProfile`] assignments with another color            | `render`     |
 //! | [`Movement`]                | Movement rulesets for a particle                                     | `movement`   |
 //! | [`Density`]                 | Density of a particle, used for displacement comparisons             | `movement`   |
 //! | [`Speed`]                   | Controls how many positions a particle can move per frame            | `movement`   |
 //! | [`AirResistance`]           | Chance that a particle will skip movement to a vacant location       | `movement`   |
 //! | [`ParticleResistor`]        | How much a particle resists being displaced by other particles       | `movement`   |
 //! | [`Momentum`]                | Directional hint that biases movement toward the last direction      | `movement`   |
-//! | [`ContactReaction`]         | Defines reaction rulesets for a particle type                        | `reactions`  |
+//! | [`ContactReaction`]         | Defines reaction rulesets targeting and producing particle type IDs   | `reactions`  |
 //! | [`Fire`]                    | Makes a particle spread fire                                         | `reactions`  |
-//! | [`Flammable`]               | Flammability properties for particles                                | `reactions`  |
-//! | [`Corrosive`]               | Corrosive properaties for particles                                  |  reactions   |
-//! | [`Corrodible`]              | Marks a particle as being subject to corrosion                       |  reactions   |
+//! | [`Flammable`]               | Flammability properties; burn products use particle type IDs         | `reactions`  |
+//! | [`Corrosive`]               | Corrosive properties for particles                                   | `reactions`  |
+//! | [`Corrodible`]              | Marks a particle as being subject to corrosion                       | `reactions`  |
 //! | [`StaticRigidBodyParticle`] | Mark particles for inclusion in rigid body mesh generation           | `physics`    |
 //! | [`TimedLifetime`]           | Despawns a particle after a specified duration                       | —            |
 //! | [`ChanceLifetime`]          | Chance to despawn an entity on a per-tick basis                      | —            |
-//! | [`ChanceMutation`]          | Chance to mutate a particle into another type on a per-tick basis    | —            |
+//! | [`ChanceMutation`]          | Chance to mutate a particle into another particle type ID            | —            |
 //!
 //! # Table of Contents
 //!

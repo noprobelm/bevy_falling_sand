@@ -67,7 +67,7 @@ impl Plugin for SyncPlugin {
 #[reflect(Component)]
 #[type_path = "bfs_core::particle"]
 pub struct ChanceMutation {
-    /// The [`ParticleType`] this particle should mutate into.
+    /// The [`ParticleTypeId`] this particle should mutate into.
     pub target: ParticleTypeId,
     /// The probability (0.0 to 1.0) that the particle will mutate each tick.
     pub chance: f64,
@@ -94,7 +94,7 @@ impl ChanceMutation {
     /// use std::time::Duration;
     /// use bevy_falling_sand::core::{ChanceMutation, ParticleTypeId};
     ///
-    /// let water = ParticleTypeId::from_raw(1);
+    /// let water = ParticleTypeId::new();
     /// let mutation = ChanceMutation::new(water, 0.05, Duration::from_millis(100));
     /// assert_eq!(mutation.target, water);
     /// assert_eq!(mutation.chance, 0.05);
@@ -583,9 +583,14 @@ impl SyncParticleTypeChildrenSignal {
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::{ParticleTypeId, SyncParticleTypeChildrenSignal};
     ///
-    /// fn resync_all_sand(mut writer: MessageWriter<SyncParticleTypeChildrenSignal>) {
-    ///     let sand = ParticleTypeId::from_raw(1);
-    ///     writer.write(SyncParticleTypeChildrenSignal::from_particle_type(sand));
+    /// #[derive(Resource)]
+    /// struct Sand(ParticleTypeId);
+    ///
+    /// fn resync_all_sand(
+    ///     mut writer: MessageWriter<SyncParticleTypeChildrenSignal>,
+    ///     sand: Res<Sand>,
+    /// ) {
+    ///     writer.write(SyncParticleTypeChildrenSignal::from_particle_type(sand.0));
     /// }
     /// ```
     #[must_use]
@@ -602,14 +607,19 @@ impl SyncParticleTypeChildrenSignal {
     ///
     /// ```no_run
     /// use bevy::prelude::*;
-    /// use bevy_falling_sand::core::{SyncParticleTypeChildrenSignal, ParticleTypeRegistry};
+    /// use bevy_falling_sand::core::{
+    ///     ParticleTypeId, ParticleTypeRegistry, SyncParticleTypeChildrenSignal,
+    /// };
+    ///
+    /// #[derive(Resource)]
+    /// struct Sand(ParticleTypeId);
     ///
     /// fn resync_by_entity(
     ///     mut writer: MessageWriter<SyncParticleTypeChildrenSignal>,
     ///     registry: Res<ParticleTypeRegistry>,
+    ///     sand: Res<Sand>,
     /// ) {
-    ///     let sand = bevy_falling_sand::core::ParticleTypeId::from_raw(1);
-    ///     if let Some(&entity) = registry.get(sand) {
+    ///     if let Some(&entity) = registry.get(sand.0) {
     ///         writer.write(SyncParticleTypeChildrenSignal::from_parent_handle(entity));
     ///     }
     /// }

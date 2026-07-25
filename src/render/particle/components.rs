@@ -450,11 +450,13 @@ impl ColorProfile {
 /// use bevy::prelude::*;
 /// use bevy_falling_sand::prelude::*;
 ///
-/// fn spawn_cyan_particle(mut writer: MessageWriter<SpawnParticleSignal>) {
-///     let sand = ParticleTypeId::from_raw(1);
+/// #[derive(Resource)]
+/// struct Sand(ParticleTypeId);
+///
+/// fn spawn_cyan_particle(mut writer: MessageWriter<SpawnParticleSignal>, sand: Res<Sand>) {
 ///     let forced = Color::srgba(0.0, 1.0, 1.0, 1.0);
 ///     writer.write(
-///         SpawnParticleSignal::new(sand, IVec2::new(5, 5))
+///         SpawnParticleSignal::new(sand.0, IVec2::new(5, 5))
 ///             .with_on_spawn(move |cmd| {
 ///                 cmd.insert(ForceColor(forced));
 ///             }),

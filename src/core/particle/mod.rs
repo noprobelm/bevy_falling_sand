@@ -58,7 +58,17 @@ pub(crate) enum LocateBy {
 
 static NEXT_PARTICLE_TYPE_ID: AtomicUsize = AtomicUsize::new(0);
 
-/// Unique runtime identifier for a [`ParticleType`].
+/// Unique identifier for a [`ParticleType`].
+///
+/// `ParticleTypeId` is the value to store in bevy resources, or anywhere else a particle type's
+/// unique identiifer might be useful. It is the stable handle through which a corresponding
+/// [`ParticleType`] entity can be accessed via the [`ParticleTypeRegistry`] resource.
+///
+/// Internally, an [`AtomicUsize`] counter is used to ensure IDs remain stable and aren't
+/// duplicately assigned. As such, `ParticleTypeId::from_raw` exists to allow users to reuse IDs
+/// between sessions without compromising the internal counter logic. One example of such use might
+/// be to store a [`ParticleTypeId`] to particle name mapper on disk, referencing the UIDs
+/// when spawning particle types during your app's initialization logic.
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Reflect, Serialize)]
 #[serde(transparent)]
 #[reflect(Serialize, Deserialize)]
@@ -66,18 +76,28 @@ pub struct ParticleTypeId(usize);
 
 impl ParticleTypeId {
     /// Allocate a new unique particle type identifier.
+    ///
+    /// Use this for ordinary runtime particle type creation. Store the returned ID wherever you
+    /// will later need to spawn, mutate, despawn, or otherwise refer to the type.
     #[must_use]
     pub fn new() -> Self {
         Self(NEXT_PARTICLE_TYPE_ID.fetch_add(1, Ordering::Relaxed))
     }
 
     /// Return the underlying numeric value.
+    ///
+    /// This is useful for diagnostics, UI display, or external formats that need a primitive
+    /// integer. Prefer passing [`ParticleTypeId`] itself through Rust APIs.
     #[must_use]
     pub const fn get(self) -> usize {
         self.0
     }
 
     /// Build an ID from a persisted numeric value and reserve it from future allocation.
+    ///
+    /// Use this for deserialization, migrations, and stable external catalogs where the numeric
+    /// value is already part of a file or asset contract. For normal runtime allocation, use
+    /// [`ParticleTypeId::new`] instead.
     #[must_use]
     pub fn from_raw(id: usize) -> Self {
         Self::reserve_loaded(id);
@@ -118,12 +138,16 @@ impl<'de> Deserialize<'de> for ParticleTypeId {
     }
 }
 
-/// Define an entity as a `ParticleType`.
+/// Define an entity as a particle type template.
 ///
 /// `ParticleType` is the ECS template component for particle synchronization and lifecycle
 /// management routines. When a [`ParticleType`] component is inserted or changed on an entity, its
 /// [`ParticleTypeId`] is synchronized with [`ParticleTypeRegistry`] and thus made available for
 /// lookup.
+///
+/// The ID is private by design. Use [`ParticleType::id`] to read it, [`ParticleType::new`] to
+/// allocate a fresh template, and [`ParticleType::from_id`] to attach an existing ID to a template
+/// entity.
 ///
 /// When new [`Particle`] entities are spawned into the world, they locate their parent template in
 /// the [`ParticleTypeRegistry`] by [`ParticleTypeId`] and store the parent entity for use at future
@@ -191,8 +215,11 @@ impl ParticleType {
     /// use bevy_falling_sand::core::ParticleType;
     ///
     /// let sand = ParticleType::new();
+    /// let sand_id = sand.id();
     /// let water = ParticleType::new();
+    ///
     /// assert_ne!(sand.id(), water.id());
+    /// assert_eq!(sand.id(), sand_id);
     /// ```
     #[must_use]
     pub fn new() -> Self {

@@ -20,13 +20,18 @@
 //!     Particles((
 //!       image: "scene.terrain.png",
 //!       colors: {
-//!         (255, 0, 0, 255): "Sand",
-//!         (0, 128, 0, 255): "Grass Wall",
+//!         (255, 0, 0, 255): 8,
+//!         (0, 128, 0, 255): 4,
 //!       },
 //!     )),
 //!   ],
 //! )
 //! ```
+//!
+//! Particle layer `colors` values are numeric [`ParticleTypeId`] values. When the scene is loaded,
+//! those numbers are deserialized through [`ParticleTypeId::from_raw`], reserving them from future
+//! automatic allocation. This format is best for stable catalogs where the application owns the ID
+//! assignments and spawns matching [`crate::ParticleType`] templates before scenes are used.
 //!
 //! Layer order is back-to-front: the first entry is drawn first (deepest), each
 //! subsequent entry composites on top. [`SceneLayer::Background`] sprites are

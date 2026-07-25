@@ -34,9 +34,10 @@ impl Plugin for ContactPlugin {
 /// Defines contact reaction rulesets for a particle type.
 ///
 /// Each rule describes what happens when a particle with a ruleset comes within a specified radius
-/// of another.
+/// of another. Rule targets and products are [`ParticleTypeId`] values, so keep the relevant IDs in
+/// your own resources or components when configuring reactions.
 ///
-/// A radius of `1` (defualt) is suitable for most cases. Increasing the radius adds overhead
+/// A radius of `1` (default) is suitable for most cases. Increasing the radius adds overhead
 /// proportional to the number of dirty particles of this type. Find a balance between appearance
 /// and selected radius.
 ///
@@ -48,10 +49,14 @@ impl Plugin for ContactPlugin {
 /// use bevy_falling_sand::core::{ParticleType, ParticleTypeId};
 ///
 /// fn setup(mut commands: Commands) {
+///     let reacting_type = ParticleTypeId::new();
 ///     let lava = ParticleTypeId::new();
 ///     let fire = ParticleTypeId::new();
+///
+///     commands.spawn(ParticleType::from_id(lava));
+///     commands.spawn(ParticleType::from_id(fire));
 ///     commands.spawn((
-///         ParticleType::new(),
+///         ParticleType::from_id(reacting_type),
 ///         ContactReaction {
 ///             rules: vec![ContactRule {
 ///                 target: lava,
@@ -83,9 +88,11 @@ pub struct ContactReaction {
 /// use bevy_falling_sand::core::ParticleTypeId;
 /// use bevy_falling_sand::reactions::{ContactRule, Consumes};
 ///
+/// let lava = ParticleTypeId::new();
+/// let fire = ParticleTypeId::new();
 /// let rule = ContactRule {
-///     target: ParticleTypeId::from_raw(1),
-///     becomes: ParticleTypeId::from_raw(2),
+///     target: lava,
+///     becomes: fire,
 ///     chance: 0.5,
 ///     radius: 1.0,
 ///     consumes: Consumes::Target,
@@ -193,7 +200,7 @@ fn on_particle_type_added(
 }
 
 /// Attempts to resolve all rules in a `ContactReaction`. Returns `None` if any
-/// target or becomes name cannot be found in the registry.
+/// target or product ID cannot be found in the registry.
 fn try_resolve(
     contact: &ContactReaction,
     registry: &ParticleTypeRegistry,

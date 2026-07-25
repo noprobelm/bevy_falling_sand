@@ -10,7 +10,8 @@ impl Plugin for RegistryPlugin {
     }
 }
 
-/// Associates unique [`ParticleType`](crate::prelude::ParticleType) with their entity ID
+/// Associates unique [`ParticleTypeId`] values with their current
+/// [`ParticleType`](crate::prelude::ParticleType) entity.
 #[derive(Resource, Clone, Default, Eq, PartialEq, Debug, Reflect)]
 #[reflect(Resource)]
 pub struct ParticleTypeRegistry {

@@ -244,13 +244,15 @@ pub type OnSpawnCallback = Arc<dyn Fn(&mut EntityCommands) + Send + Sync>;
 /// use bevy::prelude::*;
 /// use bevy_falling_sand::prelude::*;
 ///
+/// #[derive(Resource)]
+/// struct Wood(ParticleTypeId);
+///
 /// #[derive(Component)]
 /// struct OnFire;
 ///
-/// fn spawn_burning(mut writer: MessageWriter<SpawnParticleSignal>) {
-///     let wood = ParticleTypeId::from_raw(3);
+/// fn spawn_burning(mut writer: MessageWriter<SpawnParticleSignal>, wood: Res<Wood>) {
 ///     writer.write(
-///         SpawnParticleSignal::new(wood, IVec2::new(5, 5))
+///         SpawnParticleSignal::new(wood.0, IVec2::new(5, 5))
 ///             .with_on_spawn(|cmd| { cmd.insert(OnFire); }),
 ///     );
 /// }
@@ -285,10 +287,12 @@ impl SpawnParticleSignal {
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::prelude::*;
     ///
-    /// fn spawn(mut writer: MessageWriter<SpawnParticleSignal>) {
-    ///     let sand = ParticleTypeId::from_raw(1);
+    /// #[derive(Resource)]
+    /// struct Sand(ParticleTypeId);
+    ///
+    /// fn spawn(mut writer: MessageWriter<SpawnParticleSignal>, sand: Res<Sand>) {
     ///     writer.write(SpawnParticleSignal::new(
-    ///         sand,
+    ///         sand.0,
     ///         IVec2::new(10, 20),
     ///     ));
     /// }
@@ -311,10 +315,12 @@ impl SpawnParticleSignal {
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::prelude::*;
     ///
-    /// fn replace(mut writer: MessageWriter<SpawnParticleSignal>) {
-    ///     let water = ParticleTypeId::from_raw(2);
+    /// #[derive(Resource)]
+    /// struct Water(ParticleTypeId);
+    ///
+    /// fn replace(mut writer: MessageWriter<SpawnParticleSignal>, water: Res<Water>) {
     ///     writer.write(SpawnParticleSignal::overwrite_existing(
-    ///         water,
+    ///         water.0,
     ///         IVec2::new(10, 20),
     ///     ));
     /// }
@@ -338,11 +344,13 @@ impl SpawnParticleSignal {
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::prelude::*;
     ///
+    /// #[derive(Resource)]
+    /// struct Sand(ParticleTypeId);
+    ///
     /// // If position (11, 20) is vacant, short circuit and exit early.
-    /// fn spawn_fallback(mut writer: MessageWriter<SpawnParticleSignal>) {
-    ///     let sand = ParticleTypeId::from_raw(1);
+    /// fn spawn_fallback(mut writer: MessageWriter<SpawnParticleSignal>, sand: Res<Sand>) {
     ///     writer.write(SpawnParticleSignal::try_multiple(
-    ///         sand,
+    ///         sand.0,
     ///         vec![IVec2::new(10, 20), IVec2::new(11, 20), IVec2::new(12, 20)],
     ///     ));
     /// }
@@ -364,7 +372,7 @@ impl SpawnParticleSignal {
     /// particle spawns (i.e., a position is occupied or we run out of positions to try) will
     /// skip this logic, potentially saving some ECS overhead.
     ///
-    /// If more complex behaviors are desired, you can still your own message reader.
+    /// If more complex behaviors are desired, you can still write your own message reader.
     ///
     /// # Examples
     ///
@@ -372,13 +380,15 @@ impl SpawnParticleSignal {
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::prelude::*;
     ///
+    /// #[derive(Resource)]
+    /// struct Wood(ParticleTypeId);
+    ///
     /// #[derive(Component)]
     /// struct OnFire;
     ///
-    /// fn spawn_burning(mut writer: MessageWriter<SpawnParticleSignal>) {
-    ///     let wood = ParticleTypeId::from_raw(3);
+    /// fn spawn_burning(mut writer: MessageWriter<SpawnParticleSignal>, wood: Res<Wood>) {
     ///     writer.write(
-    ///         SpawnParticleSignal::new(wood, IVec2::new(5, 5))
+    ///         SpawnParticleSignal::new(wood.0, IVec2::new(5, 5))
     ///             .with_on_spawn(|cmd| { cmd.insert(OnFire); }),
     ///     );
     /// }
@@ -482,8 +492,7 @@ impl DespawnParticleSignal {
 )]
 pub struct DespawnAllParticlesSignal;
 
-/// Despawns all particle children under a type
-/// [`ParticleType`].
+/// Despawns all particle children under a [`ParticleType`].
 #[derive(Event, Message, Clone, Eq, PartialEq, Hash, Debug, Reflect, Serialize, Deserialize)]
 pub struct DespawnParticleTypeChildrenSignal {
     locate_by: LocateBy,
@@ -498,9 +507,14 @@ impl DespawnParticleTypeChildrenSignal {
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::{DespawnParticleTypeChildrenSignal, ParticleTypeId};
     ///
-    /// fn despawn_all_sand(mut writer: MessageWriter<DespawnParticleTypeChildrenSignal>) {
-    ///     let sand = ParticleTypeId::from_raw(1);
-    ///     writer.write(DespawnParticleTypeChildrenSignal::from_particle_type(sand));
+    /// #[derive(Resource)]
+    /// struct Sand(ParticleTypeId);
+    ///
+    /// fn despawn_all_sand(
+    ///     mut writer: MessageWriter<DespawnParticleTypeChildrenSignal>,
+    ///     sand: Res<Sand>,
+    /// ) {
+    ///     writer.write(DespawnParticleTypeChildrenSignal::from_particle_type(sand.0));
     /// }
     /// ```
     #[must_use]
@@ -516,14 +530,19 @@ impl DespawnParticleTypeChildrenSignal {
     ///
     /// ```no_run
     /// use bevy::prelude::*;
-    /// use bevy_falling_sand::core::{DespawnParticleTypeChildrenSignal, ParticleTypeRegistry};
+    /// use bevy_falling_sand::core::{
+    ///     DespawnParticleTypeChildrenSignal, ParticleTypeId, ParticleTypeRegistry,
+    /// };
+    ///
+    /// #[derive(Resource)]
+    /// struct Sand(ParticleTypeId);
     ///
     /// fn despawn_by_entity(
     ///     mut writer: MessageWriter<DespawnParticleTypeChildrenSignal>,
     ///     registry: Res<ParticleTypeRegistry>,
+    ///     sand: Res<Sand>,
     /// ) {
-    ///     let sand = bevy_falling_sand::core::ParticleTypeId::from_raw(1);
-    ///     if let Some(&entity) = registry.get(sand) {
+    ///     if let Some(&entity) = registry.get(sand.0) {
     ///         writer.write(DespawnParticleTypeChildrenSignal::from_parent_handle(entity));
     ///     }
     /// }
@@ -542,7 +561,7 @@ impl DespawnParticleTypeChildrenSignal {
 /// [`ParticleMap`].
 ///
 /// After all valid spawn positions have been collected, mark each [`ChunkDirtyState`] so newly
-/// spawned particlces (and their neighbors) are included in simulation systems.
+/// spawned particles (and their neighbors) are included in simulation systems.
 #[allow(clippy::needless_pass_by_value)]
 fn msgr_spawn_particle(
     mut msgr_spawn_particle: MessageReader<SpawnParticleSignal>,
@@ -619,7 +638,7 @@ fn msgr_spawn_particle(
 /// [`ParticleMap`].
 ///
 /// After all valid spawn positions have been collected, mark each [`ChunkDirtyState`] so newly
-/// spawned particlces (and their neighbors) are included in simulation systems.
+/// spawned particles (and their neighbors) are included in simulation systems.
 #[allow(clippy::needless_pass_by_value)]
 fn on_spawn_particle(
     trigger: On<SpawnParticleSignal>,

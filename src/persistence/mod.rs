@@ -29,6 +29,13 @@
 //! - [`PersistParticleTypesSignal`] / [`LoadParticleTypesSignal`]
 //! - [`ParticleTypesPersistedSignal`] / [`ParticleTypesLoadedSignal`] — confirmation signals
 //!
+//! Particle type IDs are serialized as their numeric values. Deserializing a
+//! [`ParticleTypeId`](crate::ParticleTypeId) reserves that value from future
+//! [`ParticleTypeId::new`](crate::ParticleTypeId::new) allocation, so loaded particle definitions
+//! can coexist with newly-created runtime types without reusing IDs. Application-level names,
+//! editor labels, or aliases should be stored as your own reflected components on the
+//! [`ParticleType`](crate::ParticleType) entity if they need to persist with the type definition.
+//!
 //! ## Binary formats
 //!
 //! - [`bfs`] — Binary Format without color. Compresses particle positions well.
