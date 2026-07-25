@@ -218,11 +218,9 @@ pub(super) fn par_handle_movement_by_chunks(
                                         }
                                         #[cfg(feature = "physics")]
                                         {
-                                            if rigid_body_occupancy_ref
-                                                .is_some_and(|occupancy| {
-                                                    occupancy.contains(neighbor_position)
-                                                })
-                                            {
+                                            if rigid_body_occupancy_ref.is_some_and(|occupancy| {
+                                                occupancy.contains(neighbor_position)
+                                            }) {
                                                 obstructed[obstruct_idx] = true;
                                                 continue;
                                             }
