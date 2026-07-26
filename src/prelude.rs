@@ -10,7 +10,8 @@ pub use crate::core::{
     ParticleRng, ParticleRngExt, ParticleSimulationRun, ParticleSyncExt, ParticleSystems,
     ParticleType, ParticleTypeId, ParticleTypeRegistry, PendingDespawn, PropagatorFilter,
     SimulationStepSignal, SpatialEntry, SpatialMap, SpawnParticleSignal, SyncParticleSignal,
-    SyncParticleTypeChildrenSignal, TimedLifetime, condition_msg_simulation_step_received,
+    SyncParticleTypeChildrenSignal, TimedLifetime, TimedMutation,
+    condition_msg_simulation_step_received,
 };
 
 #[cfg(feature = "render")]

@@ -11,6 +11,10 @@
 //! simulation. Direct `commands.spawn(...)` of a [`Particle`] is not currently supported —
 //! the simulation relies on internal bookkeeping (`ParticleMap`, chunk dirty rects, parent
 //! resolution, sync propagation) that only the signal handlers wire up.
+//!
+//! # Lifetime components
+//!
+//! [`TimedLifetime`] and [`ChanceLifetime`] advance during particle simulation steps.
 
 use super::LocateBy;
 use crate::core::{
@@ -58,7 +62,7 @@ impl Plugin for LifecyclePlugin {
     }
 }
 
-/// A timed lifetime component that despawns the particle after a specified duration.
+/// Despawns a particle after a specified duration of particle simulation.
 #[derive(Component, Clone, Default, Eq, PartialEq, Debug, Reflect)]
 #[reflect(Component)]
 #[type_path = "bfs_core::particle"]
@@ -86,7 +90,7 @@ impl TimedLifetime {
         self.0.tick(delta);
     }
 
-    /// Returns the duration of the lifetime timer.
+    /// Returns the configured lifetime duration.
     ///
     /// # Examples
     ///
@@ -103,24 +107,15 @@ impl TimedLifetime {
     }
 
     /// Returns true if the lifetime has expired.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use std::time::Duration;
-    /// use bevy_falling_sand::core::TimedLifetime;
-    ///
-    /// let lifetime = TimedLifetime::new(Duration::from_secs(5));
-    /// assert!(!lifetime.finished());
-    /// ```
     #[must_use]
     pub fn finished(&self) -> bool {
         self.0.is_finished()
     }
 }
 
-/// A chance-based lifetime component that has a chance to despawn the entity on a per-tick
-/// basis.
+/// Gives a particle a chance to despawn at a configured interval.
+///
+/// Evaluation occurs during particle simulation steps.
 #[derive(Component, Clone, PartialEq, Debug, Reflect)]
 #[reflect(Component)]
 #[type_path = "bfs_core::particle"]
@@ -141,7 +136,7 @@ impl Default for ChanceLifetime {
 }
 
 impl ChanceLifetime {
-    /// Create a new chance-based lifetime with the given probability, evaluated every frame.
+    /// Create a chance-based lifetime with the given probability and evaluation interval.
     ///
     /// # Examples
     ///
@@ -160,7 +155,7 @@ impl ChanceLifetime {
         }
     }
 
-    /// Create a new chance-based lifetime with the given probability and tick rate.
+    /// Alias for [`Self::new`].
     ///
     /// # Examples
     ///
@@ -1015,12 +1010,14 @@ fn despawn_orphaned_particles(
 mod tests {
     use std::time::Duration;
 
+    use bevy::time::TimeUpdateStrategy;
+
     use super::*;
     use crate::{
         FallingSandMinimalPlugin,
         core::{
             AttachedToParticleType, ChanceLifetime, GridPosition, Particle, ParticleMap,
-            ParticleType, ParticleTypeRegistry, TimedLifetime,
+            ParticleSimulationRun, ParticleType, ParticleTypeRegistry, TimedLifetime,
         },
     };
 
@@ -1564,15 +1561,19 @@ mod tests {
     #[test]
     fn timed_lifetime_despawns_after_duration() {
         let mut app = create_test_app();
+        app.insert_resource(TimeUpdateStrategy::ManualDuration(Duration::from_millis(
+            50,
+        )));
         app.world_mut().spawn(ParticleType::from_id(sand()));
         app.update();
 
         let position = IVec2::ZERO;
         let entity = spawn_particle_at(&mut app, sand(), position);
 
-        let mut lifetime = TimedLifetime::new(Duration::from_millis(100));
-        lifetime.tick(Duration::from_millis(150));
-        app.world_mut().entity_mut(entity).insert(lifetime);
+        app.world_mut()
+            .entity_mut(entity)
+            .insert(TimedLifetime::new(Duration::from_millis(100)));
+        app.update();
         app.update();
         app.update();
 
@@ -1584,15 +1585,18 @@ mod tests {
     #[test]
     fn timed_lifetime_does_not_despawn_before_duration() {
         let mut app = create_test_app();
+        app.insert_resource(TimeUpdateStrategy::ManualDuration(Duration::from_millis(
+            25,
+        )));
         app.world_mut().spawn(ParticleType::from_id(sand()));
         app.update();
 
         let position = IVec2::ZERO;
         let entity = spawn_particle_at(&mut app, sand(), position);
 
-        let mut lifetime = TimedLifetime::new(Duration::from_millis(100));
-        lifetime.tick(Duration::from_millis(50));
-        app.world_mut().entity_mut(entity).insert(lifetime);
+        app.world_mut()
+            .entity_mut(entity)
+            .insert(TimedLifetime::new(Duration::from_millis(100)));
         app.update();
         app.update();
 
@@ -1615,6 +1619,36 @@ mod tests {
         assert!(!lifetime.finished());
         lifetime.tick(Duration::from_millis(60));
         assert!(lifetime.finished());
+    }
+
+    #[test]
+    fn timed_lifetime_pauses_with_simulation() {
+        let mut app = create_test_app();
+        app.insert_resource(TimeUpdateStrategy::ManualDuration(Duration::from_millis(
+            50,
+        )));
+        app.world_mut().spawn(ParticleType::from_id(sand()));
+        app.update();
+
+        let entity = spawn_particle_at(&mut app, sand(), IVec2::ZERO);
+        app.world_mut()
+            .entity_mut(entity)
+            .insert(TimedLifetime::new(Duration::from_millis(100)));
+        app.world_mut().remove_resource::<ParticleSimulationRun>();
+
+        app.update();
+        app.update();
+        app.update();
+
+        assert!(app.world().entities().contains(entity));
+        assert_eq!(
+            app.world()
+                .get::<TimedLifetime>(entity)
+                .unwrap()
+                .0
+                .elapsed(),
+            Duration::ZERO
+        );
     }
 
     // ---- chance_lifetime ----

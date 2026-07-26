@@ -163,6 +163,7 @@
 //! | [`TimedLifetime`]           | Despawns a particle after a specified duration                       | —            |
 //! | [`ChanceLifetime`]          | Chance to despawn an entity on a per-tick basis                      | —            |
 //! | [`ChanceMutation`]          | Chance to mutate a particle into another particle type ID            | —            |
+//! | [`TimedMutation`]           | Mutates a particle into another particle type after a duration        | —            |
 //!
 //! # Table of Contents
 //!
@@ -170,6 +171,12 @@
 //!
 //! - [Spawning particles](`SpawnParticleSignal`)
 //! - [Despawning particles](`DespawnParticleSignal`)
+//! - [Timed and chance-based lifetimes](`TimedLifetime`)
+//!
+//! ## [Particle mutations](crate::core::particle::mutation)
+//!
+//! - [Timed mutation](`TimedMutation`)
+//! - [Chance-based mutation](`ChanceMutation`)
 //!
 //! ## [Rendering](`crate::render`)
 //!

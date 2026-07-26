@@ -118,7 +118,7 @@ template component. `ParticleTypeId::from_raw(...)` is reserved for persisted da
 catalogs where the numeric value is part of a file format or asset contract; it also reserves that
 value from future automatic allocation.
 
-The core crate does not store names on `ParticleType`. Keep comprehensive eparticle identifiers in
+The core crate does not store names on `ParticleType`. Keep comprehensive particle identifiers in
 your own components/resources and map those names to `ParticleTypeId` at the application boundary.
 
 ## Particle behavior components
@@ -145,6 +145,7 @@ that particle type will derive their behaviors.
 | `TimedLifetime`           | Despawns a particle after a duration                              | —           |
 | `ChanceLifetime`          | Chance to despawn on a per-tick basis                             | —           |
 | `ChanceMutation`          | Chance to mutate a particle into another `ParticleTypeId`         | —           |
+| `TimedMutation`           | Mutates a particle into another `ParticleTypeId` after a duration | —           |
 
 For full documentation, see [docs.rs/bevy_falling_sand](https://docs.rs/bevy_falling_sand).
 
