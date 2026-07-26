@@ -128,17 +128,11 @@ impl Default for DefaultFire {
                 Color::Srgba(Srgba::hex("#C74A05FF").unwrap()),
             ]),
             Movement::from(neighbors),
-            Flammable::new(
-                Duration::from_secs(1),
-                Duration::from_millis(100),
-                0.5,
-                None,
-                0.01,
-                true,
-                1.0,
-                false,
-                true,
-            ),
+            Flammable::new(Duration::from_secs(1), Duration::from_millis(100))
+                .with_chance_despawn_per_tick(0.5)
+                .with_chance_to_ignite(0.01)
+                .with_fire_spread(1.0)
+                .with_ignites_on_spawn(),
             BurnEffect,
             Name::new("FIRE"),
         )
@@ -169,17 +163,11 @@ impl Default for DefaultFlammableGas {
                 vec![IVec2::Y, IVec2::new(1, 1), IVec2::new(-1, 1)],
                 vec![IVec2::new(0, 2), IVec2::new(0, -2)],
             ]),
-            Flammable::new(
-                Duration::from_secs(1),
-                Duration::from_millis(50),
-                0.5,
-                None,
-                0.175,
-                true,
-                1.0,
-                true,
-                false,
-            ),
+            Flammable::new(Duration::from_secs(1), Duration::from_millis(50))
+                .with_chance_despawn_per_tick(0.5)
+                .with_chance_to_ignite(0.175)
+                .with_fire_spread(1.0)
+                .with_despawn_on_extinguish(),
             GasEffect,
             Name::new("Flammable Gas"),
         )

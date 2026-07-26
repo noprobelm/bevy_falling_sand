@@ -98,13 +98,13 @@ impl ContactReaction {
 
     /// Return the number of contact rules.
     #[must_use]
-    pub fn len(&self) -> usize {
+    pub const fn len(&self) -> usize {
         self.rules.len()
     }
 
     /// Return whether there are no contact rules.
     #[must_use]
-    pub fn is_empty(&self) -> bool {
+    pub const fn is_empty(&self) -> bool {
         self.rules.is_empty()
     }
 
