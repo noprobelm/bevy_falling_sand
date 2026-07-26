@@ -393,10 +393,10 @@ fn handle_ignites_on_spawn(
             let mut entity_commands = commands.entity(entity);
             entity_commands.insert(burns.to_burning());
             if burns.chance_despawn_per_tick > 0.0 {
-                entity_commands.insert(ChanceLifetime::with_tick_rate(
-                    burns.chance_despawn_per_tick,
-                    burns.tick_rate,
-                ));
+                entity_commands.insert(
+                    ChanceLifetime::new(burns.chance_despawn_per_tick)
+                        .with_tick_rate(burns.tick_rate),
+                );
             }
             if let Some(reaction) = &burns.reaction {
                 entity_commands.insert(reaction.clone());
@@ -499,10 +499,10 @@ fn handle_fire(
             let mut entity_commands = commands.entity(neighbor_entity);
             entity_commands.insert(burns.to_burning());
             if burns.chance_despawn_per_tick > 0.0 {
-                entity_commands.insert(ChanceLifetime::with_tick_rate(
-                    burns.chance_despawn_per_tick,
-                    burns.tick_rate,
-                ));
+                entity_commands.insert(
+                    ChanceLifetime::new(burns.chance_despawn_per_tick)
+                        .with_tick_rate(burns.tick_rate),
+                );
             }
             if let Some(reaction) = &burns.reaction {
                 entity_commands.insert(reaction.clone());

@@ -130,26 +130,25 @@ impl Default for ChanceLifetime {
 }
 
 impl ChanceLifetime {
-    /// Create a chance-based lifetime with the given probability and evaluation interval.
+    /// Create a chance-based lifetime with the given probability.
     ///
     /// # Examples
     ///
     /// ```
-    /// use std::time::Duration;
     /// use bevy_falling_sand::core::ChanceLifetime;
     ///
-    /// let lifetime = ChanceLifetime::new(0.05, Duration::from_millis(100));
+    /// let lifetime = ChanceLifetime::new(0.05);
     /// assert_eq!(lifetime.chance, 0.05);
     /// ```
     #[must_use]
-    pub fn new(chance: f64, tick_rate: Duration) -> Self {
+    pub fn new(chance: f64) -> Self {
         Self {
             chance,
-            tick_timer: Timer::new(tick_rate, TimerMode::Repeating),
+            tick_timer: Timer::new(Duration::ZERO, TimerMode::Repeating),
         }
     }
 
-    /// Alias for [`Self::new`].
+    /// Set the interval between chance evaluations.
     ///
     /// # Examples
     ///
@@ -157,15 +156,14 @@ impl ChanceLifetime {
     /// use std::time::Duration;
     /// use bevy_falling_sand::core::ChanceLifetime;
     ///
-    /// let lifetime = ChanceLifetime::with_tick_rate(0.05, Duration::from_millis(100));
-    /// assert_eq!(lifetime.chance, 0.05);
+    /// let lifetime = ChanceLifetime::new(0.05)
+    ///     .with_tick_rate(Duration::from_millis(100));
+    /// assert_eq!(lifetime.tick_timer.duration(), Duration::from_millis(100));
     /// ```
     #[must_use]
-    pub fn with_tick_rate(chance: f64, tick_rate: Duration) -> Self {
-        Self {
-            chance,
-            tick_timer: Timer::new(tick_rate, TimerMode::Repeating),
-        }
+    pub fn with_tick_rate(mut self, tick_rate: Duration) -> Self {
+        self.tick_timer.set_duration(tick_rate);
+        self
     }
 }
 
@@ -1656,14 +1654,14 @@ mod tests {
 
     #[test]
     fn chance_lifetime_new() {
-        let lifetime = ChanceLifetime::new(0.5, Duration::ZERO);
+        let lifetime = ChanceLifetime::new(0.5);
         assert_eq!(lifetime.chance, 0.5);
         assert_eq!(lifetime.tick_timer.duration(), Duration::ZERO);
     }
 
     #[test]
     fn chance_lifetime_with_tick_rate() {
-        let lifetime = ChanceLifetime::with_tick_rate(0.75, Duration::from_millis(200));
+        let lifetime = ChanceLifetime::new(0.75).with_tick_rate(Duration::from_millis(200));
         assert_eq!(lifetime.chance, 0.75);
         assert_eq!(lifetime.tick_timer.duration(), Duration::from_millis(200));
     }
@@ -1679,7 +1677,7 @@ mod tests {
 
         app.world_mut()
             .entity_mut(entity)
-            .insert(ChanceLifetime::new(0.0, Duration::ZERO));
+            .insert(ChanceLifetime::new(0.0));
 
         for _ in 0..100 {
             app.update();
@@ -1699,7 +1697,7 @@ mod tests {
 
         app.world_mut()
             .entity_mut(entity)
-            .insert(ChanceLifetime::new(1.0, Duration::ZERO));
+            .insert(ChanceLifetime::new(1.0));
 
         app.update();
         app.update();
@@ -1720,10 +1718,7 @@ mod tests {
 
         app.world_mut()
             .entity_mut(entity)
-            .insert(ChanceLifetime::with_tick_rate(
-                1.0,
-                Duration::from_secs(999),
-            ));
+            .insert(ChanceLifetime::new(1.0).with_tick_rate(Duration::from_secs(999)));
         app.update();
         app.update();
 
@@ -1732,7 +1727,7 @@ mod tests {
         *app.world_mut()
             .entity_mut(entity)
             .get_mut::<ChanceLifetime>()
-            .unwrap() = ChanceLifetime::new(1.0, Duration::ZERO);
+            .unwrap() = ChanceLifetime::new(1.0);
         app.update();
         app.update();
 
