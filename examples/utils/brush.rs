@@ -123,7 +123,7 @@ impl Plugin for BrushPlugin {
                 ),
             )
             .add_systems(
-                Update,
+                PostUpdate,
                 (
                     spawn_particles
                         .run_if(is_brush_input_pressed(keybindings.spawn_despawn_button))

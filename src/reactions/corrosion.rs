@@ -16,7 +16,10 @@ impl Plugin for CorrosionPlugin {
     fn build(&self, app: &mut App) {
         app.register_particle_sync_component::<Corrosive>()
             .register_particle_sync_component::<Corrodible>()
-            .add_systems(Update, handle_corrosion.in_set(ParticleSystems::Simulation));
+            .add_systems(
+                PostUpdate,
+                handle_corrosion.in_set(ParticleSystems::Simulation),
+            );
     }
 }
 

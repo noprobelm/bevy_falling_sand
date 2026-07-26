@@ -49,7 +49,7 @@ impl Plugin for SyncPlugin {
                 msgr_sync_particle.in_set(ParticleSystems::Registration),
             )
             .add_systems(
-                Update,
+                PostUpdate,
                 handle_chance_mutations.in_set(ParticleSystems::Simulation),
             );
     }
