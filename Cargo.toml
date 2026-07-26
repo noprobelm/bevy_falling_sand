@@ -66,6 +66,7 @@ image = { version = "0.25", default-features = false, features = [
 ], optional = true }
 bevy_shader = { version = "0.19.0", optional = true }
 bevy_sprite_render = { version = "0.19.0", optional = true }
+bevy_framepace = "0.22.0"
 
 [dev-dependencies]
 bevy_egui = "0.41.0"
@@ -77,7 +78,6 @@ trie-rs = "0.2"
 bevy = { version = "0.19.0" }
 noise = "0.9.0"
 avian2d = "0.7.0"
-bevy_framepace = { git = "https://github.com/noprobelm/bevy_framepace", branch = "main" }
 
 [lints.rust]
 # Mark `bevy_lint` as a valid `cfg`, as it is set when the Bevy linter runs.
