@@ -47,7 +47,7 @@ fn main() {
         )
         .add_systems(
             PostUpdate,
-            (spawn_particles.before(ParticleSystems::Simulation)),
+            spawn_particles.before(ParticleSystems::Simulation),
         )
         .run();
 }
