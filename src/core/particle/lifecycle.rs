@@ -11,10 +11,6 @@
 //! simulation. Direct `commands.spawn(...)` of a [`Particle`] is not currently supported —
 //! the simulation relies on internal bookkeeping (`ParticleMap`, chunk dirty rects, parent
 //! resolution, sync propagation) that only the signal handlers wire up.
-//!
-//! # Lifetime components
-//!
-//! [`TimedLifetime`] and [`ChanceLifetime`] advance during particle simulation steps.
 
 use super::LocateBy;
 use crate::core::{
@@ -113,9 +109,7 @@ impl TimedLifetime {
     }
 }
 
-/// Gives a particle a chance to despawn at a configured interval.
-///
-/// Evaluation occurs during particle simulation steps.
+/// Gives a particle a chance to despawn at a configured interval of particle simulation.
 #[derive(Component, Clone, PartialEq, Debug, Reflect)]
 #[reflect(Component)]
 #[type_path = "bfs_core::particle"]

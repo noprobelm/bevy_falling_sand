@@ -107,10 +107,8 @@ impl ParticlePropagators {
 /// your own components the same way.
 ///
 /// Propagators run during component synchronization whenever a [`SyncParticleSignal`] is
-/// received or change detection on [`AttachedToParticleType`] fires (e.g. on spawn or when a
-/// [`ChanceMutation`](crate::core::ChanceMutation) or
-/// [`TimedMutation`](crate::core::TimedMutation) re-attaches a particle to a new parent). Each
-/// propagator receives the
+/// received or change detection on [`AttachedToParticleType`] fires, such as on spawn or
+/// mutation. Each propagator receives the
 /// particle entity, its parent [`ParticleType`] entity, and [`Commands`] for deferred mutations.
 ///
 /// Every propagator is keyed by a [`TypeId`], which enables selective
@@ -251,9 +249,7 @@ impl ParticleSyncExt for App {
 ///
 /// Targets are collected from two sources, deduplicated by entity:
 /// 1. Drained [`SyncParticleSignal`] messages (sent externally or by other internal triggers)
-/// 2. `Changed<AttachedToParticleType>` query (catches freshly spawned and mutated particles —
-///    any time the parent reference changes, we need to re-propagate components from the new
-///    parent)
+/// 2. `Changed<AttachedToParticleType>` query
 #[derive(SystemParam)]
 struct SyncParticleParams<'w, 's> {
     msgr: MessageReader<'w, 's, SyncParticleSignal>,

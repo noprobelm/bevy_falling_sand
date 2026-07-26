@@ -1,11 +1,7 @@
-//! Components and systems for changing a particle's type over time.
+//! Components for changing a particle's type.
 //!
 //! Mutation changes [`AttachedToParticleType`] to the [`ParticleType`](crate::core::ParticleType)
-//! registered for a target [`ParticleTypeId`]. That change invokes normal
-//! [particle synchronization](crate::core::particle::sync), replacing synchronized behavior
-//! components with those from the new type.
-//!
-//! [`TimedMutation`] and [`ChanceMutation`] advance during particle simulation steps.
+//! registered for a target [`ParticleTypeId`], then synchronizes the particle with the new type.
 
 use std::time::Duration;
 
@@ -74,12 +70,7 @@ impl TimedMutation {
     }
 }
 
-/// Gives a particle a chance to mutate into another particle type at a configured interval.
-///
-/// When a roll succeeds, [`AttachedToParticleType`] changes to the entity registered for
-/// [`Self::target`].
-///
-/// Evaluation occurs during particle simulation steps.
+/// Gives a particle a chance to mutate at a configured interval of particle simulation.
 ///
 /// # Examples
 ///
@@ -117,8 +108,6 @@ impl Default for ChanceMutation {
 
 impl ChanceMutation {
     /// Create a chance-based mutation targeting `target`.
-    ///
-    /// `chance` is evaluated whenever `tick_rate` elapses.
     #[must_use]
     pub fn new(target: impl Into<ParticleTypeId>, chance: f64, tick_rate: Duration) -> Self {
         Self {

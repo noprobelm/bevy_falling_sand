@@ -1,9 +1,4 @@
 //! Components and resources central to particle behavior.
-//!
-//! - [`lifecycle`] owns particle spawning, despawning, and lifetime components.
-//! - [`mutation`] owns timed and chance-based particle type changes.
-//! - [`sync`] propagates behavior components from particle types to their particles.
-//! - [`schedule`] defines the particle system sets and simulation gate.
 
 pub mod lifecycle;
 pub mod mutation;
