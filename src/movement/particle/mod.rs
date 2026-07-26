@@ -20,7 +20,7 @@ impl Plugin for ParticlePlugin {
 
 fn sync_air_resistance(mut query: Query<(&Movement, &mut AirResistance), Changed<Movement>>) {
     for (movement, mut air_resistance) in &mut query {
-        let target_len = movement.neighbor_groups.len();
+        let target_len = movement.len();
         if air_resistance.len() != target_len {
             air_resistance.resize(target_len);
         }

@@ -43,26 +43,25 @@ impl Default for Corrosive {
 }
 
 impl Corrosive {
-    /// Create a new corrosive marker with the given probability and tick rate.
+    /// Create a corrosive component with the given probability.
     ///
     /// # Examples
     ///
     /// ```
-    /// use std::time::Duration;
     /// use bevy_falling_sand::reactions::Corrosive;
     ///
-    /// let corrosive = Corrosive::new(0.05, Duration::from_millis(100));
+    /// let corrosive = Corrosive::new(0.05);
     /// assert_eq!(corrosive.chance, 0.05);
     /// ```
     #[must_use]
-    pub fn new(chance: f64, tick_rate: Duration) -> Self {
+    pub fn new(chance: f64) -> Self {
         Self {
             chance,
-            tick_timer: Timer::new(tick_rate, TimerMode::Repeating),
+            tick_timer: Timer::new(Duration::ZERO, TimerMode::Repeating),
         }
     }
 
-    /// Create a new corrosive marker with the given probability and tick rate.
+    /// Set the interval between corrosion attempts.
     ///
     /// # Examples
     ///
@@ -70,15 +69,14 @@ impl Corrosive {
     /// use std::time::Duration;
     /// use bevy_falling_sand::reactions::Corrosive;
     ///
-    /// let corrosive = Corrosive::with_tick_rate(0.05, Duration::from_millis(100));
+    /// let corrosive =
+    ///     Corrosive::new(0.05).with_tick_rate(Duration::from_millis(100));
     /// assert_eq!(corrosive.tick_timer.duration(), Duration::from_millis(100));
     /// ```
     #[must_use]
-    pub fn with_tick_rate(chance: f64, tick_rate: Duration) -> Self {
-        Self {
-            chance,
-            tick_timer: Timer::new(tick_rate, TimerMode::Repeating),
-        }
+    pub fn with_tick_rate(mut self, tick_rate: Duration) -> Self {
+        self.tick_timer.set_duration(tick_rate);
+        self
     }
 }
 
@@ -138,4 +136,25 @@ fn handle_corrosion(
             }
         }
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn corrosive_constructor_uses_zero_tick_rate() {
+        let corrosive = Corrosive::new(0.25);
+
+        assert_eq!(corrosive.chance, 0.25);
+        assert_eq!(corrosive.tick_timer.duration(), Duration::ZERO);
+    }
+
+    #[test]
+    fn corrosive_tick_rate_builder_sets_duration() {
+        let tick_rate = Duration::from_millis(100);
+        let corrosive = Corrosive::new(0.25).with_tick_rate(tick_rate);
+
+        assert_eq!(corrosive.tick_timer.duration(), tick_rate);
+    }
 }

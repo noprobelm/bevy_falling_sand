@@ -117,7 +117,7 @@ impl ColorProfile {
 }
 
 impl ColorProfile {
-    /// Creates a color profile with a palette of colors
+    /// Creates a color profile with a palette of colors.
     ///
     /// ```
     /// use bevy::prelude::*;
@@ -133,8 +133,16 @@ impl ColorProfile {
     ///     ));
     /// }
     /// ```
+    ///
+    /// # Panics
+    ///
+    /// Panics if `colors` is empty.
     #[must_use]
     pub fn palette(colors: Vec<Color>) -> Self {
+        assert!(
+            !colors.is_empty(),
+            "ColorProfile::palette requires at least 1 color"
+        );
         Self {
             source: ColorSource::Palette(Palette { index: 0, colors }),
             ..default()
@@ -236,11 +244,17 @@ impl ColorProfile {
     pub fn random_with_index<R: Rng>(&self, rng: &mut R) -> Option<(Color, usize)> {
         match &self.source {
             ColorSource::Palette(palette) => {
+                if palette.colors.is_empty() {
+                    return None;
+                }
                 let color_index = rng.index(0..palette.colors.len());
                 Some((palette.colors[color_index], color_index))
             }
             ColorSource::Gradient(gradient) => {
                 let total = gradient.total_steps();
+                if total == 0 {
+                    return None;
+                }
                 let random_step = rng.index(0..total);
                 Some((gradient.sample(random_step), random_step))
             }
@@ -253,7 +267,7 @@ impl ColorProfile {
 
     /// Gets a color at a specific index.
     ///
-    /// Returns `None` for texture-based profiles, which are colored by world position instead.
+    /// Returns `None` when `index` is outside a palette or for texture-based profiles.
     ///
     /// ```
     /// use bevy::prelude::*;
@@ -270,7 +284,7 @@ impl ColorProfile {
     #[must_use]
     pub fn index(&self, index: usize) -> Option<Color> {
         match &self.source {
-            ColorSource::Palette(palette) => Some(palette.colors[index]),
+            ColorSource::Palette(palette) => palette.colors.get(index).copied(),
             ColorSource::Gradient(gradient) => Some(gradient.sample(index)),
             ColorSource::Texture(_) => {
                 warn!("index is not supported for texture-based ColorProfiles");
@@ -300,11 +314,17 @@ impl ColorProfile {
     pub fn next(&mut self) -> Option<Color> {
         match &mut self.source {
             ColorSource::Palette(palette) => {
+                if palette.colors.is_empty() {
+                    return None;
+                }
                 palette.index = (palette.index + 1) % palette.colors.len();
                 Some(palette.colors[palette.index])
             }
             ColorSource::Gradient(gradient) => {
                 let total = gradient.total_steps();
+                if total == 0 {
+                    return None;
+                }
                 gradient.index = (gradient.index + 1) % total;
                 Some(gradient.sample(gradient.index))
             }
@@ -342,8 +362,8 @@ impl ColorProfile {
 
     /// Removes a color from the palette at the given index.
     ///
-    /// Returns `Some(true)` if the color was removed, `Some(false)` if the palette
-    /// only has one color remaining, or `None` for non-palette profiles.
+    /// Returns `Some(true)` if the color was removed, `Some(false)` if `index` is invalid or the
+    /// palette only has one color, and `None` for non-palette profiles.
     ///
     /// ```
     /// use bevy::prelude::*;
@@ -360,7 +380,7 @@ impl ColorProfile {
     pub fn remove_color(&mut self, index: usize) -> Option<bool> {
         match &mut self.source {
             ColorSource::Palette(palette) => {
-                if palette.colors.len() <= 1 {
+                if palette.colors.len() <= 1 || index >= palette.colors.len() {
                     return Some(false);
                 }
                 palette.colors.remove(index);
@@ -378,7 +398,7 @@ impl ColorProfile {
 
     /// Edits the color at the given index and updates current color if needed.
     ///
-    /// Returns `None` for non-palette profiles.
+    /// Returns `None` if `index` is invalid or for non-palette profiles.
     ///
     /// ```
     /// use bevy::prelude::*;
@@ -390,10 +410,10 @@ impl ColorProfile {
     /// ```
     pub fn edit_color(&mut self, index: usize, new_color: Color) -> Option<()> {
         match &mut self.source {
-            ColorSource::Palette(palette) => {
-                palette.colors[index] = new_color;
-                Some(())
-            }
+            ColorSource::Palette(palette) => palette
+                .colors
+                .get_mut(index)
+                .map(|color| *color = new_color),
             ColorSource::Gradient(_) | ColorSource::Texture(_) => {
                 warn!("edit_color is only supported for palette-based ColorProfiles");
                 None
@@ -458,14 +478,41 @@ impl ColorProfile {
 ///     writer.write(
 ///         SpawnParticleSignal::new(sand.0, IVec2::new(5, 5))
 ///             .with_on_spawn(move |cmd| {
-///                 cmd.insert(ForceColor(forced));
+///                 cmd.insert(ForceColor::new(forced));
 ///             }),
 ///     );
 /// }
 /// ```
 #[derive(Component, Copy, Clone, Default, PartialEq, Debug, Reflect, Serialize, Deserialize)]
 #[reflect(Component, Default)]
+#[repr(transparent)]
 pub struct ForceColor(pub Color);
+
+impl ForceColor {
+    /// Create a forced particle color.
+    #[must_use]
+    pub const fn new(color: Color) -> Self {
+        Self(color)
+    }
+
+    /// Return the forced color.
+    #[must_use]
+    pub const fn get(self) -> Color {
+        self.0
+    }
+}
+
+impl From<Color> for ForceColor {
+    fn from(color: Color) -> Self {
+        Self::new(color)
+    }
+}
+
+impl From<ForceColor> for Color {
+    fn from(force_color: ForceColor) -> Self {
+        force_color.get()
+    }
+}
 
 /// Component that allows particles to change color based on an input chance.
 #[derive(

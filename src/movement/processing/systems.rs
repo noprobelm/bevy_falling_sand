@@ -701,7 +701,7 @@ pub(super) fn handle_movement_by_particles(
 
                                     swap_particle_positions(&mut position, &mut neighbor_position);
                                     if let Some(ref mut momentum) = momentum {
-                                        momentum.0 = IVec2::ZERO;
+                                        **momentum = Momentum::ZERO;
                                     }
                                     speed.decrement();
                                     moved = true;
@@ -727,7 +727,7 @@ pub(super) fn handle_movement_by_particles(
 
                                 position.0 = neighbor_position;
                                 if let Some(ref mut momentum) = momentum {
-                                    momentum.0 = relative_position;
+                                    **momentum = Momentum::from(relative_position);
                                 }
                                 speed.increment();
                                 moved = true;
@@ -742,7 +742,7 @@ pub(super) fn handle_movement_by_particles(
                     movement_state.visited_positions.insert(position.0);
                 } else {
                     if let Some(ref mut momentum) = momentum {
-                        momentum.0 = IVec2::ZERO;
+                        **momentum = Momentum::ZERO;
                     }
                     speed.decrement();
                 }

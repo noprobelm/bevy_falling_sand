@@ -94,13 +94,9 @@ impl Plugin for FirePlugin {
 /// fn setup(mut commands: Commands) {
 ///     commands.spawn((
 ///         ParticleType::new(),
-///         Flammable {
-///             duration: Duration::from_secs(5),
-///             tick_rate: Duration::from_millis(100),
-///             chance_to_ignite: 0.3,
-///             spreads_fire: true,
-///             ..default()
-///         },
+///         Flammable::new(Duration::from_secs(5), Duration::from_millis(100))
+///             .with_chance_to_ignite(0.3)
+///             .with_fire_spread(1.0),
 ///     ));
 /// }
 /// ```
@@ -161,8 +157,7 @@ impl Flammable {
 }
 
 impl Flammable {
-    /// Initialize a new `Flammable` with a specific duration, tick rate, and various optional parameters
-    /// which exert influence on behavior.
+    /// Create flammability settings with a burn duration and tick rate.
     ///
     /// # Examples
     ///
@@ -170,37 +165,68 @@ impl Flammable {
     /// use std::time::Duration;
     /// use bevy_falling_sand::reactions::Flammable;
     ///
-    /// let burns = Flammable::new(
-    ///     Duration::from_secs(5),
-    ///     Duration::from_millis(100),
-    ///     0.1, None, 0.3, true, 1.0, false, false,
-    /// );
+    /// let burns = Flammable::new(Duration::from_secs(5), Duration::from_millis(100))
+    ///     .with_chance_despawn_per_tick(0.1)
+    ///     .with_chance_to_ignite(0.3)
+    ///     .with_fire_spread(1.0);
     /// assert_eq!(burns.chance_to_ignite, 0.3);
     /// ```
     #[must_use]
-    #[allow(clippy::too_many_arguments)]
-    pub const fn new(
-        duration: Duration,
-        tick_rate: Duration,
-        chance_destroy_per_tick: f64,
-        reaction: Option<BurnProduct>,
-        chance_to_ignite: f64,
-        spreads_fire: bool,
-        spread_radius: f32,
-        despawn_on_extinguish: bool,
-        ignites_on_spawn: bool,
-    ) -> Self {
+    pub const fn new(duration: Duration, tick_rate: Duration) -> Self {
         Self {
             duration,
             tick_rate,
-            chance_despawn_per_tick: chance_destroy_per_tick,
-            reaction,
-            chance_to_ignite,
-            spreads_fire,
-            spread_radius,
-            despawn_on_extinguish,
-            ignites_on_spawn,
+            chance_despawn_per_tick: 0.0,
+            reaction: None,
+            chance_to_ignite: 0.0,
+            spreads_fire: false,
+            spread_radius: 1.0,
+            despawn_on_extinguish: false,
+            ignites_on_spawn: false,
         }
+    }
+
+    /// Set the chance of despawning per burn tick.
+    #[must_use]
+    pub const fn with_chance_despawn_per_tick(mut self, chance: f64) -> Self {
+        self.chance_despawn_per_tick = chance;
+        self
+    }
+
+    /// Set the particle produced while burning.
+    #[must_use]
+    pub const fn with_reaction(mut self, reaction: BurnProduct) -> Self {
+        self.reaction = Some(reaction);
+        self
+    }
+
+    /// Set the chance of ignition from a neighboring fire.
+    #[must_use]
+    pub const fn with_chance_to_ignite(mut self, chance: f64) -> Self {
+        self.chance_to_ignite = chance;
+        self
+    }
+
+    /// Enable fire spread with the given radius.
+    #[must_use]
+    pub const fn with_fire_spread(mut self, radius: f32) -> Self {
+        self.spreads_fire = true;
+        self.spread_radius = radius;
+        self
+    }
+
+    /// Despawn the particle when burning ends.
+    #[must_use]
+    pub const fn with_despawn_on_extinguish(mut self) -> Self {
+        self.despawn_on_extinguish = true;
+        self
+    }
+
+    /// Ignite the particle when it spawns.
+    #[must_use]
+    pub const fn with_ignites_on_spawn(mut self) -> Self {
+        self.ignites_on_spawn = true;
+        self
     }
 
     /// Initialize a new [`Burning`] from [`Flammable`] data.
@@ -209,14 +235,9 @@ impl Flammable {
     ///
     /// ```
     /// use std::time::Duration;
-    /// use bevy::prelude::default;
     /// use bevy_falling_sand::reactions::{Flammable, Burning};
     ///
-    /// let burns = Flammable {
-    ///     duration: Duration::from_secs(5),
-    ///     tick_rate: Duration::from_millis(100),
-    ///     ..default()
-    /// };
+    /// let burns = Flammable::new(Duration::from_secs(5), Duration::from_millis(100));
     /// let burning = burns.to_burning();
     /// assert!(!burning.timer.is_finished());
     /// ```
@@ -372,10 +393,10 @@ fn handle_ignites_on_spawn(
             let mut entity_commands = commands.entity(entity);
             entity_commands.insert(burns.to_burning());
             if burns.chance_despawn_per_tick > 0.0 {
-                entity_commands.insert(ChanceLifetime::with_tick_rate(
-                    burns.chance_despawn_per_tick,
-                    burns.tick_rate,
-                ));
+                entity_commands.insert(
+                    ChanceLifetime::new(burns.chance_despawn_per_tick)
+                        .with_tick_rate(burns.tick_rate),
+                );
             }
             if let Some(reaction) = &burns.reaction {
                 entity_commands.insert(reaction.clone());
@@ -478,10 +499,10 @@ fn handle_fire(
             let mut entity_commands = commands.entity(neighbor_entity);
             entity_commands.insert(burns.to_burning());
             if burns.chance_despawn_per_tick > 0.0 {
-                entity_commands.insert(ChanceLifetime::with_tick_rate(
-                    burns.chance_despawn_per_tick,
-                    burns.tick_rate,
-                ));
+                entity_commands.insert(
+                    ChanceLifetime::new(burns.chance_despawn_per_tick)
+                        .with_tick_rate(burns.tick_rate),
+                );
             }
             if let Some(reaction) = &burns.reaction {
                 entity_commands.insert(reaction.clone());
@@ -493,4 +514,46 @@ fn handle_fire(
             }
         }
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn flammable_constructor_sets_defaults() {
+        let duration = Duration::from_secs(5);
+        let tick_rate = Duration::from_millis(100);
+        let flammable = Flammable::new(duration, tick_rate);
+
+        assert_eq!(flammable.duration, duration);
+        assert_eq!(flammable.tick_rate, tick_rate);
+        assert_eq!(flammable.chance_despawn_per_tick, 0.0);
+        assert_eq!(flammable.reaction, None);
+        assert_eq!(flammable.chance_to_ignite, 0.0);
+        assert!(!flammable.spreads_fire);
+        assert_eq!(flammable.spread_radius, 1.0);
+        assert!(!flammable.despawn_on_extinguish);
+        assert!(!flammable.ignites_on_spawn);
+    }
+
+    #[test]
+    fn flammable_builders_set_options() {
+        let reaction = BurnProduct::new(ParticleTypeId::new(), 0.25);
+        let flammable = Flammable::new(Duration::from_secs(5), Duration::from_millis(100))
+            .with_chance_despawn_per_tick(0.1)
+            .with_reaction(reaction.clone())
+            .with_chance_to_ignite(0.3)
+            .with_fire_spread(2.0)
+            .with_despawn_on_extinguish()
+            .with_ignites_on_spawn();
+
+        assert_eq!(flammable.chance_despawn_per_tick, 0.1);
+        assert_eq!(flammable.reaction, Some(reaction));
+        assert_eq!(flammable.chance_to_ignite, 0.3);
+        assert!(flammable.spreads_fire);
+        assert_eq!(flammable.spread_radius, 2.0);
+        assert!(flammable.despawn_on_extinguish);
+        assert!(flammable.ignites_on_spawn);
+    }
 }

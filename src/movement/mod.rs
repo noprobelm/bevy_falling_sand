@@ -40,7 +40,7 @@
 //!         ]),
 //!         // If we wanted `Sand` to pass through `Water`, ensure water's density is less than
 //!         // `1250`.
-//!         Density(1250),
+//!         Density::new(1250),
 //!         // Max speed of 10, stepping up speed every 5 moves that execute unobstructed
 //!         Speed::new(5, 10),
 //!     ));

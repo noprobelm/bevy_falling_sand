@@ -83,7 +83,7 @@ fn setup(
         Color::srgba(0.91, 0.89, 0.71, 1.0),
         Color::srgba(0.95, 0.61, 0.43, 1.0),
     ]);
-    let density = Density(100);
+    let density = Density::new(100);
     let speed = Speed::new(0, 1);
 
     let dirt_wall = ParticleType::new();

@@ -182,7 +182,7 @@ fn spawn_loaded_particles(
 
                 if px < img.width() && py < img.height() {
                     let pixel = img.get_pixel(px, py);
-                    Some(ForceColor(Color::srgba(
+                    Some(ForceColor::new(Color::srgba(
                         f32::from(pixel[0]) / 255.0,
                         f32::from(pixel[1]) / 255.0,
                         f32::from(pixel[2]) / 255.0,

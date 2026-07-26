@@ -143,7 +143,7 @@ fn setup(mut commands: Commands) {
 
     commands.spawn((
         ParticleType::from_id(ids.water),
-        Density(750),
+        Density::new(750),
         Speed::new(0, 3),
         ColorProfile::palette(vec![Color::Srgba(Srgba::hex("#0B80AB80").unwrap())]),
         Movement::from(vec![
@@ -160,7 +160,7 @@ fn setup(mut commands: Commands) {
     ));
     commands.spawn((
         ParticleType::from_id(ids.sand),
-        Density(1250),
+        Density::new(1250),
         Speed::new(5, 10),
         ColorProfile::palette(vec![
             Color::Srgba(Srgba::hex("#FFEB8A").unwrap()),
@@ -174,7 +174,7 @@ fn setup(mut commands: Commands) {
     ));
     commands.spawn((
         ParticleType::from_id(ids.smoke),
-        Density(275),
+        Density::new(275),
         Speed::new(0, 1),
         ColorProfile::palette(vec![
             Color::Srgba(Srgba::hex("#706966").unwrap()),

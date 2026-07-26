@@ -119,7 +119,7 @@ impl Default for DefaultFire {
             neighbors.push(vec![IVec2::X * (i + 2), IVec2::NEG_X * (i + 2)]);
         }
         DefaultFire(
-            Density(450),
+            Density::new(450),
             Speed::new(0, 3),
             ColorProfile::palette(vec![
                 Color::Srgba(Srgba::hex("#FF5900FF").unwrap()),
@@ -128,17 +128,11 @@ impl Default for DefaultFire {
                 Color::Srgba(Srgba::hex("#C74A05FF").unwrap()),
             ]),
             Movement::from(neighbors),
-            Flammable::new(
-                Duration::from_secs(1),
-                Duration::from_millis(100),
-                0.5,
-                None,
-                0.01,
-                true,
-                1.0,
-                false,
-                true,
-            ),
+            Flammable::new(Duration::from_secs(1), Duration::from_millis(100))
+                .with_chance_despawn_per_tick(0.5)
+                .with_chance_to_ignite(0.01)
+                .with_fire_spread(1.0)
+                .with_ignites_on_spawn(),
             BurnEffect,
             Name::new("FIRE"),
         )
@@ -159,7 +153,7 @@ struct DefaultFlammableGas(
 impl Default for DefaultFlammableGas {
     fn default() -> Self {
         DefaultFlammableGas(
-            Density(200),
+            Density::new(200),
             Speed::new(0, 1),
             ColorProfile::palette(vec![
                 Color::Srgba(Srgba::hex("#40621880").unwrap()),
@@ -169,17 +163,11 @@ impl Default for DefaultFlammableGas {
                 vec![IVec2::Y, IVec2::new(1, 1), IVec2::new(-1, 1)],
                 vec![IVec2::new(0, 2), IVec2::new(0, -2)],
             ]),
-            Flammable::new(
-                Duration::from_secs(1),
-                Duration::from_millis(50),
-                0.5,
-                None,
-                0.175,
-                true,
-                1.0,
-                true,
-                false,
-            ),
+            Flammable::new(Duration::from_secs(1), Duration::from_millis(50))
+                .with_chance_despawn_per_tick(0.5)
+                .with_chance_to_ignite(0.175)
+                .with_fire_spread(1.0)
+                .with_despawn_on_extinguish(),
             GasEffect,
             Name::new("Flammable Gas"),
         )
@@ -216,7 +204,7 @@ fn setup(
         }
         commands.spawn((
             ParticleType::from_id(ids.smoke),
-            Density(275),
+            Density::new(275),
             Speed::new(0, 1),
             ColorProfile::palette(vec![
                 Color::Srgba(Srgba::hex("#706966").unwrap()),

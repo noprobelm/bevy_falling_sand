@@ -60,7 +60,7 @@ fn load_texture_handles(
 
 fn propagate_color(entity: Entity, parent: Entity, commands: &mut Commands) {
     commands.queue(move |world: &mut World| {
-        let force_color = world.get::<ForceColor>(entity).map(|fc| fc.0);
+        let force_color = world.get::<ForceColor>(entity).map(|fc| fc.get());
         if let Some(color) = force_color {
             world.entity_mut(entity).insert(ParticleColor(color));
             return;
@@ -346,7 +346,7 @@ mod tests {
                 SpawnParticleSignal::new(ParticleTypeId::from_raw(0), IVec2::new(0, 0))
                     .with_on_spawn({
                         move |cmd| {
-                            cmd.insert(ForceColor(forced));
+                            cmd.insert(ForceColor::from(forced));
                         }
                     }),
             );
@@ -371,6 +371,15 @@ mod tests {
                 && (assigned.blue - expected.blue).abs() < 0.01,
             "ForceColor should override the profile"
         );
+    }
+
+    #[test]
+    fn force_color_converts_to_and_from_color() {
+        let color = Color::srgb(0.25, 0.5, 0.75);
+        let forced = ForceColor::from(color);
+        assert_eq!(forced, ForceColor::new(color));
+        assert_eq!(forced.get(), color);
+        assert_eq!(Color::from(forced), color);
     }
 
     #[test]
@@ -401,6 +410,40 @@ mod tests {
             "Should not remove last color"
         );
         assert_eq!(profile.colors().unwrap().len(), 1);
+    }
+
+    #[test]
+    #[should_panic(expected = "ColorProfile::palette requires at least 1 color")]
+    fn palette_rejects_empty_colors() {
+        let _ = ColorProfile::palette(Vec::new());
+    }
+
+    #[test]
+    fn palette_methods_handle_invalid_indices() {
+        let mut profile = ColorProfile::palette(vec![Color::WHITE, Color::BLACK]);
+
+        assert_eq!(profile.index(2), None);
+        assert_eq!(profile.edit_color(2, Color::NONE), None);
+        assert_eq!(profile.remove_color(2), Some(false));
+        assert_eq!(profile.colors().unwrap(), vec![Color::WHITE, Color::BLACK]);
+    }
+
+    #[test]
+    fn malformed_empty_palette_methods_return_none() {
+        let mut profile = ColorProfile {
+            source: ColorSource::Palette(Palette {
+                index: 0,
+                colors: Vec::new(),
+            }),
+            ..default()
+        };
+        let mut rng = WyRand::default();
+
+        assert_eq!(profile.random_with_index(&mut rng), None);
+        assert_eq!(profile.index(0), None);
+        assert_eq!(profile.next(), None);
+        assert_eq!(profile.edit_color(0, Color::WHITE), None);
+        assert_eq!(profile.remove_color(0), Some(false));
     }
 
     #[test]

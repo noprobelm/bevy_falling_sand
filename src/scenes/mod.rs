@@ -431,7 +431,7 @@ fn write_particle_signals(
         });
         #[cfg(feature = "render")]
         let sig = sig.with_on_spawn(move |cmd| {
-            cmd.insert(ForceColor(color));
+            cmd.insert(ForceColor::from(color));
         });
         sig
     };

@@ -74,7 +74,34 @@ pub struct MovementRng(pub WyRand);
 )]
 #[reflect(Component, Debug)]
 #[type_path = "bfs_movement::particle"]
+#[repr(transparent)]
 pub struct Density(pub u32);
+
+impl Density {
+    /// Create a density from its numeric value.
+    #[must_use]
+    pub const fn new(value: u32) -> Self {
+        Self(value)
+    }
+
+    /// Return the numeric density value.
+    #[must_use]
+    pub const fn get(self) -> u32 {
+        self.0
+    }
+}
+
+impl From<u32> for Density {
+    fn from(value: u32) -> Self {
+        Self::new(value)
+    }
+}
+
+impl From<Density> for u32 {
+    fn from(density: Density) -> Self {
+        density.get()
+    }
+}
 
 /// Controls how many positions a particle can move per frame.
 ///
@@ -126,7 +153,9 @@ impl Default for Speed {
 }
 
 impl Speed {
-    /// Initialize a speed with the given threshold and max.
+    /// Initialize a speed with the given threshold and maximum speed.
+    ///
+    /// `max` is clamped to a minimum of 1.
     ///
     /// # Examples
     ///
@@ -145,7 +174,7 @@ impl Speed {
             current: 1,
             potential: 0,
             threshold,
-            max,
+            max: if max < 1 { 1 } else { max },
         }
     }
 
@@ -177,10 +206,10 @@ impl Speed {
         self.max
     }
 
-    /// Set the current speed.
+    /// Set the current speed, clamped to the maximum speed.
     #[inline(always)]
     pub const fn set_speed(&mut self, val: u8) {
-        self.current = val;
+        self.current = if val > self.max { self.max } else { val };
     }
 
     /// Set the speed threshold.
@@ -192,11 +221,17 @@ impl Speed {
     /// Set the maximum speed. Clamps to a minimum of 1.
     #[inline(always)]
     pub const fn set_max_speed(&mut self, val: u8) {
-        if val < 1 {
-            self.max = 1;
-        } else {
-            self.max = val;
+        self.max = if val < 1 { 1 } else { val };
+        if self.current > self.max {
+            self.current = self.max;
         }
+    }
+
+    /// Reset the current speed and acceleration potential.
+    #[inline(always)]
+    pub const fn reset(&mut self) {
+        self.current = 1;
+        self.potential = 0;
     }
 
     /// Increment the speed by 1 if below max and potential meets threshold.
@@ -228,11 +263,36 @@ impl Speed {
 )]
 #[reflect(Component)]
 #[type_path = "bfs_movement::particle"]
+#[repr(transparent)]
 pub struct Momentum(pub IVec2);
 
 impl Momentum {
     /// Zero momentum.
     pub const ZERO: Self = Self(IVec2::splat(0));
+
+    /// Create momentum from a direction.
+    #[must_use]
+    pub const fn new(direction: IVec2) -> Self {
+        Self(direction)
+    }
+
+    /// Return the momentum direction.
+    #[must_use]
+    pub const fn get(self) -> IVec2 {
+        self.0
+    }
+}
+
+impl From<IVec2> for Momentum {
+    fn from(direction: IVec2) -> Self {
+        Self::new(direction)
+    }
+}
+
+impl From<Momentum> for IVec2 {
+    fn from(momentum: Momentum) -> Self {
+        momentum.get()
+    }
 }
 
 /// How much this particle resists being displaced by another particle swapping into its
@@ -339,7 +399,7 @@ impl NeighborGroup {
             && let Some(position) = self
                 .neighbor_group
                 .iter()
-                .position(|&candidate| momentum.0 == candidate)
+                .position(|&candidate| momentum.get() == candidate)
         {
             return NeighborGroupIter::Single(iter::once(&self.neighbor_group[position]));
         }
@@ -445,9 +505,59 @@ impl AirResistance {
         self.resistances.iter()
     }
 
+    /// Iterate mutably through the resistance values.
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut f64> {
+        self.resistances.iter_mut()
+    }
+
     /// Resize to len, padding with 0.0.
     pub(crate) fn resize(&mut self, len: usize) {
         self.resistances.resize(len, 0.0);
+    }
+}
+
+impl FromIterator<f64> for AirResistance {
+    fn from_iter<T: IntoIterator<Item = f64>>(iter: T) -> Self {
+        Self::new(iter)
+    }
+}
+
+impl Extend<f64> for AirResistance {
+    fn extend<T: IntoIterator<Item = f64>>(&mut self, iter: T) {
+        self.resistances.extend(iter);
+    }
+}
+
+impl AsRef<[f64]> for AirResistance {
+    fn as_ref(&self) -> &[f64] {
+        &self.resistances
+    }
+}
+
+impl IntoIterator for AirResistance {
+    type Item = f64;
+    type IntoIter = smallvec::IntoIter<[f64; 8]>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.resistances.into_iter()
+    }
+}
+
+impl<'a> IntoIterator for &'a AirResistance {
+    type Item = &'a f64;
+    type IntoIter = std::slice::Iter<'a, f64>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.resistances.iter()
+    }
+}
+
+impl<'a> IntoIterator for &'a mut AirResistance {
+    type Item = &'a mut f64;
+    type IntoIter = std::slice::IterMut<'a, f64>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.resistances.iter_mut()
     }
 }
 
@@ -478,7 +588,7 @@ impl AirResistance {
 ///             vec![IVec2::NEG_ONE, IVec2::new(1, -1)],
 ///         ]),
 ///         // This particle will swap positions with movement candidates of lower densities.
-///         Density(1250),
+///         Density::new(1250),
 ///         // Defines a speed increase threshold of `5`, with a max speed of `10`. When this
 ///         // particle moves unobstructed `5` consecutive times, it will increment its speed by
 ///         // `1`, creating an acceleration-like effect.
@@ -503,7 +613,7 @@ impl AirResistance {
 ///             vec![IVec2::new(5, 0), IVec2::new(-5, 0)],
 ///         ]),
 ///         // The density of water is less than sand, so sand will pass through it.
-///         Density(750),
+///         Density::new(750),
 ///         // This particle has no speed increase threshold; it will simply max out at 3 moves per
 ///         // frame.
 ///         Speed::new(0, 3),
@@ -535,6 +645,53 @@ impl From<Vec<Vec<IVec2>>> for Movement {
                 .map(|neighbor_group| NeighborGroup::new(SmallVec::from_vec(neighbor_group)))
                 .collect::<SmallVec<[NeighborGroup; 8]>>(),
         )
+    }
+}
+
+impl FromIterator<NeighborGroup> for Movement {
+    fn from_iter<T: IntoIterator<Item = NeighborGroup>>(iter: T) -> Self {
+        Self {
+            neighbor_groups: iter.into_iter().collect(),
+        }
+    }
+}
+
+impl Extend<NeighborGroup> for Movement {
+    fn extend<T: IntoIterator<Item = NeighborGroup>>(&mut self, iter: T) {
+        self.neighbor_groups.extend(iter);
+    }
+}
+
+impl AsRef<[NeighborGroup]> for Movement {
+    fn as_ref(&self) -> &[NeighborGroup] {
+        &self.neighbor_groups
+    }
+}
+
+impl IntoIterator for Movement {
+    type Item = NeighborGroup;
+    type IntoIter = smallvec::IntoIter<[NeighborGroup; 8]>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.neighbor_groups.into_iter()
+    }
+}
+
+impl<'a> IntoIterator for &'a Movement {
+    type Item = &'a NeighborGroup;
+    type IntoIter = std::slice::Iter<'a, NeighborGroup>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.neighbor_groups.iter()
+    }
+}
+
+impl<'a> IntoIterator for &'a mut Movement {
+    type Item = &'a mut NeighborGroup;
+    type IntoIter = std::slice::IterMut<'a, NeighborGroup>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.neighbor_groups.iter_mut()
     }
 }
 
@@ -578,6 +735,22 @@ impl Movement {
     #[must_use]
     pub fn len(&self) -> usize {
         self.neighbor_groups.len()
+    }
+
+    /// Iterate through the neighbor groups.
+    pub fn iter(&self) -> impl Iterator<Item = &NeighborGroup> {
+        self.neighbor_groups.iter()
+    }
+
+    /// Iterate mutably through the neighbor groups.
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut NeighborGroup> {
+        self.neighbor_groups.iter_mut()
+    }
+
+    /// Get a neighbor group by index.
+    #[must_use]
+    pub fn get(&self, index: usize) -> Option<&NeighborGroup> {
+        self.neighbor_groups.get(index)
     }
 
     /// Push a new tier of neighbors.
@@ -643,6 +816,23 @@ impl Movement {
 mod tests {
     use super::*;
 
+    #[test]
+    fn density_converts_to_and_from_u32() {
+        let density = Density::from(1_250);
+        assert_eq!(density, Density::new(1_250));
+        assert_eq!(density.get(), 1_250);
+        assert_eq!(u32::from(density), 1_250);
+    }
+
+    #[test]
+    fn momentum_converts_to_and_from_ivec2() {
+        let direction = IVec2::new(1, -1);
+        let momentum = Momentum::from(direction);
+        assert_eq!(momentum, Momentum::new(direction));
+        assert_eq!(momentum.get(), direction);
+        assert_eq!(IVec2::from(momentum), direction);
+    }
+
     mod speed_tests {
         use super::*;
 
@@ -653,6 +843,13 @@ mod tests {
             assert_eq!(speed.threshold(), 3);
             assert_eq!(speed.max_speed(), 10);
             assert_eq!(speed.potential(), 0);
+        }
+
+        #[test]
+        fn new_clamps_max_to_1() {
+            let speed = Speed::new(3, 0);
+            assert_eq!(speed.current(), 1);
+            assert_eq!(speed.max_speed(), 1);
         }
 
         #[test]
@@ -719,6 +916,13 @@ mod tests {
         }
 
         #[test]
+        fn set_speed_clamps_to_max() {
+            let mut speed = Speed::new(1, 5);
+            speed.set_speed(10);
+            assert_eq!(speed.current(), 5);
+        }
+
+        #[test]
         fn set_max_speed_clamps_to_1() {
             let mut speed = Speed::new(1, 10);
             speed.set_max_speed(0);
@@ -726,6 +930,25 @@ mod tests {
 
             speed.set_max_speed(5);
             assert_eq!(speed.max_speed(), 5);
+        }
+
+        #[test]
+        fn lowering_max_clamps_current() {
+            let mut speed = Speed::new(1, 10);
+            speed.set_speed(8);
+            speed.set_max_speed(3);
+            assert_eq!(speed.current(), 3);
+            assert_eq!(speed.max_speed(), 3);
+        }
+
+        #[test]
+        fn reset_restores_initial_state() {
+            let mut speed = Speed::new(3, 10);
+            speed.set_speed(5);
+            speed.increment();
+            speed.reset();
+            assert_eq!(speed.current(), 1);
+            assert_eq!(speed.potential(), 0);
         }
     }
 
@@ -816,6 +1039,31 @@ mod tests {
             let ar = AirResistance::new([]);
             assert!(ar.is_empty());
         }
+
+        #[test]
+        fn collection_traits_preserve_values() {
+            let mut resistance: AirResistance = [0.1, 0.2].into_iter().collect();
+            resistance.extend([0.3]);
+
+            assert_eq!(resistance.as_ref(), &[0.1, 0.2, 0.3]);
+            assert_eq!(
+                (&resistance).into_iter().copied().collect::<Vec<_>>(),
+                vec![0.1, 0.2, 0.3]
+            );
+            assert_eq!(
+                resistance.into_iter().collect::<Vec<_>>(),
+                vec![0.1, 0.2, 0.3]
+            );
+        }
+
+        #[test]
+        fn mutable_iteration_updates_values() {
+            let mut resistance = AirResistance::new([0.125, 0.25]);
+            for value in &mut resistance {
+                *value += 0.125;
+            }
+            assert_eq!(resistance.as_ref(), &[0.25, 0.375]);
+        }
     }
 
     mod movement_tests {
@@ -891,6 +1139,31 @@ mod tests {
             let group = m.get_mut(0).unwrap();
             group.push(IVec2::Y);
             assert_eq!(m.neighbor_groups[0].len(), 2);
+        }
+
+        #[test]
+        fn collection_traits_preserve_groups() {
+            let first = NeighborGroup::new(SmallVec::from_buf([IVec2::NEG_Y; 4]));
+            let second = NeighborGroup::empty();
+            let mut movement: Movement = std::iter::once(first.clone()).collect();
+            movement.extend([second.clone()]);
+
+            assert_eq!(movement.as_ref(), &[first.clone(), second.clone()]);
+            assert_eq!(movement.iter().count(), 2);
+            assert_eq!(movement.get(0), Some(&first));
+            assert_eq!(
+                movement.into_iter().collect::<Vec<_>>(),
+                vec![first, second]
+            );
+        }
+
+        #[test]
+        fn mutable_iteration_updates_groups() {
+            let mut movement: Movement = std::iter::once(NeighborGroup::empty()).collect();
+            for group in &mut movement {
+                group.push(IVec2::NEG_Y);
+            }
+            assert_eq!(movement.get(0).unwrap().len(), 1);
         }
     }
 }
