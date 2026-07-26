@@ -63,10 +63,12 @@ pub(crate) enum LocateBy {
 /// [`ParticleType`] entity can be accessed via the [`ParticleTypeRegistry`] resource.
 ///
 /// Internally, an [`AtomicUsize`] counter is used to ensure IDs remain stable and aren't
-/// duplicately assigned. As such, `ParticleTypeId::from_raw` exists to allow users to reuse IDs
-/// between sessions without compromising the internal counter logic. One example of such use might
-/// be to store a [`ParticleTypeId`] to particle name mapper on disk, referencing the UIDs
-/// when spawning particle types during your app's initialization logic.
+/// duplicately assigned.
+///
+/// `ParticleTypeId::from_raw` exists to allow users to reuse IDs between sessions without
+/// compromising the internal counter logic. One example of this might be to store a
+/// [`ParticleTypeId`] to particle label mapper on disk, referencing the UIDs when spawning
+/// particle types during your app's initialization logic.
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Reflect, Serialize)]
 #[serde(transparent)]
 #[reflect(Serialize, Deserialize)]
@@ -76,8 +78,8 @@ static NEXT_PARTICLE_TYPE_ID: AtomicUsize = AtomicUsize::new(0);
 impl ParticleTypeId {
     /// Allocate a new unique particle type identifier.
     ///
-    /// Use this for ordinary runtime particle type creation. Store the returned ID wherever you
-    /// will later need to spawn, mutate, despawn, or otherwise refer to the type.
+    /// Use for ordinary runtime particle type creation. Store the returned ID wherever you
+    /// will later need to refer to the type.
     #[must_use]
     pub fn new() -> Self {
         Self(NEXT_PARTICLE_TYPE_ID.fetch_add(1, Ordering::Relaxed))
@@ -85,8 +87,7 @@ impl ParticleTypeId {
 
     /// Return the underlying numeric value.
     ///
-    /// This is useful for diagnostics, UI display, or external formats that need a primitive
-    /// integer. Prefer passing [`ParticleTypeId`] itself through Rust APIs.
+    /// This is useful for diagnostics. Prefer passing [`ParticleTypeId`] itself through APs.
     #[must_use]
     pub const fn get(self) -> usize {
         self.0
