@@ -404,6 +404,40 @@ mod tests {
     }
 
     #[test]
+    #[should_panic(expected = "ColorProfile::palette requires at least 1 color")]
+    fn palette_rejects_empty_colors() {
+        let _ = ColorProfile::palette(Vec::new());
+    }
+
+    #[test]
+    fn palette_methods_handle_invalid_indices() {
+        let mut profile = ColorProfile::palette(vec![Color::WHITE, Color::BLACK]);
+
+        assert_eq!(profile.index(2), None);
+        assert_eq!(profile.edit_color(2, Color::NONE), None);
+        assert_eq!(profile.remove_color(2), Some(false));
+        assert_eq!(profile.colors().unwrap(), vec![Color::WHITE, Color::BLACK]);
+    }
+
+    #[test]
+    fn malformed_empty_palette_methods_return_none() {
+        let mut profile = ColorProfile {
+            source: ColorSource::Palette(Palette {
+                index: 0,
+                colors: Vec::new(),
+            }),
+            ..default()
+        };
+        let mut rng = WyRand::default();
+
+        assert_eq!(profile.random_with_index(&mut rng), None);
+        assert_eq!(profile.index(0), None);
+        assert_eq!(profile.next(), None);
+        assert_eq!(profile.edit_color(0, Color::WHITE), None);
+        assert_eq!(profile.remove_color(0), Some(false));
+    }
+
+    #[test]
     fn colors_returns_all_for_gradient() {
         let profile = ColorProfile::gradient(
             vec![
