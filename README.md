@@ -56,7 +56,7 @@ fn setup(mut commands: Commands) {
             vec![IVec2::NEG_Y],
             vec![IVec2::NEG_ONE, IVec2::new(1, -1)],
         ]),
-        Density(1250),
+        Density::new(1250),
         Speed::new(5, 10),
     ));
 }

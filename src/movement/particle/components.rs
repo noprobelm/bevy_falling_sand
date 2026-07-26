@@ -74,7 +74,34 @@ pub struct MovementRng(pub WyRand);
 )]
 #[reflect(Component, Debug)]
 #[type_path = "bfs_movement::particle"]
+#[repr(transparent)]
 pub struct Density(pub u32);
+
+impl Density {
+    /// Create a density from its numeric value.
+    #[must_use]
+    pub const fn new(value: u32) -> Self {
+        Self(value)
+    }
+
+    /// Return the numeric density value.
+    #[must_use]
+    pub const fn get(self) -> u32 {
+        self.0
+    }
+}
+
+impl From<u32> for Density {
+    fn from(value: u32) -> Self {
+        Self::new(value)
+    }
+}
+
+impl From<Density> for u32 {
+    fn from(density: Density) -> Self {
+        density.get()
+    }
+}
 
 /// Controls how many positions a particle can move per frame.
 ///
@@ -236,11 +263,36 @@ impl Speed {
 )]
 #[reflect(Component)]
 #[type_path = "bfs_movement::particle"]
+#[repr(transparent)]
 pub struct Momentum(pub IVec2);
 
 impl Momentum {
     /// Zero momentum.
     pub const ZERO: Self = Self(IVec2::splat(0));
+
+    /// Create momentum from a direction.
+    #[must_use]
+    pub const fn new(direction: IVec2) -> Self {
+        Self(direction)
+    }
+
+    /// Return the momentum direction.
+    #[must_use]
+    pub const fn get(self) -> IVec2 {
+        self.0
+    }
+}
+
+impl From<IVec2> for Momentum {
+    fn from(direction: IVec2) -> Self {
+        Self::new(direction)
+    }
+}
+
+impl From<Momentum> for IVec2 {
+    fn from(momentum: Momentum) -> Self {
+        momentum.get()
+    }
 }
 
 /// How much this particle resists being displaced by another particle swapping into its
@@ -347,7 +399,7 @@ impl NeighborGroup {
             && let Some(position) = self
                 .neighbor_group
                 .iter()
-                .position(|&candidate| momentum.0 == candidate)
+                .position(|&candidate| momentum.get() == candidate)
         {
             return NeighborGroupIter::Single(iter::once(&self.neighbor_group[position]));
         }
@@ -486,7 +538,7 @@ impl AirResistance {
 ///             vec![IVec2::NEG_ONE, IVec2::new(1, -1)],
 ///         ]),
 ///         // This particle will swap positions with movement candidates of lower densities.
-///         Density(1250),
+///         Density::new(1250),
 ///         // Defines a speed increase threshold of `5`, with a max speed of `10`. When this
 ///         // particle moves unobstructed `5` consecutive times, it will increment its speed by
 ///         // `1`, creating an acceleration-like effect.
@@ -511,7 +563,7 @@ impl AirResistance {
 ///             vec![IVec2::new(5, 0), IVec2::new(-5, 0)],
 ///         ]),
 ///         // The density of water is less than sand, so sand will pass through it.
-///         Density(750),
+///         Density::new(750),
 ///         // This particle has no speed increase threshold; it will simply max out at 3 moves per
 ///         // frame.
 ///         Speed::new(0, 3),
@@ -650,6 +702,23 @@ impl Movement {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn density_converts_to_and_from_u32() {
+        let density = Density::from(1_250);
+        assert_eq!(density, Density::new(1_250));
+        assert_eq!(density.get(), 1_250);
+        assert_eq!(u32::from(density), 1_250);
+    }
+
+    #[test]
+    fn momentum_converts_to_and_from_ivec2() {
+        let direction = IVec2::new(1, -1);
+        let momentum = Momentum::from(direction);
+        assert_eq!(momentum, Momentum::new(direction));
+        assert_eq!(momentum.get(), direction);
+        assert_eq!(IVec2::from(momentum), direction);
+    }
 
     mod speed_tests {
         use super::*;

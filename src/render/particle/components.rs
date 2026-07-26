@@ -478,14 +478,41 @@ impl ColorProfile {
 ///     writer.write(
 ///         SpawnParticleSignal::new(sand.0, IVec2::new(5, 5))
 ///             .with_on_spawn(move |cmd| {
-///                 cmd.insert(ForceColor(forced));
+///                 cmd.insert(ForceColor::new(forced));
 ///             }),
 ///     );
 /// }
 /// ```
 #[derive(Component, Copy, Clone, Default, PartialEq, Debug, Reflect, Serialize, Deserialize)]
 #[reflect(Component, Default)]
+#[repr(transparent)]
 pub struct ForceColor(pub Color);
+
+impl ForceColor {
+    /// Create a forced particle color.
+    #[must_use]
+    pub const fn new(color: Color) -> Self {
+        Self(color)
+    }
+
+    /// Return the forced color.
+    #[must_use]
+    pub const fn get(self) -> Color {
+        self.0
+    }
+}
+
+impl From<Color> for ForceColor {
+    fn from(color: Color) -> Self {
+        Self::new(color)
+    }
+}
+
+impl From<ForceColor> for Color {
+    fn from(force_color: ForceColor) -> Self {
+        force_color.get()
+    }
+}
 
 /// Component that allows particles to change color based on an input chance.
 #[derive(

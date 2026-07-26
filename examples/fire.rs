@@ -119,7 +119,7 @@ impl Default for DefaultFire {
             neighbors.push(vec![IVec2::X * (i + 2), IVec2::NEG_X * (i + 2)]);
         }
         DefaultFire(
-            Density(450),
+            Density::new(450),
             Speed::new(0, 3),
             ColorProfile::palette(vec![
                 Color::Srgba(Srgba::hex("#FF5900FF").unwrap()),
@@ -159,7 +159,7 @@ struct DefaultFlammableGas(
 impl Default for DefaultFlammableGas {
     fn default() -> Self {
         DefaultFlammableGas(
-            Density(200),
+            Density::new(200),
             Speed::new(0, 1),
             ColorProfile::palette(vec![
                 Color::Srgba(Srgba::hex("#40621880").unwrap()),
@@ -216,7 +216,7 @@ fn setup(
         }
         commands.spawn((
             ParticleType::from_id(ids.smoke),
-            Density(275),
+            Density::new(275),
             Speed::new(0, 1),
             ColorProfile::palette(vec![
                 Color::Srgba(Srgba::hex("#706966").unwrap()),

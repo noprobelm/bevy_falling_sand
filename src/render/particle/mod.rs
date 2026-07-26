@@ -60,7 +60,7 @@ fn load_texture_handles(
 
 fn propagate_color(entity: Entity, parent: Entity, commands: &mut Commands) {
     commands.queue(move |world: &mut World| {
-        let force_color = world.get::<ForceColor>(entity).map(|fc| fc.0);
+        let force_color = world.get::<ForceColor>(entity).map(|fc| fc.get());
         if let Some(color) = force_color {
             world.entity_mut(entity).insert(ParticleColor(color));
             return;
@@ -346,7 +346,7 @@ mod tests {
                 SpawnParticleSignal::new(ParticleTypeId::from_raw(0), IVec2::new(0, 0))
                     .with_on_spawn({
                         move |cmd| {
-                            cmd.insert(ForceColor(forced));
+                            cmd.insert(ForceColor::from(forced));
                         }
                     }),
             );
@@ -371,6 +371,15 @@ mod tests {
                 && (assigned.blue - expected.blue).abs() < 0.01,
             "ForceColor should override the profile"
         );
+    }
+
+    #[test]
+    fn force_color_converts_to_and_from_color() {
+        let color = Color::srgb(0.25, 0.5, 0.75);
+        let forced = ForceColor::from(color);
+        assert_eq!(forced, ForceColor::new(color));
+        assert_eq!(forced.get(), color);
+        assert_eq!(Color::from(forced), color);
     }
 
     #[test]

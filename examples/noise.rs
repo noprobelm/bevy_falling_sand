@@ -96,7 +96,7 @@ fn setup(
 
     commands.spawn((
         ParticleType::from_id(ids.water),
-        Density(750),
+        Density::new(750),
         Speed::new(0, 3),
         ColorProfile::palette(vec![Color::Srgba(Srgba::hex("#0B80AB80").unwrap())]),
         Movement::from(vec![
@@ -114,7 +114,7 @@ fn setup(
     ));
     commands.spawn((
         ParticleType::from_id(ids.sand),
-        Density(1250),
+        Density::new(1250),
         Speed::new(5, 10),
         ColorProfile::palette(vec![
             Color::Srgba(Srgba::hex("#FFEB8A").unwrap()),
@@ -243,7 +243,7 @@ fn spawn_noise(
                 x as i32 - grid_width as i32 / 2,
                 y as i32 - grid_height as i32 / 2,
             );
-            let force_color = ForceColor(Color::Srgba(color));
+            let force_color = ForceColor::from(Color::Srgba(color));
             spawn_writer.write(
                 SpawnParticleSignal::overwrite_existing(ids.dirt_wall, position).with_on_spawn(
                     move |cmd| {
