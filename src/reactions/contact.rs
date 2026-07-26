@@ -57,15 +57,13 @@ impl Plugin for ContactPlugin {
 ///     commands.spawn(ParticleType::from_id(fire));
 ///     commands.spawn((
 ///         ParticleType::from_id(reacting_type),
-///         ContactReaction {
-///             rules: vec![ContactRule {
+///         ContactReaction::new([ContactRule {
 ///                 target: lava,
 ///                 becomes: fire,
 ///                 chance: 0.8,
 ///                 radius: 1.0,
 ///                 consumes: Consumes::Source,
-///             }],
-///         },
+///         }]),
 ///     ));
 /// }
 /// ```
@@ -75,6 +73,95 @@ impl Plugin for ContactPlugin {
 pub struct ContactReaction {
     /// The list of contact rules for this particle type.
     pub rules: Vec<ContactRule>,
+}
+
+impl ContactReaction {
+    /// Create contact reactions from rules.
+    #[must_use]
+    pub fn new(rules: impl IntoIterator<Item = ContactRule>) -> Self {
+        Self {
+            rules: rules.into_iter().collect(),
+        }
+    }
+
+    /// Add a rule and return the updated reactions.
+    #[must_use]
+    pub fn with_rule(mut self, rule: ContactRule) -> Self {
+        self.rules.push(rule);
+        self
+    }
+
+    /// Add a contact rule.
+    pub fn push(&mut self, rule: ContactRule) {
+        self.rules.push(rule);
+    }
+
+    /// Return the number of contact rules.
+    #[must_use]
+    pub fn len(&self) -> usize {
+        self.rules.len()
+    }
+
+    /// Return whether there are no contact rules.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.rules.is_empty()
+    }
+
+    /// Iterate through the contact rules.
+    pub fn iter(&self) -> impl Iterator<Item = &ContactRule> {
+        self.rules.iter()
+    }
+
+    /// Iterate mutably through the contact rules.
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut ContactRule> {
+        self.rules.iter_mut()
+    }
+}
+
+impl FromIterator<ContactRule> for ContactReaction {
+    fn from_iter<T: IntoIterator<Item = ContactRule>>(iter: T) -> Self {
+        Self::new(iter)
+    }
+}
+
+impl Extend<ContactRule> for ContactReaction {
+    fn extend<T: IntoIterator<Item = ContactRule>>(&mut self, iter: T) {
+        self.rules.extend(iter);
+    }
+}
+
+impl AsRef<[ContactRule]> for ContactReaction {
+    fn as_ref(&self) -> &[ContactRule] {
+        &self.rules
+    }
+}
+
+impl IntoIterator for ContactReaction {
+    type Item = ContactRule;
+    type IntoIter = std::vec::IntoIter<ContactRule>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.rules.into_iter()
+    }
+}
+
+impl<'a> IntoIterator for &'a ContactReaction {
+    type Item = &'a ContactRule;
+    type IntoIter = std::slice::Iter<'a, ContactRule>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.rules.iter()
+    }
+}
+
+impl<'a> IntoIterator for &'a mut ContactReaction {
+    type Item = &'a mut ContactRule;
+    type IntoIter = std::slice::IterMut<'a, ContactRule>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.rules.iter_mut()
+    }
 }
 
 /// A single contact reaction rule.
@@ -205,9 +292,9 @@ fn try_resolve(
     contact: &ContactReaction,
     registry: &ParticleTypeRegistry,
 ) -> Option<ResolvedContactReaction> {
-    let mut resolved_rules = Vec::with_capacity(contact.rules.len());
+    let mut resolved_rules = Vec::with_capacity(contact.len());
 
-    for rule in &contact.rules {
+    for rule in contact {
         let target_type = *registry.get(rule.target)?;
         let _ = registry.get(rule.becomes)?;
         resolved_rules.push(ResolvedContactRule {
@@ -309,4 +396,50 @@ fn handle_contact_reactions(
             }
         }
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn rule(id: usize) -> ContactRule {
+        ContactRule {
+            target: ParticleTypeId::from_raw(id),
+            becomes: ParticleTypeId::from_raw(id + 100),
+            ..default()
+        }
+    }
+
+    #[test]
+    fn collection_traits_preserve_rules() {
+        let first = rule(1);
+        let second = rule(2);
+        let third = rule(3);
+        let mut reactions: ContactReaction = [first.clone()].into_iter().collect();
+        reactions.extend([second.clone()]);
+        reactions.push(third.clone());
+
+        assert_eq!(reactions.len(), 3);
+        assert!(!reactions.is_empty());
+        assert_eq!(
+            reactions.as_ref(),
+            &[first.clone(), second.clone(), third.clone()]
+        );
+        assert_eq!(reactions.iter().count(), 3);
+        assert_eq!(
+            reactions.into_iter().collect::<Vec<_>>(),
+            vec![first, second, third]
+        );
+    }
+
+    #[test]
+    fn with_rule_and_mutable_iteration_update_rules() {
+        let mut reactions = ContactReaction::default().with_rule(rule(1));
+        for rule in &mut reactions {
+            rule.chance = 0.5;
+        }
+
+        assert_eq!(reactions.len(), 1);
+        assert_eq!(reactions.iter().next().unwrap().chance, 0.5);
+    }
 }

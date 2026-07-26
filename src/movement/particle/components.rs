@@ -505,9 +505,59 @@ impl AirResistance {
         self.resistances.iter()
     }
 
+    /// Iterate mutably through the resistance values.
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut f64> {
+        self.resistances.iter_mut()
+    }
+
     /// Resize to len, padding with 0.0.
     pub(crate) fn resize(&mut self, len: usize) {
         self.resistances.resize(len, 0.0);
+    }
+}
+
+impl FromIterator<f64> for AirResistance {
+    fn from_iter<T: IntoIterator<Item = f64>>(iter: T) -> Self {
+        Self::new(iter)
+    }
+}
+
+impl Extend<f64> for AirResistance {
+    fn extend<T: IntoIterator<Item = f64>>(&mut self, iter: T) {
+        self.resistances.extend(iter);
+    }
+}
+
+impl AsRef<[f64]> for AirResistance {
+    fn as_ref(&self) -> &[f64] {
+        &self.resistances
+    }
+}
+
+impl IntoIterator for AirResistance {
+    type Item = f64;
+    type IntoIter = smallvec::IntoIter<[f64; 8]>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.resistances.into_iter()
+    }
+}
+
+impl<'a> IntoIterator for &'a AirResistance {
+    type Item = &'a f64;
+    type IntoIter = std::slice::Iter<'a, f64>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.resistances.iter()
+    }
+}
+
+impl<'a> IntoIterator for &'a mut AirResistance {
+    type Item = &'a mut f64;
+    type IntoIter = std::slice::IterMut<'a, f64>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.resistances.iter_mut()
     }
 }
 
@@ -598,6 +648,53 @@ impl From<Vec<Vec<IVec2>>> for Movement {
     }
 }
 
+impl FromIterator<NeighborGroup> for Movement {
+    fn from_iter<T: IntoIterator<Item = NeighborGroup>>(iter: T) -> Self {
+        Self {
+            neighbor_groups: iter.into_iter().collect(),
+        }
+    }
+}
+
+impl Extend<NeighborGroup> for Movement {
+    fn extend<T: IntoIterator<Item = NeighborGroup>>(&mut self, iter: T) {
+        self.neighbor_groups.extend(iter);
+    }
+}
+
+impl AsRef<[NeighborGroup]> for Movement {
+    fn as_ref(&self) -> &[NeighborGroup] {
+        &self.neighbor_groups
+    }
+}
+
+impl IntoIterator for Movement {
+    type Item = NeighborGroup;
+    type IntoIter = smallvec::IntoIter<[NeighborGroup; 8]>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.neighbor_groups.into_iter()
+    }
+}
+
+impl<'a> IntoIterator for &'a Movement {
+    type Item = &'a NeighborGroup;
+    type IntoIter = std::slice::Iter<'a, NeighborGroup>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.neighbor_groups.iter()
+    }
+}
+
+impl<'a> IntoIterator for &'a mut Movement {
+    type Item = &'a mut NeighborGroup;
+    type IntoIter = std::slice::IterMut<'a, NeighborGroup>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.neighbor_groups.iter_mut()
+    }
+}
+
 impl Movement {
     fn on_add(mut world: DeferredWorld, context: HookContext) {
         if !world.entity(context.entity).contains::<MovementRng>() {
@@ -638,6 +735,22 @@ impl Movement {
     #[must_use]
     pub fn len(&self) -> usize {
         self.neighbor_groups.len()
+    }
+
+    /// Iterate through the neighbor groups.
+    pub fn iter(&self) -> impl Iterator<Item = &NeighborGroup> {
+        self.neighbor_groups.iter()
+    }
+
+    /// Iterate mutably through the neighbor groups.
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut NeighborGroup> {
+        self.neighbor_groups.iter_mut()
+    }
+
+    /// Get a neighbor group by index.
+    #[must_use]
+    pub fn get(&self, index: usize) -> Option<&NeighborGroup> {
+        self.neighbor_groups.get(index)
     }
 
     /// Push a new tier of neighbors.
@@ -926,6 +1039,31 @@ mod tests {
             let ar = AirResistance::new([]);
             assert!(ar.is_empty());
         }
+
+        #[test]
+        fn collection_traits_preserve_values() {
+            let mut resistance: AirResistance = [0.1, 0.2].into_iter().collect();
+            resistance.extend([0.3]);
+
+            assert_eq!(resistance.as_ref(), &[0.1, 0.2, 0.3]);
+            assert_eq!(
+                (&resistance).into_iter().copied().collect::<Vec<_>>(),
+                vec![0.1, 0.2, 0.3]
+            );
+            assert_eq!(
+                resistance.into_iter().collect::<Vec<_>>(),
+                vec![0.1, 0.2, 0.3]
+            );
+        }
+
+        #[test]
+        fn mutable_iteration_updates_values() {
+            let mut resistance = AirResistance::new([0.1, 0.2]);
+            for value in &mut resistance {
+                *value += 0.1;
+            }
+            assert_eq!(resistance.as_ref(), &[0.2, 0.3]);
+        }
     }
 
     mod movement_tests {
@@ -1001,6 +1139,31 @@ mod tests {
             let group = m.get_mut(0).unwrap();
             group.push(IVec2::Y);
             assert_eq!(m.neighbor_groups[0].len(), 2);
+        }
+
+        #[test]
+        fn collection_traits_preserve_groups() {
+            let first = NeighborGroup::new(SmallVec::from_buf([IVec2::NEG_Y; 4]));
+            let second = NeighborGroup::empty();
+            let mut movement: Movement = [first.clone()].into_iter().collect();
+            movement.extend([second.clone()]);
+
+            assert_eq!(movement.as_ref(), &[first.clone(), second.clone()]);
+            assert_eq!(movement.iter().count(), 2);
+            assert_eq!(movement.get(0), Some(&first));
+            assert_eq!(
+                movement.into_iter().collect::<Vec<_>>(),
+                vec![first, second]
+            );
+        }
+
+        #[test]
+        fn mutable_iteration_updates_groups() {
+            let mut movement: Movement = [NeighborGroup::empty()].into_iter().collect();
+            for group in &mut movement {
+                group.push(IVec2::NEG_Y);
+            }
+            assert_eq!(movement.get(0).unwrap().len(), 1);
         }
     }
 }
