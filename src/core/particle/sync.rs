@@ -4,8 +4,7 @@
 //! A `Particle` will synchronize with its parent on 2 occasions:
 //! - A [`SyncParticleSignal`] has been received (sent explicitly or via
 //!   [`SyncParticleTypeChildrenSignal`]).
-//! - `Changed<AttachedToParticleType>` fires (e.g., on spawn or when a [`ChanceMutation`]
-//!   re-attaches a particle to a new parent).
+//! - `Changed<AttachedToParticleType>` fires (e.g., on spawn or mutation).
 //!
 //! The [`ParticleSyncExt`] trait provides an interface for adding your own particle sync
 //! components. Each registered propagator is keyed by a [`TypeId`], enabling
@@ -15,20 +14,18 @@
 use super::LocateBy;
 use crate::core::{
     AttachedToParticleType, ChanceLifetime, ChunkDirtyState, ChunkIndex, GridPosition, Particle,
-    ParticleMap, ParticleRngExt, ParticleSystems, ParticleType, ParticleTypeId,
-    ParticleTypeRegistry, TimedLifetime,
+    ParticleMap, ParticleSystems, ParticleType, ParticleTypeId, ParticleTypeRegistry,
+    TimedLifetime,
 };
 use bevy::{ecs::system::SystemParam, platform::collections::HashSet, prelude::*};
-use bevy_rand::prelude::{GlobalRng, WyRand};
 use serde::{Deserialize, Serialize};
-use std::{any::TypeId, time::Duration};
+use std::any::TypeId;
 
 pub(super) struct SyncPlugin;
 
 impl Plugin for SyncPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<ParticlePropagators>()
-            .register_type::<ChanceMutation>()
             .add_message::<SyncParticleSignal>()
             .add_message::<SyncParticleTypeChildrenSignal>()
             .add_observer(on_sync_particle)
@@ -43,87 +40,10 @@ impl Plugin for SyncPlugin {
             )
             .register_particle_sync_component::<TimedLifetime>()
             .register_particle_sync_component::<ChanceLifetime>()
-            .register_particle_sync_component::<ChanceMutation>()
             .add_systems(
                 PreUpdate,
                 msgr_sync_particle.in_set(ParticleSystems::Registration),
-            )
-            .add_systems(
-                PostUpdate,
-                handle_chance_mutations.in_set(ParticleSystems::Simulation),
             );
-    }
-}
-
-/// A chance-based mutation component that has a chance to re-type a [`Particle`] on a per-tick
-/// basis.
-///
-/// When the roll succeeds, the particle's [`AttachedToParticleType`] is swapped to point at the
-/// [`ParticleType`] entity registered under [`ChanceMutation::target`]. The change triggers
-/// normal particle synchronization, so all registered components are re-propagated from the new
-/// parent. If `target` does not match a registered [`ParticleType`], the mutation is silently
-/// skipped.
-#[derive(Component, Clone, PartialEq, Debug, Reflect)]
-#[reflect(Component)]
-#[type_path = "bfs_core::particle"]
-pub struct ChanceMutation {
-    /// The [`ParticleTypeId`] this particle should mutate into.
-    pub target: ParticleTypeId,
-    /// The probability (0.0 to 1.0) that the particle will mutate each tick.
-    pub chance: f64,
-    /// Timer that controls how often the chance is evaluated.
-    pub tick_timer: Timer,
-}
-
-impl Default for ChanceMutation {
-    fn default() -> Self {
-        Self {
-            target: ParticleTypeId::default(),
-            chance: 0.0,
-            tick_timer: Timer::new(Duration::ZERO, TimerMode::Repeating),
-        }
-    }
-}
-
-impl ChanceMutation {
-    /// Create a new chance-based mutation targeting `target`.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use std::time::Duration;
-    /// use bevy_falling_sand::core::{ChanceMutation, ParticleTypeId};
-    ///
-    /// let water = ParticleTypeId::new();
-    /// let mutation = ChanceMutation::new(water, 0.05, Duration::from_millis(100));
-    /// assert_eq!(mutation.target, water);
-    /// assert_eq!(mutation.chance, 0.05);
-    /// ```
-    #[must_use]
-    pub fn new(target: impl Into<ParticleTypeId>, chance: f64, tick_rate: Duration) -> Self {
-        Self {
-            target: target.into(),
-            chance,
-            tick_timer: Timer::new(tick_rate, TimerMode::Repeating),
-        }
-    }
-}
-
-#[allow(clippy::needless_pass_by_value)]
-fn handle_chance_mutations(
-    mut query: Query<(&mut AttachedToParticleType, &mut ChanceMutation), With<Particle>>,
-    registry: Res<ParticleTypeRegistry>,
-    mut rng: Single<&mut WyRand, With<GlobalRng>>,
-    time: Res<Time>,
-) {
-    for (mut attached, mut mutation) in &mut query {
-        if mutation.tick_timer.tick(time.delta()).just_finished()
-            && rng.chance(mutation.chance)
-            && let Some(&new_parent) = registry.get(mutation.target)
-            && attached.0 != new_parent
-        {
-            attached.0 = new_parent;
-        }
     }
 }
 
@@ -187,8 +107,8 @@ impl ParticlePropagators {
 /// your own components the same way.
 ///
 /// Propagators run during component synchronization whenever a [`SyncParticleSignal`] is
-/// received or change detection on [`AttachedToParticleType`] fires (e.g. on spawn or when a
-/// [`ChanceMutation`] re-attaches a particle to a new parent). Each propagator receives the
+/// received or change detection on [`AttachedToParticleType`] fires, such as on spawn or
+/// mutation. Each propagator receives the
 /// particle entity, its parent [`ParticleType`] entity, and [`Commands`] for deferred mutations.
 ///
 /// Every propagator is keyed by a [`TypeId`], which enables selective
@@ -329,9 +249,7 @@ impl ParticleSyncExt for App {
 ///
 /// Targets are collected from two sources, deduplicated by entity:
 /// 1. Drained [`SyncParticleSignal`] messages (sent externally or by other internal triggers)
-/// 2. `Changed<AttachedToParticleType>` query (catches freshly spawned particles and
-///    [`ChanceMutation`] re-attachments — any time the parent reference changes, we need to
-///    re-propagate components from the new parent)
+/// 2. `Changed<AttachedToParticleType>` query
 #[derive(SystemParam)]
 struct SyncParticleParams<'w, 's> {
     msgr: MessageReader<'w, 's, SyncParticleSignal>,
@@ -766,13 +684,11 @@ fn sync_particle_type_registry(
 
 #[cfg(test)]
 mod tests {
-    use std::time::Duration;
-
     use super::*;
     use crate::{
         FallingSandMinimalPlugin,
         core::{
-            AttachedToParticleType, Particle, ParticleMap, ParticleType, ParticleTypeRegistry,
+            AttachedToParticleType, Particle, ParticleType, ParticleTypeRegistry,
             SpawnParticleSignal,
         },
     };
@@ -796,10 +712,6 @@ mod tests {
 
     fn water() -> ParticleTypeId {
         ParticleTypeId::from_raw(1)
-    }
-
-    fn ghost() -> ParticleTypeId {
-        ParticleTypeId::from_raw(999)
     }
 
     fn type_id_of(app: &App, entity: Entity) -> Option<ParticleTypeId> {
@@ -1318,158 +1230,5 @@ mod tests {
     #[test]
     fn propagator_filter_default_is_all() {
         assert_eq!(PropagatorFilter::default(), PropagatorFilter::All);
-    }
-
-    // ---- chance_mutation ----
-
-    fn spawn_particle_at(app: &mut App, particle_type: ParticleTypeId, position: IVec2) -> Entity {
-        app.world_mut()
-            .write_message(SpawnParticleSignal::new(particle_type, position));
-        app.update();
-
-        app.world()
-            .resource::<ParticleMap>()
-            .get_copied(position)
-            .unwrap()
-            .unwrap()
-    }
-
-    fn attached_to(app: &App, entity: Entity) -> Entity {
-        app.world()
-            .entity(entity)
-            .get::<AttachedToParticleType>()
-            .unwrap()
-            .0
-    }
-
-    #[test]
-    fn chance_mutation_default() {
-        let mutation = ChanceMutation::default();
-        assert_eq!(mutation.chance, 0.0);
-        assert_eq!(mutation.tick_timer.duration(), Duration::ZERO);
-    }
-
-    #[test]
-    fn chance_mutation_new_from_particle_type_id() {
-        let mutation = ChanceMutation::new(water(), 0.5, Duration::from_millis(100));
-        assert_eq!(mutation.target, water());
-        assert_eq!(mutation.chance, 0.5);
-        assert_eq!(mutation.tick_timer.duration(), Duration::from_millis(100));
-    }
-
-    #[test]
-    fn chance_mutation_zero_never_mutates() {
-        let mut app = create_test_app();
-        let sand_pt = app.world_mut().spawn(ParticleType::from_id(sand())).id();
-        app.world_mut().spawn(ParticleType::from_id(water()));
-        app.update();
-
-        let position = IVec2::ZERO;
-        let entity = spawn_particle_at(&mut app, sand(), position);
-
-        app.world_mut()
-            .entity_mut(entity)
-            .insert(ChanceMutation::new(water(), 0.0, Duration::ZERO));
-
-        for _ in 0..100 {
-            app.update();
-        }
-
-        assert_eq!(attached_to(&app, entity), sand_pt);
-    }
-
-    #[test]
-    fn chance_mutation_one_always_mutates() {
-        let mut app = create_test_app();
-        let sand_pt = app.world_mut().spawn(ParticleType::from_id(sand())).id();
-        let water_pt = app.world_mut().spawn(ParticleType::from_id(water())).id();
-        app.update();
-
-        let position = IVec2::ZERO;
-        let entity = spawn_particle_at(&mut app, sand(), position);
-        assert_eq!(attached_to(&app, entity), sand_pt);
-
-        app.world_mut()
-            .entity_mut(entity)
-            .insert(ChanceMutation::new(water(), 1.0, Duration::ZERO));
-
-        app.update();
-        app.update();
-
-        assert_eq!(attached_to(&app, entity), water_pt);
-    }
-
-    #[test]
-    fn chance_mutation_respects_tick_rate() {
-        let mut app = create_test_app();
-        let sand_pt = app.world_mut().spawn(ParticleType::from_id(sand())).id();
-        let water_pt = app.world_mut().spawn(ParticleType::from_id(water())).id();
-        app.update();
-
-        let position = IVec2::ZERO;
-        let entity = spawn_particle_at(&mut app, sand(), position);
-
-        app.world_mut()
-            .entity_mut(entity)
-            .insert(ChanceMutation::new(water(), 1.0, Duration::from_secs(999)));
-        app.update();
-        app.update();
-        assert_eq!(attached_to(&app, entity), sand_pt);
-
-        *app.world_mut()
-            .entity_mut(entity)
-            .get_mut::<ChanceMutation>()
-            .unwrap() = ChanceMutation::new(water(), 1.0, Duration::ZERO);
-        app.update();
-        app.update();
-
-        assert_eq!(attached_to(&app, entity), water_pt);
-    }
-
-    #[test]
-    fn chance_mutation_unregistered_target_is_skipped() {
-        let mut app = create_test_app();
-        let sand_pt = app.world_mut().spawn(ParticleType::from_id(sand())).id();
-        app.update();
-
-        let position = IVec2::ZERO;
-        let entity = spawn_particle_at(&mut app, sand(), position);
-
-        app.world_mut()
-            .entity_mut(entity)
-            .insert(ChanceMutation::new(ghost(), 1.0, Duration::ZERO));
-
-        app.update();
-        app.update();
-
-        assert_eq!(
-            attached_to(&app, entity),
-            sand_pt,
-            "Mutation to an unregistered type is silently skipped"
-        );
-    }
-
-    #[test]
-    fn chance_mutation_propagates_from_particle_type() {
-        let mut app = create_test_app();
-        app.world_mut().spawn((
-            ParticleType::from_id(sand()),
-            ChanceMutation::new(water(), 1.0, Duration::ZERO),
-        ));
-        let water_pt = app.world_mut().spawn(ParticleType::from_id(water())).id();
-        app.update();
-
-        let position = IVec2::ZERO;
-        let entity = spawn_particle_at(&mut app, sand(), position);
-
-        assert!(
-            app.world().entity(entity).get::<ChanceMutation>().is_some(),
-            "ChanceMutation should be propagated from ParticleType to child Particle"
-        );
-
-        app.update();
-        app.update();
-
-        assert_eq!(attached_to(&app, entity), water_pt);
     }
 }

@@ -1,6 +1,7 @@
 //! Components and resources central to particle behavior.
 
 pub mod lifecycle;
+pub mod mutation;
 pub mod schedule;
 pub mod sync;
 
@@ -20,6 +21,7 @@ use std::{
 };
 
 pub use lifecycle::*;
+pub use mutation::*;
 pub use particle_map::*;
 pub use registry::*;
 pub use schedule::*;
@@ -45,6 +47,7 @@ impl Plugin for ParticlePlugin {
                 RegistryPlugin,
                 LifecyclePlugin,
                 SyncPlugin,
+                mutation::MutationPlugin,
             ));
     }
 }

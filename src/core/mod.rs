@@ -2,7 +2,7 @@
 //!
 //! The [`mod@particle`] module manages
 //! - The [`ParticleMap`] resource
-//! - [`Particle`] lifecycle (spawning/despawning) and synchronization routines
+//! - [`Particle`] lifecycle (spawning/despawning), mutation, and synchronization routines
 //!
 //! The [`mod@simulation`] module provides constructs used to control the progression of the
 //! simulation.
