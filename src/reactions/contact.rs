@@ -415,7 +415,7 @@ mod tests {
         let first = rule(1);
         let second = rule(2);
         let third = rule(3);
-        let mut reactions: ContactReaction = [first.clone()].into_iter().collect();
+        let mut reactions: ContactReaction = std::iter::once(first.clone()).collect();
         reactions.extend([second.clone()]);
         reactions.push(third.clone());
 

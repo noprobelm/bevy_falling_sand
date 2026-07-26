@@ -1145,7 +1145,7 @@ mod tests {
         fn collection_traits_preserve_groups() {
             let first = NeighborGroup::new(SmallVec::from_buf([IVec2::NEG_Y; 4]));
             let second = NeighborGroup::empty();
-            let mut movement: Movement = [first.clone()].into_iter().collect();
+            let mut movement: Movement = std::iter::once(first.clone()).collect();
             movement.extend([second.clone()]);
 
             assert_eq!(movement.as_ref(), &[first.clone(), second.clone()]);
@@ -1159,7 +1159,7 @@ mod tests {
 
         #[test]
         fn mutable_iteration_updates_groups() {
-            let mut movement: Movement = [NeighborGroup::empty()].into_iter().collect();
+            let mut movement: Movement = std::iter::once(NeighborGroup::empty()).collect();
             for group in &mut movement {
                 group.push(IVec2::NEG_Y);
             }
