@@ -1058,11 +1058,11 @@ mod tests {
 
         #[test]
         fn mutable_iteration_updates_values() {
-            let mut resistance = AirResistance::new([0.1, 0.2]);
+            let mut resistance = AirResistance::new([0.125, 0.25]);
             for value in &mut resistance {
-                *value += 0.1;
+                *value += 0.125;
             }
-            assert_eq!(resistance.as_ref(), &[0.2, 0.3]);
+            assert_eq!(resistance.as_ref(), &[0.25, 0.375]);
         }
     }
 
