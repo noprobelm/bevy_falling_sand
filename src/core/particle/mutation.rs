@@ -79,7 +79,8 @@ impl TimedMutation {
 /// use bevy_falling_sand::core::{ChanceMutation, ParticleTypeId};
 ///
 /// let water = ParticleTypeId::new();
-/// let mutation = ChanceMutation::new(water, 0.05, Duration::from_millis(100));
+/// let mutation =
+///     ChanceMutation::new(water, 0.05).with_tick_rate(Duration::from_millis(100));
 /// assert_eq!(mutation.target, water);
 /// assert_eq!(mutation.chance, 0.05);
 /// assert_eq!(mutation.tick_timer.duration(), Duration::from_millis(100));
@@ -109,12 +110,19 @@ impl Default for ChanceMutation {
 impl ChanceMutation {
     /// Create a chance-based mutation targeting `target`.
     #[must_use]
-    pub fn new(target: impl Into<ParticleTypeId>, chance: f64, tick_rate: Duration) -> Self {
+    pub fn new(target: impl Into<ParticleTypeId>, chance: f64) -> Self {
         Self {
             target: target.into(),
             chance,
-            tick_timer: Timer::new(tick_rate, TimerMode::Repeating),
+            tick_timer: Timer::new(Duration::ZERO, TimerMode::Repeating),
         }
+    }
+
+    /// Set the interval between mutation attempts.
+    #[must_use]
+    pub fn with_tick_rate(mut self, tick_rate: Duration) -> Self {
+        self.tick_timer.set_duration(tick_rate);
+        self
     }
 }
 
@@ -210,7 +218,7 @@ mod tests {
 
     #[test]
     fn chance_mutation_new_from_particle_type_id() {
-        let mutation = ChanceMutation::new(water(), 0.5, Duration::from_millis(100));
+        let mutation = ChanceMutation::new(water(), 0.5).with_tick_rate(Duration::from_millis(100));
         assert_eq!(mutation.target, water());
         assert_eq!(mutation.chance, 0.5);
         assert_eq!(mutation.tick_timer.duration(), Duration::from_millis(100));
@@ -226,7 +234,7 @@ mod tests {
         let particle = spawn_particle(&mut app, sand());
         app.world_mut()
             .entity_mut(particle)
-            .insert(ChanceMutation::new(water(), 0.0, Duration::ZERO));
+            .insert(ChanceMutation::new(water(), 0.0));
 
         for _ in 0..100 {
             app.update();
@@ -246,7 +254,7 @@ mod tests {
         assert_eq!(attached_to(&app, particle), sand_parent);
         app.world_mut()
             .entity_mut(particle)
-            .insert(ChanceMutation::new(water(), 1.0, Duration::ZERO));
+            .insert(ChanceMutation::new(water(), 1.0));
 
         app.update();
         app.update();
@@ -264,7 +272,7 @@ mod tests {
         let particle = spawn_particle(&mut app, sand());
         app.world_mut()
             .entity_mut(particle)
-            .insert(ChanceMutation::new(water(), 1.0, Duration::from_secs(999)));
+            .insert(ChanceMutation::new(water(), 1.0).with_tick_rate(Duration::from_secs(999)));
         app.update();
         app.update();
         assert_eq!(attached_to(&app, particle), sand_parent);
@@ -272,7 +280,7 @@ mod tests {
         *app.world_mut()
             .entity_mut(particle)
             .get_mut::<ChanceMutation>()
-            .unwrap() = ChanceMutation::new(water(), 1.0, Duration::ZERO);
+            .unwrap() = ChanceMutation::new(water(), 1.0);
         app.update();
         app.update();
 
@@ -288,7 +296,7 @@ mod tests {
         let particle = spawn_particle(&mut app, sand());
         app.world_mut()
             .entity_mut(particle)
-            .insert(ChanceMutation::new(ghost(), 1.0, Duration::ZERO));
+            .insert(ChanceMutation::new(ghost(), 1.0));
 
         app.update();
         app.update();
@@ -301,7 +309,7 @@ mod tests {
         let mut app = create_test_app();
         app.world_mut().spawn((
             ParticleType::from_id(sand()),
-            ChanceMutation::new(water(), 1.0, Duration::ZERO),
+            ChanceMutation::new(water(), 1.0),
         ));
         let water_parent = app.world_mut().spawn(ParticleType::from_id(water())).id();
         app.update();
