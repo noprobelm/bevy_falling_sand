@@ -60,15 +60,34 @@ fn main() {
 #[derive(Default, Resource)]
 struct SpawnParticles;
 
+#[derive(Copy, Clone, Resource)]
+struct NoiseParticleIds {
+    dirt_wall: ParticleTypeId,
+    sand: ParticleTypeId,
+    water: ParticleTypeId,
+}
+
+impl Default for NoiseParticleIds {
+    fn default() -> Self {
+        Self {
+            dirt_wall: ParticleTypeId::new(),
+            sand: ParticleTypeId::new(),
+            water: ParticleTypeId::new(),
+        }
+    }
+}
+
 fn setup(
     mut commands: Commands,
     mut rng: Single<&mut WyRand, With<GlobalRng>>,
     mut spawn_writer: MessageWriter<SpawnParticleSignal>,
 ) {
+    let ids = NoiseParticleIds::default();
+    commands.insert_resource(ids);
     commands.remove_resource::<DebugParticleMap>();
     commands.remove_resource::<DebugDirtyRects>();
     commands.spawn((
-        ParticleType::new("Dirt Wall"),
+        ParticleType::from_id(ids.dirt_wall),
         ColorProfile::palette(vec![
             Color::Srgba(Srgba::hex("#916B4C").unwrap()),
             Color::Srgba(Srgba::hex("#73573D").unwrap()),
@@ -76,7 +95,7 @@ fn setup(
     ));
 
     commands.spawn((
-        ParticleType::new("Water"),
+        ParticleType::from_id(ids.water),
         Density(750),
         Speed::new(0, 3),
         ColorProfile::palette(vec![Color::Srgba(Srgba::hex("#0B80AB80").unwrap())]),
@@ -94,7 +113,7 @@ fn setup(
         Momentum::default(),
     ));
     commands.spawn((
-        ParticleType::new("Sand"),
+        ParticleType::from_id(ids.sand),
         Density(1250),
         Speed::new(5, 10),
         ColorProfile::palette(vec![
@@ -109,11 +128,11 @@ fn setup(
     ));
 
     commands.insert_resource(ParticleSpawnList::new(vec![
-        "Dirt Wall".into(),
-        "Sand".into(),
-        "Water".into(),
+        ids.dirt_wall,
+        ids.sand,
+        ids.water,
     ]));
-    commands.insert_resource(SelectedBrushParticle("Dirt Wall".into()));
+    commands.insert_resource(SelectedBrushParticle(ids.dirt_wall));
 
     let instructions_text = "Left mouse: Spawn/despawn particles\n\
         Right mouse: Cycle particle type\n\
@@ -159,19 +178,24 @@ fn setup(
         ));
     });
 
-    spawn_noise(&mut spawn_writer, &mut rng);
+    spawn_noise(&mut spawn_writer, &mut rng, ids);
 }
 
 fn reset_noise(
     mut rng: Single<&mut WyRand, With<GlobalRng>>,
     mut despawn_writer: MessageWriter<DespawnAllParticlesSignal>,
     mut spawn_writer: MessageWriter<SpawnParticleSignal>,
+    ids: Res<NoiseParticleIds>,
 ) {
     despawn_writer.write(DespawnAllParticlesSignal);
-    spawn_noise(&mut spawn_writer, &mut rng);
+    spawn_noise(&mut spawn_writer, &mut rng, *ids);
 }
 
-fn spawn_noise(spawn_writer: &mut MessageWriter<SpawnParticleSignal>, rng: &mut WyRand) {
+fn spawn_noise(
+    spawn_writer: &mut MessageWriter<SpawnParticleSignal>,
+    rng: &mut WyRand,
+    ids: NoiseParticleIds,
+) {
     let seed = rng.u32(0..u32::MAX);
 
     let basic_multi = Fbm::<PerlinSurflet>::new(seed);
@@ -221,7 +245,7 @@ fn spawn_noise(spawn_writer: &mut MessageWriter<SpawnParticleSignal>, rng: &mut 
             );
             let force_color = ForceColor(Color::Srgba(color));
             spawn_writer.write(
-                SpawnParticleSignal::overwrite_existing("Dirt Wall", position).with_on_spawn(
+                SpawnParticleSignal::overwrite_existing(ids.dirt_wall, position).with_on_spawn(
                     move |cmd| {
                         cmd.insert(force_color);
                     },

@@ -8,8 +8,8 @@ pub use crate::core::{
     ChunkSystems, DespawnAllParticlesSignal, DespawnBatchConfig, DespawnParticleSignal,
     DespawnParticleTypeChildrenSignal, GridPosition, OnSpawnCallback, Particle, ParticleMap,
     ParticleRng, ParticleRngExt, ParticleSimulationRun, ParticleSyncExt, ParticleSystems,
-    ParticleType, ParticleTypeRegistry, PendingDespawn, PropagatorFilter, SimulationStepSignal,
-    SpatialEntry, SpatialMap, SpawnParticleSignal, SyncParticleSignal,
+    ParticleType, ParticleTypeId, ParticleTypeRegistry, PendingDespawn, PropagatorFilter,
+    SimulationStepSignal, SpatialEntry, SpatialMap, SpawnParticleSignal, SyncParticleSignal,
     SyncParticleTypeChildrenSignal, TimedLifetime, condition_msg_simulation_step_received,
 };
 

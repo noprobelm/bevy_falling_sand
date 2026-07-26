@@ -4,8 +4,7 @@
 //! - Magic: "BFS\0" (4 bytes)
 //! - Particle type count: u16
 //! - For each particle type:
-//!   - Name length: u8
-//!   - Name: [u8; `name_len`]
+//!   - Particle type ID: u64
 //!   - Entry count: u32
 //!   - Entries (type byte + i32 coordinates):
 //!     - 0: Point (x, y) = 9 bytes
@@ -14,6 +13,7 @@
 //!     - 3: Rectangle (x1, x2, y1, y2) = 17 bytes
 
 use super::io_reader;
+use crate::core::ParticleTypeId;
 use bevy::platform::collections::{HashMap, HashSet};
 use bevy::prelude::*;
 use std::io::{Read, Write};
@@ -208,15 +208,15 @@ pub fn compress_positions(positions: &[IVec2]) -> Vec<CompressedEntry> {
 /// Unlike BFC, BFS does not store color information.
 #[derive(Debug, Clone)]
 pub struct ParticleData {
-    /// Particle type name.
-    pub name: String,
+    /// Particle type ID.
+    pub particle_type: ParticleTypeId,
     /// World position of the particle.
     pub position: IVec2,
 }
 
 /// Serialize BFS format to a writer.
 ///
-/// Groups particles by name and writes them using run-length compression.
+/// Groups particles by type ID and writes them using run-length compression.
 /// This is the counterpart to [`deserialize_from_reader`].
 ///
 /// # Errors
@@ -227,10 +227,10 @@ pub fn serialize_to_writer(
     writer: &mut impl Write,
 ) -> std::io::Result<()> {
     // Group particles by type
-    let mut grouped: HashMap<&str, Vec<IVec2>> = HashMap::default();
+    let mut grouped: HashMap<ParticleTypeId, Vec<IVec2>> = HashMap::default();
     for particle in particles {
         grouped
-            .entry(&particle.name)
+            .entry(particle.particle_type)
             .or_default()
             .push(particle.position);
     }
@@ -242,11 +242,8 @@ pub fn serialize_to_writer(
     #[allow(clippy::cast_possible_truncation)]
     writer.write_all(&(grouped.len() as u16).to_le_bytes())?;
 
-    for (name, positions) in &grouped {
-        // Name length and name bytes
-        #[allow(clippy::cast_possible_truncation)]
-        writer.write_all(&[name.len() as u8])?;
-        writer.write_all(name.as_bytes())?;
+    for (particle_type, positions) in &grouped {
+        writer.write_all(&(particle_type.get() as u64).to_le_bytes())?;
 
         // Compress and write entries
         let entries = compress_positions(positions);
@@ -313,18 +310,11 @@ pub fn deserialize_from_reader(reader: &mut impl Read) -> Result<Vec<ParticleDat
     let mut particles = Vec::new();
 
     for _ in 0..type_count {
-        // Read name
-        let mut name_len = [0u8; 1];
+        let mut type_id_buf = [0u8; 8];
         reader
-            .read_exact(&mut name_len)
-            .map_err(|e| format!("Failed to read name length: {e}"))?;
-
-        let mut name_buf = vec![0u8; name_len[0] as usize];
-        reader
-            .read_exact(&mut name_buf)
-            .map_err(|e| format!("Failed to read name: {e}"))?;
-
-        let name = String::from_utf8(name_buf).map_err(|e| format!("Invalid UTF-8 name: {e}"))?;
+            .read_exact(&mut type_id_buf)
+            .map_err(|e| format!("Failed to read particle type ID: {e}"))?;
+        let particle_type = ParticleTypeId::from_raw(u64::from_le_bytes(type_id_buf) as usize);
 
         // Read entry count
         let mut entry_count_buf = [0u8; 4];
@@ -348,7 +338,7 @@ pub fn deserialize_from_reader(reader: &mut impl Read) -> Result<Vec<ParticleDat
                     let y = io_reader::read_i32(reader)
                         .map_err(|e| format!("Failed to read point y: {e}"))?;
                     particles.push(ParticleData {
-                        name: name.clone(),
+                        particle_type,
                         position: IVec2::new(x, y),
                     });
                 }
@@ -362,7 +352,7 @@ pub fn deserialize_from_reader(reader: &mut impl Read) -> Result<Vec<ParticleDat
                         .map_err(|e| format!("Failed to read hrun y: {e}"))?;
                     for x in x1..=x2 {
                         particles.push(ParticleData {
-                            name: name.clone(),
+                            particle_type,
                             position: IVec2::new(x, y),
                         });
                     }
@@ -377,7 +367,7 @@ pub fn deserialize_from_reader(reader: &mut impl Read) -> Result<Vec<ParticleDat
                         .map_err(|e| format!("Failed to read vrun y2: {e}"))?;
                     for y in y1..=y2 {
                         particles.push(ParticleData {
-                            name: name.clone(),
+                            particle_type,
                             position: IVec2::new(x, y),
                         });
                     }
@@ -395,7 +385,7 @@ pub fn deserialize_from_reader(reader: &mut impl Read) -> Result<Vec<ParticleDat
                     for x in x1..=x2 {
                         for y in y1..=y2 {
                             particles.push(ParticleData {
-                                name: name.clone(),
+                                particle_type,
                                 position: IVec2::new(x, y),
                             });
                         }

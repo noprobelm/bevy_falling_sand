@@ -2,7 +2,6 @@
 
 - [Bevy versions](#bevy-versions)
 - [Getting Started](#getting-started)
-  - [Feature flags](#feature-flags)
   - [Particle behavior components](#particle-behavior-components)
 - [Common pitfalls](#common-pitfalls)
   - [Slow simulation speeds](#slow-simulation-speeds)
@@ -16,6 +15,7 @@
 
 | `bevy_falling_sand`   | `bevy`    |
 |-----------------------|-----------|
+| 0.8.x                 | 0.19.x    |
 | 0.7.x                 | 0.18.x    |
 
 # Getting Started
@@ -42,8 +42,11 @@ fn main() {
 
 // Spawn a simple particle type with colors and movement behavior resembling sand.
 fn setup(mut commands: Commands) {
+    let sand = ParticleType::new();
+    commands.insert_resource(SandParticle(sand.id()));
+
     commands.spawn((
-        ParticleType::new("Sand"),
+        sand,
         ColorProfile::palette(vec![
             Color::Srgba(Srgba::hex("#FFEB8A").unwrap()),
             Color::Srgba(Srgba::hex("#F2E06B").unwrap()),
@@ -59,11 +62,20 @@ fn setup(mut commands: Commands) {
 }
 
 // Continuously emit sand between (0, 0) and (10, 10)
-fn sand_emitter(mut writer: MessageWriter<SpawnParticleSignal>) {
+#[derive(Resource)]
+struct SandParticle(ParticleTypeId);
+
+impl SandParticle {
+    fn id(&self) -> ParticleTypeId {
+        self.0
+    }
+}
+
+fn sand_emitter(mut writer: MessageWriter<SpawnParticleSignal>, sand: Res<SandParticle>) {
     for x in 0..10 {
         for y in 0..10 {
             writer.write(SpawnParticleSignal::new(
-                "Sand",
+                sand.id(),
                 IVec2::new(x, y),
             ));
         }
@@ -71,37 +83,68 @@ fn sand_emitter(mut writer: MessageWriter<SpawnParticleSignal>) {
 }
 ```
 
-Entities with the `ParticleType` component act as the template for all entities with the
-`Particle` component of the same name. Components added to a `ParticleType` (such as `ColorProfile`,
-`Movement`, `Density`, and `Speed`) define the behavior of its child particles.
+Entities with the `ParticleType` component act as templates for spawned `Particle` entities.
+Each `ParticleType` owns a `ParticleTypeId`; store that ID in your own resources or components
+when you need to spawn, mutate, despawn, or otherwise refer to that particle type later.
+Components added to a `ParticleType` (such as `ColorProfile`, `Movement`, `Density`, and `Speed`)
+define the behavior of its child particles.
 
 To spawn individual particles at runtime, send a `SpawnParticleSignal` via Bevy's
 `MessageWriter`. Despawn them with `DespawnParticleSignal`.
 
+## Particle type identities
+
+`ParticleTypeId` is the stable handle you should pass around in gameplay code. It is `Copy`,
+serializable, and independent of the Bevy `Entity` that currently owns the corresponding
+`ParticleType` template. `ParticleType` is the ECS component that marks an entity as the template
+for a type of particle.
+
+Use `ParticleType::new()` for normal runtime allocation, then copy out its ID before moving the
+component into the world:
+
+```rust
+let sand = ParticleType::new();
+let sand_id = sand.id();
+
+commands.spawn((sand, Movement::default()));
+commands.insert_resource(SandParticle(sand_id));
+```
+
+Use `ParticleType::id()` when you already have a `ParticleType` component and need its handle.
+Use `ParticleType::from_id(id)` when spawning or restoring the template entity for an ID you
+already own, such as when loading persisted type definitions or building a stable catalog.
+`ParticleTypeId::new()` is available when you need to allocate an ID before constructing the
+template component. `ParticleTypeId::from_raw(...)` is reserved for persisted data and externally stable
+catalogs where the numeric value is part of a file format or asset contract; it also reserves that
+value from future automatic allocation.
+
+The core crate does not store names on `ParticleType`. Keep comprehensive eparticle identifiers in
+your own components/resources and map those names to `ParticleTypeId` at the application boundary.
+
 ## Particle behavior components
 
-Insert any of these components on a [`ParticleType`] entity and [`Particle`] entities sharing the
-same name will derive their behaviors.
+Insert any of these components on a [`ParticleType`] entity and [`Particle`] entities attached to
+that particle type will derive their behaviors.
 
-| Component                | Description                                                    | Feature     |
-| ------------------------ | -------------------------------------------------------------- | ----------- |
-| `ColorProfile`           | Color profile from a predefined palette or gradient            | `render`    |
-| `ForceColor`             | Overrides `ColorProfile` with another color                    | `render`    |
-| `Movement`               | Movement rulesets for a particle                               | `movement`  |
-| `Density`                | Density, used for displacement comparisons                     | `movement`  |
-| `Speed`                  | How many positions a particle can move per frame               | `movement`  |
-| `AirResistance`          | Chance to skip movement to a vacant location                   | `movement`  |
-| `ParticleResistor`       | How much a particle resists being displaced                    | `movement`  |
-| `Momentum`               | Biases movement toward the last direction                      | `movement`  |
-| `ContactReaction`        | Reaction rulesets between particle types                       | `reactions` |
-| `Fire`                   | Makes a particle spread fire                                   | `reactions` |
-| `Flammable`              | Flammability properties                                        | `reactions` |
-| `Corrosive`              | Corrosive properaties for particles                            |  reactions   |
-| `Corrodible`             | Marks a particle as being subject to corrosion                 |  reactions   |
-| `StaticRigidBodyParticle`| Marks particles for rigid body mesh generation                 | `physics`   |
-| `TimedLifetime`          | Despawns a particle after a duration                           | —           |
-| `ChanceLifetime`         | Chance to despawn on a per-tick basis                          | —           |
-| `ChanceMutation`         | Chance to mutate a particle into another type on a per-tick basis    | —            |
+| Component                 | Description                                                       | Feature     |
+| ------------------------- | ----------------------------------------------------------------- | ----------- |
+| `ColorProfile`            | Color profile from a predefined palette or gradient               | `render`    |
+| `ForceColor`              | Overrides `ColorProfile` with another color                       | `render`    |
+| `Movement`                | Movement rulesets for a particle                                  | `movement`  |
+| `Density`                 | Density, used for displacement comparisons                        | `movement`  |
+| `Speed`                   | How many positions a particle can move per frame                  | `movement`  |
+| `AirResistance`           | Chance to skip movement to a vacant location                      | `movement`  |
+| `ParticleResistor`        | How much a particle resists being displaced                       | `movement`  |
+| `Momentum`                | Biases movement toward the last direction                         | `movement`  |
+| `ContactReaction`         | Reaction rulesets that target and produce `ParticleTypeId` values | `reactions` |
+| `Fire`                    | Makes a particle spread fire                                      | `reactions` |
+| `Flammable`               | Flammability properties; burn products use `ParticleTypeId`       | `reactions` |
+| `Corrosive`               | Corrosive properties for particles                                | `reactions` |
+| `Corrodible`              | Marks a particle as being subject to corrosion                    | `reactions` |
+| `StaticRigidBodyParticle` | Marks particles for rigid body mesh generation                    | `physics`   |
+| `TimedLifetime`           | Despawns a particle after a duration                              | —           |
+| `ChanceLifetime`          | Chance to despawn on a per-tick basis                             | —           |
+| `ChanceMutation`          | Chance to mutate a particle into another `ParticleTypeId`         | —           |
 
 For full documentation, see [docs.rs/bevy_falling_sand](https://docs.rs/bevy_falling_sand).
 
@@ -167,10 +210,3 @@ particle map that other threads are accessing at the same time, leading to undef
 This safety consideration is exclusive to movement systems. Manually moving a `Particle`
 entity's `GridPosition` is safe, as long as the user keeps the `GridPosition` in sync with
 the `ParticleMap` resource.
-
-### Integrated GPU limitations
-
-This crate's internals currently rely on the parallelism offered by compute shaders to update
-pixel colors for moving particles in parallel. Integrated GPUs do not handle this very well.
-
-Sub-features will be made available in the `render` module in the future to alleviate this.

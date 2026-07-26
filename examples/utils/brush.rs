@@ -1,7 +1,7 @@
 use bevy::{input::mouse::MouseWheel, prelude::*};
 use bevy_falling_sand::prelude::{
     AttachedToParticleType, DespawnParticleSignal, Particle, ParticleMap, ParticleSystems,
-    ParticleType, SpawnParticleSignal,
+    ParticleType, ParticleTypeId, SpawnParticleSignal,
 };
 
 use super::{
@@ -11,23 +11,23 @@ use super::{
 
 #[derive(Clone, Debug, Resource)]
 pub struct ParticleSpawnList {
-    particles: Vec<ParticleType>,
+    particles: Vec<ParticleTypeId>,
     index: usize,
 }
 
 impl ParticleSpawnList {
-    pub fn new(particles: Vec<ParticleType>) -> Self {
+    pub fn new(particles: Vec<ParticleTypeId>) -> Self {
         Self {
             particles,
             index: 0,
         }
     }
 
-    pub fn current(&self) -> Option<&ParticleType> {
+    pub fn current(&self) -> Option<&ParticleTypeId> {
         self.particles.get(self.index)
     }
 
-    pub fn cycle_next(&mut self) -> Option<&ParticleType> {
+    pub fn cycle_next(&mut self) -> Option<&ParticleTypeId> {
         if self.particles.is_empty() {
             return None;
         }
@@ -180,7 +180,7 @@ impl BrushType {
 }
 
 #[derive(Resource)]
-pub struct SelectedBrushParticle(pub ParticleType);
+pub struct SelectedBrushParticle(pub ParticleTypeId);
 
 fn setup_brush(mut commands: Commands) {
     commands.spawn((
@@ -227,7 +227,7 @@ fn spawn_particles(
         size.0 as f32,
         brush_type.get(),
     ) {
-        spawn_writer.write(SpawnParticleSignal::new(selected.0.clone(), pos));
+        spawn_writer.write(SpawnParticleSignal::new(selected.0, pos));
     }
     Ok(())
 }
@@ -307,7 +307,7 @@ fn cycle_selected_particle(
     mut selected_particle: ResMut<SelectedBrushParticle>,
 ) {
     if let Some(next_particle) = particle_spawn_list.cycle_next() {
-        selected_particle.0 = next_particle.clone();
+        selected_particle.0 = *next_particle;
     }
 }
 
@@ -330,7 +330,7 @@ fn sample_hovered(
         && let Ok(attached) = particle_query.get(entity)
         && let Ok(particle_type) = type_query.get(attached.0)
     {
-        selected_brush_particle.0 = particle_type.clone();
+        selected_brush_particle.0 = particle_type.id();
         brush_state.set(BrushState::Spawn);
     }
 }

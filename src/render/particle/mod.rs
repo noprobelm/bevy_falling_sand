@@ -149,7 +149,7 @@ mod tests {
     use super::*;
     use crate::{
         FallingSandMinimalPlugin,
-        core::{ParticleType, SpawnParticleSignal},
+        core::{ParticleType, ParticleTypeId, SpawnParticleSignal},
         render::{FallingSandRenderPlugin, ParticleColor},
     };
     use bevy::{asset::AssetPlugin, image::ImagePlugin};
@@ -242,7 +242,7 @@ mod tests {
         let mut app = setup_app();
 
         app.world_mut().spawn((
-            ParticleType::new("TestSequential"),
+            ParticleType::from_id(ParticleTypeId::from_raw(0)),
             ColorProfile {
                 source: ColorSource::Gradient(ColorGradient {
                     colors: vec![
@@ -260,7 +260,10 @@ mod tests {
         for i in 0..5 {
             app.world_mut()
                 .resource_mut::<Messages<SpawnParticleSignal>>()
-                .write(SpawnParticleSignal::new("TestSequential", IVec2::new(i, 0)));
+                .write(SpawnParticleSignal::new(
+                    ParticleTypeId::from_raw(0),
+                    IVec2::new(i, 0),
+                ));
         }
 
         for _ in 0..5 {
@@ -294,13 +297,16 @@ mod tests {
         ];
 
         app.world_mut().spawn((
-            ParticleType::new("TestPalette"),
+            ParticleType::from_id(ParticleTypeId::from_raw(0)),
             ColorProfile::palette(palette_colors.clone()),
         ));
 
         app.world_mut()
             .resource_mut::<Messages<SpawnParticleSignal>>()
-            .write(SpawnParticleSignal::new("TestPalette", IVec2::new(0, 0)));
+            .write(SpawnParticleSignal::new(
+                ParticleTypeId::from_raw(0),
+                IVec2::new(0, 0),
+            ));
 
         for _ in 0..5 {
             app.update();
@@ -329,7 +335,7 @@ mod tests {
         let mut app = setup_app();
 
         app.world_mut().spawn((
-            ParticleType::new("TestForce"),
+            ParticleType::from_id(ParticleTypeId::from_raw(0)),
             ColorProfile::palette(vec![Color::srgba(1.0, 0.0, 0.0, 1.0)]),
         ));
 
@@ -337,11 +343,12 @@ mod tests {
         app.world_mut()
             .resource_mut::<Messages<SpawnParticleSignal>>()
             .write(
-                SpawnParticleSignal::new("TestForce", IVec2::new(0, 0)).with_on_spawn({
-                    move |cmd| {
-                        cmd.insert(ForceColor(forced));
-                    }
-                }),
+                SpawnParticleSignal::new(ParticleTypeId::from_raw(0), IVec2::new(0, 0))
+                    .with_on_spawn({
+                        move |cmd| {
+                            cmd.insert(ForceColor(forced));
+                        }
+                    }),
             );
 
         for _ in 0..5 {

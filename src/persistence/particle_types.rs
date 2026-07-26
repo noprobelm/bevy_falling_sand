@@ -52,6 +52,10 @@ pub struct LoadParticleTypesSignal(pub PathBuf);
 pub struct ParticleTypesLoadedSignal(pub PathBuf);
 
 /// System to save all `ParticleType` entities and their components to RON.
+#[allow(
+    clippy::significant_drop_tightening,
+    reason = "DynamicWorldBuilder borrows the registry until entity extraction is complete"
+)]
 fn msgr_save_particle_types(world: &mut World) {
     let signals: Vec<PathBuf> = world
         .resource_mut::<Messages<PersistParticleTypesSignal>>()
@@ -75,28 +79,31 @@ fn msgr_save_particle_types(world: &mut World) {
 
     let serialized = {
         let type_registry = world.resource::<AppTypeRegistry>();
+        let dynamic_world = {
+            let registry = type_registry.read();
+            let mut builder = DynamicWorldBuilder::from_world(world, &registry);
+
+            // Deny runtime-only components that shouldn't be persisted.
+            // These are re-initialized automatically when particle types are loaded.
+            #[cfg(feature = "render")]
+            {
+                builder = builder.deny_component::<ColorRng>();
+            }
+            #[cfg(feature = "movement")]
+            {
+                builder = builder
+                    .deny_component::<Momentum>()
+                    .deny_component::<MovementRng>();
+            }
+            #[cfg(feature = "reactions")]
+            {
+                builder = builder.deny_component::<ReactionRng>();
+            }
+
+            builder.extract_entities(entities.into_iter()).build()
+        };
+
         let registry = type_registry.read();
-        let mut builder = DynamicWorldBuilder::from_world(world, &registry);
-
-        // Deny runtime-only components that shouldn't be persisted.
-        // These are re-initialized automatically when particle types are loaded.
-        #[cfg(feature = "render")]
-        {
-            builder = builder.deny_component::<ColorRng>();
-        }
-        #[cfg(feature = "movement")]
-        {
-            builder = builder
-                .deny_component::<Momentum>()
-                .deny_component::<MovementRng>();
-        }
-        #[cfg(feature = "reactions")]
-        {
-            builder = builder.deny_component::<ReactionRng>();
-        }
-
-        let dynamic_world = builder.extract_entities(entities.into_iter()).build();
-
         let serialized = match dynamic_world.serialize(&registry) {
             Ok(s) => s,
             Err(e) => {

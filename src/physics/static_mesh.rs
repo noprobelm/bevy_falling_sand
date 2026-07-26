@@ -50,7 +50,7 @@ impl Plugin for StaticPlugin {
 ///
 /// fn setup(mut commands: Commands) {
 ///     commands.spawn((
-///         ParticleType::new("Stone"),
+///         ParticleType::new(),
 ///         StaticRigidBodyParticle,
 ///     ));
 /// }

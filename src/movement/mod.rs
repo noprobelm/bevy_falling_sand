@@ -28,7 +28,7 @@
 //!
 //! fn setup(mut commands: Commands) {
 //!     commands.spawn((
-//!         ParticleType::new("Sand"),
+//!         ParticleType::new(),
 //!         ColorProfile::palette(vec![
 //!             Color::Srgba(Srgba::hex("#FFEB8A").unwrap()),
 //!             Color::Srgba(Srgba::hex("#F2E06B").unwrap()),

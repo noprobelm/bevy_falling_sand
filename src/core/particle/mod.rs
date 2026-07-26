@@ -12,8 +12,12 @@ use bevy::{
     prelude::*,
 };
 use rand_core::Rng;
-use serde::{Deserialize, Serialize};
-use std::{borrow::Cow, ops::Bound, ops::RangeBounds};
+use serde::{Deserialize, Deserializer, Serialize};
+use std::{
+    ops::Bound,
+    ops::RangeBounds,
+    sync::atomic::{AtomicUsize, Ordering},
+};
 
 pub use lifecycle::*;
 pub use particle_map::*;
@@ -32,6 +36,7 @@ pub(super) struct ParticlePlugin {
 impl Plugin for ParticlePlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(ParticleMap::new(self.width, self.height, self.origin))
+            .register_type::<ParticleTypeId>()
             .register_type::<ParticleType>()
             .register_type::<Particle>()
             .register_type::<GridPosition>()
@@ -46,19 +51,107 @@ impl Plugin for ParticlePlugin {
 
 #[derive(Clone, Eq, PartialEq, Hash, Debug, Reflect, Serialize, Deserialize)]
 pub(crate) enum LocateBy {
-    Name(String),
+    ParticleType(ParticleTypeId),
     Position(IVec2),
     Entity(Entity),
 }
 
-/// Define an entity as a `ParticleType`.
+/// Unique identifier for a [`ParticleType`].
 ///
-/// `ParticleType` is a linchpin in particle synchronization and lifecycle management routines.
-/// When a [`ParticleType`] component is inserted or changed on an entity, it is synchronized
-/// [`ParticleTypeRegistry`] and thus made available for lookup.
+/// `ParticleTypeId` can be stored in bevy resources or anywhere else a particle type's
+/// unique identiifer might be useful. It is the stable handle through which a corresponding
+/// [`ParticleType`] entity can be accessed via the [`ParticleTypeRegistry`] resource.
 ///
-/// When new [`Particle`] entities are spawned into the world, they will locate their parent in
-/// the [`ParticleTypeRegistry`] and store it for use at future synchronization points.
+/// Internally, an [`AtomicUsize`] counter is used to ensure IDs remain stable and aren't
+/// duplicately assigned.
+///
+/// `ParticleTypeId::from_raw` exists to allow users to reuse IDs between sessions without
+/// compromising the internal counter logic. One example of this might be to store a
+/// [`ParticleTypeId`] to particle label mapper on disk, referencing the UIDs when spawning
+/// particle types during your app's initialization logic.
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Reflect, Serialize)]
+#[serde(transparent)]
+#[reflect(Serialize, Deserialize)]
+pub struct ParticleTypeId(usize);
+static NEXT_PARTICLE_TYPE_ID: AtomicUsize = AtomicUsize::new(0);
+
+impl ParticleTypeId {
+    /// Allocate a new unique particle type identifier.
+    ///
+    /// Use for ordinary runtime particle type creation. Store the returned ID wherever you
+    /// will later need to refer to the type.
+    #[must_use]
+    pub fn new() -> Self {
+        Self(NEXT_PARTICLE_TYPE_ID.fetch_add(1, Ordering::Relaxed))
+    }
+
+    /// Return the underlying numeric value.
+    ///
+    /// This is useful for diagnostics. Prefer passing [`ParticleTypeId`] itself through APs.
+    #[must_use]
+    pub const fn get(self) -> usize {
+        self.0
+    }
+
+    /// Build an ID from a persisted numeric value and reserve it from future allocation.
+    ///
+    /// Use this for deserialization, migrations, and stable external catalogs where the numeric
+    /// value is already part of a file or asset contract. For normal runtime allocation, use
+    /// [`ParticleTypeId::new`] instead.
+    #[must_use]
+    pub fn from_raw(id: usize) -> Self {
+        Self::reserve_loaded(id);
+        Self(id)
+    }
+
+    fn reserve_loaded(id: usize) {
+        let next = id.saturating_add(1);
+        let mut current = NEXT_PARTICLE_TYPE_ID.load(Ordering::Relaxed);
+        while current < next {
+            match NEXT_PARTICLE_TYPE_ID.compare_exchange_weak(
+                current,
+                next,
+                Ordering::Relaxed,
+                Ordering::Relaxed,
+            ) {
+                Ok(_) => break,
+                Err(actual) => current = actual,
+            }
+        }
+    }
+}
+
+impl Default for ParticleTypeId {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<'de> Deserialize<'de> for ParticleTypeId {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let id = usize::deserialize(deserializer)?;
+        Self::reserve_loaded(id);
+        Ok(Self(id))
+    }
+}
+
+/// Define an entity as a particle type template.
+///
+/// `ParticleType` is the ECS template component for particle synchronization and lifecycle
+/// management routines. When a [`ParticleType`] component is inserted or changed on an entity, its
+/// [`ParticleTypeId`] is synchronized with [`ParticleTypeRegistry`] and thus made available for
+/// lookup.
+///
+/// The ID is private by design. Use [`ParticleType::id`] to read it, [`ParticleType::new`] to
+/// allocate a fresh template, and [`ParticleType::from_id`] to attach an existing ID to a template
+/// entity.
+///
+/// When new [`Particle`] entities are spawned into the world, they locate their parent template in
+/// the [`ParticleTypeRegistry`] by [`ParticleTypeId`] and store the parent entity for use at future
+/// synchronization points.
 #[derive(
     Component,
     Clone,
@@ -79,19 +172,19 @@ pub(crate) enum LocateBy {
 #[type_path = "bfs_core::particle"]
 pub struct ParticleType {
     /// The particle type's unique identifier.
-    pub name: Cow<'static, str>,
+    id: ParticleTypeId,
 }
 
 impl ParticleType {
     /// Synchronize the new `ParticleType` with the [`ParticleTypeRegistry`].
     ///
-    /// If a previous entity was registered under the same name, it is despawned.
+    /// If a previous entity was registered under the same ID, it is despawned.
     fn on_add(mut world: DeferredWorld, context: HookContext) {
         let particle_type = world.get::<Self>(context.entity).unwrap();
-        let name = particle_type.name.clone();
+        let id = particle_type.id();
 
         let mut type_map = world.resource_mut::<ParticleTypeRegistry>();
-        let old_entity = type_map.insert(name, context.entity);
+        let old_entity = type_map.insert(id, context.entity);
 
         if let Some(old) = old_entity
             && old != context.entity
@@ -101,97 +194,76 @@ impl ParticleType {
     }
 
     /// Remove this `ParticleType` from the [`ParticleTypeRegistry`], but only if
-    /// it is still the registered entity for its name. This avoids clobbering a
+    /// it is still the registered entity for its ID. This avoids clobbering a
     /// replacement that was already inserted by [`on_add`](ParticleType::on_add).
     fn on_remove(mut world: DeferredWorld, context: HookContext) {
         let particle_type = world.get::<Self>(context.entity).unwrap();
-        let name = particle_type.name.clone();
+        let id = particle_type.id();
         let mut type_map = world.resource_mut::<ParticleTypeRegistry>();
-        if type_map.get(&name) == Some(&context.entity) {
-            type_map.remove(&name);
+        if type_map.get(id) == Some(&context.entity) {
+            type_map.remove(id);
         }
     }
 }
 
 impl ParticleType {
-    /// Initialize a new [`ParticleType`] from a static string.
+    /// Initialize a new [`ParticleType`] with a unique ID.
     ///
     /// # Examples
     ///
     /// ```
     /// use bevy_falling_sand::core::ParticleType;
     ///
-    /// let sand = ParticleType::new("Sand");
-    /// assert_eq!(sand.name, "Sand");
+    /// let sand = ParticleType::new();
+    /// let sand_id = sand.id();
+    /// let water = ParticleType::new();
+    ///
+    /// assert_ne!(sand.id(), water.id());
+    /// assert_eq!(sand.id(), sand_id);
     /// ```
     #[must_use]
-    pub const fn new(name: &'static str) -> Self {
+    pub fn new() -> Self {
         Self {
-            name: Cow::Borrowed(name),
+            id: ParticleTypeId::new(),
         }
     }
 
-    /// Initialize a new [`ParticleType`] from an owned string.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bevy_falling_sand::core::ParticleType;
-    ///
-    /// let name = String::from("Water");
-    /// let water = ParticleType::from_string(name);
-    /// assert_eq!(water.name, "Water");
-    /// ```
+    /// Initialize a [`ParticleType`] from an existing ID.
     #[must_use]
-    pub const fn from_string(name: String) -> Self {
-        Self {
-            name: Cow::Owned(name),
-        }
+    pub const fn from_id(id: ParticleTypeId) -> Self {
+        Self { id }
+    }
+
+    /// Return the particle type's unique identifier.
+    #[must_use]
+    pub const fn id(&self) -> ParticleTypeId {
+        self.id
     }
 }
 
-impl From<&'static str> for ParticleType {
-    fn from(name: &'static str) -> Self {
-        Self::new(name)
-    }
-}
-
-impl From<String> for ParticleType {
-    fn from(name: String) -> Self {
-        Self::from_string(name)
-    }
-}
-
-impl From<Cow<'static, str>> for ParticleType {
-    fn from(name: Cow<'static, str>) -> Self {
-        Self { name }
-    }
-}
-
-impl From<ParticleType> for Cow<'static, str> {
-    fn from(val: ParticleType) -> Self {
-        val.name
+impl From<ParticleTypeId> for ParticleType {
+    fn from(id: ParticleTypeId) -> Self {
+        Self::from_id(id)
     }
 }
 
 /// Marker component for entities participating in the falling sand simulation.
 ///
-/// `Particle` is a zero-sized component. The "type" of a particle is identified entirely by its
+/// `Particle` is a zero-sized component. The "type" of a particle is identified by its
 /// [`AttachedToParticleType`] reference, which points at the [`ParticleType`] entity that holds
-/// the canonical name and shared-default behavior. To read a particle's type name, query its
-/// parent:
+/// the canonical [`ParticleTypeId`] and shared-default behavior.
 ///
 /// ```no_run
 /// use bevy::prelude::*;
 /// use bevy_falling_sand::core::{AttachedToParticleType, Particle, ParticleType};
 ///
-/// fn read_names(
+/// fn read_particle_type_ids(
 ///     particles: Query<&AttachedToParticleType, With<Particle>>,
 ///     types: Query<&ParticleType>,
 /// ) {
 ///     for attached in &particles {
 ///         if let Ok(particle_type) = types.get(attached.0) {
-///             println!("{}", particle_type.name);
+///             println!("{:?}", particle_type.id());
 ///         }
 ///     }
 /// }

@@ -4,14 +4,14 @@
 //! - Magic: "BFC\0" (4 bytes)
 //! - Particle type count: u16
 //! - For each particle type:
-//!   - Name length: u8
-//!   - Name: [u8; `name_len`]
+//!   - Particle type ID: u64
 //!   - Entry count: u32
 //!   - Entries: (x: i32, y: i32, `color_type`: u8, `color_data`: variable)
 //!     - `color_type` 0: `ColorIndex` - `color_data` is u16 (2 bytes)
 //!     - `color_type` 1: `ForceColor` - `color_data` is 4 x f32 RGBA (16 bytes)
 
 use super::io_reader;
+use crate::core::ParticleTypeId;
 
 use bevy::platform::collections::HashMap;
 use bevy::prelude::*;
@@ -26,8 +26,8 @@ pub const MAGIC: &[u8; 4] = b"BFC\0";
 /// Other modules can convert this to their own types as needed.
 #[derive(Debug, Clone)]
 pub struct ParticleData {
-    /// Particle type name.
-    pub name: String,
+    /// Particle type ID.
+    pub particle_type: ParticleTypeId,
     /// World position of the particle.
     pub position: IVec2,
     /// Color index if using palette.
@@ -49,9 +49,12 @@ pub fn serialize_to_writer(
     writer: &mut impl Write,
 ) -> std::io::Result<()> {
     // Group particles by type
-    let mut grouped: HashMap<&str, Vec<&ParticleData>> = HashMap::default();
+    let mut grouped: HashMap<ParticleTypeId, Vec<&ParticleData>> = HashMap::default();
     for particle in particles {
-        grouped.entry(&particle.name).or_default().push(particle);
+        grouped
+            .entry(particle.particle_type)
+            .or_default()
+            .push(particle);
     }
 
     // Magic header
@@ -61,10 +64,8 @@ pub fn serialize_to_writer(
     #[allow(clippy::cast_possible_truncation)]
     writer.write_all(&(grouped.len() as u16).to_le_bytes())?;
 
-    for (name, entries) in &grouped {
-        // Name length and name bytes
-        writer.write_all(&[name.len() as u8])?;
-        writer.write_all(name.as_bytes())?;
+    for (particle_type, entries) in &grouped {
+        writer.write_all(&(particle_type.get() as u64).to_le_bytes())?;
 
         // Entry count
         writer.write_all(&(entries.len() as u32).to_le_bytes())?;
@@ -147,18 +148,11 @@ pub fn deserialize_from_reader(reader: &mut impl Read) -> Result<Vec<ParticleDat
     let mut particles = Vec::new();
 
     for _ in 0..type_count {
-        // Read name
-        let mut name_len = [0u8; 1];
+        let mut type_id_buf = [0u8; 8];
         reader
-            .read_exact(&mut name_len)
-            .map_err(|e| format!("Failed to read name length: {e}"))?;
-
-        let mut name_buf = vec![0u8; name_len[0] as usize];
-        reader
-            .read_exact(&mut name_buf)
-            .map_err(|e| format!("Failed to read name: {e}"))?;
-
-        let name = String::from_utf8(name_buf).map_err(|e| format!("Invalid UTF-8 name: {e}"))?;
+            .read_exact(&mut type_id_buf)
+            .map_err(|e| format!("Failed to read particle type ID: {e}"))?;
+        let particle_type = ParticleTypeId::from_raw(u64::from_le_bytes(type_id_buf) as usize);
 
         // Read entry count
         let mut entry_count_buf = [0u8; 4];
@@ -200,7 +194,7 @@ pub fn deserialize_from_reader(reader: &mut impl Read) -> Result<Vec<ParticleDat
             };
 
             particles.push(ParticleData {
-                name: name.clone(),
+                particle_type,
                 position: IVec2::new(x, y),
                 color_index,
                 force_color,

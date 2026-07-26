@@ -165,7 +165,7 @@ fn spawn_loaded_particles(
             chunk_data
                 .particles
                 .iter()
-                .all(|p| registry.contains(&p.name))
+                .all(|p| registry.contains(p.particle_type))
         })
         .collect();
 
@@ -194,7 +194,7 @@ fn spawn_loaded_particles(
             });
 
             let signal = SpawnParticleSignal::overwrite_existing(
-                particle_data.name.clone(),
+                particle_data.particle_type,
                 particle_data.position,
             );
             let signal = if let Some(color) = force_color {

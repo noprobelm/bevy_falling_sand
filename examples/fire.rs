@@ -79,9 +79,27 @@ const END_X: i32 = 150;
 const START_Y: i32 = -150;
 const END_Y: i32 = 150;
 
+#[derive(Copy, Clone, Resource)]
+struct ParticleIds {
+    fire: ParticleTypeId,
+    flammable_gas: ParticleTypeId,
+    dirt_wall: ParticleTypeId,
+    smoke: ParticleTypeId,
+}
+
+impl Default for ParticleIds {
+    fn default() -> Self {
+        Self {
+            fire: ParticleTypeId::new(),
+            flammable_gas: ParticleTypeId::new(),
+            dirt_wall: ParticleTypeId::new(),
+            smoke: ParticleTypeId::new(),
+        }
+    }
+}
+
 #[derive(Clone, Resource)]
 struct DefaultFire(
-    ParticleType,
     Density,
     Speed,
     ColorProfile,
@@ -98,7 +116,6 @@ impl Default for DefaultFire {
             neighbors.push(vec![IVec2::X * (i + 2), IVec2::NEG_X * (i + 2)]);
         }
         DefaultFire(
-            ParticleType::new("FIRE"),
             Density(450),
             Speed::new(0, 3),
             ColorProfile::palette(vec![
@@ -127,7 +144,6 @@ impl Default for DefaultFire {
 
 #[derive(Resource)]
 struct DefaultFlammableGas(
-    ParticleType,
     Density,
     Speed,
     ColorProfile,
@@ -140,7 +156,6 @@ struct DefaultFlammableGas(
 impl Default for DefaultFlammableGas {
     fn default() -> Self {
         DefaultFlammableGas(
-            ParticleType::new("Flammable Gas"),
             Density(200),
             Speed::new(0, 1),
             ColorProfile::palette(vec![
@@ -179,10 +194,12 @@ fn setup(
     default_flammable_gas: Res<DefaultFlammableGas>,
     default_fire: Res<DefaultFire>,
 ) {
+    let ids = ParticleIds::default();
+    commands.insert_resource(ids);
     commands.remove_resource::<DebugParticleMap>();
     commands.remove_resource::<DebugDirtyRects>();
     commands.spawn((
-        ParticleType::new("Dirt Wall"),
+        ParticleType::from_id(ids.dirt_wall),
         ColorProfile::palette(vec![
             Color::Srgba(Srgba::hex("#916B4C").unwrap()),
             Color::Srgba(Srgba::hex("#73573D").unwrap()),
@@ -195,7 +212,7 @@ fn setup(
             neighbors.push(vec![IVec2::X * (i + 2), IVec2::NEG_X * (i + 2)]);
         }
         commands.spawn((
-            ParticleType::new("Smoke"),
+            ParticleType::from_id(ids.smoke),
             Density(275),
             Speed::new(0, 1),
             ColorProfile::palette(vec![
@@ -209,31 +226,29 @@ fn setup(
     }
 
     commands.spawn((
-        default_flammable_gas.0.clone(),
+        ParticleType::from_id(ids.flammable_gas),
+        default_flammable_gas.0,
         default_flammable_gas.1,
-        default_flammable_gas.2,
+        default_flammable_gas.2.clone(),
         default_flammable_gas.3.clone(),
         default_flammable_gas.4.clone(),
         default_flammable_gas.5.clone(),
         default_flammable_gas.6.clone(),
-        default_flammable_gas.7.clone(),
     ));
 
     commands.spawn((
-        default_fire.0.clone(),
+        ParticleType::from_id(ids.fire),
+        default_fire.0,
         default_fire.1,
-        default_fire.2,
+        default_fire.2.clone(),
         default_fire.3.clone(),
         default_fire.4.clone(),
         default_fire.5.clone(),
         default_fire.6.clone(),
     ));
 
-    commands.insert_resource(ParticleSpawnList::new(vec![
-        "FIRE".into(),
-        "Flammable Gas".into(),
-    ]));
-    commands.insert_resource(SelectedBrushParticle("FIRE".into()));
+    commands.insert_resource(ParticleSpawnList::new(vec![ids.fire, ids.flammable_gas]));
+    commands.insert_resource(SelectedBrushParticle(ids.fire));
 
     let instructions_text = "Left mouse: Spawn/despawn particles\n\
         Right mouse: Cycle particle type\n\
@@ -281,7 +296,10 @@ fn setup(
     });
 }
 
-fn spawn_flammable_gas_particles(mut spawn_writer: MessageWriter<SpawnParticleSignal>) {
+fn spawn_flammable_gas_particles(
+    mut spawn_writer: MessageWriter<SpawnParticleSignal>,
+    ids: Res<ParticleIds>,
+) {
     let center_x = (START_X + END_X) / 2;
     let center_y = (START_Y + END_Y) / 2;
 
@@ -291,7 +309,7 @@ fn spawn_flammable_gas_particles(mut spawn_writer: MessageWriter<SpawnParticleSi
         for dy in -radius..=radius {
             if dx * dx + dy * dy <= radius * radius {
                 let position = IVec2::new(center_x + dx, center_y + dy);
-                spawn_writer.write(SpawnParticleSignal::new("Flammable Gas", position));
+                spawn_writer.write(SpawnParticleSignal::new(ids.flammable_gas, position));
             }
         }
     }
@@ -324,9 +342,10 @@ fn render_fire_settings_gui(
     mut commands: Commands,
     default_fire: Res<DefaultFire>,
     default_flammable_gas: Res<DefaultFlammableGas>,
+    ids: Res<ParticleIds>,
 ) {
-    let fire_entity = *particle_type_map.get("FIRE").unwrap();
-    let flammable_gas_entity = *particle_type_map.get("Flammable Gas").unwrap();
+    let fire_entity = *particle_type_map.get(ids.fire).unwrap();
+    let flammable_gas_entity = *particle_type_map.get(ids.flammable_gas).unwrap();
 
     egui::Window::new("Particle Properties").show(contexts.ctx_mut().unwrap(), |ui| {
         {
@@ -401,7 +420,7 @@ fn render_fire_settings_gui(
             if ui.checkbox(&mut smoke_enabled, "Smoke").changed() {
                 if smoke_enabled {
                     burns.reaction = Some(BurnProduct {
-                        produces: "Smoke".into(),
+                        produces: ids.smoke,
                         chance_to_produce: 0.5,
                     });
                 } else {
@@ -427,7 +446,7 @@ fn render_fire_settings_gui(
                     .drag_stopped()
                 {
                     burns.reaction = Some(BurnProduct {
-                        produces: "Smoke".into(),
+                        produces: ids.smoke,
                         chance_to_produce,
                     });
                     fire_updated = true;
@@ -438,14 +457,14 @@ fn render_fire_settings_gui(
 
             if ui.button("🔄 Reset Fire to Default").clicked() {
                 commands.spawn((
-                    default_fire.0.clone(),
+                    ParticleType::from_id(ids.fire),
+                    default_fire.0,
                     default_fire.1,
-                    default_fire.2,
+                    default_fire.2.clone(),
                     default_fire.3.clone(),
                     default_fire.4.clone(),
                     default_fire.5.clone(),
                     default_fire.6.clone(),
-                    default_fire.7.clone(),
                 ));
             }
 
@@ -533,9 +552,10 @@ fn render_fire_settings_gui(
 
             if ui.button("🔄 Reset Flammable Gas to Default").clicked() {
                 commands.spawn((
-                    default_flammable_gas.0.clone(),
+                    ParticleType::from_id(ids.flammable_gas),
+                    default_flammable_gas.0,
                     default_flammable_gas.1,
-                    default_flammable_gas.2,
+                    default_flammable_gas.2.clone(),
                     default_flammable_gas.3.clone(),
                     default_flammable_gas.4.clone(),
                     default_flammable_gas.5.clone(),

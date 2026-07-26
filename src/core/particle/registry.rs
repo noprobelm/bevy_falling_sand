@@ -1,5 +1,6 @@
 use bevy::{platform::collections::HashMap, prelude::*};
-use std::borrow::Cow;
+
+use super::ParticleTypeId;
 
 pub(super) struct RegistryPlugin;
 
@@ -9,11 +10,12 @@ impl Plugin for RegistryPlugin {
     }
 }
 
-/// Associates unique [`ParticleType`](crate::prelude::ParticleType) with their entity ID
+/// Associates unique [`ParticleTypeId`] values with their current
+/// [`ParticleType`](crate::prelude::ParticleType) entity.
 #[derive(Resource, Clone, Default, Eq, PartialEq, Debug, Reflect)]
 #[reflect(Resource)]
 pub struct ParticleTypeRegistry {
-    map: HashMap<Cow<'static, str>, Entity>,
+    map: HashMap<ParticleTypeId, Entity>,
 }
 
 impl ParticleTypeRegistry {
@@ -26,15 +28,16 @@ impl ParticleTypeRegistry {
     /// use bevy_falling_sand::core::ParticleTypeRegistry;
     ///
     /// fn check_type(registry: Res<ParticleTypeRegistry>) {
-    ///     if registry.contains("Sand") {
+    ///     # let sand = bevy_falling_sand::core::ParticleTypeId::new();
+    ///     if registry.contains(sand) {
     ///         println!("Sand type is registered");
     ///     }
     /// }
     /// ```
     #[must_use]
     #[inline(always)]
-    pub fn contains(&self, name: &str) -> bool {
-        self.map.contains_key(name)
+    pub fn contains(&self, id: impl Into<ParticleTypeId>) -> bool {
+        self.map.contains_key(&id.into())
     }
 
     /// Iterate over key value pairs in the map.
@@ -46,31 +49,13 @@ impl ParticleTypeRegistry {
     /// use bevy_falling_sand::core::ParticleTypeRegistry;
     ///
     /// fn list_types(registry: Res<ParticleTypeRegistry>) {
-    ///     for (name, entity) in registry.iter() {
-    ///         println!("{name}: {entity:?}");
+    ///     for (id, entity) in registry.iter() {
+    ///         println!("{id:?}: {entity:?}");
     ///     }
     /// }
     /// ```
-    pub fn iter(&self) -> impl Iterator<Item = (&str, &Entity)> {
-        self.map.iter().map(|(k, v)| (k.as_ref(), v))
-    }
-
-    /// Iterate over particle names in the map.
-    ///
-    /// # Examples
-    ///
-    /// ```no_run
-    /// use bevy::prelude::*;
-    /// use bevy_falling_sand::core::ParticleTypeRegistry;
-    ///
-    /// fn list_names(registry: Res<ParticleTypeRegistry>) {
-    ///     for name in registry.names() {
-    ///         println!("Particle type: {name}");
-    ///     }
-    /// }
-    /// ```
-    pub fn names(&self) -> impl Iterator<Item = &str> + use<'_> {
-        self.map.keys().map(AsRef::as_ref)
+    pub fn iter(&self) -> impl Iterator<Item = (&ParticleTypeId, &Entity)> {
+        self.map.iter()
     }
 
     /// Iterate over entities in the map.
@@ -100,15 +85,16 @@ impl ParticleTypeRegistry {
     /// use bevy_falling_sand::core::ParticleTypeRegistry;
     ///
     /// fn get_sand(registry: Res<ParticleTypeRegistry>) {
-    ///     if let Some(entity) = registry.get("Sand") {
+    ///     # let sand = bevy_falling_sand::core::ParticleTypeId::new();
+    ///     if let Some(entity) = registry.get(sand) {
     ///         println!("Sand type entity: {entity:?}");
     ///     }
     /// }
     /// ```
     #[must_use]
     #[inline(always)]
-    pub fn get(&self, name: &str) -> Option<&Entity> {
-        self.map.get(name)
+    pub fn get(&self, id: impl Into<ParticleTypeId>) -> Option<&Entity> {
+        self.map.get(&id.into())
     }
 
     /// Returns `true` if the particle type map is empty.
@@ -132,16 +118,12 @@ impl ParticleTypeRegistry {
 
     /// Insert a new [`ParticleType`](crate::ParticleType) and entity.
     #[inline(always)]
-    pub(crate) fn insert(
-        &mut self,
-        name: impl Into<Cow<'static, str>>,
-        entity: Entity,
-    ) -> Option<Entity> {
-        self.map.insert(name.into(), entity)
+    pub(crate) fn insert(&mut self, id: ParticleTypeId, entity: Entity) -> Option<Entity> {
+        self.map.insert(id, entity)
     }
 
     /// Remove a particle type from the map
-    pub(crate) fn remove(&mut self, name: &str) -> Option<Entity> {
-        self.map.remove(name)
+    pub(crate) fn remove(&mut self, id: ParticleTypeId) -> Option<Entity> {
+        self.map.remove(&id)
     }
 }
