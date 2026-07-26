@@ -51,7 +51,7 @@ impl Plugin for LifecyclePlugin {
                 despawn_orphaned_particles.before(ParticleSystems::Registration),
             )
             .add_systems(
-                Update,
+                PostUpdate,
                 (handle_timed_lifetimes, handle_chance_lifetimes)
                     .in_set(ParticleSystems::Simulation),
             );

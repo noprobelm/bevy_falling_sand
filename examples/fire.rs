@@ -59,9 +59,6 @@ fn main() {
                 utils::camera::zoom_camera.run_if(in_state(AppState::Canvas)),
                 utils::camera::pan_camera.run_if(in_state(AppState::Canvas)),
                 utils::camera::smooth_zoom,
-                spawn_flammable_gas_particles
-                    .run_if(resource_exists::<SpawnFlammableGasParticles>)
-                    .before(ParticleSystems::Simulation),
                 toggle_spawn_flamable_gas_particles
                     .run_if(input_just_pressed(KeyCode::F4))
                     .run_if(in_state(AppState::Canvas)),
@@ -70,6 +67,12 @@ fn main() {
                     .run_if(input_just_pressed(KeyCode::KeyR))
                     .run_if(in_state(AppState::Canvas)),
             ),
+        )
+        .add_systems(
+            PostUpdate,
+            spawn_flammable_gas_particles
+                .run_if(resource_exists::<SpawnFlammableGasParticles>)
+                .before(ParticleSystems::Simulation),
         )
         .run();
 }

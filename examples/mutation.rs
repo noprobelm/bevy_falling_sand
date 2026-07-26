@@ -39,17 +39,15 @@ fn main() {
                 utils::camera::zoom_camera,
                 utils::camera::pan_camera,
                 utils::camera::smooth_zoom,
-                spawn_particles.before(ParticleSystems::Simulation),
                 utils::instructions::toggle_standalone_instructions,
+                mutate_particle_type_one.run_if(input_just_pressed(MouseButton::Left)),
+                mutate_particle_type_two.run_if(input_just_pressed(MouseButton::Right)),
                 update_movement_source_text,
             ),
         )
         .add_systems(
-            Update,
-            (
-                mutate_particle_type_one.run_if(input_just_pressed(MouseButton::Left)),
-                mutate_particle_type_two.run_if(input_just_pressed(MouseButton::Right)),
-            ),
+            PostUpdate,
+            (spawn_particles.before(ParticleSystems::Simulation)),
         )
         .run();
 }
