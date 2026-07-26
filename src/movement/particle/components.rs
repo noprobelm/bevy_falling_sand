@@ -126,7 +126,9 @@ impl Default for Speed {
 }
 
 impl Speed {
-    /// Initialize a speed with the given threshold and max.
+    /// Initialize a speed with the given threshold and maximum speed.
+    ///
+    /// `max` is clamped to a minimum of 1.
     ///
     /// # Examples
     ///
@@ -145,7 +147,7 @@ impl Speed {
             current: 1,
             potential: 0,
             threshold,
-            max,
+            max: if max < 1 { 1 } else { max },
         }
     }
 
@@ -177,10 +179,10 @@ impl Speed {
         self.max
     }
 
-    /// Set the current speed.
+    /// Set the current speed, clamped to the maximum speed.
     #[inline(always)]
     pub const fn set_speed(&mut self, val: u8) {
-        self.current = val;
+        self.current = if val > self.max { self.max } else { val };
     }
 
     /// Set the speed threshold.
@@ -192,11 +194,17 @@ impl Speed {
     /// Set the maximum speed. Clamps to a minimum of 1.
     #[inline(always)]
     pub const fn set_max_speed(&mut self, val: u8) {
-        if val < 1 {
-            self.max = 1;
-        } else {
-            self.max = val;
+        self.max = if val < 1 { 1 } else { val };
+        if self.current > self.max {
+            self.current = self.max;
         }
+    }
+
+    /// Reset the current speed and acceleration potential.
+    #[inline(always)]
+    pub const fn reset(&mut self) {
+        self.current = 1;
+        self.potential = 0;
     }
 
     /// Increment the speed by 1 if below max and potential meets threshold.
@@ -656,6 +664,13 @@ mod tests {
         }
 
         #[test]
+        fn new_clamps_max_to_1() {
+            let speed = Speed::new(3, 0);
+            assert_eq!(speed.current(), 1);
+            assert_eq!(speed.max_speed(), 1);
+        }
+
+        #[test]
         fn default_is_1_1() {
             let speed = Speed::default();
             assert_eq!(speed.current(), 1);
@@ -719,6 +734,13 @@ mod tests {
         }
 
         #[test]
+        fn set_speed_clamps_to_max() {
+            let mut speed = Speed::new(1, 5);
+            speed.set_speed(10);
+            assert_eq!(speed.current(), 5);
+        }
+
+        #[test]
         fn set_max_speed_clamps_to_1() {
             let mut speed = Speed::new(1, 10);
             speed.set_max_speed(0);
@@ -726,6 +748,25 @@ mod tests {
 
             speed.set_max_speed(5);
             assert_eq!(speed.max_speed(), 5);
+        }
+
+        #[test]
+        fn lowering_max_clamps_current() {
+            let mut speed = Speed::new(1, 10);
+            speed.set_speed(8);
+            speed.set_max_speed(3);
+            assert_eq!(speed.current(), 3);
+            assert_eq!(speed.max_speed(), 3);
+        }
+
+        #[test]
+        fn reset_restores_initial_state() {
+            let mut speed = Speed::new(3, 10);
+            speed.set_speed(5);
+            speed.increment();
+            speed.reset();
+            assert_eq!(speed.current(), 1);
+            assert_eq!(speed.potential(), 0);
         }
     }
 
