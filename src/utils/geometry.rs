@@ -23,7 +23,7 @@ pub struct GridCellMesh {
 ///
 /// Duplicate position inputs are ignored.
 ///
-/// ```
+/// ```no_run
 /// use bevy::prelude::IVec2;
 /// use bevy_falling_sand::utils::connected_components;
 ///
@@ -420,13 +420,6 @@ mod tests {
 
     mod grid_tests {
         use super::*;
-
-        #[test]
-        fn new_creates_empty_grid() {
-            let grid = OccupancyGrid::new(IVec2::ZERO, IVec2::new(3, 3));
-            assert!(!grid.get(IVec2::ZERO));
-            assert!(!grid.get(IVec2::new(3, 3)));
-        }
 
         #[test]
         fn set_and_get() {

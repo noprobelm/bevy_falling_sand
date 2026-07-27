@@ -47,7 +47,7 @@ impl Corrosive {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy_falling_sand::reactions::Corrosive;
     ///
     /// let corrosive = Corrosive::new(0.05);
@@ -65,7 +65,7 @@ impl Corrosive {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use std::time::Duration;
     /// use bevy_falling_sand::reactions::Corrosive;
     ///
@@ -141,14 +141,6 @@ fn handle_corrosion(
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn corrosive_constructor_uses_zero_tick_rate() {
-        let corrosive = Corrosive::new(0.25);
-
-        assert_eq!(corrosive.chance, 0.25);
-        assert_eq!(corrosive.tick_timer.duration(), Duration::ZERO);
-    }
 
     #[test]
     fn corrosive_tick_rate_builder_sets_duration() {

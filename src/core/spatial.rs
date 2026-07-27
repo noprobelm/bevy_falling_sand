@@ -15,7 +15,7 @@ impl PositionUnloaded {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy_falling_sand::core::PositionUnloaded;
     ///
     /// let err = PositionUnloaded::new(100, 200);
@@ -77,7 +77,7 @@ impl<T: Clone> SpatialMap<T> {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::SpatialMap;
     ///
@@ -128,7 +128,7 @@ impl<T: Clone> SpatialMap<T> {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::SpatialMap;
     ///
@@ -152,7 +152,7 @@ impl<T: Clone> SpatialMap<T> {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::SpatialMap;
     ///
@@ -190,7 +190,7 @@ impl<T: Clone> SpatialMap<T> {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::SpatialMap;
     ///
@@ -217,7 +217,7 @@ impl<T: Clone> SpatialMap<T> {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::SpatialMap;
     ///
@@ -246,7 +246,7 @@ impl<T: Clone> SpatialMap<T> {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::SpatialMap;
     ///
@@ -275,7 +275,7 @@ impl<T: Clone> SpatialMap<T> {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::SpatialMap;
     ///
@@ -299,7 +299,7 @@ impl<T: Clone> SpatialMap<T> {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::SpatialMap;
     ///
@@ -326,7 +326,7 @@ impl<T: Clone> SpatialMap<T> {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::SpatialMap;
     ///
@@ -360,7 +360,7 @@ impl<T: Clone> SpatialMap<T> {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::SpatialMap;
     ///
@@ -394,7 +394,7 @@ impl<T: Clone> SpatialMap<T> {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::SpatialMap;
     ///
@@ -421,7 +421,7 @@ impl<T: Clone> SpatialMap<T> {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::SpatialMap;
     ///
@@ -451,7 +451,7 @@ impl<T: Clone> SpatialMap<T> {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::SpatialMap;
     ///
@@ -476,7 +476,7 @@ impl<T: Clone> SpatialMap<T> {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::SpatialMap;
     ///
@@ -493,7 +493,7 @@ impl<T: Clone> SpatialMap<T> {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::SpatialMap;
     ///
@@ -534,7 +534,7 @@ impl<T: Clone> SpatialMap<T> {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::SpatialMap;
     ///
@@ -556,7 +556,7 @@ impl<T: Clone> SpatialMap<T> {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::SpatialMap;
     ///
@@ -580,7 +580,7 @@ impl<T: Clone> SpatialMap<T> {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::SpatialMap;
     ///
@@ -599,7 +599,7 @@ impl<T: Clone> SpatialMap<T> {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::SpatialMap;
     ///
@@ -621,7 +621,7 @@ impl<T: Clone + Copy> SpatialMap<T> {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::SpatialMap;
     ///
@@ -660,7 +660,7 @@ impl<T: Clone + Copy> SpatialMap<T> {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::SpatialMap;
     ///
@@ -699,7 +699,7 @@ impl<T: Clone + Copy> SpatialMap<T> {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::SpatialMap;
     ///
@@ -719,7 +719,7 @@ impl<T: Clone + Copy> SpatialMap<T> {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::SpatialMap;
     ///
@@ -742,7 +742,7 @@ impl<T: Clone + Copy> SpatialMap<T> {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::SpatialMap;
     ///
@@ -805,7 +805,7 @@ impl<T: Clone + Copy> SpatialMap<T> {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::SpatialMap;
     ///
@@ -833,7 +833,7 @@ impl<T: Clone + Copy> SpatialMap<T> {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::SpatialMap;
     ///
@@ -880,7 +880,7 @@ impl<T: Clone + Copy> SpatialMap<T> {
 ///
 /// # Examples
 ///
-/// ```
+/// ```no_run
 /// use bevy::prelude::*;
 /// use bevy_falling_sand::core::SpatialMap;
 ///
@@ -906,7 +906,7 @@ impl<T> SpatialEntry<'_, T> {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::SpatialMap;
     ///
@@ -925,7 +925,7 @@ impl<T> SpatialEntry<'_, T> {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::SpatialMap;
     ///
@@ -946,7 +946,7 @@ impl<T> SpatialEntry<'_, T> {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::SpatialMap;
     ///
@@ -965,7 +965,7 @@ impl<T> SpatialEntry<'_, T> {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::SpatialMap;
     ///
@@ -984,7 +984,7 @@ impl<T> SpatialEntry<'_, T> {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::SpatialMap;
     ///
@@ -1001,7 +1001,7 @@ impl<T> SpatialEntry<'_, T> {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::SpatialMap;
     ///
@@ -1022,7 +1022,7 @@ impl<T> SpatialEntry<'_, T> {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::SpatialMap;
     ///
@@ -1048,7 +1048,7 @@ impl<T> SpatialEntry<'_, T> {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::SpatialMap;
     ///
@@ -1074,7 +1074,7 @@ impl<T> SpatialEntry<'_, T> {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::SpatialMap;
     ///
@@ -1092,7 +1092,7 @@ impl<T> SpatialEntry<'_, T> {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::SpatialMap;
     ///

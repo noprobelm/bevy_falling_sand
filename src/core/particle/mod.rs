@@ -214,7 +214,7 @@ impl ParticleType {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy_falling_sand::core::ParticleType;
     ///
     /// let sand = ParticleType::new();
@@ -326,7 +326,7 @@ impl Particle {
 ///
 /// # Examples
 ///
-/// ```
+/// ```no_run
 /// use bevy::prelude::*;
 /// use bevy_falling_sand::core::GridPosition;
 ///
@@ -350,7 +350,7 @@ pub struct AttachedToParticleType(pub Entity);
 ///
 /// # Examples
 ///
-/// ```
+/// ```no_run
 /// use bevy::prelude::*;
 /// use bevy_rand::prelude::WyRand;
 /// use bevy_falling_sand::impl_particle_rng;

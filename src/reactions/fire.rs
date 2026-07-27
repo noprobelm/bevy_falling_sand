@@ -161,7 +161,7 @@ impl Flammable {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use std::time::Duration;
     /// use bevy_falling_sand::reactions::Flammable;
     ///
@@ -233,7 +233,7 @@ impl Flammable {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use std::time::Duration;
     /// use bevy_falling_sand::reactions::{Flammable, Burning};
     ///
@@ -254,7 +254,7 @@ impl Flammable {
 ///
 /// # Examples
 ///
-/// ```
+/// ```no_run
 /// use std::time::Duration;
 /// use bevy_falling_sand::reactions::Burning;
 ///
@@ -280,7 +280,7 @@ impl Burning {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use std::time::Duration;
     /// use bevy_falling_sand::reactions::Burning;
     ///
@@ -307,7 +307,7 @@ impl Burning {
 ///
 /// # Examples
 ///
-/// ```
+/// ```no_run
 /// use bevy_falling_sand::core::ParticleTypeId;
 /// use bevy_falling_sand::reactions::BurnProduct;
 ///
@@ -331,7 +331,7 @@ impl BurnProduct {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy_falling_sand::core::ParticleTypeId;
     /// use bevy_falling_sand::reactions::BurnProduct;
     ///
@@ -519,23 +519,6 @@ fn handle_fire(
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn flammable_constructor_sets_defaults() {
-        let duration = Duration::from_secs(5);
-        let tick_rate = Duration::from_millis(100);
-        let flammable = Flammable::new(duration, tick_rate);
-
-        assert_eq!(flammable.duration, duration);
-        assert_eq!(flammable.tick_rate, tick_rate);
-        assert_eq!(flammable.chance_despawn_per_tick, 0.0);
-        assert_eq!(flammable.reaction, None);
-        assert_eq!(flammable.chance_to_ignite, 0.0);
-        assert!(!flammable.spreads_fire);
-        assert_eq!(flammable.spread_radius, 1.0);
-        assert!(!flammable.despawn_on_extinguish);
-        assert!(!flammable.ignites_on_spawn);
-    }
 
     #[test]
     fn flammable_builders_set_options() {

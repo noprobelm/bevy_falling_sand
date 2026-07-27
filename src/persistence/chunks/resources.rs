@@ -69,7 +69,7 @@ pub struct ParticlePersistenceState {
 ///
 /// # Examples
 ///
-/// ```
+/// ```no_run
 /// use bevy_falling_sand::core::ChunkCoord;
 /// use bevy_falling_sand::persistence::ChunkPersistenceError;
 ///

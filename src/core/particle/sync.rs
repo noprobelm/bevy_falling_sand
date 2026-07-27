@@ -159,10 +159,7 @@ pub trait ParticleSyncExt {
     /// }
     ///
     /// fn setup(mut commands: Commands) {
-    ///     commands.spawn((
-    ///         ParticleType::from_id(sand()),
-    ///         Toxicity(0.8),
-    ///     ));
+    ///     commands.spawn((ParticleType::new(), Toxicity(0.8)));
     /// }
     /// ```
     fn register_particle_sync_component<C: Component + Clone>(&mut self) -> &mut Self;

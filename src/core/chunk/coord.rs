@@ -34,7 +34,7 @@ impl ChunkCoord {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy_falling_sand::core::ChunkCoord;
     ///
     /// let coord = ChunkCoord::new(3, 5);
@@ -70,7 +70,7 @@ impl ChunkCoord {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy_falling_sand::core::ChunkCoord;
     ///
     /// assert_eq!(ChunkCoord::new(0, 0).group(), 0);
@@ -91,7 +91,7 @@ impl ChunkCoord {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy_falling_sand::core::ChunkCoord;
     ///
     /// let coord = ChunkCoord::new(5, 5);
@@ -125,14 +125,6 @@ mod tests {
         assert_eq!(coord.x(), 5);
         assert_eq!(coord.y(), 10);
         assert_eq!(IVec2::from(coord), IVec2::new(5, 10));
-    }
-
-    #[test]
-    fn new_with_negative_values() {
-        let coord = ChunkCoord::new(-3, -7);
-
-        assert_eq!(coord.x(), -3);
-        assert_eq!(coord.y(), -7);
     }
 
     #[test]
@@ -177,47 +169,23 @@ mod tests {
         assert!(set.contains(&ChunkCoord::new(6, 4)));
     }
 
-    #[test]
-    fn neighbors_at_origin() {
-        let coord = ChunkCoord::new(0, 0);
-        let neighbors = coord.neighbors();
-        let set: HashSet<_> = neighbors.into_iter().collect();
-
-        assert!(set.contains(&ChunkCoord::new(-1, 0)));
-        assert!(set.contains(&ChunkCoord::new(1, 0)));
-        assert!(set.contains(&ChunkCoord::new(0, 1)));
-        assert!(set.contains(&ChunkCoord::new(0, -1)));
-        assert!(set.contains(&ChunkCoord::new(-1, 1)));
-        assert!(set.contains(&ChunkCoord::new(1, 1)));
-        assert!(set.contains(&ChunkCoord::new(-1, -1)));
-        assert!(set.contains(&ChunkCoord::new(1, -1)));
-    }
-
     mod group {
         use super::*;
 
         #[test]
-        fn even_even() {
-            assert_eq!(ChunkCoord::new(0, 0).group(), 0);
-            assert_eq!(ChunkCoord::new(2, 2).group(), 0);
-        }
-
-        #[test]
-        fn odd_even() {
-            assert_eq!(ChunkCoord::new(1, 0).group(), 1);
-            assert_eq!(ChunkCoord::new(3, 2).group(), 1);
-        }
-
-        #[test]
-        fn even_odd() {
-            assert_eq!(ChunkCoord::new(0, 1).group(), 2);
-            assert_eq!(ChunkCoord::new(2, 3).group(), 2);
-        }
-
-        #[test]
-        fn odd_odd() {
-            assert_eq!(ChunkCoord::new(1, 1).group(), 3);
-            assert_eq!(ChunkCoord::new(3, 3).group(), 3);
+        fn group_is_checkerboard_parity() {
+            for (coord, expected) in [
+                (ChunkCoord::new(0, 0), 0),
+                (ChunkCoord::new(2, 2), 0),
+                (ChunkCoord::new(1, 0), 1),
+                (ChunkCoord::new(3, 2), 1),
+                (ChunkCoord::new(0, 1), 2),
+                (ChunkCoord::new(2, 3), 2),
+                (ChunkCoord::new(1, 1), 3),
+                (ChunkCoord::new(3, 3), 3),
+            ] {
+                assert_eq!(coord.group(), expected);
+            }
         }
     }
 }

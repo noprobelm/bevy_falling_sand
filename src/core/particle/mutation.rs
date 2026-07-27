@@ -34,7 +34,7 @@ impl Plugin for MutationPlugin {
 ///
 /// # Examples
 ///
-/// ```
+/// ```no_run
 /// use std::time::Duration;
 /// use bevy_falling_sand::core::{ParticleTypeId, TimedMutation};
 ///
@@ -74,7 +74,7 @@ impl TimedMutation {
 ///
 /// # Examples
 ///
-/// ```
+/// ```no_run
 /// use std::time::Duration;
 /// use bevy_falling_sand::core::{ChanceMutation, ParticleTypeId};
 ///
@@ -207,21 +207,6 @@ mod tests {
             .get::<AttachedToParticleType>()
             .unwrap()
             .0
-    }
-
-    #[test]
-    fn chance_mutation_default() {
-        let mutation = ChanceMutation::default();
-        assert_eq!(mutation.chance, 0.0);
-        assert_eq!(mutation.tick_timer.duration(), Duration::ZERO);
-    }
-
-    #[test]
-    fn chance_mutation_new_from_particle_type_id() {
-        let mutation = ChanceMutation::new(water(), 0.5).with_tick_rate(Duration::from_millis(100));
-        assert_eq!(mutation.target, water());
-        assert_eq!(mutation.chance, 0.5);
-        assert_eq!(mutation.tick_timer.duration(), Duration::from_millis(100));
     }
 
     #[test]

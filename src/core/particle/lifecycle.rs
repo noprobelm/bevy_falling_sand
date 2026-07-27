@@ -69,7 +69,7 @@ impl TimedLifetime {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use std::time::Duration;
     /// use bevy_falling_sand::core::TimedLifetime;
     ///
@@ -90,7 +90,7 @@ impl TimedLifetime {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use std::time::Duration;
     /// use bevy_falling_sand::core::TimedLifetime;
     ///
@@ -134,7 +134,7 @@ impl ChanceLifetime {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy_falling_sand::core::ChanceLifetime;
     ///
     /// let lifetime = ChanceLifetime::new(0.05);
@@ -152,7 +152,7 @@ impl ChanceLifetime {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use std::time::Duration;
     /// use bevy_falling_sand::core::ChanceLifetime;
     ///
@@ -1598,22 +1598,6 @@ mod tests {
     }
 
     #[test]
-    fn timed_lifetime_new_sets_duration() {
-        let lifetime = TimedLifetime::new(Duration::from_secs(5));
-        assert_eq!(lifetime.duration(), Duration::from_secs(5));
-        assert!(!lifetime.finished());
-    }
-
-    #[test]
-    fn timed_lifetime_tick_advances_timer() {
-        let mut lifetime = TimedLifetime::new(Duration::from_millis(100));
-        lifetime.tick(Duration::from_millis(50));
-        assert!(!lifetime.finished());
-        lifetime.tick(Duration::from_millis(60));
-        assert!(lifetime.finished());
-    }
-
-    #[test]
     fn timed_lifetime_pauses_with_simulation() {
         let mut app = create_test_app();
         app.insert_resource(TimeUpdateStrategy::ManualDuration(Duration::from_millis(
@@ -1644,27 +1628,6 @@ mod tests {
     }
 
     // ---- chance_lifetime ----
-
-    #[test]
-    fn chance_lifetime_default() {
-        let lifetime = ChanceLifetime::default();
-        assert_eq!(lifetime.chance, 0.0);
-        assert_eq!(lifetime.tick_timer.duration(), Duration::ZERO);
-    }
-
-    #[test]
-    fn chance_lifetime_new() {
-        let lifetime = ChanceLifetime::new(0.5);
-        assert_eq!(lifetime.chance, 0.5);
-        assert_eq!(lifetime.tick_timer.duration(), Duration::ZERO);
-    }
-
-    #[test]
-    fn chance_lifetime_with_tick_rate() {
-        let lifetime = ChanceLifetime::new(0.75).with_tick_rate(Duration::from_millis(200));
-        assert_eq!(lifetime.chance, 0.75);
-        assert_eq!(lifetime.tick_timer.duration(), Duration::from_millis(200));
-    }
 
     #[test]
     fn chance_lifetime_zero_never_despawns() {

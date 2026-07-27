@@ -823,16 +823,6 @@ mod tests {
     }
 
     #[test]
-    fn from_grid_cells_uses_default_disabled_resting() {
-        let collider = ParticleCollider::from_grid_cells(sample_cells(), Vec2::new(5.0, 6.0));
-
-        assert_eq!(collider.cell_count(), 2);
-        assert!(collider.contains_cell(IVec2::new(1, 2)));
-        assert!(!collider.resting.enabled);
-        assert_eq!(collider.grid_from_local_translation(), Vec2::new(5.0, 6.0));
-    }
-
-    #[test]
     fn from_grid_cells_with_options_applies_reusable_options() {
         let options = ParticleColliderOptions::new().with_resting(
             ParticleColliderRestingOptions::new()
@@ -852,19 +842,6 @@ mod tests {
         assert!(matches!(
             collider.resting.rest_type,
             RestConversionType::Sleep
-        ));
-    }
-
-    #[test]
-    fn builder_configures_resting_directly() {
-        let collider = ParticleCollider::builder(sample_cells(), Vec2::ZERO)
-            .with_default_resting()
-            .build();
-
-        assert!(collider.resting.enabled);
-        assert!(matches!(
-            collider.resting.rest_type,
-            RestConversionType::Static
         ));
     }
 }

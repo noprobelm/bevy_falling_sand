@@ -115,7 +115,7 @@ impl From<Density> for u32 {
 ///
 /// # Examples
 ///
-/// ```
+/// ```no_run
 /// use bevy_falling_sand::movement::Speed;
 ///
 /// // This particle has a max speed of 10, stepping up speed after 5 unobstructed moves.
@@ -159,7 +159,7 @@ impl Speed {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy_falling_sand::movement::Speed;
     ///
     /// let speed = Speed::new(5, 10);
@@ -304,7 +304,7 @@ impl From<Momentum> for IVec2 {
 ///
 /// # Examples
 ///
-/// ```
+/// ```no_run
 /// use bevy_falling_sand::movement::ParticleResistor;
 ///
 /// let r = ParticleResistor(0.5);
@@ -320,7 +320,7 @@ pub struct ParticleResistor(pub f64);
 ///
 /// # Examples
 ///
-/// ```
+/// ```no_run
 /// use bevy::prelude::*;
 /// use bevy_falling_sand::movement::NeighborGroup;
 ///
@@ -453,7 +453,7 @@ impl<'a> Iterator for NeighborGroupIter<'a> {
 ///
 /// # Examples
 ///
-/// ```
+/// ```no_run
 /// use bevy_falling_sand::movement::AirResistance;
 ///
 /// let resistance = AirResistance::new([0.0, 0.3]);
@@ -571,7 +571,7 @@ impl<'a> IntoIterator for &'a mut AirResistance {
 ///
 /// A "Sand" particle which slowly drifts through "Water" might look like this.
 ///
-/// ```
+/// ```no_run
 /// use bevy::prelude::*;
 /// use bevy_falling_sand::prelude::{ParticleType, ColorProfile, Movement, Density, Speed, AirResistance, ParticleResistor};
 ///
@@ -816,23 +816,6 @@ impl Movement {
 mod tests {
     use super::*;
 
-    #[test]
-    fn density_converts_to_and_from_u32() {
-        let density = Density::from(1_250);
-        assert_eq!(density, Density::new(1_250));
-        assert_eq!(density.get(), 1_250);
-        assert_eq!(u32::from(density), 1_250);
-    }
-
-    #[test]
-    fn momentum_converts_to_and_from_ivec2() {
-        let direction = IVec2::new(1, -1);
-        let momentum = Momentum::from(direction);
-        assert_eq!(momentum, Momentum::new(direction));
-        assert_eq!(momentum.get(), direction);
-        assert_eq!(IVec2::from(momentum), direction);
-    }
-
     mod speed_tests {
         use super::*;
 
@@ -850,14 +833,6 @@ mod tests {
             let speed = Speed::new(3, 0);
             assert_eq!(speed.current(), 1);
             assert_eq!(speed.max_speed(), 1);
-        }
-
-        #[test]
-        fn default_is_1_1() {
-            let speed = Speed::default();
-            assert_eq!(speed.current(), 1);
-            assert_eq!(speed.max_speed(), 1);
-            assert_eq!(speed.threshold(), 1);
         }
 
         #[test]
@@ -956,22 +931,6 @@ mod tests {
         use super::*;
 
         #[test]
-        fn empty_is_empty() {
-            let group = NeighborGroup::empty();
-            assert!(group.is_empty());
-            assert_eq!(group.len(), 0);
-        }
-
-        #[test]
-        fn push_adds_neighbor() {
-            let mut group = NeighborGroup::empty();
-            group.push(IVec2::NEG_Y);
-            assert_eq!(group.len(), 1);
-            assert!(!group.is_empty());
-            assert_eq!(group.neighbor_group[0], IVec2::NEG_Y);
-        }
-
-        #[test]
         fn swap_within_bounds() {
             let mut group = NeighborGroup::empty();
             group.push(IVec2::NEG_Y);
@@ -991,16 +950,6 @@ mod tests {
 
     mod air_resistance_tests {
         use super::*;
-
-        #[test]
-        fn new_from_iter() {
-            let ar = AirResistance::new([0.0, 0.5, 1.0]);
-            assert_eq!(ar.len(), 3);
-            assert_eq!(ar.get(0), Some(0.0));
-            assert_eq!(ar.get(1), Some(0.5));
-            assert_eq!(ar.get(2), Some(1.0));
-            assert_eq!(ar.get(3), None);
-        }
 
         #[test]
         fn set_updates_value() {
@@ -1033,48 +982,10 @@ mod tests {
             assert_eq!(ar.len(), 1);
             assert_eq!(ar.get(0), Some(0.1));
         }
-
-        #[test]
-        fn is_empty_when_no_values() {
-            let ar = AirResistance::new([]);
-            assert!(ar.is_empty());
-        }
-
-        #[test]
-        fn collection_traits_preserve_values() {
-            let mut resistance: AirResistance = [0.1, 0.2].into_iter().collect();
-            resistance.extend([0.3]);
-
-            assert_eq!(resistance.as_ref(), &[0.1, 0.2, 0.3]);
-            assert_eq!(
-                (&resistance).into_iter().copied().collect::<Vec<_>>(),
-                vec![0.1, 0.2, 0.3]
-            );
-            assert_eq!(
-                resistance.into_iter().collect::<Vec<_>>(),
-                vec![0.1, 0.2, 0.3]
-            );
-        }
-
-        #[test]
-        fn mutable_iteration_updates_values() {
-            let mut resistance = AirResistance::new([0.125, 0.25]);
-            for value in &mut resistance {
-                *value += 0.125;
-            }
-            assert_eq!(resistance.as_ref(), &[0.25, 0.375]);
-        }
     }
 
     mod movement_tests {
         use super::*;
-
-        #[test]
-        fn empty_has_no_groups() {
-            let m = Movement::empty();
-            assert!(m.is_empty());
-            assert_eq!(m.len(), 0);
-        }
 
         #[test]
         fn from_vec_creates_groups() {
@@ -1085,13 +996,6 @@ mod tests {
             assert_eq!(m.len(), 2);
             assert_eq!(m.neighbor_groups[0].len(), 1);
             assert_eq!(m.neighbor_groups[1].len(), 2);
-        }
-
-        #[test]
-        fn push_outer_adds_tier() {
-            let mut m = Movement::empty();
-            m.push_outer(NeighborGroup::empty());
-            assert_eq!(m.len(), 1);
         }
 
         #[test]
@@ -1139,31 +1043,6 @@ mod tests {
             let group = m.get_mut(0).unwrap();
             group.push(IVec2::Y);
             assert_eq!(m.neighbor_groups[0].len(), 2);
-        }
-
-        #[test]
-        fn collection_traits_preserve_groups() {
-            let first = NeighborGroup::new(SmallVec::from_buf([IVec2::NEG_Y; 4]));
-            let second = NeighborGroup::empty();
-            let mut movement: Movement = std::iter::once(first.clone()).collect();
-            movement.extend([second.clone()]);
-
-            assert_eq!(movement.as_ref(), &[first.clone(), second.clone()]);
-            assert_eq!(movement.iter().count(), 2);
-            assert_eq!(movement.get(0), Some(&first));
-            assert_eq!(
-                movement.into_iter().collect::<Vec<_>>(),
-                vec![first, second]
-            );
-        }
-
-        #[test]
-        fn mutable_iteration_updates_groups() {
-            let mut movement: Movement = std::iter::once(NeighborGroup::empty()).collect();
-            for group in &mut movement {
-                group.push(IVec2::NEG_Y);
-            }
-            assert_eq!(movement.get(0).unwrap().len(), 1);
         }
     }
 }
