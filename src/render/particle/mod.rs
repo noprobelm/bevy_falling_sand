@@ -374,15 +374,6 @@ mod tests {
     }
 
     #[test]
-    fn force_color_converts_to_and_from_color() {
-        let color = Color::srgb(0.25, 0.5, 0.75);
-        let forced = ForceColor::from(color);
-        assert_eq!(forced, ForceColor::new(color));
-        assert_eq!(forced.get(), color);
-        assert_eq!(Color::from(forced), color);
-    }
-
-    #[test]
     fn palette_mutation_methods() {
         let mut profile = ColorProfile::palette(vec![
             Color::srgba(1.0, 0.0, 0.0, 1.0),

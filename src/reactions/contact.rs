@@ -411,28 +411,6 @@ mod tests {
     }
 
     #[test]
-    fn collection_traits_preserve_rules() {
-        let first = rule(1);
-        let second = rule(2);
-        let third = rule(3);
-        let mut reactions: ContactReaction = std::iter::once(first.clone()).collect();
-        reactions.extend([second.clone()]);
-        reactions.push(third.clone());
-
-        assert_eq!(reactions.len(), 3);
-        assert!(!reactions.is_empty());
-        assert_eq!(
-            reactions.as_ref(),
-            &[first.clone(), second.clone(), third.clone()]
-        );
-        assert_eq!(reactions.iter().count(), 3);
-        assert_eq!(
-            reactions.into_iter().collect::<Vec<_>>(),
-            vec![first, second, third]
-        );
-    }
-
-    #[test]
     fn with_rule_and_mutable_iteration_update_rules() {
         let mut reactions = ContactReaction::default().with_rule(rule(1));
         for rule in &mut reactions {

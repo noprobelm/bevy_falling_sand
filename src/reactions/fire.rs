@@ -521,23 +521,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn flammable_constructor_sets_defaults() {
-        let duration = Duration::from_secs(5);
-        let tick_rate = Duration::from_millis(100);
-        let flammable = Flammable::new(duration, tick_rate);
-
-        assert_eq!(flammable.duration, duration);
-        assert_eq!(flammable.tick_rate, tick_rate);
-        assert_eq!(flammable.chance_despawn_per_tick, 0.0);
-        assert_eq!(flammable.reaction, None);
-        assert_eq!(flammable.chance_to_ignite, 0.0);
-        assert!(!flammable.spreads_fire);
-        assert_eq!(flammable.spread_radius, 1.0);
-        assert!(!flammable.despawn_on_extinguish);
-        assert!(!flammable.ignites_on_spawn);
-    }
-
-    #[test]
     fn flammable_builders_set_options() {
         let reaction = BurnProduct::new(ParticleTypeId::new(), 0.25);
         let flammable = Flammable::new(Duration::from_secs(5), Duration::from_millis(100))

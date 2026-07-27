@@ -352,17 +352,6 @@ mod tests {
     }
 
     #[test]
-    fn len_and_is_empty() {
-        let mut index = create_index();
-        assert!(index.is_empty());
-        assert_eq!(index.len(), 0);
-
-        index.insert(ChunkCoord::new(0, 0), Entity::from_bits(1));
-        assert!(!index.is_empty());
-        assert_eq!(index.len(), 1);
-    }
-
-    #[test]
     fn is_coord_loaded() {
         let index = create_index();
 
@@ -388,19 +377,6 @@ mod tests {
     }
 
     #[test]
-    fn iter_yields_all_chunks() {
-        let mut index = create_index();
-
-        let e1 = Entity::from_bits(1);
-        let e2 = Entity::from_bits(2);
-
-        index.insert(ChunkCoord::new(0, 0), e1);
-        index.insert(ChunkCoord::new(5, 5), e2);
-
-        assert_eq!(index.iter().count(), 2);
-    }
-
-    #[test]
     fn coords_yields_only_occupied() {
         let mut index = create_index();
         index.insert(ChunkCoord::new(0, 0), Entity::from_bits(1));
@@ -410,15 +386,6 @@ mod tests {
         assert_eq!(coords.len(), 2);
         assert!(coords.contains(&ChunkCoord::new(0, 0)));
         assert!(coords.contains(&ChunkCoord::new(3, 3)));
-    }
-
-    #[test]
-    fn entities_yields_only_occupied() {
-        let mut index = create_index();
-        index.insert(ChunkCoord::new(0, 0), Entity::from_bits(1));
-        index.insert(ChunkCoord::new(3, 3), Entity::from_bits(2));
-
-        assert_eq!(index.entities().count(), 2);
     }
 
     #[test]

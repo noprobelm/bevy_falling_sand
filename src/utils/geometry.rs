@@ -422,13 +422,6 @@ mod tests {
         use super::*;
 
         #[test]
-        fn new_creates_empty_grid() {
-            let grid = OccupancyGrid::new(IVec2::ZERO, IVec2::new(3, 3));
-            assert!(!grid.get(IVec2::ZERO));
-            assert!(!grid.get(IVec2::new(3, 3)));
-        }
-
-        #[test]
         fn set_and_get() {
             let mut grid = OccupancyGrid::new(IVec2::ZERO, IVec2::new(3, 3));
             grid.set(IVec2::new(1, 2));

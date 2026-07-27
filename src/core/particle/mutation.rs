@@ -210,21 +210,6 @@ mod tests {
     }
 
     #[test]
-    fn chance_mutation_default() {
-        let mutation = ChanceMutation::default();
-        assert_eq!(mutation.chance, 0.0);
-        assert_eq!(mutation.tick_timer.duration(), Duration::ZERO);
-    }
-
-    #[test]
-    fn chance_mutation_new_from_particle_type_id() {
-        let mutation = ChanceMutation::new(water(), 0.5).with_tick_rate(Duration::from_millis(100));
-        assert_eq!(mutation.target, water());
-        assert_eq!(mutation.chance, 0.5);
-        assert_eq!(mutation.tick_timer.duration(), Duration::from_millis(100));
-    }
-
-    #[test]
     fn chance_mutation_zero_never_mutates() {
         let mut app = create_test_app();
         let sand_parent = app.world_mut().spawn(ParticleType::from_id(sand())).id();

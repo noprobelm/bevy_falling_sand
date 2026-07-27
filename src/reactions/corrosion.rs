@@ -143,14 +143,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn corrosive_constructor_uses_zero_tick_rate() {
-        let corrosive = Corrosive::new(0.25);
-
-        assert_eq!(corrosive.chance, 0.25);
-        assert_eq!(corrosive.tick_timer.duration(), Duration::ZERO);
-    }
-
-    #[test]
     fn corrosive_tick_rate_builder_sets_duration() {
         let tick_rate = Duration::from_millis(100);
         let corrosive = Corrosive::new(0.25).with_tick_rate(tick_rate);

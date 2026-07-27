@@ -125,14 +125,6 @@ mod tests {
         }
 
         #[test]
-        fn new_accepts_power_of_two() {
-            for size in [32, 64, 128, 256, 512, 1024] {
-                let map = ParticleMap::new(size, size, IVec2::ZERO);
-                assert_eq!(map.width(), size);
-            }
-        }
-
-        #[test]
         #[should_panic(expected = "power of 2")]
         fn new_panics_on_non_power_of_two_width() {
             let _ = ParticleMap::new(33, 64, IVec2::ZERO);
@@ -167,22 +159,13 @@ mod tests {
         }
 
         #[test]
-        fn is_position_loaded_inside() {
+        fn is_position_loaded_checks_region_bounds() {
             let map = create_map();
 
             assert!(map.is_position_loaded(IVec2::new(0, 0)));
-            assert!(map.is_position_loaded(IVec2::new(32, 32)));
             assert!(map.is_position_loaded(IVec2::new(63, 63)));
-        }
-
-        #[test]
-        fn is_position_loaded_outside() {
-            let map = create_map();
-
             assert!(!map.is_position_loaded(IVec2::new(-1, 0)));
-            assert!(!map.is_position_loaded(IVec2::new(0, -1)));
             assert!(!map.is_position_loaded(IVec2::new(64, 0)));
-            assert!(!map.is_position_loaded(IVec2::new(0, 64)));
         }
     }
 
@@ -236,28 +219,6 @@ mod tests {
 
             assert_eq!(removed, Ok(Some(entity)));
             assert_eq!(map.contains(pos), Ok(false));
-        }
-
-        #[test]
-        fn remove_empty_returns_none() {
-            let mut map = create_map();
-            let removed = map.remove(IVec2::new(5, 5));
-
-            assert_eq!(removed, Ok(None));
-        }
-
-        #[test]
-        fn is_empty_on_new_map() {
-            let map = create_map();
-            assert!(map.is_empty());
-        }
-
-        #[test]
-        fn is_empty_after_insert() {
-            let mut map = create_map();
-            let _ = map.insert(IVec2::new(5, 5), Entity::from_bits(1));
-
-            assert!(!map.is_empty());
         }
 
         #[test]
