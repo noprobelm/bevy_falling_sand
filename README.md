@@ -1,26 +1,31 @@
-`bevy_falling_sand` provides a [Falling Sand](https://en.wikipedia.org/wiki/Falling-sand_game) engine for Bevy.
+`bevy_falling_sand` is a falling-sand simulation engine for Bevy apps.
 
-- [Bevy versions](#bevy-versions)
+It provides a particle grid, chunked simulation scheduling, rendering, movement
+rules, reactions, persistence, scene loading, and avian2d physics
+integration.
+
+Use the default plugin for the full engine, or disable default features and add
+only the systems you need.
+
+- [Bevy Versions](#bevy-versions)
 - [Getting Started](#getting-started)
-  - [Particle behavior components](#particle-behavior-components)
-- [Common pitfalls](#common-pitfalls)
+- [Particle Types](#particle-types)
+- [Feature Flags](#feature-flags)
+- [Common Pitfalls](#common-pitfalls)
+  - [Frame pacing](#frame-pacing)
   - [Slow simulation speeds](#slow-simulation-speeds)
     - [Profile optimizations](#profile-optimizations)
     - [Complex particle types](#complex-particle-types)
     - [Undefined particle movement behavior in parallel systems](#undefined-particle-movement-behavior-in-parallel-systems)
-    - [Integrated GPU](#integrated-gpu)
-    - [Frame pacing](#frame-pacing)
 
-# Bevy versions
+# Bevy Versions
 
-| `bevy_falling_sand`   | `bevy`    |
-|-----------------------|-----------|
-| 0.8.x                 | 0.19.x    |
-| 0.7.x                 | 0.18.x    |
+| `bevy_falling_sand` | `bevy` |
+| ------------------- | ------ |
+| 0.8.x               | 0.19.x |
+| 0.7.x               | 0.18.x |
 
 # Getting Started
-
-In addition to this boilerplate, several examples are available to help you get started.
 
 ```rust
 use bevy::prelude::*;
@@ -31,8 +36,9 @@ fn main() {
         .add_plugins((
             DefaultPlugins,
             FallingSandPlugin::default()
-                // Create a map with 64x64 chunks, each of which can hold 64x64 particles
+                // 64x64 particles per chunk
                 .with_chunk_size(64)
+                // 64x64 active chunks in the map
                 .with_map_size(64),
         ))
         .add_systems(Startup, setup)
@@ -40,7 +46,9 @@ fn main() {
         .run();
 }
 
-// Spawn a simple particle type with colors and movement behavior resembling sand.
+#[derive(Resource)]
+struct SandParticle(ParticleTypeId);
+
 fn setup(mut commands: Commands) {
     let sand = ParticleType::new();
     commands.insert_resource(SandParticle(sand.id()));
@@ -51,7 +59,6 @@ fn setup(mut commands: Commands) {
             Color::Srgba(Srgba::hex("#FFEB8A").unwrap()),
             Color::Srgba(Srgba::hex("#F2E06B").unwrap()),
         ]),
-        // First tier: look directly below. Second tier: look diagonally down.
         Movement::from(vec![
             vec![IVec2::NEG_Y],
             vec![IVec2::NEG_ONE, IVec2::new(1, -1)],
@@ -61,112 +68,85 @@ fn setup(mut commands: Commands) {
     ));
 }
 
-// Continuously emit sand between (0, 0) and (10, 10)
-#[derive(Resource)]
-struct SandParticle(ParticleTypeId);
-
-impl SandParticle {
-    fn id(&self) -> ParticleTypeId {
-        self.0
-    }
-}
-
 fn sand_emitter(mut writer: MessageWriter<SpawnParticleSignal>, sand: Res<SandParticle>) {
     for x in 0..10 {
         for y in 0..10 {
-            writer.write(SpawnParticleSignal::new(
-                sand.id(),
-                IVec2::new(x, y),
-            ));
+            writer.write(SpawnParticleSignal::new(sand.0, IVec2::new(x, y)));
         }
     }
 }
 ```
 
-Entities with the `ParticleType` component act as templates for spawned `Particle` entities.
-Each `ParticleType` owns a `ParticleTypeId`; store that ID in your own resources or components
-when you need to spawn, mutate, despawn, or otherwise refer to that particle type later.
-Components added to a `ParticleType` (such as `ColorProfile`, `Movement`, `Density`, and `Speed`)
-define the behavior of its child particles.
+See [docs.rs/bevy_falling_sand](https://docs.rs/bevy_falling_sand) for the full
+module guide and API documentation. The repository also includes runnable
+examples for movement, reactions, mutation, noise, rigid bodies, and basic setup.
 
-To spawn individual particles at runtime, send a `SpawnParticleSignal` via Bevy's
-`MessageWriter`. Despawn them with `DespawnParticleSignal`.
+# Particle Types
 
-## Particle type identities
+Entities with `ParticleType` are templates for spawned `Particle` entities.
+Each `ParticleType` owns a stable `ParticleTypeId`; keep that ID in your own
+resources or components when gameplay code needs to spawn, mutate, despawn, or
+otherwise refer to that type.
 
-`ParticleTypeId` is the stable handle you should pass around in gameplay code. It is `Copy`,
-serializable, and independent of the Bevy `Entity` that currently owns the corresponding
-`ParticleType` template. `ParticleType` is the ECS component that marks an entity as the template
-for a type of particle.
+Spawn particles by sending `SpawnParticleSignal` with Bevy's `MessageWriter`.
+Despawn them with `DespawnParticleSignal`. Directly spawning `Particle` entities
+is not supported; the plugin needs to keep the particle map, type registry, and
+child entities synchronized.
 
-Use `ParticleType::new()` for normal runtime allocation, then copy out its ID before moving the
-component into the world:
+Common components for `ParticleType` entities:
 
-```rust
-let sand = ParticleType::new();
-let sand_id = sand.id();
+| Component                 | Description                                                | Feature     |
+| ------------------------- | ---------------------------------------------------------- | ----------- |
+| `ColorProfile`            | Color profile from a palette, gradient, or texture         | `render`    |
+| `ForceColor`              | Overrides assigned particle color                          | `render`    |
+| `Movement`                | Ordered movement candidate groups                          | `movement`  |
+| `Density`                 | Displacement comparison value                              | `movement`  |
+| `Speed`                   | Maximum movement attempts per frame                        | `movement`  |
+| `AirResistance`           | Per-tier chance to skip movement into empty space          | `movement`  |
+| `ParticleResistor`        | Chance to resist displacement by another particle          | `movement`  |
+| `Momentum`                | Bias toward the last successful movement direction         | `movement`  |
+| `ContactReaction`         | Contact rules that consume and produce particle type IDs   | `reactions` |
+| `Fire`, `Flammable`       | Fire spread and burn behavior                              | `reactions` |
+| `Corrosive`, `Corrodible` | Corrosion behavior                                         | `reactions` |
+| `StaticRigidBodyParticle` | Include particles in generated static collision meshes     | `physics`   |
+| `TimedLifetime`           | Despawn after a duration                                   | core        |
+| `ChanceLifetime`          | Chance to despawn per tick                                 | core        |
+| `TimedMutation`           | Mutate into another particle type after a duration         | core        |
+| `ChanceMutation`          | Chance to mutate into another particle type per tick       | core        |
 
-commands.spawn((sand, Movement::default()));
-commands.insert_resource(SandParticle(sand_id));
-```
+# Feature Flags
 
-Use `ParticleType::id()` when you already have a `ParticleType` component and need its handle.
-Use `ParticleType::from_id(id)` when spawning or restoring the template entity for an ID you
-already own, such as when loading persisted type definitions or building a stable catalog.
-`ParticleTypeId::new()` is available when you need to allocate an ID before constructing the
-template component. `ParticleTypeId::from_raw(...)` is reserved for persisted data and externally stable
-catalogs where the numeric value is part of a file format or asset contract; it also reserves that
-value from future automatic allocation.
+All features are enabled by default.
 
-The core crate does not store names on `ParticleType`. Keep comprehensive particle identifiers in
-your own components/resources and map those names to `ParticleTypeId` at the application boundary.
+| Feature       | Description                                      | Implies              |
+| ------------- | ------------------------------------------------ | -------------------- |
+| `render`      | Particle colors, chunk textures, effect layers   | —                    |
+| `movement`    | Particle movement systems                        | —                    |
+| `reactions`   | Contact, fire, and corrosion reactions           | `render`, `movement` |
+| `physics`     | avian2d rigid body integration                   | —                    |
+| `debug`       | Debug counters and gizmo overlays                | —                    |
+| `persistence` | Chunk save/load and particle type serialization  | `bfs`, `bfc`         |
+| `scenes`      | Layered scene assets from RON and images         | —                    |
+| `bfs`         | Compact particle format without color            | —                    |
+| `bfc`         | Particle format with per-particle color          | `render`             |
 
-## Particle behavior components
-
-Insert any of these components on a [`ParticleType`] entity and [`Particle`] entities attached to
-that particle type will derive their behaviors.
-
-| Component                 | Description                                                       | Feature     |
-| ------------------------- | ----------------------------------------------------------------- | ----------- |
-| `ColorProfile`            | Color profile from a predefined palette or gradient               | `render`    |
-| `ForceColor`              | Overrides `ColorProfile` with another color                       | `render`    |
-| `Movement`                | Movement rulesets for a particle                                  | `movement`  |
-| `Density`                 | Density, used for displacement comparisons                        | `movement`  |
-| `Speed`                   | How many positions a particle can move per frame                  | `movement`  |
-| `AirResistance`           | Chance to skip movement to a vacant location                      | `movement`  |
-| `ParticleResistor`        | How much a particle resists being displaced                       | `movement`  |
-| `Momentum`                | Biases movement toward the last direction                         | `movement`  |
-| `ContactReaction`         | Reaction rulesets that target and produce `ParticleTypeId` values | `reactions` |
-| `Fire`                    | Makes a particle spread fire                                      | `reactions` |
-| `Flammable`               | Flammability properties; burn products use `ParticleTypeId`       | `reactions` |
-| `Corrosive`               | Corrosive properties for particles                                | `reactions` |
-| `Corrodible`              | Marks a particle as being subject to corrosion                    | `reactions` |
-| `StaticRigidBodyParticle` | Marks particles for rigid body mesh generation                    | `physics`   |
-| `TimedLifetime`           | Despawns a particle after a duration                              | —           |
-| `ChanceLifetime`          | Chance to despawn on a per-tick basis                             | —           |
-| `ChanceMutation`          | Chance to mutate a particle into another `ParticleTypeId`         | —           |
-| `TimedMutation`           | Mutates a particle into another `ParticleTypeId` after a duration | —           |
-
-For full documentation, see [docs.rs/bevy_falling_sand](https://docs.rs/bevy_falling_sand).
-
-# Common pitfalls
+# Common Pitfalls
 
 ## Frame pacing
 
-It is recommended to add frame pacing to your app using something like
-[bevy_framepace](https://github.com/aevyrie/bevy_framepace). Particles are evaluated on a
-_per frame_ basis, so a simulation at 60 Hz will look very different than a simulation at 144 Hz.
+Consider adding frame pacing to your app with something like
+[bevy_framepace](https://github.com/aevyrie/bevy_framepace). Particles are evaluated
+_per frame_, so a simulation at 60 Hz will look very different than one at 144 Hz.
 
 60 fps is a reasonable starting point for your simulation.
 
 ## Slow simulation speeds
 
-`bfs` is well optimized, but there are several situations that could cause a simulation to
-run slowly.
+`bfs` is well optimized, but some setups can still run slowly.
 
 ### Profile optimizations
 
-It is important to optimize your debug and release profiles to maximize performance.
+Optimized debug and release profiles make a noticeable difference.
 Building your project with [bevy_cli](https://github.com/TheBevyFlock/bevy_cli) is recommended,
 as it handles most of these cases for you.
 
@@ -176,10 +156,8 @@ in your release profile (which `bevy_cli` does not do as of
 
 ### Complex particle types
 
-This crate aims to provide maximum flexibility with `ParticleType` creation, but this means
-the user is essentially unbounded in their options for defining particle behaviors. If one is
-not careful, it's very easy to create particles that can take a long time to process in
-simulation hot paths.
+`ParticleType` creation is intentionally flexible, which also makes it easy to build particle
+behaviors that take a long time to process in simulation hot paths.
 
 The `Movement` component is a common offender of this. Depending on your hardware, it is
 usually a good idea to keep movement candidate positions for a particle below ~12 total
@@ -187,26 +165,24 @@ positions.
 
 `Speed` is another component that should be carefully configured. A particle with a max speed
 of 10 may try to move 10 times in a single frame. A particle with 3 movement candidates and a
-speed of 10 has the potential to be evaluated as many as 30 times per frame.
+speed of 10 can be evaluated as many as 30 times per frame.
 
-Either example (12 possible movement positions, each evaluated potentially 10 times per frame)
-typically runs fine even with many moving particles, but encroaches on the upper limit for
-modern hardware. Finding a balance for these components is key in creating a cool-looking and
-fast-performing simulation.
+These examples typically run fine even with many moving particles, but they are near the upper
+limit for modern hardware. Finding a balance for these components is key in creating a cool-looking
+and fast-performing simulation.
 
 ### Undefined particle movement behavior in parallel systems
 
-In order to achieve movement parallelism, particles are subdivided into chunks and iterated
-upon in a checkerboard pattern. This is guaranteed to work only if the user ensures a
-particle's `Movement` behavior doesn't cause it to move greater than the size of the
-`chunk_length / 2` in a single frame.
+To make movement parallel, particles are subdivided into chunks and iterated in a checkerboard
+pattern. This is only well-defined when a particle's `Movement` behavior doesn't let it move
+farther than `chunk_length / 2` in a single frame.
 
 For example, a world with a chunk size of 64 must not have particles with `Movement` and
-`Speed` components which would cause them to move more than 32 positions in a single frame
-via the movement systems.
+`Speed` components that would move them more than 32 positions in a single frame via the movement
+systems.
 
-In the event this happens, the offending particle may attempt to mutably access positions in the
-particle map that other threads are accessing at the same time, leading to undefined behavior.
+If this happens, the offending particle may attempt to mutably access positions in the particle map
+that other threads are accessing at the same time, leading to undefined behavior.
 
 This safety consideration is exclusive to movement systems. Manually moving a `Particle`
 entity's `GridPosition` is safe, as long as the user keeps the `GridPosition` in sync with
