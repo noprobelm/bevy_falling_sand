@@ -69,7 +69,7 @@ impl TimedLifetime {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use std::time::Duration;
     /// use bevy_falling_sand::core::TimedLifetime;
     ///
@@ -90,7 +90,7 @@ impl TimedLifetime {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use std::time::Duration;
     /// use bevy_falling_sand::core::TimedLifetime;
     ///
@@ -134,7 +134,7 @@ impl ChanceLifetime {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy_falling_sand::core::ChanceLifetime;
     ///
     /// let lifetime = ChanceLifetime::new(0.05);
@@ -152,7 +152,7 @@ impl ChanceLifetime {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use std::time::Duration;
     /// use bevy_falling_sand::core::ChanceLifetime;
     ///

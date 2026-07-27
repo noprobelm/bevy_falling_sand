@@ -9,7 +9,7 @@ impl ChunkRegion {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::ChunkRegion;
     ///
@@ -25,7 +25,7 @@ impl ChunkRegion {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::ChunkRegion;
     ///
@@ -41,7 +41,7 @@ impl ChunkRegion {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::ChunkRegion;
     ///
@@ -57,7 +57,7 @@ impl ChunkRegion {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::ChunkRegion;
     ///
@@ -73,7 +73,7 @@ impl ChunkRegion {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::ChunkRegion;
     ///

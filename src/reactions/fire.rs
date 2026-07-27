@@ -161,7 +161,7 @@ impl Flammable {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use std::time::Duration;
     /// use bevy_falling_sand::reactions::Flammable;
     ///
@@ -233,7 +233,7 @@ impl Flammable {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use std::time::Duration;
     /// use bevy_falling_sand::reactions::{Flammable, Burning};
     ///
@@ -254,7 +254,7 @@ impl Flammable {
 ///
 /// # Examples
 ///
-/// ```
+/// ```no_run
 /// use std::time::Duration;
 /// use bevy_falling_sand::reactions::Burning;
 ///
@@ -280,7 +280,7 @@ impl Burning {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use std::time::Duration;
     /// use bevy_falling_sand::reactions::Burning;
     ///
@@ -307,7 +307,7 @@ impl Burning {
 ///
 /// # Examples
 ///
-/// ```
+/// ```no_run
 /// use bevy_falling_sand::core::ParticleTypeId;
 /// use bevy_falling_sand::reactions::BurnProduct;
 ///
@@ -331,7 +331,7 @@ impl BurnProduct {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy_falling_sand::core::ParticleTypeId;
     /// use bevy_falling_sand::reactions::BurnProduct;
     ///

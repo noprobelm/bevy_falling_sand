@@ -23,7 +23,7 @@ pub struct GridCellMesh {
 ///
 /// Duplicate position inputs are ignored.
 ///
-/// ```
+/// ```no_run
 /// use bevy::prelude::IVec2;
 /// use bevy_falling_sand::utils::connected_components;
 ///

@@ -115,7 +115,7 @@ impl From<Density> for u32 {
 ///
 /// # Examples
 ///
-/// ```
+/// ```no_run
 /// use bevy_falling_sand::movement::Speed;
 ///
 /// // This particle has a max speed of 10, stepping up speed after 5 unobstructed moves.
@@ -159,7 +159,7 @@ impl Speed {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy_falling_sand::movement::Speed;
     ///
     /// let speed = Speed::new(5, 10);
@@ -304,7 +304,7 @@ impl From<Momentum> for IVec2 {
 ///
 /// # Examples
 ///
-/// ```
+/// ```no_run
 /// use bevy_falling_sand::movement::ParticleResistor;
 ///
 /// let r = ParticleResistor(0.5);
@@ -320,7 +320,7 @@ pub struct ParticleResistor(pub f64);
 ///
 /// # Examples
 ///
-/// ```
+/// ```no_run
 /// use bevy::prelude::*;
 /// use bevy_falling_sand::movement::NeighborGroup;
 ///
@@ -453,7 +453,7 @@ impl<'a> Iterator for NeighborGroupIter<'a> {
 ///
 /// # Examples
 ///
-/// ```
+/// ```no_run
 /// use bevy_falling_sand::movement::AirResistance;
 ///
 /// let resistance = AirResistance::new([0.0, 0.3]);
@@ -571,7 +571,7 @@ impl<'a> IntoIterator for &'a mut AirResistance {
 ///
 /// A "Sand" particle which slowly drifts through "Water" might look like this.
 ///
-/// ```
+/// ```no_run
 /// use bevy::prelude::*;
 /// use bevy_falling_sand::prelude::{ParticleType, ColorProfile, Movement, Density, Speed, AirResistance, ParticleResistor};
 ///

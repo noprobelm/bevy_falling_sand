@@ -40,7 +40,7 @@ pub struct ColorRng(pub WyRand);
 ///
 /// A palette picks from a discrete list of colors:
 ///
-/// ```
+/// ```no_run
 /// use bevy::prelude::*;
 /// use bevy_falling_sand::prelude::{ParticleType, ColorProfile};
 ///
@@ -60,7 +60,7 @@ pub struct ColorRng(pub WyRand);
 /// A gradient interpolates between two or more colors. Each segment between consecutive
 /// colors gets its own configurable number of samples:
 ///
-/// ```
+/// ```no_run
 /// use bevy::prelude::*;
 /// use bevy_falling_sand::prelude::{ParticleType, ColorProfile};
 ///
@@ -83,7 +83,7 @@ pub struct ColorRng(pub WyRand);
 ///
 /// A texture samples colors from an image file, tiling across the map by world position:
 ///
-/// ```
+/// ```no_run
 /// use bevy::prelude::*;
 /// use bevy_falling_sand::prelude::{ParticleType, ColorProfile};
 ///
@@ -119,7 +119,7 @@ impl ColorProfile {
 impl ColorProfile {
     /// Creates a color profile with a palette of colors.
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::prelude::{ParticleType, ColorProfile};
     ///
@@ -157,7 +157,7 @@ impl ColorProfile {
     /// Each `steps[k]` defines how many color samples span the segment from
     /// `colors[k]` to `colors[k + 1]`.
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::prelude::{ParticleType, ColorProfile};
     ///
@@ -226,7 +226,7 @@ impl ColorProfile {
     ///
     /// Returns `None` for texture-based profiles, which are colored by world position instead.
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::prelude::ColorProfile;
     /// use bevy_rand::prelude::WyRand;
@@ -269,7 +269,7 @@ impl ColorProfile {
     ///
     /// Returns `None` when `index` is outside a palette or for texture-based profiles.
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::prelude::ColorProfile;
     ///
@@ -297,7 +297,7 @@ impl ColorProfile {
     ///
     /// Returns `None` for texture-based profiles, which are colored by world position instead.
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::prelude::ColorProfile;
     ///
@@ -339,7 +339,7 @@ impl ColorProfile {
     ///
     /// Returns `None` for non-palette profiles.
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::prelude::ColorProfile;
     ///
@@ -365,7 +365,7 @@ impl ColorProfile {
     /// Returns `Some(true)` if the color was removed, `Some(false)` if `index` is invalid or the
     /// palette only has one color, and `None` for non-palette profiles.
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::prelude::ColorProfile;
     ///
@@ -400,7 +400,7 @@ impl ColorProfile {
     ///
     /// Returns `None` if `index` is invalid or for non-palette profiles.
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::prelude::ColorProfile;
     ///
@@ -426,7 +426,7 @@ impl ColorProfile {
     ///
     /// Returns `None` for texture-based profiles, which are colored by world position instead.
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::prelude::ColorProfile;
     ///

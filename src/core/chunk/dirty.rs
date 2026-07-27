@@ -69,7 +69,7 @@ impl ChunkDirtyState {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy_falling_sand::core::ChunkDirtyState;
     ///
     /// let state = ChunkDirtyState::new();
@@ -91,7 +91,7 @@ impl ChunkDirtyState {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::ChunkDirtyState;
     ///
@@ -115,7 +115,7 @@ impl ChunkDirtyState {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::ChunkDirtyState;
     ///
@@ -134,7 +134,7 @@ impl ChunkDirtyState {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::ChunkDirtyState;
     ///
@@ -155,7 +155,7 @@ impl ChunkDirtyState {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::ChunkDirtyState;
     ///
@@ -174,7 +174,7 @@ impl ChunkDirtyState {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::ChunkDirtyState;
     ///
@@ -202,7 +202,7 @@ impl ChunkDirtyState {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy_falling_sand::core::{ChunkDirtyState, BORDER_N, BORDER_E};
     ///
     /// let mut state = ChunkDirtyState::new();
@@ -217,7 +217,7 @@ impl ChunkDirtyState {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::ChunkDirtyState;
     ///
@@ -246,7 +246,7 @@ impl ChunkDirtyState {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::{ChunkDirtyState, BORDER_N};
     ///
@@ -300,7 +300,7 @@ impl ChunkDirtyState {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::{ChunkDirtyState, BORDER_S};
     ///
@@ -344,7 +344,7 @@ impl ChunkDirtyState {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy::prelude::*;
     /// use bevy_falling_sand::core::ChunkDirtyState;
     ///

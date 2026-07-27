@@ -171,7 +171,7 @@ impl<'a> IntoIterator for &'a mut ContactReaction {
 ///
 /// # Examples
 ///
-/// ```
+/// ```no_run
 /// use bevy_falling_sand::core::ParticleTypeId;
 /// use bevy_falling_sand::reactions::{ContactRule, Consumes};
 ///

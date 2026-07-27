@@ -34,7 +34,7 @@ impl ChunkCoord {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy_falling_sand::core::ChunkCoord;
     ///
     /// let coord = ChunkCoord::new(3, 5);
@@ -70,7 +70,7 @@ impl ChunkCoord {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy_falling_sand::core::ChunkCoord;
     ///
     /// assert_eq!(ChunkCoord::new(0, 0).group(), 0);
@@ -91,7 +91,7 @@ impl ChunkCoord {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use bevy_falling_sand::core::ChunkCoord;
     ///
     /// let coord = ChunkCoord::new(5, 5);

@@ -19,9 +19,6 @@ exclude = [
 documentation = "http://docs.rs/bevy_falling_sand"
 categories = ["game-engines", "game-development"]
 
-[lib]
-doctest = false
-
 [features]
 default = [
     "render",

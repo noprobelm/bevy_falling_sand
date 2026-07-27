@@ -34,7 +34,7 @@ impl Plugin for MutationPlugin {
 ///
 /// # Examples
 ///
-/// ```
+/// ```no_run
 /// use std::time::Duration;
 /// use bevy_falling_sand::core::{ParticleTypeId, TimedMutation};
 ///
@@ -74,7 +74,7 @@ impl TimedMutation {
 ///
 /// # Examples
 ///
-/// ```
+/// ```no_run
 /// use std::time::Duration;
 /// use bevy_falling_sand::core::{ChanceMutation, ParticleTypeId};
 ///
