@@ -17,10 +17,10 @@
     clippy::type_complexity,
     clippy::float_cmp
 )]
-//! # Overview
+//! # Bevy Falling Sand
 //!
-//! **Bevy Falling Sand** (`bfs`) provides a [Falling Sand](https://en.wikipedia.org/wiki/Falling-sand_game)
-//! engine for [Bevy](https://bevy.org) apps.
+//! **Bevy Falling Sand** is a falling-sand simulation engine for
+//! [Bevy](https://bevy.org) apps.
 //!
 //! | `bevy_falling_sand`   | `bevy`    |
 //! |-----------------------|-----------|
@@ -29,25 +29,26 @@
 //!
 //! # Feature Flags
 //!
-//! This crate aims to be modular. Opt out of any simulation features you don't want
-//! in favor of your own implementations.
+//! The crate is modular. Disable the simulation features you want to replace with your own
+//! systems.
 //!
 //! All features are enabled by default.
 //!
-//! | Feature              | Description                                                              | Implies                    |
-//! | -------------------- | ------------------------------------------------------------------------ | -------------------------- |
-//! | [`mod@render`]       | Particle color profiles and chunk-based rendering                        | —                          |
-//! | [`mod@movement`]     | Particle movement systems                                                | —                          |
-//! | [`mod@reactions`]    | Inter-particle reactions                                                 | `render`, `movement`       |
-//! | [`mod@physics`]      | [avian2d](https://docs.rs/avian2d) bridge between rigid bodies and particles | —                          |
-//! | [`mod@debug`]        | Debug resources                                                          | —                          |
-//! | [`mod@persistence`]  | Save/load chunks, particle types, and scenes to disk                     | `bfs`, `bfc`               |
-//! | `bfs`                | Enables [`persistence::bfs`] — compact particle scene format             | —                          |
-//! | `bfc`                | Enables [`persistence::bfc`] — scene format with per-particle color      | `render`                   |
+//! | Feature             | Description                                                                  | Implies              |
+//! | ------------------- | ---------------------------------------------------------------------------- | -------------------- |
+//! | [`mod@render`]      | Particle color profiles, chunk textures, and custom effect layers            | —                    |
+//! | [`mod@movement`]    | Particle movement components, movement system states, and chunk iteration    | —                    |
+//! | [`mod@reactions`]   | Contact, fire, and corrosion reactions between particles                     | `render`, `movement` |
+//! | [`mod@physics`]     | [avian2d](https://docs.rs/avian2d) bridge between rigid bodies and particles | —                    |
+//! | [`mod@debug`]       | Debug counters and gizmo overlays                                            | —                    |
+//! | [`mod@persistence`] | Chunk save/load and particle type serialization                              | `bfs`, `bfc`         |
+//! | [`mod@scenes`]      | Layered scene assets loaded from RON and images                              | —                    |
+//! | `bfs`               | Enables [`persistence::bfs`] — compact particle format without color         | —                    |
+//! | `bfc`               | Enables [`persistence::bfc`] — particle format with per-particle color       | `render`             |
 //!
 //! # Quick start
 //!
-//! Add the [`FallingSandPlugin`] plugin, overriding defaults as desired (see also
+//! Add [`FallingSandPlugin`], overriding defaults as desired (see also
 //! [`FallingSandMinimalPlugin`]). Common overrides:
 //! - `with_chunk_size`: side length of a chunk in particles. Must be a power of 2.
 //! - `with_map_size`: side length of the loaded region in chunks. Must be a power of 2.
@@ -113,36 +114,23 @@
 //! }
 //!
 //! ```
-//! # Particle types
+//! # Particle Types
 //!
 //! The [`ParticleType`] component acts as a template for creating new particles. When
 //! [`ParticleType`] is inserted on an entity, it becomes the point of synchronization for all
 //! [`Particle`] entities attached to that type.
 //!
-//! Each [`ParticleType`] owns a [`ParticleTypeId`]. Store that ID in your own resources or
-//! components when you need to spawn, mutate, despawn, or otherwise refer to that particle type
-//! later. Names and labels should live in your application code, not in the core particle identity.
-//! `ParticleTypeId` is `Copy`, serializable, and independent of the Bevy
-//! [`Entity`](bevy::prelude::Entity) that currently owns the corresponding [`ParticleType`]
-//! template.
-//!
-//! Use [`ParticleType::new`] for normal runtime allocation, then copy its ID with
-//! [`ParticleType::id`] before moving the component into the world. Use [`ParticleType::from_id`]
-//! when spawning or restoring a template entity for an ID you already own, such as when loading
-//! persisted type definitions or building a stable catalog. [`ParticleTypeId::new`] is available
-//! when you need to allocate an ID before constructing the template component.
-//! [`ParticleTypeId::from_raw`] is intended for persisted data and externally stable catalogs where
-//! the numeric value is part of the asset or file-format contract; it also reserves that value from
-//! future automatic allocation.
+//! Each [`ParticleType`] owns a [`ParticleTypeId`], a stable handle that is cheap to copy and pass
+//! around. Keep it in your application's resources or components when you need to refer to that
+//! particle type later.
 //!
 //! Particles are introduced into the simulation by writing a [`SpawnParticleSignal`] — direct
 //! `commands.spawn(...)` of a [`Particle`] is not supported. Each spawned particle receives an
 //! [`AttachedToParticleType`] reference pointing at its parent [`ParticleType`] entity, which is
 //! the canonical source for the particle's type behavior.
 //!
-//! `bfs` provides several components that add behavior to particle types. Inserting any of the
-//! components from the table below on a [`ParticleType`] entity will influence its child
-//! [`Particle`] entity's behavior.
+//! Most particle behavior comes from components on the [`ParticleType`] entity. Insert these to
+//! affect its spawned [`Particle`] children.
 //!
 //! | Particle Behavior Component | Description                                                          | Feature      |
 //! | --------------------------- | -------------------------------------------------------------------- | ------------ |
@@ -199,8 +187,8 @@
 //! - [Contact Reactions](ContactReaction)
 //! - [Fire emitting particles](Fire)
 //! - [Flammable particles](Flammable)
-//!   [Corrosive particles](Corrosive)
-//!   [Corrodible particles](Corrodible)
+//! - [Corrosive particles](Corrosive)
+//! - [Corrodible particles](Corrodible)
 //!
 //! ## [Avian2d integration](`crate::physics`)
 //!
@@ -263,10 +251,6 @@
 //! - [Generic raycasting](crate::core::SpatialMap::raycast)
 //! - [Generic line-of-sight](crate::core::SpatialMap::has_line_of_sight_by)
 //! - [Generic radius with line-of-sight](crate::core::SpatialMap::within_radius_los_by)
-//!
-//! [`ParticleMap`] convenience methods that accept a Bevy
-//! [`Query`](bevy::prelude::Query) filter to define what counts as a "hit" or "blocker":
-//!
 //! - [Raycasting against a query filter](`ParticleMap::raycast_query`)
 //! - [Line-of-sight against a query filter](`ParticleMap::has_line_of_sight`)
 //! - [Radius with line-of-sight against a query filter](`ParticleMap::within_radius_los`)
@@ -276,7 +260,7 @@
 //! - [Total particle count](DebugParticleCount)
 //! - [Static particle (non-movable) count](`StaticParticleCount`)
 //! - [Dynamic particle (movable) count](`DynamicParticleCount`)
-//! - [Active particle count](`DynamicParticleCount`)
+//! - [Active particle count](`ActiveParticleCount`)
 //! - [Chunk overlay](`DebugParticleMap`)
 //! - [Dirty rect overlay](`DebugDirtyRects`)
 //!
