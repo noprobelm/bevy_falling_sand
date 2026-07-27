@@ -41,14 +41,15 @@
 //! - [`bfs`] — Binary Format without color. Compresses particle positions well.
 //! - [`bfc`] — Binary Format with Color. Stores per-particle position and color data at the
 //!   expense of worse compression ratios.
-///
-/// ## Feature flags
-///
-/// | Feature       | Description                                           | Implies |
-/// |---------------|-------------------------------------------------------|---------|
-/// | `bfs`         | BFS binary format (run-length compressed, no color).  | —       |
-/// | `bfc`         | BFC binary format (per-particle color data).          | `color` |
-/// | `persistence` | Full persistence: chunk save/load, scenes, RON types. | `bfs`, `bfc` |
+//!
+//! ## Feature flags
+//!
+//! | Feature       | Description                                                 | Implies      |
+//! |---------------|-------------------------------------------------------------|--------------|
+//! | `bfs`         | BFS binary format (run-length compressed, no color).        | —            |
+//! | `bfc`         | BFC binary format (per-particle color data).                | `render`     |
+//! | `persistence` | Chunk save/load and particle type definition serialization. | `bfs`, `bfc` |
+//!
 /// BFC format — Binary Format with Color.
 #[cfg(feature = "bfc")]
 #[cfg_attr(docsrs, doc(cfg(feature = "bfc")))]
