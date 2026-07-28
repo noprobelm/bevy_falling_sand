@@ -14,7 +14,9 @@ use futures_lite::future;
 
 use super::dynamic::SuspendedParticle;
 use crate::ParticleSyncExt;
-use crate::core::{ChunkCoord, ChunkDirtyState, ChunkIndex, ChunkRegion, ParticleMap};
+use crate::core::{
+    ChunkCoord, ChunkDirtyState, ChunkIndex, ChunkRegion, GridPosition, ParticleMap,
+};
 use crate::utils::mesh_components_from_bitmap;
 
 pub(super) struct StaticPlugin;
@@ -165,6 +167,7 @@ pub(super) fn calculate_static_rigid_bodies(
     map: Res<ParticleMap>,
     chunk_index: Res<ChunkIndex>,
     chunk_query: Query<(&ChunkRegion, &ChunkDirtyState)>,
+    moved_particle_query: Query<(), Changed<GridPosition>>,
 ) {
     let current_time = time.elapsed_secs();
     let update_interval = dirty_chunk_interval.0;
@@ -225,6 +228,7 @@ pub(super) fn calculate_static_rigid_bodies(
                     let pos = IVec2::new(base_x + lx as i32, base_y + ly as i32);
                     if let Ok(Some(entity)) = map.get(pos)
                         && static_body_query.contains(*entity)
+                        && !moved_particle_query.contains(*entity)
                     {
                         new_bitmap[ly * chunk_size + lx] = true;
                     }
