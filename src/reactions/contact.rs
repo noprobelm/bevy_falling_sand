@@ -479,16 +479,16 @@ mod tests {
             .resource_mut::<Messages<SpawnParticleSignal>>()
             .drain()
             .collect();
-        let despawned: Vec<_> = app
+        let despawned = app
             .world_mut()
             .resource_mut::<Messages<DespawnParticleSignal>>()
             .drain()
-            .collect();
+            .count();
 
         assert_eq!(spawned.len(), 1);
         assert_eq!(spawned[0].particle_type, ParticleTypeId::from_raw(42));
         assert_eq!(spawned[0].positions, [IVec2::X]);
         assert!(spawned[0].overwrite_existing);
-        assert_eq!(despawned.len(), 1);
+        assert_eq!(despawned, 1);
     }
 }
