@@ -4,8 +4,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     core::{
-        AttachedToParticleType, Particle, ParticleChunksMut, ParticleRngExt, ParticleSystems,
-        ParticleType, ParticleTypeId, ParticleTypeRegistry, SpawnParticleSignal,
+        AttachedToParticleType, DespawnParticleSignal, Particle, ParticleChunksMut, ParticleRngExt,
+        ParticleSystems, ParticleType, ParticleTypeId, ParticleTypeRegistry, SpawnParticleSignal,
     },
     movement::ParticleMovementSystems,
 };
@@ -16,7 +16,7 @@ impl Plugin for ContactPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<ContactReaction>()
             .register_type::<ContactRule>()
-            .register_type::<Consumes>()
+            .register_type::<ContactOutcome>()
             .add_observer(on_contact_reaction_added)
             .add_observer(on_particle_type_added)
             .add_systems(
@@ -45,7 +45,7 @@ impl Plugin for ContactPlugin {
 ///
 /// ```no_run
 /// use bevy::prelude::*;
-/// use bevy_falling_sand::reactions::{ContactReaction, ContactRule, Consumes};
+/// use bevy_falling_sand::reactions::{ContactOutcome, ContactReaction, ContactRule};
 /// use bevy_falling_sand::core::{ParticleType, ParticleTypeId};
 ///
 /// fn setup(mut commands: Commands) {
@@ -59,10 +59,10 @@ impl Plugin for ContactPlugin {
 ///         ParticleType::from_id(reacting_type),
 ///         ContactReaction::new([ContactRule {
 ///                 target: lava,
-///                 becomes: fire,
+///                 source_outcome: ContactOutcome::Becomes(fire),
+///                 target_outcome: ContactOutcome::Unchanged,
 ///                 chance: 0.8,
 ///                 radius: 1.0,
-///                 consumes: Consumes::Source,
 ///         }]),
 ///     ));
 /// }
@@ -173,57 +173,60 @@ impl<'a> IntoIterator for &'a mut ContactReaction {
 ///
 /// ```no_run
 /// use bevy_falling_sand::core::ParticleTypeId;
-/// use bevy_falling_sand::reactions::{ContactRule, Consumes};
+/// use bevy_falling_sand::reactions::{ContactOutcome, ContactRule};
 ///
 /// let lava = ParticleTypeId::new();
 /// let fire = ParticleTypeId::new();
 /// let rule = ContactRule {
 ///     target: lava,
-///     becomes: fire,
+///     source_outcome: ContactOutcome::Unchanged,
+///     target_outcome: ContactOutcome::Becomes(fire),
 ///     chance: 0.5,
 ///     radius: 1.0,
-///     consumes: Consumes::Target,
 /// };
 /// assert_eq!(rule.chance, 0.5);
-/// assert_eq!(rule.consumes, Consumes::Target);
+/// assert_eq!(rule.target_outcome, ContactOutcome::Becomes(fire));
 /// ```
 #[derive(Clone, PartialEq, Debug, Reflect, Serialize, Deserialize)]
 pub struct ContactRule {
     /// [`ParticleTypeId`] this rule reacts with on contact.
     pub target: ParticleTypeId,
-    /// [`ParticleTypeId`] produced by the reaction.
-    pub becomes: ParticleTypeId,
+    /// What happens to the source particle when this rule fires.
+    #[serde(default)]
+    #[reflect(default)]
+    pub source_outcome: ContactOutcome,
+    /// What happens to the target particle when this rule fires.
+    #[serde(default)]
+    #[reflect(default)]
+    pub target_outcome: ContactOutcome,
     /// Probability per contact per frame (0.0 to 1.0).
     pub chance: f64,
     /// The radius within which to check for the target particle.
     /// Defaults to 1.0 (immediate neighbors).
     #[serde(default = "ContactRule::default_radius")]
     pub radius: f32,
-    /// Which particle is consumed (replaced by `becomes`) when the reaction occurs.
-    #[serde(default)]
-    #[reflect(default)]
-    pub consumes: Consumes,
 }
 
-/// Controls which particle is consumed (replaced by [`ContactRule::becomes`]) when
-/// a contact reaction fires.
+/// Describes what happens to one participant when a contact reaction fires.
 #[derive(Clone, Copy, Default, Eq, PartialEq, Hash, Debug, Reflect, Serialize, Deserialize)]
-pub enum Consumes {
-    /// The source particle (the one with the [`ContactReaction`]) is consumed.
+pub enum ContactOutcome {
+    /// Keep the particle unchanged.
     #[default]
-    Source,
-    /// The target particle (the neighbor that triggered the reaction) is consumed.
-    Target,
+    Unchanged,
+    /// Destroy the particle.
+    Destroy,
+    /// Replace the particle with the specified type.
+    Becomes(ParticleTypeId),
 }
 
 impl Default for ContactRule {
     fn default() -> Self {
         Self {
             target: ParticleTypeId::default(),
-            becomes: ParticleTypeId::default(),
+            source_outcome: ContactOutcome::default(),
+            target_outcome: ContactOutcome::default(),
             chance: 0.0,
             radius: 1.0,
-            consumes: Consumes::default(),
         }
     }
 }
@@ -244,10 +247,10 @@ pub(super) struct ResolvedContactReaction {
 #[derive(Clone, Debug)]
 pub(super) struct ResolvedContactRule {
     pub(crate) target_type: Entity,
-    pub(crate) becomes: ParticleTypeId,
+    pub(crate) source_outcome: ContactOutcome,
+    pub(crate) target_outcome: ContactOutcome,
     pub(crate) chance: f64,
     pub(crate) radius: f32,
-    pub(crate) consumes: Consumes,
 }
 
 /// Resolves `ContactReaction` type IDs into `ResolvedContactReaction` entity references
@@ -296,13 +299,17 @@ fn try_resolve(
 
     for rule in contact {
         let target_type = *registry.get(rule.target)?;
-        let _ = registry.get(rule.becomes)?;
+        for outcome in [rule.source_outcome, rule.target_outcome] {
+            if let ContactOutcome::Becomes(particle_type) = outcome {
+                let _ = registry.get(particle_type)?;
+            }
+        }
         resolved_rules.push(ResolvedContactRule {
             target_type,
-            becomes: rule.becomes,
+            source_outcome: rule.source_outcome,
+            target_outcome: rule.target_outcome,
             chance: rule.chance,
             radius: rule.radius,
-            consumes: rule.consumes,
         });
     }
 
@@ -340,6 +347,7 @@ fn handle_contact_reactions(
     rules_query: Query<&ResolvedContactReaction, With<ParticleType>>,
     mut rng: Single<&mut WyRand, With<GlobalRng>>,
     mut msgw_spawn: MessageWriter<SpawnParticleSignal>,
+    mut msgw_despawn: MessageWriter<DespawnParticleSignal>,
 ) {
     particle_chunks.for_each_dirty_particle(|map, dirty_state, pos, entity| {
         let Ok(attached) = particle_query.get(entity) else {
@@ -374,20 +382,13 @@ fn handle_contact_reactions(
                 }
                 if neighbor_attached.0 == rule.target_type {
                     if rng.chance(rule.chance) {
-                        match rule.consumes {
-                            Consumes::Source => {
-                                msgw_spawn.write(SpawnParticleSignal::overwrite_existing(
-                                    rule.becomes,
-                                    pos,
-                                ));
-                            }
-                            Consumes::Target => {
-                                msgw_spawn.write(SpawnParticleSignal::overwrite_existing(
-                                    rule.becomes,
-                                    neighbor_pos,
-                                ));
-                            }
-                        }
+                        apply_outcome(rule.source_outcome, pos, &mut msgw_spawn, &mut msgw_despawn);
+                        apply_outcome(
+                            rule.target_outcome,
+                            neighbor_pos,
+                            &mut msgw_spawn,
+                            &mut msgw_despawn,
+                        );
                         reacted = true;
                         break;
                     }
@@ -398,6 +399,26 @@ fn handle_contact_reactions(
     });
 }
 
+fn apply_outcome(
+    outcome: ContactOutcome,
+    position: IVec2,
+    spawn: &mut MessageWriter<SpawnParticleSignal>,
+    despawn: &mut MessageWriter<DespawnParticleSignal>,
+) {
+    match outcome {
+        ContactOutcome::Unchanged => {}
+        ContactOutcome::Destroy => {
+            despawn.write(DespawnParticleSignal::from_position(position));
+        }
+        ContactOutcome::Becomes(particle_type) => {
+            spawn.write(SpawnParticleSignal::overwrite_existing(
+                particle_type,
+                position,
+            ));
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -405,7 +426,7 @@ mod tests {
     fn rule(id: usize) -> ContactRule {
         ContactRule {
             target: ParticleTypeId::from_raw(id),
-            becomes: ParticleTypeId::from_raw(id + 100),
+            source_outcome: ContactOutcome::Becomes(ParticleTypeId::from_raw(id + 100)),
             ..default()
         }
     }
@@ -419,5 +440,55 @@ mod tests {
 
         assert_eq!(reactions.len(), 1);
         assert_eq!(reactions.iter().next().unwrap().chance, 0.5);
+    }
+
+    #[test]
+    fn outcomes_emit_independent_spawn_and_despawn_signals() {
+        fn emit_outcomes(
+            mut spawn: MessageWriter<SpawnParticleSignal>,
+            mut despawn: MessageWriter<DespawnParticleSignal>,
+        ) {
+            apply_outcome(
+                ContactOutcome::Unchanged,
+                IVec2::ZERO,
+                &mut spawn,
+                &mut despawn,
+            );
+            apply_outcome(
+                ContactOutcome::Destroy,
+                IVec2::ONE,
+                &mut spawn,
+                &mut despawn,
+            );
+            apply_outcome(
+                ContactOutcome::Becomes(ParticleTypeId::from_raw(42)),
+                IVec2::X,
+                &mut spawn,
+                &mut despawn,
+            );
+        }
+
+        let mut app = App::new();
+        app.add_message::<SpawnParticleSignal>()
+            .add_message::<DespawnParticleSignal>()
+            .add_systems(Update, emit_outcomes);
+        app.update();
+
+        let spawned: Vec<_> = app
+            .world_mut()
+            .resource_mut::<Messages<SpawnParticleSignal>>()
+            .drain()
+            .collect();
+        let despawned = app
+            .world_mut()
+            .resource_mut::<Messages<DespawnParticleSignal>>()
+            .drain()
+            .count();
+
+        assert_eq!(spawned.len(), 1);
+        assert_eq!(spawned[0].particle_type, ParticleTypeId::from_raw(42));
+        assert_eq!(spawned[0].positions, [IVec2::X]);
+        assert!(spawned[0].overwrite_existing);
+        assert_eq!(despawned, 1);
     }
 }

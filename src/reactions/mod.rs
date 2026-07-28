@@ -17,7 +17,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::impl_particle_rng;
 
-pub use contact::{Consumes, ContactReaction, ContactRule};
+pub use contact::{ContactOutcome, ContactReaction, ContactRule};
 pub use corrosion::{Corrodible, Corrosive};
 pub use fire::{BurnProduct, Burning, Fire, Flammable};
 
